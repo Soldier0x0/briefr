@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Why AI is used sparingly — the case against a bigger role, stated once — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="arch-ai-restraint" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="arch-ai-restraint">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A4</span>
+        <h3>Why AI is used sparingly — the case against a bigger role, stated once</h3>
+        <p class="dek">Every chapter so far has made one small, local "why not more ML/LLM here" argument on its own turf. This chapter pulls all of them into a single line of reasoning, because the pattern across them is the actual answer, not any one instance of it.</p>
+        <div class="files"><span class="chip">scoring/risk.py</span><span class="chip">ai/llm_router.py</span><span class="chip">ml/embeddings.py</span><span class="chip">ROADMAP.md</span></div>
+      </div>
+
+      <h4 class="subhead concept">The question worth asking directly: this is 2026, AI is everywhere — why isn't BRIEFR built around it?</h4>
+      <div class="prose">
+        <p>It's a fair challenge, and worth answering directly rather than deflecting to "we use some AI." BRIEFR could plausibly have been built as an LLM-first product: a chat interface over your CVE data, an agent that decides what's a priority, a model that learns your organization's risk tolerance from feedback. None of that is what got built. Instead, across every chapter in this book, AI shows up in exactly two narrow, well-fenced roles — CPU-only local embeddings for semantic similarity (Chapter 24), and hosted-LLM calls for three specific, optional enrichment tasks (Chapter 24B) — and everywhere else, a deterministic formula, a fixed lookup table, or plain code does the job instead. That's not an oversight or a resource constraint alone; it's a position, and it's visible in four separate, independently-justified decisions that happen to all point the same direction.</p>
+      </div>
+
+      <h4 class="subhead why">Four decisions, one pattern: explainability beats raw predictive power for this problem</h4>
+      <div class="prose">
+        <p><strong>Risk Score is a fixed weighted formula, not a learned model (Chapter 18).</strong> A gradient-boosted tree trained on historical exploitation data could plausibly out-predict the six-component formula BRIEFR actually ships. It wasn't built, because a security analyst asking "why is this CVE ranked above that one" needs an answer that <em>is</em> the computation, not an approximation of it produced by a separate explainability layer bolted onto a black box afterward. A fixed formula is also perfectly reproducible — the same CVE and asset profile score identically today and a year from now, which matters when an analyst asks why a score changed and the honest answer needs to be a specific component delta, never "the model's weights drifted during retraining."</p>
+        <p><strong>Detection rules are generated by an LLM but never auto-deployed (Chapter 21, Chapter A3).</strong> An LLM extracts detection-rule artifacts from CVE text — genuinely useful, genuinely "AI" in the loose sense — but the pipeline stops at "here's a rule for a human to review," on purpose. Generated content becoming live detection logic in a real SIEM without a human reading it first is exactly the kind of unreviewed-automation risk this project has chosen not to accept, regardless of how good the model producing it is.</p>
+        <p><strong>Semantic search stays hybrid, never vectors-alone (Chapter 24).</strong> Embeddings are excellent at "this text means something similar" and comparatively weak at exact-token matching — a CVE ID, a specific version string, an error code pasted in verbatim. Rather than trust the model to cover that gap, BRIEFR blends vector similarity with ordinary keyword search deliberately, so the two techniques cover each other's blind spots instead of asking one imperfect technique to do a job it's structurally bad at.</p>
+        <p><strong>Every LLM feature has a deterministic fallback, without exception (Chapter 24).</strong> BRIEFR must fully function for an operator who configures zero LLM API keys — a real, supported deployment mode, not an edge case — because every LLM-touched feature is additive polish layered on a core product whose correctness never depends on it. That's the constraint that keeps the previous three decisions honest: nothing in the product is allowed to become load-bearing on a model's output, so nothing has the incentive to reach for one just because it's available.</p>
+      </div>
+
+      <h4 class="subhead why">"Generic LLM chat SOC" is a named non-goal, not an oversight</h4>
+      <div class="prose">
+        <p>ROADMAP.md states this as a standing decision with a reason on record, not a gap waiting to be filled: a chat-style SOC assistant is "considered a commodity" — plenty of other tools already build a general-purpose LLM chat layer over security data, and building another one wouldn't be BRIEFR's contribution. The project's actual bet is the opposite of "put a model in front of everything": pick the handful of places where a model's output is genuinely additive (summarizing, extracting structure from messy free text) and everywhere else, do the more boring thing that can be pinned down, tested, and explained exactly. That's a scope decision as much as a technical one, and it's the same instinct — see Chapter A1's non-goals table — that also keeps BRIEFR a monolith rather than a distributed system: narrow the problem on purpose, rather than reaching for the most powerful available tool by default.</p>
+      </div>
+
+      <h4 class="subhead how">What would have to change before AI's role grew</h4>
+      <div class="prose">
+        <p>None of this is a permanent ceiling — it's a statement about where the tradeoff currently lands, and it's worth being precise about what would actually move it. A learned risk-scoring model would become worth the explainability cost only once there's enough of BRIEFR's own labeled outcome data (which CVEs an operator actually acted on, and which they correctly ignored) to meaningfully outperform the fixed formula rather than just approximate it — data this project doesn't yet have because it's a young, single-operator-oriented tool, not a mature platform with years of feedback loops. Auto-deploying generated detection rules would need a much higher, independently-verified confidence bar than any current model realistically clears, plus a real rollback story if a bad rule shipped automatically. And a genuine chat interface would need to solve, honestly, the same problem every LLM-chat security product has to solve — hallucination on security-consequential answers — before it could be trusted anywhere near "should I act on this," which is precisely the question BRIEFR's fixed, auditable scoring answers today without that risk.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the two places in BRIEFR where AI genuinely does real work, and the boundary that keeps each one from becoming load-bearing.</li>
+          <li>Why would a more accurate learned risk-scoring model still be a worse fit for BRIEFR today than the fixed formula it has?</li>
+          <li>"Generic LLM chat SOC" is listed as a non-goal because it's "considered a commodity" — restate that argument in your own words, and say what BRIEFR's actual bet is instead.</li>
+          <li>What specific evidence would have to exist before a learned risk model became a reasonable replacement for the current formula?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="arch-connectivity.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">How the pieces connect — and why some deliberately don't</span></a><a class="next" href="arch-license.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Why Business Source License 1.1 — and the AGPL decision it reversed</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

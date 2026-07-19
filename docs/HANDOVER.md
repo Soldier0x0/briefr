@@ -20,6 +20,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — Learn site Phase 1 (deploy-ready, no DNS yet)
+
+**Done**
+- Design: `docs/superpowers/specs/2026-07-19-learn-site-phase1-design.md`
+- Pathways SSOT: `docs/learn/pathways.json` (System Design / Analyst / Architect)
+- Generator: `scripts/build_learn_site.py` → self-contained `docs/learn-site/` (chooser + pathways + nested `book/`)
+- Local preview + future subdomain steps in `docs/learn-site/DEPLOY.md`
+- Tests: `backend/tests/test_build_learn_site.py`
+
+**Deploy later:** point `docs.<domain>` (or Cloudflare Pages output) at `docs/learn-site/` when DNS exists. No live subdomain required to keep iterating.
+
+**Next:** when subdomain is configured, follow `DEPLOY.md`; optional split to a separate learn repo.
+
+---
+
 ## 2026-07-19 — Study guide Phase 0 inventory gates green
 
 **Done**

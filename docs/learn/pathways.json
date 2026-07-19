@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "title": "BRIEFR Learn",
+  "tagline": "Learn system design and security roles from a real CVE intelligence product — facts from the living codebase.",
+  "pathways": [
+    {
+      "id": "system-design",
+      "title": "System Design",
+      "eyebrow": "Case study track",
+      "blurb": "From foundations to deploy: how BRIEFR is shaped as a monolith, where heavy work lives, and how scoring, ingest, and ops fit together. Every step links into the audited textbook.",
+      "audience": "Engineers and interview prep using BRIEFR as a concrete system.",
+      "steps": [
+        {"id": "preface", "label": "How to study this book"},
+        {"id": "system-design", "label": "Four architecture diagrams"},
+        {"id": "primer-mechanics", "label": "Patterns you will see everywhere"},
+        {"id": "arch-monolith", "label": "Why a monolith (not microservices)"},
+        {"id": "arch-resources", "label": "Resource-consciousness thread"},
+        {"id": "arch-connectivity", "label": "What talks to what"},
+        {"id": "arch-ai-restraint", "label": "Why AI is used sparingly"},
+        {"id": "be-bootstrap", "label": "Process bootstrap & lifespan"},
+        {"id": "be-data", "label": "Data layer (Postgres-native)"},
+        {"id": "be-auth", "label": "Auth: JWT + refresh sessions"},
+        {"id": "in-feeds", "label": "Feed watermarks & ingest shapes"},
+        {"id": "in-scheduler", "label": "Scheduler & locks"},
+        {"id": "in-queue", "label": "Outbound queue & circuit breakers"},
+        {"id": "ie-scoring", "label": "Risk & Threat scoring"},
+        {"id": "ie-correlation", "label": "Correlation & campaigns"},
+        {"id": "ie-detection", "label": "Detection packs (no live SIEM)"},
+        {"id": "ie-ml", "label": "ML vs LLM vs deterministic enrichment"},
+        {"id": "api-ops", "label": "Ops: backup, wallboard, diagnostics"},
+        {"id": "devops-deploy", "label": "Deploy surface"},
+        {"id": "sec-availability", "label": "Request-path discipline (availability)"},
+        {"id": "roadmap-future", "label": "Open gaps & future"}
+      ]
+    },
+    {
+      "id": "analyst",
+      "title": "Security analyst",
+      "eyebrow": "Role track",
+      "blurb": "See BRIEFR the way an analyst does: URL-owned tabs, feed + drawer investigation, scoring signals, detection starters, morning brief, and Forge handoffs — without needing the full ops console first.",
+      "audience": "SOC / vuln analysts learning the product surface.",
+      "steps": [
+        {"id": "preface", "label": "How to study (skim method)"},
+        {"id": "system-design", "label": "Where the analyst UI sits in the system"},
+        {"id": "fe-analyst-shell", "label": "Analyst shell: tabs, feed, drawer"},
+        {"id": "fe-forge-wallboard", "label": "Forge, ATLAS, wallboard"},
+        {"id": "fe-shared-utils", "label": "Filters, links, shared helpers"},
+        {"id": "ie-scoring", "label": "Operational Priority & Threat Score"},
+        {"id": "ie-matching", "label": "My Stack / CPE relevance"},
+        {"id": "ie-correlation", "label": "Campaigns & related intel"},
+        {"id": "ie-detection", "label": "Detect tab & hunt starters"},
+        {"id": "ie-brief", "label": "Morning brief"},
+        {"id": "ie-threatmodel", "label": "Threat scenarios & IOC paths"},
+        {"id": "ie-retrieval-ops", "label": "Semantic search / retrieval honesty"},
+        {"id": "api-usersettings", "label": "Preferences, stack, notifications"},
+        {"id": "sec-identity", "label": "Sessions you live inside"}
+      ]
+    },
+    {
+      "id": "architect",
+      "title": "Security architect",
+      "eyebrow": "Role track",
+      "blurb": "Trust boundaries, controls, and living posture: auth, rate limits, SSRF, secrets, self-assessment corpus, and how the product documents its own architecture without inventing scores.",
+      "audience": "Security architects evaluating or extending BRIEFR.",
+      "steps": [
+        {"id": "preface", "label": "How to study"},
+        {"id": "system-design", "label": "System shape & trust lines"},
+        {"id": "arch-connectivity", "label": "Connectivity & deliberate non-edges"},
+        {"id": "arch-ai-restraint", "label": "AI restraint as a control"},
+        {"id": "be-config", "label": "Config & encrypted secrets (ADR-006)"},
+        {"id": "be-auth", "label": "Identity & session design"},
+        {"id": "be-ratelimit", "label": "Inbound rate limits"},
+        {"id": "be-logging", "label": "Structured logging & redaction"},
+        {"id": "in-queue", "label": "Outbound circuits & metering"},
+        {"id": "api-webhooks", "label": "Webhooks & SSRF hardening"},
+        {"id": "api-secarch", "label": "security_architecture/ living corpus"},
+        {"id": "sec-identity", "label": "Posture: identity"},
+        {"id": "sec-network", "label": "Posture: network trust"},
+        {"id": "sec-secrets", "label": "Posture: secrets"},
+        {"id": "sec-availability", "label": "Posture: availability"},
+        {"id": "sec-selfassess", "label": "Posture: self-assessment"},
+        {"id": "devops-deploy", "label": "Deploy & production posture"},
+        {"id": "devops-ci", "label": "CI gates"}
+      ]
+    }
+  ]
+}

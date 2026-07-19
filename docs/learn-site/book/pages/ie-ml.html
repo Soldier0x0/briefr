@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ML and LLM enrichment — three genuinely different categories, and zero Anthropic dependency — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="ie-ml" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="ie-ml">
+      <div class="chapter-head">
+        <span class="chapter-num">Part IV · Chapter 24</span>
+        <h3>ML and LLM enrichment — three genuinely different categories, and zero Anthropic dependency</h3>
+        <p class="dek">Local embeddings, hosted-API LLM calls, and plain deterministic enrichment are three separate things that get talked about as if they were one — this chapter draws the actual lines, verified directly against the code.</p>
+        <div class="files"><span class="chip">ml/embeddings.py</span><span class="chip">ml/product_extraction.py</span><span class="chip">ai/llm_router.py</span><span class="chip">enrichment/*.py</span></div>
+      </div>
+
+      <h4 class="subhead concept">Three categories, not one blurry "AI" bucket</h4>
+      <div class="prose">
+        <p>It's worth being disciplined about vocabulary here, because "AI" gets used loosely to mean at least three structurally different things in this codebase. <strong>True local machine learning:</strong> CPU-only sentence embeddings, computed by a small ONNX model (<code>BAAI/bge-small-en-v1.5</code>, via the <code>fastembed</code> library) running entirely on BRIEFR's own hardware, no network call involved — used to power "related CVEs" and semantic search via cosine similarity between vectors. This is env-gated off by default, and computed only during scheduled backfill jobs; the request path only ever reads vectors that were already computed and stored, with an explicit code comment stating "Related CVEs must not call this — they use stored vectors only," closing off any temptation to compute an embedding live on a request. <strong>LLM-assisted enrichment:</strong> a genuine network call to a hosted large-language-model API — extracting a structured <code>{vendor, product, version_range}</code> triple from free-text CVE descriptions when NVD hasn't yet analyzed a freshly-published CVE, extracting detection-rule artifacts (Chapter 21), and generating on-demand PDF executive summaries. All three are scheduler-side or explicitly on-demand, gated off by default, and every single one has a deterministic template fallback available. <strong>Plain deterministic enrichment, no ML or LLM involved at all:</strong> regex-derived MITRE technique tags and proof-of-concept flags pulled from NVD's own reference-link tags, DNS hostname format validation, and third-party IOC reputation lookups (VirusTotal, AbuseIPDB, GreyNoise) — these are just structured API calls or pattern matching, and calling them "AI" would be a real category error worth correcting if you hear it described that way.</p>
+      </div>
+
+      <h4 class="subhead why">The provider chain — verified: no Anthropic client exists anywhere in this stack</h4>
+      <div class="prose">
+        <p>A direct search across <code>ai/</code>, <code>ml/</code>, and <code>enrichment/</code> confirms there is no Anthropic or Claude API client anywhere in this codebase. <code>ai/llm_router.py</code> instead implements a fixed-order failover chain across free and cheap-tier providers — Groq, then Cerebras, then OpenRouter, then Gemini as the last resort — explicitly "not round-robin": one attempt per provider per call, in that exact priority order, falling through to the next only on failure or an empty response. The reasoning, visible in the code's own comments (a display-order comment states plainly that admin UI ordering matches failover priority, "Gemini is last resort"), is straightforward cost engineering: keeping a self-hosted tool's operating cost near zero by leaning on free and cheap-tier LLM providers rather than paying premium-tier API prices for enrichment tasks that are genuinely optional polish, never load-bearing functionality.</p>
+      </div>
+
+      <h4 class="subhead how">Why every LLM feature has a deterministic fallback, without exception</h4>
+      <div class="prose">
+        <p>This is the detail that ties the whole chapter together: BRIEFR must fully function for an operator who configures zero LLM API keys at all — a real, expected, and fully-supported deployment mode, not an edge case. A single gate function, <code>any_llm_provider_configured()</code>, controls whether LLM-dependent features attempt to run at all; when it's false, PDF executive summaries fall back to a template-based <code>_template_executive_summary</code> instead of an LLM-generated one, product extraction and detection-artifact extraction simply don't run (CPE data and deterministic Nuclei-YAML parsing still populate the same underlying fields through non-LLM paths), and semantic search degrades to keyword-only matching, reporting that fact honestly in its response metadata rather than silently pretending to be semantic. Every one of these enrichments is additive polish layered on top of a fully-functional core product — never something the core product's correctness depends on.</p>
+      </div>
+
+      <h4 class="subhead concept">The actual algorithm underneath "semantic search" — cosine similarity, made concrete</h4>
+      <div class="prose">
+        <p>It's worth de-mystifying exactly what "embeddings" computes, since the term gets used as if it were magic. An embedding model turns a piece of text into a fixed-length list of numbers — a vector — positioned in a high-dimensional space such that texts with similar <em>meaning</em> end up as nearby vectors, even if they share few or no exact words in common. "Semantic search" then reduces to a genuinely simple piece of arithmetic: compute the embedding vector for a search query, compute (or, in BRIEFR's case, already have stored) the embedding vector for every candidate CVE description, and rank candidates by <strong>cosine similarity</strong> — the cosine of the angle between two vectors, which is 1 when they point in exactly the same direction (maximally similar in meaning) and 0 when they're orthogonal (unrelated). There's no learning or inference happening at search time at all — the model already did the hard work once, ahead of time, when it produced the stored vectors; a live search is pure vector arithmetic, which is exactly why it's cheap enough to run on the request path when a live LLM call would not be.</p>
+        <p>At real scale, comparing a query vector against every single stored vector one by one (a brute-force linear scan) becomes too slow to do on every request once the CVE corpus is large. This is what pgvector's ANN (Approximate Nearest Neighbor) index solves — a data structure that finds vectors <em>very close to</em> the true nearest matches, in a fraction of the time a brute-force scan would take, trading a small, usually irrelevant amount of ranking precision for a large, very relevant speed gain. BRIEFR's hybrid search then blends this vector-similarity ranking with ordinary keyword search rather than relying on vectors alone — deliberately, because embeddings are excellent at "this text means something similar" and comparatively weak at exact-token matching (a CVE ID, a specific product version string, an exact error code an analyst pastes in verbatim) — the two techniques cover each other's blind spots.</p>
+      </div>
+
+      <h4 class="subhead why">Why <code>BAAI/bge-small-en-v1.5</code> specifically — and why not a bigger, "better" model</h4>
+      <div class="prose">
+        <p>Embedding models span an enormous size range — from tens of millions of parameters up to models comparable in size to a full LLM. BRIEFR's choice sits deliberately at the small end for reasons that connect directly to Chapter 25's resource-consciousness thread: <code>bge-small-en-v1.5</code> is a compact model (roughly on the order of tens of millions of parameters, not billions) specifically chosen so it runs acceptably fast on ordinary CPU hardware via ONNX through <code>fastembed</code> — no GPU, no PyTorch runtime dependency, no meaningful extra RAM budget beyond loading one small model file. A larger, more capable embedding model would very likely produce marginally better semantic rankings, but at a real cost this project has explicitly declined to pay: slower CPU inference (mattering directly for how long a bulk backfill job takes, since Chapter 24 established this only ever runs in the scheduler, never on the request path), a meaningfully larger memory footprint just to hold the model in memory, and — for anyone considering a hosted embedding API instead of a local model — a recurring per-call cost and a dependency on sending CVE and asset-stack text to a third party, which cuts directly against BRIEFR's self-hosted, privacy-conscious posture (the same instinct behind self-hosting fonts in Chapter 5, stated again at the ML layer). A small, local, CPU-only model is the one choice that satisfies "works fully offline," "costs nothing per query," and "keeps analyst data on the box" simultaneously — three properties a larger or hosted model would each individually break.</p>
+      </div>
+
+      <h4 class="subhead pitfall">The real restrictions this choice imposes — worth naming precisely, not glossing over</h4>
+      <div class="pitfall-box">
+        <p>A small local model is not a free lunch, and the honest restrictions are worth stating explicitly rather than only praising the upside. <strong>Fixed dimensionality:</strong> every vector this model produces has the same fixed length, set once by the model architecture — switching to a different embedding model later isn't a drop-in config change, because old and new vectors would live in incompatible spaces, meaning a model change requires re-embedding the entire historical corpus from scratch, not a quiet migration. <strong>English-biased:</strong> the model name says it plainly (<code>-en-</code>) — this is trained predominantly on English text, so semantic quality for non-English CVE descriptions or analyst queries would be meaningfully weaker, a real limitation for any future internationalization of the product. <strong>No fine-tuning on BRIEFR's own domain data:</strong> the model is used exactly as published, off the shelf, with no additional training on CVE-specific or security-specific text — it brings general-purpose semantic understanding, not a specialized notion of, say, which CVEs security professionals consider "similar" in a way a general text model wouldn't naturally capture. <strong>CPU-bound throughput:</strong> embedding a large historical backlog of CVEs is measurably slower on CPU than it would be on a GPU, which is precisely why the backfill is scheduler-only, resumable, and explicitly never something the request path can trigger inline — a direct, load-bearing consequence of the CPU-only choice, not an unrelated design decision.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Explain cosine similarity in your own words, and say precisely why a search request needs to compute only <em>one</em> new embedding (the query's), not embed every CVE again.</li>
+          <li>Why does an ANN index trade a small amount of ranking accuracy for a large speed gain, and why is that trade acceptable for this specific use case?</li>
+          <li>Name three properties a larger or hosted embedding model would break for BRIEFR that <code>bge-small-en-v1.5</code> preserves — connect each one back to a specific project value (cost, privacy, offline capability).</li>
+          <li>If BRIEFR wanted to switch embedding models in the future, why couldn't it simply swap the model name in a config file and move on?</li>
+          <li>An operator configures zero LLM API keys. Walk through, category by category, exactly what breaks — and justify why the honest answer is "nothing user-visible."</li>
+          <li>Why is the LLM provider chain a fixed-priority failover rather than round-robin load balancing across providers?</li>
+          <li>Give a concrete example of enrichment that sounds like "AI" but is actually plain deterministic code, and explain what specifically makes it deterministic rather than learned.</li>
+          <li>Why does the code comment insist "related CVEs must not call [the embedding model] — they use stored vectors only"? What would break the heavy-work rule if that constraint were violated?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="ie-threatmodel.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Threat modeling, provenance, and IOC retro-matching</span></a><a class="next" href="ie-ml-providers.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Inside the LLM failover chain — pacing, quota, audit trail, and the one request-path exception</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

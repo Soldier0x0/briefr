@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authentication — sessions, tokens, and passwords — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="be-auth" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="be-auth">
+      <div class="chapter-head">
+        <span class="chapter-num">Part II · Chapter 11</span>
+        <h3>Authentication — sessions, tokens, and passwords</h3>
+        <p class="dek">The full login system, replacing a legacy shared admin-key header — and the reasoning behind every one of its individually small, deliberate security choices.</p>
+        <div class="files"><span class="chip">auth/tokens.py</span><span class="chip">auth/passwords.py</span><span class="chip">auth/repo.py</span><span class="chip">auth/usernames.py</span><span class="chip">auth_middleware.py</span></div>
+      </div>
+
+      <h4 class="subhead concept">Two tokens, not one, and why that split exists</h4>
+      <div class="prose">
+        <p>BRIEFR issues two different credentials at login, each optimized for a different property. A short-lived <strong>access token</strong> — a JWT, self-contained and stateless, checked by decoding and verifying its signature, no database lookup required — is fast to verify on every request but, once issued, cannot be individually revoked before it naturally expires. An opaque <strong>refresh token</strong> — a random string with no embedded meaning — is checked against a database table (<code>sessions</code>) on use, which makes it slower to verify but fully revocable at any moment, since revocation just means deleting or marking that one database row. The two are complementary precisely because they trade the same property in opposite directions: the access token optimizes for speed at the cost of instant revocability; the refresh token optimizes for revocability at the cost of a database round-trip. Using one alone would force a single tradeoff onto the entire system; using both lets each request pick the cheaper one (the access token) for routine reads, while keeping a slower-but-revocable mechanism (the refresh token) in reserve for the moment revocation actually matters — a stolen session, an offboarded user, a suspicious login.</p>
+      </div>
+
+      <pre class="code"><code><span class="kw">def</span> create_access_token(user_id: <span class="kw">int</span>, username: <span class="kw">str</span>, role: <span class="kw">str</span>) -> <span class="kw">str</span>:
+    now = datetime.now(timezone.utc)
+    payload = {
+        <span class="str">"sub"</span>: <span class="kw">str</span>(user_id),
+        <span class="str">"username"</span>: username,
+        <span class="str">"role"</span>: role,
+        <span class="str">"iat"</span>: now,
+        <span class="str">"exp"</span>: now + timedelta(minutes=settings.jwt_access_token_minutes),
+    }
+    <span class="kw">return</span> jwt.encode(payload, settings.jwt_secret, algorithm=ALGORITHM)
+
+<span class="kw">def</span> generate_refresh_token() -> <span class="kw">str</span>:
+    <span class="kw">return</span> secrets.token_urlsafe(<span class="num">32</span>)
+
+<span class="kw">def</span> hash_refresh_token(token: <span class="kw">str</span>) -> <span class="kw">str</span>:
+    <span class="kw">return</span> hashlib.sha256(token.encode(<span class="str">"utf-8"</span>)).hexdigest()</code></pre>
+      <p class="code-caption">auth/tokens.py, in full for the relevant functions — notice the refresh token is never stored raw, only its SHA-256 hash</p>
+
+      <div class="prose">
+        <p>That last function is a small but important detail: the raw refresh token is handed to the browser once, at login, and never persisted anywhere on the server — only <code>hash_refresh_token()</code>'s output goes into the <code>sessions</code> table. If the database ever leaked (a backup file exposed, a read replica compromised), an attacker with the hash table alone cannot reconstruct the original tokens and therefore cannot replay anyone's session — the same principle as never storing a plaintext password, applied to a session credential instead.</p>
+      </div>
+
+      <h4 class="subhead concept">Password hashing, and the timing-attack detail most implementations miss</h4>
+      <div class="prose">
+        <p>BRIEFR hashes passwords with <code>bcrypt</code> directly, at 12 rounds — a deliberate choice over <code>passlib</code>, a popular wrapper library, because the code's own comment notes passlib is unmaintained and has broken compatibility with bcrypt versions 4.1 and above. Depending on an unmaintained abstraction layer over a well-maintained primitive is a real risk in security-sensitive code; calling <code>bcrypt</code> directly removes that dependency entirely.</p>
+      </div>
+      <pre class="code"><code>DUMMY_HASH = bcrypt.hashpw(secrets.token_bytes(<span class="num">32</span>), bcrypt.gensalt(rounds=<span class="num">12</span>)).decode(<span class="str">"utf-8"</span>)
+
+<span class="kw">def</span> hash_password(plain: <span class="kw">str</span>) -> <span class="kw">str</span>:
+    <span class="kw">return</span> bcrypt.hashpw(plain.encode(<span class="str">"utf-8"</span>), bcrypt.gensalt(rounds=<span class="num">12</span>)).decode(<span class="str">"utf-8"</span>)
+
+<span class="kw">def</span> verify_password(plain: <span class="kw">str</span>, hashed: <span class="kw">str</span>) -> <span class="kw">bool</span>:
+    <span class="kw">try</span>:
+        <span class="kw">return</span> bcrypt.checkpw(plain.encode(<span class="str">"utf-8"</span>), hashed.encode(<span class="str">"utf-8"</span>))
+    <span class="kw">except</span> ValueError:
+        <span class="kw">return</span> <span class="kw">False</span></code></pre>
+      <p class="code-caption">auth/passwords.py, in full — <code>DUMMY_HASH</code> is generated once at import time, from random bytes</p>
+      <div class="prose">
+        <p>The subtle piece worth studying is <code>DUMMY_HASH</code>. Without it, a naive login handler might do "look up the username; if not found, return an error immediately; if found, call <code>verify_password</code>." That branch has a measurable timing difference — a nonexistent username returns fast (no bcrypt call at all), while an existing username with a wrong password returns slower (a full, deliberately-slow bcrypt comparison runs). An attacker who can measure response times precisely enough can use that difference alone to enumerate which usernames exist in the system, without ever guessing a single correct password. <code>DUMMY_HASH</code> closes this: when a username lookup fails, the login handler still runs <code>verify_password(plain, DUMMY_HASH)</code> against this fixed, meaningless hash, so a nonexistent username costs the same bcrypt-comparison time as a wrong password on a real one. The two cases become indistinguishable by timing alone.</p>
+      </div>
+
+      <h4 class="subhead how">Session rotation and reuse detection</h4>
+      <div class="prose">
+        <p>When a refresh token is used, <code>auth/repo.py</code>'s <code>rotate_session</code> doesn't simply issue a new one and move on — it explicitly <em>revokes</em> the old session row rather than deleting it outright. That distinction matters: because the hash of the old, now-revoked token is still sitting in the table (marked revoked, not gone), a <em>second</em> attempted use of that same old token — which shouldn't happen in normal operation, since a legitimate client only uses a refresh token once before getting a new one — is detectable as reuse rather than silently accepted or silently rejected with no signal. In the concrete attack scenario this defends against: an attacker steals a refresh token and uses it once to mint their own session. When the legitimate user's client later tries to use that same (now-already-rotated) token, the system can recognize "this exact token was already rotated once" and treat it as a signal that the token was compromised, rather than as an ordinary, unremarkable refresh.</p>
+      </div>
+
+      <h4 class="subhead how">Username validation as a security control, not just data hygiene</h4>
+      <div class="prose">
+        <p><code>auth/usernames.py</code> lowercases and validates usernames against a strict pattern — 3 to 32 characters, alphanumeric plus underscore/hyphen, must start and end with an alphanumeric character. The code's own comment frames this as reducing "homograph confusion" — the risk that two visually similar usernames (using look-alike Unicode characters, or subtly different capitalization) could be mistaken for each other in an audit log or a security review, which matters in exactly the way it wouldn't for a consumer app: a security operator scanning an audit trail for a specific account needs to trust that what they're reading is what's actually there.</p>
+      </div>
+
+      <h4 class="subhead how">The scoped bearer-token path — a second, narrower credential</h4>
+      <div class="prose">
+        <p>Separate from the interactive-session cookie flow entirely, <code>auth_middleware.py</code> recognizes a second kind of credential: an <code>Authorization: Bearer briefr_search_...</code> token, intended for machine or service access rather than a human browser session. This token is deliberately more restricted than a full login session in two ways at once — it's checked against a small, explicit allowlist of read-only paths (semantic search, CVE detail/related/drawer GET requests only — enforced by a path regex, not by role) rather than the general permission system, and it has its own separate rate-limit bucket. The design principle here is the security concept of least privilege applied to machine credentials specifically: a service that only needs to query search results gets a credential that can only query search results, rather than reusing the same broad session mechanism a human analyst uses.</p>
+      </div>
+
+      <div class="security-box">
+        <p><strong>The one honest tradeoff to be able to name in an interview:</strong> access tokens are stateless JWTs, which means an individual access token cannot be revoked before its 15-minute expiry, even if the corresponding session is revoked — only the refresh token is revocable via the <code>sessions</code> table. After a suspected token leak, an operator who revokes the session has still left up to 15 minutes of residual access on any already-issued access token. This is a deliberate, documented tradeoff (short TTL bounds the exposure window tightly), not an oversight — but it's exactly the kind of detail worth being able to state precisely rather than hand-wave past.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>A stolen refresh token gets used by an attacker, and moments later the legitimate user's own client tries to refresh using that same now-rotated token. Walk through <code>rotate_session</code>'s state change and explain exactly how BRIEFR distinguishes this from an ordinary refresh.</li>
+          <li>Why does a failed username lookup during login still run a full bcrypt comparison against <code>DUMMY_HASH</code> instead of returning an error immediately?</li>
+          <li>Why is the search-token bearer path checked against a path-regex allowlist rather than the normal role-based permission system used everywhere else?</li>
+          <li>After revoking a compromised user's session, what window of residual access remains, and why can't it be closed immediately?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="be-alembic.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Alembic migrations — forward-only, Postgres-only</span></a><a class="next" href="be-ratelimit.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Rate limiting — inbound, and the residual risk that's accepted rather than solved</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

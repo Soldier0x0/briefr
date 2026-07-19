@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detection engineering — a generator, deliberately not a live detector — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="ie-detection" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="ie-detection">
+      <div class="chapter-head">
+        <span class="chapter-num">Part IV · Chapter 21</span>
+        <h3>Detection engineering — a generator, deliberately not a live detector</h3>
+        <p class="dek">Why the rule-generation path is explicitly "no LLM," and where an LLM is allowed to help instead.</p>
+        <div class="files"><span class="chip">detection/*.py</span><span class="chip">detection/composer.py</span><span class="chip">detection/sigma_generator.py</span><span class="chip">detection/class_router.py</span><span class="chip">detection/backlog.py</span></div>
+      </div>
+      <div class="prose">
+        <p>Given a CVE (and optionally an ATT&amp;CK technique or CWE it maps to), this subsystem assembles a "detection pack" — community Sigma and Elastic rules fetched live from GitHub, BRIEFR's own template-generated Sigma rules, ready-to-paste SIEM queries in four dialects (Elastic KQL, Splunk SPL, Microsoft Sentinel KQL, IBM QRadar AQL), and YARA rules built from file hashes OTX has observed in the wild. It's worth being precise about what this is <em>not</em>: nothing here executes against live logs or fires an alert. It generates and aggregates starter content for an analyst to adapt — a detection-engineering accelerator, not a detection engine in the SIEM sense.</p>
+      </div>
+
+      <h4 class="subhead why">Why the generation path is explicitly, deliberately "no LLM"</h4>
+      <div class="prose">
+        <p>Community rule coverage (SigmaHQ's public repository, Elastic's detection rules) is genuinely patchy — most CVEs, especially recent or less prominent ones, simply have no published community rule yet, and waiting for one is not a real fallback plan. The obvious modern instinct is to have an LLM generate a plausible-looking rule on demand. <code>detection/composer.py</code>'s own docstring rejects that instinct explicitly: the template-based generation path is deterministic, keyed by ATT&amp;CK technique ID or CWE, precisely because a generated detection rule needs to be reproducible (the same input always produces the same rule, so two analysts comparing notes are looking at the same thing) and honestly labeled — every generated rule ships with <code>status: experimental</code> and an explicit <code>briefr_confidence</code> tier (HIGH/MEDIUM/LOW), rather than an LLM's confident-sounding prose that might describe detection logic which doesn't actually work as written, with no easy way for an analyst to tell the difference between "this was carefully derived" and "this sounds plausible."</p>
+        <p>LLM involvement isn't absent from the system entirely — it's deliberately isolated to a narrower, separate, scheduler-only step: extracting structured hints (HTTP paths, parameters, keywords) from CVE and exploit-writeup text, which then <em>enriches</em> the deterministic templates rather than replacing them. The distinction matters: an LLM is trusted to notice "this exploit writeup mentions the path <code>/api/upload</code>" (a narrow, checkable extraction task) but never trusted to invent the actual detection logic (the Sigma rule's <code>condition</code> block) from scratch.</p>
+      </div>
+
+      <h4 class="subhead how">Routing a CVE to a detection class, and a documented concurrency bug fix</h4>
+      <div class="prose">
+        <p><code>class_router.py</code> is the single resolution path everything else depends on: an ATT&amp;CK technique prefix (<code>T1190</code> maps to a <code>web_exploit</code> class) or a normalized CWE (<code>CWE-89</code>, SQL injection, maps to <code>sqli</code>) resolves to one stable "detection class" slug, which every downstream template set — Sigma generation, SIEM query generation, class-level fallback queries — keys off consistently. One implementation detail is worth knowing because it's a real, previously-shipped bug fix rather than a stylistic choice: community-rule fetching from GitHub (Sigma rules, Elastic rules) runs strictly <em>sequentially</em>, not in parallel via <code>asyncio.gather</code> as you might otherwise expect for two independent network calls. A code comment explains why directly — both lookup functions share a single asyncpg connection, and Postgres does not permit two concurrent queries on the same connection at once. Running them concurrently previously caused a documented 15-to-30-second hang (two queries silently contending for the same connection, each waiting on the other), fixed simply by making the two calls sequential instead. It's a small, concrete lesson in something Part 0 flagged in the abstract: async/await gives you concurrency, not automatic safety, and a shared resource (here, one database connection) can still serialize supposedly-parallel code in a way that produces exactly the kind of hang you'd assume <code>async</code> was supposed to prevent.</p>
+      </div>
+
+      <h4 class="subhead how">Injecting extracted artifacts without corrupting the rule</h4>
+      <div class="prose">
+        <p>When the LLM-extracted keywords/paths from artifact extraction get merged into a generated Sigma rule, the merge only happens for rules whose <code>condition</code> is the flat <code>keywords</code> type — a simple "does the log line contain any of these strings" match. A different Sigma rule shape — say, a Windows process-tree selection/filter rule with structured field matching — has an entirely different schema, and blindly injecting extracted keyword strings into that structure would silently produce a malformed or logically wrong rule rather than a working one. The safety check here is narrow and specific on purpose: enrichment only applies where the target shape is simple enough to guarantee it can't corrupt the underlying detection logic.</p>
+      </div>
+
+      <h4 class="subhead concept">The DetectionContext family — one cache entity, three independent writers</h4>
+      <div class="prose">
+        <p>Four files share the word "context" in their name and are easy to assume are redundant — they aren't. <code>context.py</code> is purely the data model and cache accessor: it defines the <code>DetectionContext</code> envelope shape (CWE IDs, product, detection class, an <code>artifacts</code> list, plus provenance fields recording which model/provider populated it), and builds a bare version of it from nothing but static CVE metadata — no network call, no LLM. The other three files are independent <em>jobs</em> that populate the <code>artifacts</code> field of that same cached envelope, each with a different trigger and a different method:</p>
+        <p><code>context_sync.py</code> is the cheap, broad backfill job (disabled by default): it finds every CVE that has no context row at all yet and writes a bare, empty-artifacts envelope for it, prioritizing KEV/PoC/recency — its entire job is making sure every CVE has <em>something</em> to read, never adding real artifacts itself. <code>context_nuclei_sync.py</code> is a deterministic enrichment job (on by default), triggered specifically for CVEs just touched by the exploit-sync job (Chapter 14): it parses actual Nuclei template YAML (via <code>nuclei_parser.py</code>, no LLM at all) to extract real HTTP paths, parameters, and keywords, and <em>merges</em> new artifacts onto whatever already exists, capped at 8, deduping by content. <code>context_llm_sync.py</code> is the LLM-based sibling (disabled by default, needs an explicit flag and a configured provider): it targets CVEs with a public exploit that haven't had an LLM extraction attempt recently, runs inside the per-job provider-skip session from Chapter 24 (so one empty response from a provider doesn't waste the rest of a batch retrying it), and — worth flagging as a real, load-bearing difference from the Nuclei job — <em>overwrites</em> the artifacts field outright rather than merging. If both jobs eventually touch the same CVE, whichever ran more recently wins completely on the artifacts field, not just contributes to it.</p>
+        <p>Both enrichment jobs converge on the same validation gate in <code>artifact_extract.py</code>: paths capped at 200 characters (max 5), params/keywords capped at 80 characters (max 10 each), HTTP method restricted to a real-verb whitelist, and an artifact that's entirely empty across all three fields is discarded outright rather than stored as a hollow shell. This shared gate is what lets a caller reading a <code>DetectionContext</code> never need to know or care whether Nuclei parsing or an LLM populated it — both paths are guaranteed to produce the same validated shape.</p>
+      </div>
+
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart LR
+  CTX[("DetectionContext cache\ndetection_ctx:{CVE_ID}\ndefined by context.py")]
+  S["context_sync.py\n(off by default)\nbroad backfill — empty artifacts"]
+  NU["context_nuclei_sync.py\n(on by default)\ntriggered by exploit_sync\nMERGES artifacts, capped at 8"]
+  L["context_llm_sync.py\n(off by default)\nneeds a configured LLM provider\nOVERWRITES artifacts"]
+  V["artifact_extract.py\nshared validation gate"]
+  S --> CTX
+  NU --> V --> CTX
+  L --> V
+          </pre>
+        </div>
+        <figcaption>Three independent writers, one shared reader contract — a caller never needs to know which job last touched a given CVE's context.</figcaption>
+      </figure>
+
+      <h4 class="subhead how">The fallback tier below ATT&amp;CK techniques: <code>class_queries.py</code></h4>
+      <div class="prose">
+        <p>When a CVE maps to no ATT&amp;CK technique at all, <code>class_queries.py</code> is the next tier down — ten vulnerability classes (path traversal, command injection, SQL injection, XSS, deserialization, code injection, unsafe upload, SSRF, XXE, auth bypass, memory corruption, default credentials), each with all four platform queries pre-built from one of three shared "query pack" templates (URI-based, path-based, body-based hunting terms) or, for the classes that don't reduce neatly to "look for these terms in a field" (unsafe upload needs a method-and-extension combination; memory corruption and default credentials are event-code or account-name based), fully bespoke queries instead.</p>
+      </div>
+
+      <h4 class="subhead how">Per-platform SIEM query generation — four genuinely different query languages, concretely</h4>
+      <div class="prose">
+        <p><code>siem_queries.py</code> is the ATT&amp;CK-technique tier proper, covering 11 real techniques plus a generic default, and it's worth seeing the actual syntax differences rather than taking "four dialects" as an abstract claim. For the same underlying detection intent (T1190, exploiting a public-facing application), <strong>Elastic KQL</strong> reads as field:value pairs — <code>http.response.status_code:(400 or 403 or 500 or 503) and http.request.body.bytes &gt; 500</code>. <strong>Splunk SPL</strong> is space-separated implicit-AND search terms piped into aggregation stages — the same rule ends with <code>| stats count by {{SRC_IP}}, {{URI}}, status | sort - count</code>, using a pipe-stage syntax none of the other three platforms have. <strong>Microsoft Sentinel</strong> is Kusto — it starts from a bare table name and chains <code>| where</code>/<code>| project</code> stages, calling functions like <code>ipv4_is_private()</code> that don't exist in the other dialects. <strong>IBM QRadar AQL</strong> reads like SQL — <code>SELECT ... FROM events WHERE ... LAST 24 HOURS</code>, with QRadar's own time-window clause built into the query text itself rather than left to the platform's UI. Every generated query also ships a field-name legend, because a placeholder like <code>{{SRC_IP}}</code> maps to a different real column depending on which specific log source an analyst has actually configured (Splunk's <code>{{URI}}</code>, for instance, might really be <code>uri_path</code>, <code>cs_uri_stem</code>, or <code>url</code> depending on the sourcetype) — the generated query is a strong starting point, not a guaranteed drop-in.</p>
+      </div>
+
+      <h4 class="subhead how">Finding rules that already exist, before generating new ones</h4>
+      <div class="prose">
+        <p><code>rule_sources.py</code> is the community-rule discovery layer this chapter's class-router section already referenced for its documented concurrency fix — worth adding one more real detail: unauthenticated GitHub code search is capped at 10 requests per minute, and the module's own comment records that this limit caused a genuine 15-to-30-second hang on a CVE's very first Detect-tab view, initially misdiagnosed as a frontend bug before the root cause (an unconfigured <code>GITHUB_TOKEN</code> still attempting a rate-limited search) was found. The fix mirrors a pattern you've seen elsewhere for GreyNoise and OTX: if no GitHub token is configured at all, skip the search call entirely rather than let it queue. SigmaHQ is searched by CVE ID first, falling back to ATT&amp;CK technique IDs only if that yields nothing; Elastic's rule repository, by contrast, is searched by technique ID only, since Elastic's own rules are organized around techniques rather than indexed by CVE.</p>
+      </div>
+
+      <h4 class="subhead how">YARA rules from OTX-observed hashes, concretely</h4>
+      <div class="prose">
+        <p><code>yara_generator.py</code> validates every candidate string against a strict format check (exactly MD5, SHA1, or SHA256 length and hex-character shape — nothing else is accepted as a "hash") and, critically, maps each hash <em>length</em> to the matching YARA builtin function — a 32-character hash gets <code>hash.md5(0, filesize) == "..."</code>, a 64-character hash gets <code>hash.sha256(...)</code> — rather than assuming every hash is SHA-256. Every generated rule's metadata block is explicit about its own provenance: <code>author = "BRIEFR (generated from OTX)"</code> and <code>confidence = "experimental"</code>, so a rule built this way is never mistaken for one an analyst hand-verified.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does <code>detection/composer.py</code> explicitly reject using an LLM to generate the detection rule itself, while still allowing an LLM to extract artifacts that enrich it?</li>
+          <li>Explain, precisely, why running the Sigma and Elastic community-rule lookups concurrently caused a 15-to-30-second hang, and why making them sequential fixed it. What general lesson about async code does this illustrate?</li>
+          <li>Why does artifact injection only apply to <code>keywords</code>-condition Sigma rules and not to a process-tree selection/filter rule?</li>
+          <li><code>context_nuclei_sync.py</code> merges new artifacts onto existing ones; <code>context_llm_sync.py</code> overwrites them outright. What would go wrong for an analyst if both jobs ran against the same CVE and this difference didn't exist — say, if the LLM job also merged?</li>
+          <li>Pick any one ATT&amp;CK technique's four generated queries and identify one genuine syntax feature unique to each platform (not just "the field names differ") — what would happen if you pasted the Splunk version directly into a Sentinel query box?</li>
+          <li>Why does a 64-character hash need to route to a different YARA builtin function than a 32-character one, rather than the generator just always emitting a <code>hash.sha256(...)</code> condition?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="ie-correlation.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">The correlation engine — a five-phase build, and why it had to move off the request path</span></a><a class="next" href="ie-brief.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">The morning brief — read-time aggregation, and a portability lesson worth remembering</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

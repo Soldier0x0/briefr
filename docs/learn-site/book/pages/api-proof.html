@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proof, services, and templates — three more names worth clarifying precisely — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="api-proof" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="api-proof">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V · Chapter 29</span>
+        <h3>Proof, services, and templates — three more names worth clarifying precisely</h3>
+        <p class="dek">"Proof" here means rule-testing, not exploit tracking. Getting that wrong would genuinely misdirect a security review of this codebase.</p>
+        <div class="files"><span class="chip">proof/bench.py</span><span class="chip">services/semantic_search.py</span><span class="chip">services/stack_backfill_worker.py</span><span class="chip">templates/intelligence.py</span></div>
+      </div>
+      <div class="prose">
+        <p>Worth stating directly, because the directory name genuinely invites the wrong guess: <code>proof/</code> is a <strong>rule-proof bench</strong>, not exploit proof-of-concept tracking or storage of any kind. <code>POST /api/proof/run</code> takes pasted log lines alongside either a Sigma rule (Chapter 21) or explicit match patterns, extracts the actual match/keyword conditions from the Sigma <code>detection</code> block, and reports which log lines hit and which missed — a lightweight way for an analyst to sanity-check a detection rule against real or sample log data without needing a live SIEM connection to test against. Confirmed directly by reading the code: there is no exploit code and no proof-of-concept database anywhere in this module. It's purely a rule-testing sandbox, and the name refers to "proving" a detection rule works, not to offensive tooling.</p>
+        <p><code>services/semantic_search.py</code> orchestrates the hybrid keyword-plus-vector search introduced in Chapter 24, gracefully degrading to keyword-only matching whenever embeddings are disabled or unavailable — and, notably, always reporting which method actually served a given request (<code>meta.method</code> in the response) rather than silently returning keyword-only results labeled as if they were semantic. <code>services/stack_backfill_worker.py</code> is the actual work behind Chapter 17's Procrastinate-driven Tier-A backfill: paginated NVD keyword fetching, upserting, and EPSS/KEV enrichment application, resumable via checkpoints — and it deliberately never calls OTX, exploit-availability feeds, or the correlation engine, deferring all of that to the ordinary background jobs that already cover it, rather than duplicating that work inside the backfill path itself.</p>
+        <p><code>templates/intelligence.py</code> is template-based English-sentence generation — deliberately no LLM involved — for the CVE detail drawer: <code>severity_sentence</code>, <code>epss_sentence</code>, <code>kev_sentence</code>, <code>patch_sentence</code>, <code>exploit_sentence</code>, plus classification of reference URLs into recognizable exploit-source categories (Metasploit, Exploit-DB, GitHub, PacketStorm). This is the actual mechanism behind something you might otherwise assume required an LLM call: CVE summaries in the detail view read as fluent, natural prose without any request-path AI call at all — every sentence is assembled from a fixed template filled in with real data, an approach consistent with the whole product's "explainable, deterministic where it can be" posture running all the way through to the sentence level.</p>
+      </div>
+
+      <h4 class="subhead how">enrichment/ — the plain, deterministic tier this book has referenced but not yet named</h4>
+      <div class="prose">
+        <p>Chapter 24 already described this tier conceptually as "no ML, no LLM" — here are the actual three files. <code>enrichment/cve.py</code> is rule-based display-field derivation: it regex-extracts MITRE technique IDs from NVD's own reference-link tags, heuristically flags whether a CVE has a public PoC by matching reference-tag text and known exploit-hosting domains, and builds a plain-English summary preferring CISA KEV's short description, then OSV's, and only falling back to an auto-truncated first sentence of the raw NVD description if neither richer source exists — with a companion function that can tell whether a stored summary is genuinely enriched or just that auto-truncated fallback, by re-deriving it and comparing. <code>enrichment/domain_validation.py</code> is a single, careful function backing IOC lookup input validation: it IDNA/punycode-encodes for proper international domain support, validates real DNS label structure, and explicitly rejects a bare IP address as not being a "domain" — this is the exact function Chapter 23's IOC lookup calls to return a clean 422 rather than silently mishandling a malformed input. <code>enrichment/ioc.py</code> is the actual multi-source orchestrator behind IOC lookup: it deliberately sets retries to zero on every quota-billed API call (VirusTotal, AbuseIPDB — both hard-capped daily quotas where an automatic retry would waste a scarce budget on a request that's already failed), and layers VirusTotal plus a type-appropriate second source (AbuseIPDB for IPs, MalwareBazaar for hashes, URLhaus for domains) with GreyNoise and OTX as further optional enrichment on top.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does <code>semantic_search.py</code> report its own fallback method in the response instead of silently returning keyword-only results labeled as semantic?</li>
+          <li>Why does the stack backfill worker deliberately avoid calling OTX or the correlation engine directly, deferring to the ordinary scheduled jobs instead?</li>
+          <li>What would you have assumed <code>proof/</code> did from its directory name alone, and why does that assumption matter for someone auditing this codebase's security posture?</li>
+          <li>Why does <code>enrichment/ioc.py</code> set retries to zero specifically for VirusTotal and AbuseIPDB calls, when Chapter 16's outbound queue elsewhere in this book insists on retrying rather than dropping requests?</li>
+          <li>Why does <code>enrichment/domain_validation.py</code> explicitly reject a bare IP address as an invalid "domain," rather than accepting it as a trivial special case?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="api-usersettings.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">User-facing settings: notifications, onboarding, preferences</span></a><a class="next" href="api-ops.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Ops and observability — keeping a self-hosted instance alive without its authors watching over it</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

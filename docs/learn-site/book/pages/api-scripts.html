@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scripts and top-level admin guardrails — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="api-scripts" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="api-scripts">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V · Chapter 31</span>
+        <h3>Scripts and top-level admin guardrails</h3>
+        <p class="dek">The last chapter of Part V — smaller pieces, but each with a specific, deliberate reason for existing exactly as it does.</p>
+        <div class="files"><span class="chip">scripts/create_user.py</span><span class="chip">scripts/delete_user.py</span><span class="chip">destructive_actions.py</span><span class="chip">task_registry.py</span><span class="chip">tracking.py</span></div>
+      </div>
+      <div class="prose">
+        <p><code>scripts/create_user.py</code> is the <em>only</em> way to provision or reset a login account in BRIEFR — deliberately never exposed over HTTP, referenced explicitly by <code>auth.py</code>'s own comments as a security boundary rather than an accidental limitation: account creation requires shell access to the box the instance runs on, closing off any possibility of a network-reachable account-creation or password-reset endpoint being abused. <code>scripts/delete_user.py</code> is the operational counterpart for data-subject erasure: it removes a built-in app login and tied sessions/preferences/watchlist/notifications, also CLI-only (never an HTTP route). <code>scripts/backfill_poc.py</code> and <code>scripts/sync_env.py</code> are smaller maintenance utilities — a one-shot backfill of proof-of-concept availability flags for legacy rows, and a tool that regenerates <code>.env</code> from <code>.env.example</code> while carefully preserving existing values and comment structure. All three scripts re-exec into the app's own virtual environment if run under system Python that lacks the right dependencies (<code>aiosqlite</code> specifically) — a small systemd-deployment convenience that avoids a confusing "module not found" error for an operator who ran the script with the wrong interpreter.</p>
+      </div>
+
+      <pre class="code"><code>DESTRUCTIVE_ACTIONS: tuple[DestructiveAction, ...] = (
+    DestructiveAction(<span class="str">"storage.purge.ioc_cache"</span>, <span class="str">"clear"</span>,
+        <span class="str">"Deletes all rows from ioc_cache. Next lookups will re-query external APIs."</span>),
+    DestructiveAction(<span class="str">"storage.purge.feed_cache"</span>, <span class="str">"clear"</span>,
+        <span class="str">"Deletes all rows from feed_cache. Next incident feed load will be slower."</span>),
+    DestructiveAction(<span class="str">"storage.purge.epss_history_old"</span>, <span class="str">"prune"</span>,
+        <span class="str">"Deletes epss_history rows older than 90 days."</span>),
+    <span class="cmt"># ...one entry per destructive action, each with its own required confirm word...</span>
+)</code></pre>
+      <p class="code-caption">destructive_actions.py, real code — one dataclass instance per confirm-gated action</p>
+
+      <div class="prose">
+        <p>The module's own docstring explains exactly what it generalizes: before this file existed, confirm-gated destructive actions lived only as a hardcoded map inside <code>routers/admin.py</code>, specific to storage purges alone. Every other destructive admin action (scheduler pause/resume, a full restart, the Postgres data migration from Chapter 30, deleting a webhook destination) either had no confirmation step at all, or had one hand-coded separately, differently, in whatever router happened to implement it. Generalizing this into one dataclass-based registry means the frontend can render a correct, appropriately-worded confirmation dialog generically for <em>any</em> destructive action, by simply calling <code>GET /api/admin/destructive-actions</code> — rather than the frontend needing to hardcode a matching confirm string per page, which would inevitably drift out of sync the next time someone changed the required confirm word on the backend without remembering to update the frontend's copy of it.</p>
+        <p><code>task_registry.py</code> exists because of a genuinely subtle Python detail worth knowing in its own right: <code>asyncio</code>'s event loop only holds a <em>weak</em> reference to a task you spawn with <code>asyncio.create_task()</code> and don't otherwise keep a reference to — meaning Python's garbage collector is technically free to collect that task object (silently cancelling it mid-execution) the moment nothing else refers to it, even while it's still actively running. A fire-and-forget background operation (an ingest sync, a snapshot build) spawned this way could simply vanish partway through, with no exception, no log message, nothing — a bug class documented internally as REST-002/REST-012. <code>task_registry.py</code>'s fix is to hold a strong reference to every such spawned task in a registry the module itself owns, specifically so shutdown can wait (with a bounded timeout, not indefinitely) for in-flight tasks to finish cleanly, instead of either killing them mid-write or leaving them to be silently garbage-collected at an unpredictable moment.</p>
+        <p>Finally, <code>tracking.py</code> is worth a one-line correction to a natural first assumption: despite the generic name, this is external API <em>quota</em> tracking — daily, weekly, monthly, and hourly usage counters per external service (NVD, VirusTotal, AbuseIPDB, GreyNoise, OTX, and the LLM providers from Chapter 24) — not user analytics or telemetry of any kind. Its <code>has_quota()</code> check gates outbound calls <em>before</em> they're made, letting BRIEFR proactively avoid exceeding a provider's quota rather than discovering the violation only after a request fails.</p>
+      </div>
+
+      <h4 class="subhead how">The last five files: metering's two halves, queue-status labeling, the read cache, and resource sampling</h4>
+      <div class="prose">
+        <p>Top-level <code>api_metering.py</code> and <code>db/api_metering.py</code> (Chapter 9) share a name but split a single job in two: the top-level file is the <em>write-path hook</em>, called from <code>resilient_client.py</code> after literally every outbound HTTP attempt anywhere in the system, pulling actor/job/request context from contextvars and handing off to the <code>db/</code> module's actual SQL — wrapped in a bare try/except specifically so a metering failure can never take down the outbound call it's trying to measure. <code>api_queue_operations.py</code> is not a queue implementation at all — it's pure labeling and redaction for the API-queue status UI Chapter 16 describes: it translates internal operation keys into analyst-facing strings ("Fetching vulnerability intelligence" rather than <code>cve_lookup</code>), and sanitizes any context ID before it's ever displayed — a CVE ID or IP address passes through cleanly, but a webhook URL gets its path tail stripped so a Discord/Slack webhook secret embedded in a URL never surfaces in the admin UI.</p>
+        <p><code>read_cache.py</code> is exactly as small as it sounds, confirmed directly: an in-process dictionary plus a monotonic clock, a 45-second default TTL, no Redis, no persistence — this is the literal mechanism behind <code>/api/health</code>'s caching from Chapter 25. <code>resource_collector.py</code> is the scheduler-side sampler feeding the admin Resources dashboard (Chapter 30's <code>resource_metrics.py</code> table): it walks BRIEFR's own process tree (and Postgres's, when applicable) via <code>psutil</code>, computes CPU percentage from raw time deltas rather than trusting a blocking library call, and pulls the request count from <code>metrics/request_counter.py</code> on every sample specifically so the counter can be reset immediately after each reading. <code>storage_metrics.py</code> is the complementary table-level view: per-table disk usage (a genuinely different query per backend — Postgres's own size functions vs. SQLite's <code>dbstat</code> virtual table) and a rough daily-growth estimate derived from comparing successive backup archive sizes over time, honestly reporting "insufficient history" rather than guessing when fewer than two backups exist to compare.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why is account creation deliberately never exposed over HTTP, even behind admin authentication? What specific attack surface does that close off entirely?</li>
+          <li>Explain, precisely, why a fire-and-forget <code>asyncio.create_task()</code> call can be silently garbage-collected mid-execution, and how holding a strong reference in a registry prevents that.</li>
+          <li><code>destructive_actions.py</code> and <code>operator_settings.py</code> (Chapter 7) are both sometimes described as "admin guardrails." Do they actually share any code, or only a theme? Why does that distinction matter?</li>
+          <li>Why does top-level <code>api_metering.py</code> wrap its entire body in a bare try/except, when most of this book's other outbound-call code paths are careful to raise on genuine failures?</li>
+          <li>Why does <code>api_queue_operations.py</code> specifically strip the path tail from a webhook URL before displaying it in the admin queue-status view?</li>
+          <li>Why does <code>storage_metrics.py</code> explicitly report "insufficient history" rather than producing a growth estimate from just one backup archive?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="api-ops.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Ops and observability — keeping a self-hosted instance alive without its authors watching over it</span></a><a class="next" href="devops-part.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Deployment, CI, and testing</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>
