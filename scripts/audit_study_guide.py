@@ -402,6 +402,38 @@ def directory_of(path: str) -> str:
     return str(Path(path).parent).replace("\\", "/")
 
 
+def is_frontend_gate_test(path: str) -> bool:
+    """Co-located FE gate/unit tests under src — aggregate into Testing strategy."""
+    return path.startswith("frontend/src/") and path.endswith(".test.js")
+
+
+def is_empty_package_init(path: str, root: Path = ROOT) -> bool:
+    """Package marker __init__.py with no real code (empty / comments / docstring-only)."""
+    if not path.endswith("/__init__.py") and path != "__init__.py":
+        return False
+    fp = root / path
+    if not fp.is_file():
+        return False
+    text = fp.read_text(encoding="utf-8", errors="replace").strip()
+    if not text:
+        return True
+    lines = [
+        ln.strip()
+        for ln in text.splitlines()
+        if ln.strip() and not ln.strip().startswith("#")
+    ]
+    if not lines:
+        return True
+    if len(lines) == 1 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
+        return True
+    # Triple-quoted module docstring only (possibly multi-line)
+    if text.startswith('"""') and text.endswith('"""') and text.count('"""') == 2:
+        return True
+    if text.startswith("'''") and text.endswith("'''") and text.count("'''") == 2:
+        return True
+    return False
+
+
 # Inventory roots and other directories that are too broad for "weak" sibling inference.
 BROAD_DIRS = frozenset(
     {
@@ -436,6 +468,18 @@ def classify_files(
     inventory_set = set(inventory)
 
     for path in inventory:
+        if is_frontend_gate_test(path):
+            rows.append(
+                FileRow(
+                    path=path,
+                    status="out_of_scope",
+                    chapters=[],
+                    evidence="",
+                    notes="FE gate/unit test; aggregate into Testing strategy chapter",
+                )
+            )
+            continue
+
         owners = sorted(path_to_chapters.get(path, set()))
         if owners:
             rows.append(
@@ -444,6 +488,18 @@ def classify_files(
                     status="covered",
                     chapters=owners,
                     evidence="exact path mention in chapter body/chips",
+                )
+            )
+            continue
+
+        if is_empty_package_init(path, root=root):
+            rows.append(
+                FileRow(
+                    path=path,
+                    status="out_of_scope",
+                    chapters=[],
+                    evidence="",
+                    notes="Empty/docstring-only package __init__.py marker",
                 )
             )
             continue
@@ -509,6 +565,15 @@ def classify_files(
             chapters=[],
             evidence="",
             notes="Aggregate into Testing strategy chapter; not file-mapped",
+        )
+    )
+    rows.append(
+        FileRow(
+            path="frontend/src/**/*.test.js",
+            status="out_of_scope",
+            chapters=[],
+            evidence="",
+            notes="FE gate/unit tests; aggregate into Testing strategy chapter",
         )
     )
     return rows
@@ -715,6 +780,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--guide", type=Path, default=DEFAULT_GUIDE)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--root", type=Path, default=ROOT)
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 when gap>0 or weak>0 (Phase 0 ship gate G1/G2)",
+    )
     args = ap.parse_args(argv)
 
     if not args.guide.is_file():
@@ -731,6 +801,16 @@ def main(argv: list[str] | None = None) -> int:
         f" orphan={counts.get('orphan_mention', 0)}"
         f" → {args.out}"
     )
+    if args.strict:
+        gap = int(counts.get("gap", 0) or 0)
+        weak = int(counts.get("weak", 0) or 0)
+        if gap or weak:
+            print(
+                f"error: --strict failed (gap={gap} weak={weak}); "
+                "Phase 0 requires gap=0 and weak=0",
+                file=sys.stderr,
+            )
+            return 1
     return 0
 
 

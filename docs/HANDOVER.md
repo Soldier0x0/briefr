@@ -20,6 +20,35 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — Study guide Phase 0 inventory gates green
+
+**Done**
+- Design + plan: truth hardening before multi-profile `docs.` / learn repo.
+- Auditor: `--strict` (fail on gap/weak); FE `*.test.js` + empty `__init__.py` → `out_of_scope`.
+- Guide chips/globs drove inventory to **covered=612 / weak=0 / gap=0** (orphan=1 intentional `dialect.py`).
+- Book regenerated; `--strict` exit 0.
+- Gemini #692: clarified inventory scope (scripts/ not walked); G5 pytest asserts committed book == fresh rebuild.
+- Preface + `primer-mechanics` self-checks added (sec-* digests already had them).
+
+**Update protocol (unchanged):** maintainer says “update” after features/audits → re-inventory HEAD → close new weak/gap/stale → `--strict` green → rebuild book.
+
+**Next:** Phase 1 design (separate learn repo + System Design / Analyst / Architect pathways on `docs.`) — **only after** maintainer green-lights Phase 1.
+
+---
+
+## 2026-07-19 — Study guide Phase 0 truth hardening (started)
+
+**Design:** `docs/superpowers/specs/2026-07-19-study-guide-truth-hardening-design.md`  
+**Plan:** `docs/superpowers/plans/2026-07-19-study-guide-truth-hardening.md`
+
+**Bar:** `gap=0` is not enough — drive `weak→0` (or explicit OOS), ground claims in HEAD/`PRODUCT_STATUS`. Phase 1 (multi-profile `docs.` / learn repo) is **blocked** until G1–G5 green.
+
+**Update protocol:** when maintainer says “update” (or pastes audits after new features) → re-inventory HEAD → close new weak/gap/stale → `audit_study_guide.py --strict` green → rebuild book.
+
+**Next:** execute plan Tasks 1–9 (strict auditor + directory sweeps).
+
+---
+
 ## 2026-07-19 — Study guide coverage: zero file gaps
 
 **Done**

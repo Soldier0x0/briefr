@@ -183,3 +183,96 @@ def test_bare_prefers_shallow_duplicate(audit, tmp_path: Path):
     (tmp_path / "backend" / "api_metering.py").write_text("root\n", encoding="utf-8")
     (tmp_path / "backend" / "db" / "api_metering.py").write_text("deep\n", encoding="utf-8")
     assert audit.normalize_repo_path("api_metering.py", root=tmp_path) == "backend/api_metering.py"
+
+
+def test_frontend_test_js_is_out_of_scope(audit, tmp_path: Path):
+    (tmp_path / "frontend" / "src" / "utils").mkdir(parents=True)
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.js").write_text("export {}", encoding="utf-8")
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.test.js").write_text("test", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "deploy").mkdir()
+    inventory = audit.iter_inventory_files(tmp_path)
+    assert "frontend/src/utils/cveFilters.test.js" in inventory
+    chapters = {
+        "fe-shared-utils": audit.Chapter(
+            id="fe-shared-utils",
+            title="Utils",
+            mentioned_paths={"frontend/src/utils/cveFilters.js"},
+        )
+    }
+    rows = audit.classify_files(
+        inventory, chapters, chapters["fe-shared-utils"].mentioned_paths, root=tmp_path
+    )
+    by = {r.path: r for r in rows}
+    assert by["frontend/src/utils/cveFilters.js"].status == "covered"
+    assert by["frontend/src/utils/cveFilters.test.js"].status == "out_of_scope"
+    assert "test" in by["frontend/src/utils/cveFilters.test.js"].notes.lower()
+
+
+def test_empty_package_init_is_out_of_scope(audit, tmp_path: Path):
+    (tmp_path / "backend" / "feeds").mkdir(parents=True)
+    (tmp_path / "backend" / "feeds" / "__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "backend" / "feeds" / "nvd.py").write_text("x", encoding="utf-8")
+    (tmp_path / "frontend" / "src").mkdir(parents=True)
+    (tmp_path / "deploy").mkdir()
+    inventory = audit.iter_inventory_files(tmp_path)
+    chapters = {
+        "in-feeds": audit.Chapter(
+            id="in-feeds",
+            title="Feeds",
+            mentioned_paths={"backend/feeds/nvd.py"},
+        )
+    }
+    rows = audit.classify_files(
+        inventory, chapters, {"backend/feeds/nvd.py"}, root=tmp_path
+    )
+    by = {r.path: r for r in rows}
+    assert by["backend/feeds/__init__.py"].status == "out_of_scope"
+
+
+def test_frontend_test_js_stays_oos_even_if_mentioned(audit, tmp_path: Path):
+    (tmp_path / "frontend" / "src" / "utils").mkdir(parents=True)
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.js").write_text("export {}", encoding="utf-8")
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.test.js").write_text("test", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "deploy").mkdir()
+    inventory = audit.iter_inventory_files(tmp_path)
+    chapters = {
+        "fe-shared-utils": audit.Chapter(
+            id="fe-shared-utils",
+            title="Utils",
+            mentioned_paths={
+                "frontend/src/utils/cveFilters.js",
+                "frontend/src/utils/cveFilters.test.js",
+            },
+        )
+    }
+    rows = audit.classify_files(
+        inventory,
+        chapters,
+        chapters["fe-shared-utils"].mentioned_paths,
+        root=tmp_path,
+    )
+    by = {r.path: r for r in rows}
+    assert by["frontend/src/utils/cveFilters.test.js"].status == "out_of_scope"
+    guide = tmp_path / "STUDY_GUIDE.html"
+    guide.write_text(
+        """
+        <nav id="toc"><a class="toc-link" href="#in-feeds">Feeds</a></nav>
+        <section class="page chapter" id="in-feeds">
+          <span class="chip">backend/feeds/nvd.py</span>
+        </section>
+        """,
+        encoding="utf-8",
+    )
+    root = tmp_path / "repo"
+    (root / "backend" / "feeds").mkdir(parents=True)
+    (root / "backend" / "feeds" / "nvd.py").write_text("x", encoding="utf-8")
+    (root / "backend" / "feeds" / "kev.py").write_text("x", encoding="utf-8")
+    (root / "frontend" / "src").mkdir(parents=True)
+    (root / "deploy").mkdir()
+    out = tmp_path / "out"
+    code = audit.main(
+        ["--guide", str(guide), "--out", str(out), "--root", str(root), "--strict"]
+    )
+    assert code == 1

@@ -18,9 +18,9 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `fe-state` | Ch 4 · State & data flow | 4 |  |  |  |  |  |
 | `fe-tooling` | Ch 5 · Fonts, exports, testing | 0 |  |  |  |  |  |
 | `fe-analyst-shell` | Ch 5B · Analyst shell | 11 |  |  |  |  |  |
-| `fe-admin-shell` | Ch 5C · Admin shell | 77 |  |  |  |  |  |
+| `fe-admin-shell` | Ch 5C · Admin shell | 107 |  |  |  |  |  |
 | `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 10 |  |  |  |  |  |
-| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 64 |  |  |  |  |  |
+| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 216 |  |  |  |  |  |
 | `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 3 |  |  |  |  |  |
 | `be-config` | Ch 7 · Config & encrypted secrets | 5 |  |  |  |  |  |
 | `be-shim` | Ch 8 · The database.py shim | 3 |  |  |  |  |  |
@@ -29,26 +29,26 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `be-auth` | Ch 11 · Authentication | 5 |  |  |  |  |  |
 | `be-ratelimit` | Ch 12 · Rate limiting | 2 |  |  |  |  |  |
 | `be-logging` | Ch 13 · Logging & redaction | 2 |  |  |  |  |  |
-| `in-feeds` | Ch 14 · Feed sources | 4 |  |  |  |  |  |
+| `in-feeds` | Ch 14 · Feed sources | 29 |  |  |  |  |  |
 | `in-scheduler` | Ch 15 · Scheduler & locks | 3 |  |  |  |  |  |
 | `in-queue` | Ch 16 · Outbound queue & circuit breakers | 5 |  |  |  |  |  |
-| `in-jobs` | Ch 17 · Durable jobs (Procrastinate) | 6 |  |  |  |  |  |
-| `ie-scoring` | Ch 18 · Risk & Threat scoring | 5 |  |  |  |  |  |
+| `in-jobs` | Ch 17 · Durable jobs (Procrastinate) | 8 |  |  |  |  |  |
+| `ie-scoring` | Ch 18 · Risk & Threat scoring | 7 |  |  |  |  |  |
 | `ie-matching` | Ch 19 · Asset/CPE matching | 2 |  |  |  |  |  |
 | `ie-correlation` | Ch 20 · Correlation engine | 23 |  |  |  |  |  |
-| `ie-detection` | Ch 21 · Detection engineering | 4 |  |  |  |  |  |
+| `ie-detection` | Ch 21 · Detection engineering | 15 |  |  |  |  |  |
 | `ie-brief` | Ch 22 · The morning brief | 1 |  |  |  |  |  |
 | `ie-threatmodel` | Ch 23 · Threat modeling & provenance | 3 |  |  |  |  |  |
 | `ie-ml` | Ch 24 · ML & LLM enrichment | 7 |  |  |  |  |  |
-| `ie-ml-providers` | Ch 24B · Inside the LLM chain | 5 |  |  |  |  |  |
+| `ie-ml-providers` | Ch 24B · Inside the LLM chain | 13 |  |  |  |  |  |
 | `ie-retrieval-ops` | Ch 24C · Retrieval ops & auto-on-ingest | 4 |  |  |  |  |  |
 | `api-routers` | Ch 25 · Routers | 5 |  |  |  |  |  |
 | `api-secarch` | Ch 26 · Security architecture (self-doc) | 27 |  |  |  |  |  |
-| `api-webhooks` | Ch 27 · Webhooks & SSRF | 6 |  |  |  |  |  |
+| `api-webhooks` | Ch 27 · Webhooks & SSRF | 8 |  |  |  |  |  |
 | `api-usersettings` | Ch 28 · User-facing settings | 5 |  |  |  |  |  |
 | `api-proof` | Ch 29 · Proof, services & templates | 7 |  |  |  |  |  |
-| `api-ops` | Ch 30 · Ops & observability | 13 |  |  |  |  |  |
-| `api-scripts` | Ch 31 · Scripts & guardrails | 9 |  |  |  |  |  |
+| `api-ops` | Ch 30 · Ops & observability | 16 |  |  |  |  |  |
+| `api-scripts` | Ch 31 · Scripts & guardrails | 10 |  |  |  |  |  |
 | `devops-deploy` | Ch 32 · Deployment & infrastructure | 25 |  |  |  |  |  |
 | `devops-ci` | Ch 33 · CI/CD & testing | 0 |  |  |  |  |  |
 | `sec-identity` | 1 · Identity & session security | 0 |  |  |  |  |  |

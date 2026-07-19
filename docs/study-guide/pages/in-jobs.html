@@ -133,7 +133,7 @@
         <span class="chapter-num">Part III · Chapter 17</span>
         <h3>Durable background jobs — a second job system, and why one wasn't enough</h3>
         <p class="dek">Procrastinate exists specifically for the one class of job where APScheduler's "just re-run it, it's idempotent" story genuinely isn't good enough.</p>
-        <div class="files"><span class="chip">jobs/app.py</span><span class="chip">jobs/tasks.py</span><span class="chip">jobs/worker.py</span><span class="chip">jobs/context.py</span></div>
+        <div class="files"><span class="chip">jobs/__init__.py</span><span class="chip">jobs/app.py</span><span class="chip">jobs/tasks.py</span><span class="chip">jobs/worker.py</span><span class="chip">jobs/context.py</span></div>
       </div>
       <div class="prose">
         <p>Every job discussed so far — NVD sync, KEV sync, correlation — shares a comfortable property: if the process crashes mid-run, the next scheduled run safely resumes from the last saved watermark, at worst redoing a small, harmless amount of already-completed work. That property holds because each of those jobs is a single, short-ish unit of work bounded by one watermark. It stops holding for a fundamentally different kind of job: the Tier-A stack backfill, a long-running, multi-step process (retroactively pulling every historical CVE matching a newly-declared software stack) that can span many separate ticks over an extended period. A crash halfway through that kind of job doesn't have one clean watermark to resume from in the same way — restarting from scratch would mean redoing potentially hours of already-completed work.</p>
