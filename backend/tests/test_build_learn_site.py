@@ -27,25 +27,20 @@ def learn_mod():
     return _load()
 
 
-def test_build_learn_site_from_repo_book(learn_mod, tmp_path: Path):
+def test_build_learn_links_sibling_study_guide(learn_mod, tmp_path: Path):
     book = ROOT / "docs" / "study-guide"
     pathways = ROOT / "docs" / "learn" / "pathways.json"
     assert book.is_dir()
-    assert pathways.is_file()
-    out = tmp_path / "learn-site"
-    n = learn_mod.build(pathways, book, out)
+    out = tmp_path / "learn"
+    out.mkdir()
+    (out / "pathways.json").write_text(pathways.read_text(encoding="utf-8"), encoding="utf-8")
+    n = learn_mod.build(out / "pathways.json", book, out)
     assert n == 3
     assert (out / "index.html").is_file()
-    assert (out / "DEPLOY.md").is_file()
-    assert (out / "book" / "pages" / "preface.html").is_file()
-    for pid in ("system-design", "analyst", "architect"):
-        page = (out / "pathways" / f"{pid}.html").read_text(encoding="utf-8")
-        assert "../book/pages/" in page
-        assert "All pathways" in page
-    index = (out / "index.html").read_text(encoding="utf-8")
-    assert "pathways/system-design.html" in index
-    assert "pathways/analyst.html" in index
-    assert "pathways/architect.html" in index
+    assert not (out / "book").exists()
+    page = (out / "pathways" / "analyst.html").read_text(encoding="utf-8")
+    assert "../study-guide/pages/" in page
+    assert (out / "pathways.json").is_file()  # preserved
 
 
 def test_build_fails_on_missing_step(learn_mod, tmp_path: Path):

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Build docs/learn-site/ — deploy-ready pathway overlays + nested study-guide book.
+"""Build thin learn pathway pages next to the study-guide book.
 
-Requires Phase 0 textbook SSOT. Does not need a live subdomain.
+Writes static HTML under docs/learn/ (chooser + pathway lists) that link into
+docs/study-guide/pages/. Does not copy or rebuild the textbook.
 
 Usage (repo root):
   python scripts/build_learn_site.py
@@ -18,8 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PATHWAYS = ROOT / "docs" / "learn" / "pathways.json"
-DEFAULT_BOOK_SRC = ROOT / "docs" / "study-guide"
-DEFAULT_OUT = ROOT / "docs" / "learn-site"
+DEFAULT_BOOK = ROOT / "docs" / "study-guide"
+DEFAULT_OUT = ROOT / "docs" / "learn"
 
 LEARN_CSS = """
 :root {
@@ -77,99 +78,54 @@ h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0 0 12px; letter-spacing: -0
 }
 """
 
-DEPLOY_MD = """# Deploying BRIEFR Learn
-
-This folder (`docs/learn-site/`) is a **self-contained static site**.
-No application server is required.
-
-## Preview locally (no subdomain)
-
-```bash
-# from repo root
-python scripts/build_learn_site.py
-cd docs/learn-site && python3 -m http.server 8765
-# open http://127.0.0.1:8765/
-```
-
-## When `docs.<your-domain>` is ready
-
-Point the host document root (or Cloudflare Pages / Netlify / nginx `root`) at **this directory**:
-
-- Cloudflare Pages: connect the repo, build command `python scripts/build_learn_site.py`, output `docs/learn-site`
-- nginx: `root /path/to/briefr/docs/learn-site;`
-- Any static bucket: upload the contents of `docs/learn-site/`
-
-The nested `book/` tree is the audited study guide. Pathway pages only link into those chapters.
-
-## Rebuild after textbook changes
-
-```bash
-python scripts/build_study_guide_book.py
-python scripts/audit_study_guide.py --strict
-python scripts/build_learn_site.py
-```
-
-## Optional later: separate learn repo
-
-Copy `docs/learn/`, `scripts/build_learn_site.py`, and CI that pulls a truth bundle from BRIEFR. Until then, this in-repo artifact is the deploy target.
-"""
+KEEP_NAMES = frozenset({"pathways.json", "README.md"})
 
 
 def _esc(s: str) -> str:
     return html.escape(s, quote=True)
 
 
-def _page(title: str, body: str) -> str:
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{_esc(title)} — BRIEFR Learn</title>
-  <link rel="stylesheet" href="assets/learn.css">
-</head>
-<body>
-{body}
-</body>
-</html>
-"""
-
-
 def build(
     pathways_path: Path = DEFAULT_PATHWAYS,
-    book_src: Path = DEFAULT_BOOK_SRC,
+    book_src: Path = DEFAULT_BOOK,
     out: Path = DEFAULT_OUT,
 ) -> int:
     data = json.loads(pathways_path.read_text(encoding="utf-8"))
     pathways = data["pathways"]
-    if not book_src.is_dir() or not (book_src / "pages").is_dir():
+    pages_dir = book_src / "pages"
+    if not pages_dir.is_dir():
         raise SystemExit(
-            f"error: study-guide book missing at {book_src}; "
+            f"error: study-guide pages missing at {pages_dir}; "
             "run scripts/build_study_guide_book.py first"
         )
 
-    # Validate every step id exists as a book page
     missing: list[str] = []
     for pw in pathways:
         for step in pw["steps"]:
-            page = book_src / "pages" / f"{step['id']}.html"
-            if not page.is_file():
+            if not (pages_dir / f"{step['id']}.html").is_file():
                 missing.append(f"{pw['id']}:{step['id']}")
     if missing:
         raise SystemExit("error: pathway steps missing from book: " + ", ".join(missing))
 
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
-    (out / "assets").mkdir()
-    (out / "pathways").mkdir()
+    out.mkdir(parents=True, exist_ok=True)
+    # Clear previous generated outputs only
+    for child in list(out.iterdir()):
+        if child.name in KEEP_NAMES:
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
-    # Nested book copy (self-contained deploy artifact)
-    shutil.copytree(book_src, out / "book")
-    (out / "assets" / "learn.css").write_text(LEARN_CSS, encoding="utf-8")
-    (out / "DEPLOY.md").write_text(DEPLOY_MD, encoding="utf-8")
+    assets = out / "assets"
+    pathways_dir = out / "pathways"
+    assets.mkdir()
+    pathways_dir.mkdir()
+    (assets / "learn.css").write_text(LEARN_CSS, encoding="utf-8")
 
-    # Chooser
+    # Sibling link: docs/learn/pathways/x.html → docs/study-guide/pages/y.html
+    book_href_prefix = "../study-guide/pages"
+
     cards = []
     for pw in pathways:
         cards.append(
@@ -179,6 +135,7 @@ def build(
     <p>{_esc(pw['blurb'])}</p>
   </a>"""
         )
+
     index_body = f"""<main class="wrap">
   <p class="eyebrow">BRIEFR Learn</p>
   <h1>{_esc(data.get('title', 'BRIEFR Learn'))}</h1>
@@ -186,32 +143,46 @@ def build(
   <div class="chooser">
 {chr(10).join(cards)}
   </div>
-  <p class="foot">Textbook chapters live under <code>book/</code>. When your <code>docs.</code> subdomain is ready, point the host at this folder — see <code>DEPLOY.md</code>.</p>
+  <p class="foot">Chapters open from the study guide at <code>docs/study-guide/</code>. Edit pathway order in <code>pathways.json</code>, then re-run this builder.</p>
 </main>
 """
-    (out / "index.html").write_text(_page(data.get("title", "BRIEFR Learn"), index_body), encoding="utf-8")
+    (out / "index.html").write_text(
+        f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{_esc(data.get('title', 'BRIEFR Learn'))} — BRIEFR Learn</title>
+  <link rel="stylesheet" href="assets/learn.css">
+</head>
+<body>
+{index_body}
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
 
-    # Pathway pages (CSS href is ../assets from pathways/)
     for pw in pathways:
         steps_html = []
         for i, step in enumerate(pw["steps"], start=1):
-            href = f"../book/pages/{step['id']}.html"
+            href = f"{book_href_prefix}/{step['id']}.html"
             steps_html.append(
                 f"""  <li><a href="{_esc(href)}"><span class="n">{i:02d}</span><span class="title">{_esc(step['label'])}</span></a></li>"""
             )
-        # Fix asset path for nested page — rewrite stylesheet in a dedicated template
         body = f"""<main class="wrap">
   <a class="back" href="../index.html">← All pathways</a>
   <p class="eyebrow">{_esc(pw.get('eyebrow', 'Pathway'))}</p>
   <h1>{_esc(pw['title'])}</h1>
   <p class="lede">{_esc(pw['blurb'])}</p>
-  <div class="banner"><strong>Audience:</strong> {_esc(pw.get('audience', ''))} · Steps open the audited textbook (nested under <code>book/</code>). Facts only — no parallel architecture story.</div>
+  <div class="banner"><strong>Audience:</strong> {_esc(pw.get('audience', ''))} · Each step opens a chapter in the audited study guide. Pathways reorder facts; they do not invent architecture.</div>
   <ol class="steps">
 {chr(10).join(steps_html)}
   </ol>
 </main>
 """
-        page = f"""<!DOCTYPE html>
+        (pathways_dir / f"{pw['id']}.html").write_text(
+            f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -223,27 +194,21 @@ def build(
 {body}
 </body>
 </html>
-"""
-        (out / "pathways" / f"{pw['id']}.html").write_text(page, encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
 
-    # README for the artifact
-    (out / "README.md").write_text(
-        "# BRIEFR Learn (generated)\n\n"
-        "Do not hand-edit. Regenerate with `python scripts/build_learn_site.py`.\n\n"
-        "See `DEPLOY.md` for local preview and subdomain publish steps.\n",
-        encoding="utf-8",
-    )
     return len(pathways)
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--pathways", type=Path, default=DEFAULT_PATHWAYS)
-    ap.add_argument("--book", type=Path, default=DEFAULT_BOOK_SRC)
+    ap.add_argument("--book", type=Path, default=DEFAULT_BOOK)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = ap.parse_args(argv)
     n = build(args.pathways, args.book, args.out)
-    print(f"learn-site: {n} pathways → {args.out}")
+    print(f"learn: {n} pathways → {args.out}")
     return 0
 
 

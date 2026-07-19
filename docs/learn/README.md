@@ -1,13 +1,20 @@
-# BRIEFR Learn — pathway overlays
+# BRIEFR Learn
 
-Editable pathway definitions live in `pathways.json`.
+Static pathway chooser (System Design / Security analyst / Security architect) that links into the audited textbook at [`../study-guide/`](../study-guide/).
 
-Regenerate the deployable site:
+## Files
+
+| Path | Role |
+|------|------|
+| `pathways.json` | Editable pathway order (source of truth) |
+| `index.html`, `pathways/*.html`, `assets/` | Generated — do not hand-edit |
+| `../study-guide/` | Textbook chapters |
+
+## Regenerate
 
 ```bash
-python scripts/build_study_guide_book.py
-python scripts/audit_study_guide.py --strict
+python scripts/build_study_guide_book.py   # if the textbook changed
 python scripts/build_learn_site.py
 ```
 
-Output: `docs/learn-site/` (self-contained; see that folder’s `DEPLOY.md`).
+Open `index.html` in a browser, or serve the `docs/` tree so `learn/` and `study-guide/` stay siblings.
