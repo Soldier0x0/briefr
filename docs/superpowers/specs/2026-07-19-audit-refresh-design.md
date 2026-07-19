@@ -173,7 +173,7 @@ Use systematic-debugging discipline for ambiguous “is it fixed?” cases: no s
 | Branch | `cursor/audit-refresh-91c2` |
 | Base | `main` |
 | PR | Draft, docs-only |
-| Paths | `docs/audit/**` (required); `docs/superpowers/specs|plans/**` for design/plan |
+| Paths | `docs/audit/**` (required); `docs/superpowers/specs/**` and `docs/superpowers/plans/**` for design/plan |
 | Title | `docs(audit): refresh 11-phase engineering audit against current main` |
 
 ## 10. Success criteria
