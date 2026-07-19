@@ -2,10 +2,10 @@
   "generated": "2026-07-19",
   "guide": "docs/STUDY_GUIDE.html",
   "counts": {
-    "weak": 244,
+    "weak": 171,
     "covered": 441,
-    "orphan_mention": 1,
-    "out_of_scope": 1
+    "out_of_scope": 75,
+    "orphan_mention": 1
   },
   "chapters": [
     {
@@ -839,12 +839,10 @@
     },
     {
       "path": "backend/auth/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "be-auth"
-      ],
-      "evidence": "sibling/dir coverage under backend/auth/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/auth/passwords.py",
@@ -929,13 +927,10 @@
     },
     {
       "path": "backend/brief/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops",
-        "ie-brief"
-      ],
-      "evidence": "sibling/dir coverage under backend/brief/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/brief/service.py",
@@ -1533,13 +1528,10 @@
     },
     {
       "path": "backend/detection/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "ie-detection",
-        "in-jobs"
-      ],
-      "evidence": "sibling/dir coverage under backend/detection/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/detection/artifact_extract.py",
@@ -1678,12 +1670,10 @@
     },
     {
       "path": "backend/diagnostics/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops"
-      ],
-      "evidence": "sibling/dir coverage under backend/diagnostics/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/diagnostics/support_pack.py",
@@ -1735,12 +1725,10 @@
     },
     {
       "path": "backend/feeds/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "in-feeds"
-      ],
-      "evidence": "sibling/dir coverage under backend/feeds/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/feeds/ai_context.py",
@@ -1996,12 +1984,10 @@
     },
     {
       "path": "backend/intel/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "ie-threatmodel"
-      ],
-      "evidence": "sibling/dir coverage under backend/intel/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/intel/provenance.py",
@@ -2014,12 +2000,10 @@
     },
     {
       "path": "backend/ioc/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "ie-threatmodel"
-      ],
-      "evidence": "sibling/dir coverage under backend/ioc/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/ioc/retro_match.py",
@@ -2086,12 +2070,10 @@
     },
     {
       "path": "backend/matching/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "ie-matching"
-      ],
-      "evidence": "sibling/dir coverage under backend/matching/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/matching/cpe.py",
@@ -2104,13 +2086,10 @@
     },
     {
       "path": "backend/metrics/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops",
-        "api-scripts"
-      ],
-      "evidence": "sibling/dir coverage under backend/metrics/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/metrics/request_counter.py",
@@ -2124,12 +2103,10 @@
     },
     {
       "path": "backend/migration/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops"
-      ],
-      "evidence": "sibling/dir coverage under backend/migration/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/migration/sqlite_to_postgres.py",
@@ -2142,15 +2119,10 @@
     },
     {
       "path": "backend/ml/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "arch-ai-restraint",
-        "arch-resources",
-        "ie-ml",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under backend/ml/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/ml/embeddings.py",
@@ -2175,12 +2147,10 @@
     },
     {
       "path": "backend/monitoring/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops"
-      ],
-      "evidence": "sibling/dir coverage under backend/monitoring/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/monitoring/api_key_health.py",
@@ -2211,12 +2181,10 @@
     },
     {
       "path": "backend/onboarding/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-usersettings"
-      ],
-      "evidence": "sibling/dir coverage under backend/onboarding/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/onboarding/checklist.py",
@@ -2265,12 +2233,10 @@
     },
     {
       "path": "backend/proof/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-proof"
-      ],
-      "evidence": "sibling/dir coverage under backend/proof/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/proof/bench.py",
@@ -2887,12 +2853,10 @@
     },
     {
       "path": "backend/security_architecture/routers/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-secarch"
-      ],
-      "evidence": "sibling/dir coverage under backend/security_architecture/routers/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/security_architecture/routers/security_architecture.py",
@@ -2905,14 +2869,10 @@
     },
     {
       "path": "backend/services/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-proof",
-        "ie-retrieval-ops",
-        "in-jobs"
-      ],
-      "evidence": "sibling/dir coverage under backend/services/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/services/retrieval_health.py",
@@ -2998,12 +2958,10 @@
     },
     {
       "path": "backend/templates/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-proof"
-      ],
-      "evidence": "sibling/dir coverage under backend/templates/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/templates/intelligence.py",
@@ -3016,12 +2974,10 @@
     },
     {
       "path": "backend/threat_model/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "ie-threatmodel"
-      ],
-      "evidence": "sibling/dir coverage under backend/threat_model/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/threat_model/scenarios.py",
@@ -3043,12 +2999,10 @@
     },
     {
       "path": "backend/wallboard/__init__.py",
-      "status": "weak",
-      "chapters": [
-        "api-ops"
-      ],
-      "evidence": "sibling/dir coverage under backend/wallboard/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "Empty/docstring-only package __init__.py marker"
     },
     {
       "path": "backend/wallboard/service.py",
@@ -4153,15 +4107,10 @@
     },
     {
       "path": "frontend/src/components/timeWindowDateUtils.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "fe-analyst-shell",
-        "fe-forge-wallboard",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/components/ui/AlertDialog.jsx",
@@ -4183,12 +4132,10 @@
     },
     {
       "path": "frontend/src/components/ui/AsyncState.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-design"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/components/ui/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/components/ui/Badge.jsx",
@@ -4444,12 +4391,10 @@
     },
     {
       "path": "frontend/src/components/ui/Tooltip.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-design"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/components/ui/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/components/ui/index.js",
@@ -4933,13 +4878,10 @@
     },
     {
       "path": "frontend/src/pages/admin/adminFormFieldGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/adminJobAck.js",
@@ -4953,23 +4895,17 @@
     },
     {
       "path": "frontend/src/pages/admin/adminNav.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/adminUrlPageClearGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/catalog.js",
@@ -5013,13 +4949,10 @@
     },
     {
       "path": "frontend/src/pages/admin/formatters.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/intelStatus.js",
@@ -5043,13 +4976,10 @@
     },
     {
       "path": "frontend/src/pages/admin/jobActions.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/jobStatus.js",
@@ -5073,13 +5003,10 @@
     },
     {
       "path": "frontend/src/pages/admin/needsAttention.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/rateLimits.js",
@@ -5103,13 +5030,10 @@
     },
     {
       "path": "frontend/src/pages/admin/resourceChartUtils.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/admin/resourcesChartsRecharts.jsx",
@@ -5375,13 +5299,10 @@
     },
     {
       "path": "frontend/src/pages/admin/toastCopy.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/pages/security-architecture/ContextRail.jsx",
@@ -5593,13 +5514,10 @@
     },
     {
       "path": "frontend/src/utils/activeStateGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/adminLinks.js",
@@ -5643,13 +5561,10 @@
     },
     {
       "path": "frontend/src/utils/apiQueuePresentation.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/appLinks.js",
@@ -5663,43 +5578,31 @@
     },
     {
       "path": "frontend/src/utils/archAnalystCleanupGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/archLayoutGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/archTabRemovalGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/architectureGraphGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/architectureGraphLayout.js",
@@ -5723,13 +5626,10 @@
     },
     {
       "path": "frontend/src/utils/architectureGraphView.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/assetProfileIo.js",
@@ -5792,13 +5692,10 @@
     },
     {
       "path": "frontend/src/utils/correlationPresentation.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/cveAge.js",
@@ -5821,33 +5718,24 @@
     },
     {
       "path": "frontend/src/utils/dataGridStandardGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/dateTimePickerSimpleGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/dateTimePickerStandardGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/detectLabels.js",
@@ -5861,13 +5749,10 @@
     },
     {
       "path": "frontend/src/utils/detectLabels.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/displayPrefs.js",
@@ -5911,13 +5796,10 @@
     },
     {
       "path": "frontend/src/utils/domainTermTips.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/domainValidation.js",
@@ -5931,23 +5813,17 @@
     },
     {
       "path": "frontend/src/utils/drawerDatetimeFixes.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/drawerForgeMitreLinksGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/epssSparkline.js",
@@ -5961,13 +5837,10 @@
     },
     {
       "path": "frontend/src/utils/epssSparkline.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/exploitationDisplay.js",
@@ -5981,13 +5854,10 @@
     },
     {
       "path": "frontend/src/utils/exploitationDisplay.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/exportCommon.js",
@@ -6031,13 +5901,10 @@
     },
     {
       "path": "frontend/src/utils/feedEpssUiCleanupGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/feedHealthStatus.js",
@@ -6051,33 +5918,24 @@
     },
     {
       "path": "frontend/src/utils/forgeDeadControlsGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/forgeMitreNavigatorGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/forgeUrlTabClearGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/heatmapGrid.js",
@@ -6111,23 +5969,17 @@
     },
     {
       "path": "frontend/src/utils/hybridFeedSearch.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/iconOnlyAriaGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/intelProvenance.js",
@@ -6161,13 +6013,10 @@
     },
     {
       "path": "frontend/src/utils/investigationLabels.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/investigationPdf.js",
@@ -6191,13 +6040,10 @@
     },
     {
       "path": "frontend/src/utils/iocLookupMessages.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/kevDeadline.js",
@@ -6211,13 +6057,10 @@
     },
     {
       "path": "frontend/src/utils/kevDeadline.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/keyboardScope.js",
@@ -6231,13 +6074,10 @@
     },
     {
       "path": "frontend/src/utils/keyboardScope.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/lazyWithReload.js",
@@ -6251,13 +6091,10 @@
     },
     {
       "path": "frontend/src/utils/mitreNavigatorHelpers.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/momentumCache.js",
@@ -6281,13 +6118,10 @@
     },
     {
       "path": "frontend/src/utils/morningBriefFormat.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/motion.js",
@@ -6301,33 +6135,24 @@
     },
     {
       "path": "frontend/src/utils/motion.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/nativeRangeGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/nativeSelectGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/notificationChime.js",
@@ -6381,13 +6206,10 @@
     },
     {
       "path": "frontend/src/utils/patchReferences.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/patchRemediation.js",
@@ -6401,13 +6223,10 @@
     },
     {
       "path": "frontend/src/utils/patchRemediation.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/pdfAiSummary.js",
@@ -6441,13 +6260,10 @@
     },
     {
       "path": "frontend/src/utils/rechartsVersionGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/referenceRows.js",
@@ -6461,13 +6277,10 @@
     },
     {
       "path": "frontend/src/utils/referenceRows.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/report.js",
@@ -6491,23 +6304,17 @@
     },
     {
       "path": "frontend/src/utils/safeExternalUrl.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/sectionLabels.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/securityArchitecturePdf.js",
@@ -6521,23 +6328,17 @@
     },
     {
       "path": "frontend/src/utils/securityPostureGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/selectionAccentGate.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/severitySemantics.js",
@@ -6561,13 +6362,10 @@
     },
     {
       "path": "frontend/src/utils/sharedObservables.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/shellUrlState.js",
@@ -6581,13 +6379,10 @@
     },
     {
       "path": "frontend/src/utils/shellUrlState.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/stackLocalSync.js",
@@ -6601,13 +6396,10 @@
     },
     {
       "path": "frontend/src/utils/stackLocalSync.test.js",
-      "status": "weak",
-      "chapters": [
-        "fe-analyst-shell",
-        "fe-shared-utils"
-      ],
-      "evidence": "sibling/dir coverage under frontend/src/utils/",
-      "notes": "File never named; only directory-level association"
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/timezone.js",
@@ -6919,6 +6711,13 @@
       "chapters": [],
       "evidence": "",
       "notes": "Aggregate into Testing strategy chapter; not file-mapped"
+    },
+    {
+      "path": "frontend/src/**/*.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit tests; aggregate into Testing strategy chapter"
     }
   ]
 }

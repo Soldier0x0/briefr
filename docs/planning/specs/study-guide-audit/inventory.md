@@ -5,10 +5,10 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | Status | Count |
 |--------|------:|
 | `covered` | 441 |
-| `weak` | 244 |
+| `weak` | 171 |
 | `gap` | 0 |
 | `orphan_mention` | 1 |
-| `out_of_scope` | 1 |
+| `out_of_scope` | 75 |
 
 | Path | Status | Chapters | Evidence / notes |
 |------|--------|----------|------------------|
@@ -63,7 +63,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/api_metering.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
 | `backend/api_queue.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
 | `backend/api_queue_operations.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
-| `backend/auth/__init__.py` | `weak` | `be-auth` | sibling/dir coverage under backend/auth/; File never named; only directory-level association |
+| `backend/auth/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/auth/passwords.py` | `covered` | `be-auth` | exact path mention in chapter body/chips |
 | `backend/auth/repo.py` | `covered` | `be-auth` | exact path mention in chapter body/chips |
 | `backend/auth/tokens.py` | `covered` | `be-auth` | exact path mention in chapter body/chips |
@@ -73,7 +73,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/backup/__main__.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/backup/manager.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/backup/postgres_util.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
-| `backend/brief/__init__.py` | `weak` | `api-ops`, `ie-brief` | sibling/dir coverage under backend/brief/; File never named; only directory-level association |
+| `backend/brief/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/brief/service.py` | `covered` | `api-ops`, `ie-brief` | exact path mention in chapter body/chips |
 | `backend/config_schema.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/correlation/__init__.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
@@ -135,7 +135,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/db/webhooks.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/dependencies.py` | `covered` | `be-bootstrap` | exact path mention in chapter body/chips |
 | `backend/destructive_actions.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
-| `backend/detection/__init__.py` | `weak` | `ie-detection`, `in-jobs` | sibling/dir coverage under backend/detection/; File never named; only directory-level association |
+| `backend/detection/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/detection/artifact_extract.py` | `weak` | `ie-detection`, `in-jobs` | sibling/dir coverage under backend/detection/; File never named; only directory-level association |
 | `backend/detection/backlog.py` | `covered` | `ie-detection` | exact path mention in chapter body/chips |
 | `backend/detection/class_queries.py` | `weak` | `ie-detection`, `in-jobs` | sibling/dir coverage under backend/detection/; File never named; only directory-level association |
@@ -150,13 +150,13 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/detection/siem_queries.py` | `weak` | `ie-detection`, `in-jobs` | sibling/dir coverage under backend/detection/; File never named; only directory-level association |
 | `backend/detection/sigma_generator.py` | `covered` | `ie-detection` | exact path mention in chapter body/chips |
 | `backend/detection/yara_generator.py` | `weak` | `ie-detection`, `in-jobs` | sibling/dir coverage under backend/detection/; File never named; only directory-level association |
-| `backend/diagnostics/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/diagnostics/; File never named; only directory-level association |
+| `backend/diagnostics/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/diagnostics/support_pack.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/enrichment/__init__.py` | `covered` | `ie-ml` | exact path mention in chapter body/chips |
 | `backend/enrichment/cve.py` | `covered` | `api-proof`, `ie-ml` | exact path mention in chapter body/chips |
 | `backend/enrichment/domain_validation.py` | `covered` | `api-proof`, `ie-ml` | exact path mention in chapter body/chips |
 | `backend/enrichment/ioc.py` | `covered` | `api-proof`, `ie-ml` | exact path mention in chapter body/chips |
-| `backend/feeds/__init__.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
+| `backend/feeds/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/feeds/ai_context.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
 | `backend/feeds/atlas.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
 | `backend/feeds/case_study_feed.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
@@ -185,9 +185,9 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/feeds/threatfox.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
 | `backend/feeds/vulncheck_kev.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
 | `backend/feeds/vulnrichment.py` | `weak` | `in-feeds` | sibling/dir coverage under backend/feeds/; File never named; only directory-level association |
-| `backend/intel/__init__.py` | `weak` | `ie-threatmodel` | sibling/dir coverage under backend/intel/; File never named; only directory-level association |
+| `backend/intel/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/intel/provenance.py` | `covered` | `ie-threatmodel` | exact path mention in chapter body/chips |
-| `backend/ioc/__init__.py` | `weak` | `ie-threatmodel` | sibling/dir coverage under backend/ioc/; File never named; only directory-level association |
+| `backend/ioc/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/ioc/retro_match.py` | `covered` | `ie-threatmodel` | exact path mention in chapter body/chips |
 | `backend/jobs/__init__.py` | `weak` | `in-jobs` | sibling/dir coverage under backend/jobs/; File never named; only directory-level association |
 | `backend/jobs/app.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
@@ -195,26 +195,26 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/jobs/tasks.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/jobs/worker.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/main.py` | `covered` | `be-bootstrap` | exact path mention in chapter body/chips |
-| `backend/matching/__init__.py` | `weak` | `ie-matching` | sibling/dir coverage under backend/matching/; File never named; only directory-level association |
+| `backend/matching/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/matching/cpe.py` | `covered` | `ie-matching` | exact path mention in chapter body/chips |
-| `backend/metrics/__init__.py` | `weak` | `api-ops`, `api-scripts` | sibling/dir coverage under backend/metrics/; File never named; only directory-level association |
+| `backend/metrics/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/metrics/request_counter.py` | `covered` | `api-ops`, `api-scripts` | exact path mention in chapter body/chips |
-| `backend/migration/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/migration/; File never named; only directory-level association |
+| `backend/migration/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/migration/sqlite_to_postgres.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
-| `backend/ml/__init__.py` | `weak` | `arch-ai-restraint`, `arch-resources`, `ie-ml`, `ie-retrieval-ops` | sibling/dir coverage under backend/ml/; File never named; only directory-level association |
+| `backend/ml/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/ml/embeddings.py` | `covered` | `arch-ai-restraint`, `arch-resources`, `ie-ml`, `ie-retrieval-ops` | exact path mention in chapter body/chips |
 | `backend/ml/product_extraction.py` | `covered` | `ie-ml` | exact path mention in chapter body/chips |
-| `backend/monitoring/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/monitoring/; File never named; only directory-level association |
+| `backend/monitoring/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/monitoring/api_key_health.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/monitoring/notifications.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/notifications/emit.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
-| `backend/onboarding/__init__.py` | `weak` | `api-usersettings` | sibling/dir coverage under backend/onboarding/; File never named; only directory-level association |
+| `backend/onboarding/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/onboarding/checklist.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/operator_settings.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/preferences/display_validate.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/preferences/repo.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/preferences/validate.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
-| `backend/proof/__init__.py` | `weak` | `api-proof` | sibling/dir coverage under backend/proof/; File never named; only directory-level association |
+| `backend/proof/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/proof/bench.py` | `covered` | `api-proof` | exact path mention in chapter body/chips |
 | `backend/pytest.ini` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `backend/rate_limit.py` | `covered` | `arch-resources`, `be-ratelimit` | exact path mention in chapter body/chips |
@@ -281,9 +281,9 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/security_architecture/frameworks/scope.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/graphs.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/merge.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
-| `backend/security_architecture/routers/__init__.py` | `weak` | `api-secarch` | sibling/dir coverage under backend/security_architecture/routers/; File never named; only directory-level association |
+| `backend/security_architecture/routers/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/security_architecture/routers/security_architecture.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
-| `backend/services/__init__.py` | `weak` | `api-proof`, `ie-retrieval-ops`, `in-jobs` | sibling/dir coverage under backend/services/; File never named; only directory-level association |
+| `backend/services/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/services/retrieval_health.py` | `covered` | `ie-retrieval-ops` | exact path mention in chapter body/chips |
 | `backend/services/semantic_search.py` | `covered` | `api-proof` | exact path mention in chapter body/chips |
 | `backend/services/stack_backfill_worker.py` | `covered` | `api-proof`, `in-jobs` | exact path mention in chapter body/chips |
@@ -293,12 +293,12 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/storage_metrics.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/structured_logging.py` | `covered` | `be-logging` | exact path mention in chapter body/chips |
 | `backend/task_registry.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
-| `backend/templates/__init__.py` | `weak` | `api-proof` | sibling/dir coverage under backend/templates/; File never named; only directory-level association |
+| `backend/templates/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/templates/intelligence.py` | `covered` | `api-proof` | exact path mention in chapter body/chips |
-| `backend/threat_model/__init__.py` | `weak` | `ie-threatmodel` | sibling/dir coverage under backend/threat_model/; File never named; only directory-level association |
+| `backend/threat_model/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/threat_model/scenarios.py` | `covered` | `ie-threatmodel` | exact path mention in chapter body/chips |
 | `backend/tracking.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
-| `backend/wallboard/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/wallboard/; File never named; only directory-level association |
+| `backend/wallboard/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/wallboard/service.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/wallboard/session.py` | `weak` | `api-ops` | sibling/dir coverage under backend/wallboard/; File never named; only directory-level association |
 | `backend/webhooks/__init__.py` | `weak` | `api-webhooks` | sibling/dir coverage under backend/webhooks/; File never named; only directory-level association |
@@ -408,10 +408,10 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/forge/mitreTacticOrder.js` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
 | `frontend/src/components/forge/shared.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
 | `frontend/src/components/timeWindowDateUtils.js` | `weak` | `fe-admin-shell`, `fe-analyst-shell`, `fe-forge-wallboard`, `fe-shared-utils` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
-| `frontend/src/components/timeWindowDateUtils.test.js` | `weak` | `fe-admin-shell`, `fe-analyst-shell`, `fe-forge-wallboard`, `fe-shared-utils` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/timeWindowDateUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/components/ui/AlertDialog.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/AsyncState.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
-| `frontend/src/components/ui/AsyncState.test.js` | `weak` | `fe-design` | sibling/dir coverage under frontend/src/components/ui/; File never named; only directory-level association |
+| `frontend/src/components/ui/AsyncState.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/components/ui/Badge.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/Button.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/Card.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
@@ -440,7 +440,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/ui/Tabs.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/Toast.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/Tooltip.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
-| `frontend/src/components/ui/Tooltip.test.js` | `weak` | `fe-design` | sibling/dir coverage under frontend/src/components/ui/; File never named; only directory-level association |
+| `frontend/src/components/ui/Tooltip.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/components/ui/index.js` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/components/ui/ui.css` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/config/assetCatalog.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -492,24 +492,24 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/WebhookDestinationCard.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/WebhooksPage.css` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/WebhooksPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/adminFormFieldGate.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/adminFormFieldGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/adminJobAck.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/adminNav.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/adminUrlPageClearGate.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/adminNav.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/pages/admin/adminUrlPageClearGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/catalog.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/circuitLabels.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/constants.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/formatters.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/formatters.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/formatters.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/intelStatus.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/jobActions.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/jobActions.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/jobActions.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/jobStatus.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/needsAttention.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/needsAttention.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/needsAttention.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/rateLimits.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/resourceChartUtils.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/resourceChartUtils.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/resourceChartUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/ActionProgress.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
@@ -539,7 +539,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/shared/backupChartUtils.test.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/opsChartsRecharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/toastCopy.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/toastCopy.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/toastCopy.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/security-architecture/ContextRail.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/security-architecture/GlobalSearch.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/security-architecture/SecurityArchitecturePage.css` | `weak` | `fe-admin-shell` | sibling/dir coverage under frontend/src/pages/security-architecture/; File never named; only directory-level association |
@@ -563,108 +563,108 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/scoring/riskScore.test.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/styles/tokens.css` | `covered` | `fe-design`, `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/theme/light-theme.css` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/utils/activeStateGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/activeStateGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/adminLinks.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/adminMode.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/aiAssets.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/apiQueuePresentation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/apiQueuePresentation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/apiQueuePresentation.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/appLinks.js` | `covered` | `fe-analyst-shell`, `fe-shared-utils` | exact path mention in chapter body/chips |
-| `frontend/src/utils/archAnalystCleanupGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/archLayoutGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/archTabRemovalGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/architectureGraphGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/archAnalystCleanupGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/archLayoutGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/archTabRemovalGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/architectureGraphGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/architectureGraphLayout.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/architectureGraphView.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/architectureGraphView.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/architectureGraphView.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/assetProfileIo.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/backendRestart.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/campaignClusterOpen.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/caseStudyFeed.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/chartTheme.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/correlationPresentation.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
-| `frontend/src/utils/correlationPresentation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/correlationPresentation.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/cveAge.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/cveFilters.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
-| `frontend/src/utils/dataGridStandardGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/dateTimePickerSimpleGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/dateTimePickerStandardGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/dataGridStandardGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/dateTimePickerSimpleGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/dateTimePickerStandardGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/detectLabels.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/detectLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/detectLabels.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/displayPrefs.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/displayPrefsCore.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/displayText.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/domainTermTips.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/domainTermTips.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/domainTermTips.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/domainValidation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/drawerDatetimeFixes.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/drawerForgeMitreLinksGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/drawerDatetimeFixes.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/drawerForgeMitreLinksGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/epssSparkline.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/epssSparkline.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/epssSparkline.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/exploitationDisplay.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/exploitationDisplay.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exploitationDisplay.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/exportCommon.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/exportCsv.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/exportXlsx.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/extractIndicatorsFromCve.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/feedEpssUiCleanupGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/feedEpssUiCleanupGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/feedHealthStatus.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/forgeDeadControlsGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/forgeMitreNavigatorGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/forgeUrlTabClearGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/forgeDeadControlsGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/forgeMitreNavigatorGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/forgeUrlTabClearGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/heatmapGrid.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/huntPackPdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/hybridFeedSearch.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/hybridFeedSearch.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/iconOnlyAriaGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/hybridFeedSearch.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/iconOnlyAriaGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/intelProvenance.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/investigationActors.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/investigationLabels.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/investigationLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/investigationLabels.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/investigationPdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/iocLookupMessages.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/iocLookupMessages.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/iocLookupMessages.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/kevDeadline.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/kevDeadline.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/kevDeadline.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/keyboardScope.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/keyboardScope.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/keyboardScope.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/lazyWithReload.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/mitreNavigatorHelpers.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/mitreNavigatorHelpers.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/momentumCache.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/morningBriefFormat.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/morningBriefFormat.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/morningBriefFormat.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/motion.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/motion.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/nativeRangeGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/nativeSelectGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/motion.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/nativeRangeGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/nativeSelectGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/notificationChime.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/notificationsApi.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/observableExtraction.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/openCveDrawer.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/patchReferences.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/patchReferences.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchReferences.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/patchRemediation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/patchRemediation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchRemediation.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/pdfAiSummary.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/pdfReport.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/rechartsTheme.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/rechartsVersionGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/rechartsVersionGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/referenceRows.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/referenceRows.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/referenceRows.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/report.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/safeExternalUrl.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/safeExternalUrl.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/sectionLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/safeExternalUrl.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/sectionLabels.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/securityArchitecturePdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/securityPostureGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/selectionAccentGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/securityPostureGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/selectionAccentGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/severitySemantics.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/sharedObservables.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/sharedObservables.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/sharedObservables.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/shellUrlState.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/shellUrlState.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/shellUrlState.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/stackLocalSync.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
-| `frontend/src/utils/stackLocalSync.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/stackLocalSync.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/timezone.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/tutorial.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `frontend/src/utils/typographyPrefs.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
@@ -699,3 +699,4 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `scripts/export_intel_snapshot.py` | `covered` | `be-data` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
 | `scripts/generate_security_corpus.py` | `covered` | `api-secarch` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
 | `backend/tests/**` | `out_of_scope` | — | ; Aggregate into Testing strategy chapter; not file-mapped |
+| `frontend/src/**/*.test.js` | `out_of_scope` | — | ; FE gate/unit tests; aggregate into Testing strategy chapter |

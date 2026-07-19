@@ -20,6 +20,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — Study guide Phase 0 truth hardening (started)
+
+**Design:** `docs/superpowers/specs/2026-07-19-study-guide-truth-hardening-design.md`  
+**Plan:** `docs/superpowers/plans/2026-07-19-study-guide-truth-hardening.md`
+
+**Bar:** `gap=0` is not enough — drive `weak→0` (or explicit OOS), ground claims in HEAD/`PRODUCT_STATUS`. Phase 1 (multi-profile `docs.` / learn repo) is **blocked** until G1–G5 green.
+
+**Update protocol:** when maintainer says “update” (or pastes audits after new features) → re-inventory HEAD → close new weak/gap/stale → `audit_study_guide.py --strict` green → rebuild book.
+
+**Next:** execute plan Tasks 1–9 (strict auditor + directory sweeps).
+
+---
+
 ## 2026-07-19 — Study guide coverage: zero file gaps
 
 **Done**
