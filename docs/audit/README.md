@@ -48,7 +48,7 @@ release-blocker: **F4.1** (CI trust) — see [PHASE_11_readiness.md](PHASE_11_re
 
 | Topic | Document | Score |
 |-------|----------|-------|
-| Idempotency & exactly-once (scheduler jobs, durable queue, webhooks, ingest) | [IDEMPOTENCY_AUDIT.md](IDEMPOTENCY_AUDIT.md) | 7.5/10 |
+| Idempotency & exactly-once (scheduler jobs, durable queue, webhooks, ingest) | [IDEMPOTENCY_AUDIT.md](IDEMPOTENCY_AUDIT.md) | 8.5/10 |
 
 ## Scoring key
 Priority: **Critical / High / Medium / Low**. Each finding is **Quick Win** (hours, low
