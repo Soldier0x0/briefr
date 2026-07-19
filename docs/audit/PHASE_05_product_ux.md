@@ -1,8 +1,9 @@
 # PHASE 5 — Product Experience, UX, UI, Design System, Accessibility & Data Presentation
 
-*Reviewed at commit `61c686f`. Frontend: React 19 + Vite, plain JSX/CSS + Radix (ADR-003, no
-Tailwind). Design system: `docs/design/design-system.md` (24 sections), `src/styles/tokens.css`
-(238 tokens), `src/components/ui/*` (30 components), 50 CSS files (~20k LOC).*
+*Reviewed at pinned commit `ff23c18a4925b3b7082a2b1d1600884324d90d02`. Frontend: React 19 +
+Vite, plain JSX/CSS + Radix (ADR-003, no Tailwind). Design system:
+`docs/design/design-system.md` (24 sections), `src/styles/tokens.css` (semantic tokens wired from
+`main.jsx`), `src/components/ui/*`, and 56 frontend unit/gate tests.*
 
 > Covers the full Phase-5 sub-audit list: Product Experience · User Journey · Information
 > Architecture · Navigation · UI Consistency · UX Consistency · Visual Design · Design System ·
@@ -14,50 +15,41 @@ Tailwind). Design system: `docs/design/design-system.md` (24 sections), `src/sty
 
 ## Executive Summary
 
-This is the **strongest area of the product**. BRIEFR has a real, documented design system — a
-24-section `design-system.md` (WCAG 2.1 AA target, four-state discipline, severity/status color
-semantics, motion timings, keyboard a11y, an entire §23 of "permanent repo-wide UX standards"),
-238 design tokens in `tokens.css`, and a 30-component library (`AsyncState`, `EmptyState`,
-`ErrorState`, `Skeleton`, `ChartShell`+`ChartDataTable`, `ReferenceTooltip`, shared
-`DateTimePicker`, `DataGrid`, etc.). Accessibility is taken seriously in practice: **580 `aria-*`
-usages**, correct roles (`menuitem`, `status`, `columnheader`/`cell`, `progressbar`,
-`list`/`listitem`), `role="status"`/`aria-live="polite"`/`aria-busy` on async surfaces,
-`role="img"`+`aria-label` on charts with a tabular `ChartDataTable` alternative, **14
-`prefers-reduced-motion`** blocks, **69 media queries**, and **zero hardcoded hex colors in JSX**.
-The four-states contract is centralized in `AsyncState`, and UX contracts are encoded as
-"gate tests."
+This remains the **strongest area of the product**. BRIEFR has a real, documented design system:
+WCAG 2.1 AA targets, four-state discipline, severity/status color semantics, motion rules,
+keyboard/accessibility standards, and §23 permanent repo-wide UX standards. The token layer is
+explicitly wired, Radix is used without Tailwind, and UX/a11y contracts are increasingly encoded as
+frontend unit/gate tests.
 
-The weaknesses are **consistency-at-scale and migration-in-flight**, not absence of a system:
-(1) an **in-progress token migration** — `design-system.md` A2 admits `tokens.css` supersedes an
-ad-hoc `App.css` token block but legacy aliases (`--red`, `--bg2`, `--text3`) "remain until
-migration completes"; (2) heavy **inline-style sprawl** — 436 `style={{…}}` blocks, only ~137
-using `var(--token)`, so ~68% embed raw values that bypass the system; (3) **typography tokens are
-under-used** — 682 raw `font-size` declarations vs 197 token-based (~78% bypass the type scale);
-(4) the **light theme is not actually shipped** (A3: `light-theme.css` exists but is not imported)
-despite 36 theme references; (5) the **icon strategy is unresolved** (Open-Q3) — `lucide-react` is
-a dependency yet inline SVGs persist; (6) the excellent gate-tests that would enforce all of this
-**don't run in CI** (Phase 4 F4.2); (7) `AsyncState`'s error surfacing depends on the caller
-passing `empty` correctly, so a first-load error without `empty=true` renders an empty body
-instead of the error.
+The refresh changes the classification more than the score. One user-facing bug is **closed**:
+`AsyncState` now derives `hasData`, renders `ErrorState` on no-data errors, and has a regression
+test. Icon usage also moved materially toward Lucide (27 `lucide-react` import lines vs 4 inline
+`<svg>` tags). The remaining gaps are consistency-at-scale: 434 inline `style={{...}}` blocks,
+only 142 with same-line token vars; 924 CSS `font-size:` declarations, only 228 via any `var(--*)`
+and only 12 via the semantic `--font-size-*` scale; 1,817 legacy color/surface alias references and
+224 legacy `--type-*` references; light-theme selectors exist but the light theme is still not
+shipped; 56 frontend tests exist but CI still does not run `npm run test:unit`.
 
-**Overall Score: 8 / 10** — the highest-scoring phase so far; the gaps are polish and consistency
-enforcement, not foundational design failure.
+**Overall Score: 8.1 / 10** — production-grade UX foundation with one silent-error defect fixed;
+the remaining risk is unmanaged design-system drift unless the gates become required.
 
 ---
 
 ## Findings
 
-### F5.1 — Inline-style sprawl bypasses the token system (436 blocks, ~68% raw values) · Priority: MEDIUM · Architectural
-- **Location:** frontend-wide — 436 `style={{…}}` occurrences across `*.jsx`; only ~137 reference
-  `var(--…)`. Concentrated in large components (`IOCLookup.jsx`, `App.jsx`, `DetailDrawer/*`,
-  admin pages).
+### F5.1 — Inline-style sprawl bypasses the token system (434 blocks, ~67% raw/unverified) · Status: UPDATED · Priority: MEDIUM · Architectural
+- **Location:** frontend-wide — 434 `style={{…}}` occurrences across 49 `*.jsx` files; 142
+  same-line occurrences reference `var(--…)`. Concentrated in admin pages
+  (`AiOperationsPage.jsx`, `OverviewPage.jsx`, `WebhooksPage.jsx`, `FeedHealthPage.jsx`) plus
+  `IOCLookup.jsx` and detail surfaces.
 - **Description:** Two-thirds of inline styles embed literal values (spacing, sizes, colors as
   non-token) directly in JSX, bypassing `tokens.css` and the CSS layer. This is the classic route
   by which a token system erodes: values drift, dark/light parity breaks, and global restyling
   becomes a find-and-replace.
 - **Why it matters:** The product's competitive strength is a coherent dense terminal aesthetic;
   inline raw values are how that coherence quietly degrades over years/contributors.
-- **Evidence:** `grep 'style={{'` → 436; `grep 'style={{...var(--'` → 137.
+- **Evidence:** Python scan at pinned SHA → 434 inline style blocks; 142 same-line token-var blocks;
+  292 raw or unverified blocks.
 - **Risk:** Visual drift, broken theming, high restyle cost.
 - **Recommended solution:** (a) Add a lint rule (stylelint for CSS + an ESLint rule/gate test) that
   flags inline `style` with literal color/size values, allowing only `var(--…)` and layout-dynamic
@@ -67,26 +59,30 @@ enforcement, not foundational design failure.
   raw-color inline style fails the gate.
 - **Effort:** Medium (incremental). **Type:** Architectural.
 
-### F5.2 — Typography tokens under-used (682 raw `font-size` vs 197 token-based) · Priority: MEDIUM · Quick Win
-- **Location:** 50 CSS files; `tokens.css` defines a type scale (`--font-size-title`, …) but ~78%
-  of `font-size` declarations use raw px/rem.
+### F5.2 — Typography tokens under-used (924 declarations; only 12 semantic `--font-size-*`) · Status: UPDATED · Priority: MEDIUM · Quick Win
+- **Location:** 48 CSS files; `tokens.css` defines the semantic type scale
+  (`--font-size-title`, …), but the CSS still mostly uses raw sizes or legacy `--type-*` aliases.
 - **Description:** The type scale exists but isn't the source of truth in practice, producing
   inconsistent text sizing and undermining the "density over decoration" typographic rhythm.
 - **Why it matters:** Inconsistent type scale is the most visible form of UI inconsistency and the
   easiest to regress.
-- **Recommended solution:** Define the full type scale as tokens (title/body/label/mono sizes +
-  line-heights), codemod raw `font-size` values to the nearest token, and add a stylelint rule
-  banning raw `font-size` outside `tokens.css`.
+- **Evidence:** Python scan → 924 `font-size:` declarations; 228 use any CSS var; only 12 use
+  `var(--font-size-*)`; 696 are raw/non-var. Legacy `--type-*` aliases account for most var usage.
+- **Recommended solution:** Codemod raw `font-size` and legacy `--type-*` aliases to the semantic
+  `--font-size-*` scale, then add a stylelint/gate rule banning raw `font-size` outside
+  `tokens.css`.
 - **Acceptance criteria:** All `font-size` outside `tokens.css` use `var(--font-size-*)`; stylelint
   enforces it.
 - **Effort:** Quick Win–Medium (codemod). **Type:** Quick Win.
 
-### F5.3 — Token migration is mid-flight (dual token systems: legacy aliases + `tokens.css`) · Priority: MEDIUM · Architectural
+### F5.3 — Token migration is mid-flight (dual token systems: legacy aliases + `tokens.css`) · Status: UPDATED · Priority: MEDIUM · Architectural
 - **Location:** `docs/design/design-system.md` §21 A2 (legacy raw names `--red`, `--bg2`,
   `--text3` "remain as aliases until migration completes, then are removed"; "Open: exact
   alias-removal cut-line per component"); `App.css` (610 LOC) still carries an ad-hoc token block.
 - **Description:** The system is self-aware that it's mid-migration from `App.css` ad-hoc tokens to
   `tokens.css`. Two naming systems coexist with no completion criteria per component.
+- **Evidence:** Current scan found 1,817 legacy color/surface alias references
+  (`--red`/`--bg2`/`--text3`/etc.) plus 224 legacy `--type-*` references in `frontend/src`.
 - **Why it matters:** Dual token vocabularies mean contributors pick either, indefinitely — the
   migration never finishes without a forcing function, and F5.1/F5.2 keep recurring.
 - **Recommended solution:** Define the per-component cut-line (A2's open item) as a checklist; add a
@@ -96,7 +92,7 @@ enforcement, not foundational design failure.
   files may not reference legacy aliases.
 - **Effort:** Medium. **Type:** Architectural.
 
-### F5.4 — Light theme documented as a parity target but not shipped · Priority: LOW · Architectural
+### F5.4 — Light theme documented as a parity target but not shipped · Status: OPEN · Priority: LOW · Architectural
 - **Location:** `src/theme/light-theme.css` exists but is **not imported** (design-system.md §21
   A3: "Light theme is a parity target, not a shipped feature"); 36 `prefers-color-scheme`/
   `data-theme` references in CSS imply theming intent.
@@ -112,43 +108,23 @@ enforcement, not foundational design failure.
   regardless of OS theme with a documented decision.
 - **Effort:** Medium (ship) / Quick Win (neutralize). **Type:** Architectural.
 
-### F5.5 — Icon strategy unresolved: `lucide-react` dependency + persistent inline SVGs · Priority: LOW · Quick Win
+### F5.5 — Icon strategy mostly converged on Lucide, but Open-Q3 remains · Status: UPDATED · Priority: LOW · Quick Win
 - **Location:** `package.json` (`lucide-react`); design-system.md §21 Open-Q3 still lists "icon
-  library choice (existing inline SVGs vs a set like Lucide)" as open; inline SVGs remain in
+  library choice (existing inline SVGs vs a set like Lucide)" as open; inline SVGs remain in a few
   components.
-- **Description:** Two icon approaches coexist with no decision, risking inconsistent stroke
-  weights/sizes/metaphors and unnecessary bundle weight (shipping Lucide + hand SVGs).
-- **Recommended solution:** Pick one (Lucide is already a dep and tree-shakeable); migrate inline
-  SVGs or remove the Lucide dependency; close Open-Q3 in the design doc.
+- **Description:** Usage has shifted strongly toward Lucide, but the design-system decision remains
+  unresolved, so new contributors still see two valid-looking approaches.
+- **Evidence:** Current scan → 27 `lucide-react` import lines; 4 inline `<svg>` tags.
+- **Recommended solution:** Declare Lucide the default icon source, allowlist custom SVGs only for
+  chart/sparkline/graph primitives, and close Open-Q3 in the design doc.
 - **Acceptance criteria:** One icon source; design-system.md Open-Q3 resolved; bundle contains one
   icon system.
 - **Effort:** Quick Win–Medium. **Type:** Quick Win.
 
-### F5.6 — `AsyncState` error surfacing depends on the caller computing `empty` correctly · Priority: MEDIUM · Quick Win
-- **Location:** `src/components/ui/AsyncState.jsx` — `ErrorState` renders only when `error &&
-  empty`; a set `error` with `empty=false` falls through to render `children` (the body).
-- **Description:** The four-state component only shows the error UI when the caller also flags
-  `empty`. On a first-load failure where the caller hasn't set `empty=true` (e.g. data is `null`,
-  not an empty array, so the caller's `empty` heuristic is false), the component renders the body
-  with no data and **no visible error** — a silent failure state, contradicting the CLAUDE.md rule
-  that every async view needs a designed error state with the request-id.
-- **Why it matters:** Silent error states are the worst UX failure — the user sees a blank/broken
-  panel with no explanation or retry, and no `ref: <request-id>` to report.
-- **Evidence:** the `if (error && empty)` guard in `AsyncState.jsx`; no branch for `error &&
-  !empty`.
-- **Recommended solution:** Show `ErrorState` whenever `error` is set **and there is no existing
-  data** (stale-while-revalidate should keep old data only when data exists). Change the guard to:
-  render `ErrorState` if `error && !hasData`; keep body (with a non-blocking error toast/banner)
-  only when `error && hasData` (refresh failure over existing data). Add a gate test for the
-  first-load-error path.
-- **Acceptance criteria:** A first-load fetch error renders `ErrorState` with retry regardless of
-  the `empty` flag; a refresh error over existing data keeps data + shows a non-blocking notice.
-- **Effort:** Quick Win. **Type:** Quick Win.
-
-### F5.7 — UX/design contracts are encoded as gate-tests but not enforced in CI · Priority: HIGH · Quick Win
-- **Location:** 47 `*.test.js` incl. `iconOnlyAriaGate`, `nativeSelectGate`,
+### F5.7 — UX/design contracts are encoded as gate-tests but not enforced in CI · Status: UPDATED · Priority: HIGH · Quick Win
+- **Location:** 56 `*.test.js` incl. `iconOnlyAriaGate`, `nativeSelectGate`,
   `dataGridStandardGate`, `selectionAccentGate`, `activeStateGate`, `motion`, `safeExternalUrl`,
-  `dateTimePickerStandardGate`; CI runs none (Phase 4 F4.2).
+  `dateTimePickerStandardGate`, and `AsyncState.test.js`; CI runs none (Phase 4 F4.2).
 - **Description:** The single most effective mechanism this team built to keep UI/UX/a11y
   consistent — executable design-system gates — provides zero automated protection because CI
   doesn't run them. Every consistency finding above (F5.1–F5.5) is exactly what these gates are
@@ -160,7 +136,7 @@ enforcement, not foundational design failure.
 - **Acceptance criteria:** All gate tests run and are required on PRs.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### F5.8 — Command palette vs sidebar navigation strategy is undecided (IA/navigation) · Priority: LOW · Architectural
+### F5.8 — Command palette vs sidebar navigation strategy is undecided (IA/navigation) · Status: OPEN · Priority: LOW · Architectural
 - **Location:** design-system.md §21 Open-Q2 ("whether the command palette becomes the primary
   nav (affects sidebar work)"); `App.jsx` `paletteOpen` state; `Sidebar.jsx` (filters + supplementary
   data, not primary nav).
@@ -175,7 +151,7 @@ enforcement, not foundational design failure.
   non-overlapping roles.
 - **Effort:** Medium. **Type:** Architectural.
 
-### F5.9 — Contrast/type validation is aspirational (automated contrast lint not in place) · Priority: MEDIUM · Quick Win
+### F5.9 — Contrast/type validation is aspirational (automated contrast lint not in place) · Status: OPEN · Priority: MEDIUM · Quick Win
 - **Location:** design-system.md §21 Open-Q1 ("final `--text-muted` value validated by an automated
   contrast lint") — implies the contrast lint does not yet exist; §4 targets WCAG 2.1 AA.
 - **Description:** The design system commits to WCAG 2.1 AA and even annotates `--text-muted` as
@@ -189,12 +165,13 @@ enforcement, not foundational design failure.
 - **Acceptance criteria:** CI fails if any documented text/background token pair drops below AA.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### F5.10 — Data-density adherence and table presentation are strong but need a consistency gate · Priority: LOW · Quick Win
+### F5.10 — Data-density adherence and table presentation are strong but need a consistency gate · Status: UPDATED · Priority: LOW · Quick Win
 - **Location:** `DataGrid.jsx`/`DataGrid.css` (+ `@tanstack/react-table`), `dataGridStandardGate`
   test, `ChartDataTable`, CLAUDE.md UI rule ("density over decoration; no narrow centered column").
-- **Description:** Tables/grids are centralized and there's already a `dataGridStandardGate` — good.
-  The risk is per-page bespoke tables drifting from the standard grid (some admin/detail tabs render
-  their own `role="columnheader"/"cell"` markup, e.g. `IntelTab.jsx`).
+- **Description:** Tables/grids are more centralized and there's already a `dataGridStandardGate`.
+  The risk is per-page bespoke table/grid markup drifting from the standard grid; the current gate
+  checks `DataGrid.css` quality but does not yet ban ad-hoc tabular roles outside allowlisted
+  components.
 - **Why it matters:** Divergent table implementations fragment sorting/keyboard/empty-state behavior
   and a11y.
 - **Recommended solution:** Route tabular data through `DataGrid`/`ChartDataTable`; extend
@@ -203,14 +180,13 @@ enforcement, not foundational design failure.
   exception; gate enforces it.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### F5.11 — Every status word needs a discoverable explanation — verify coverage · Priority: LOW · Quick Win
+### F5.11 — Every status word needs a discoverable explanation — verify coverage · Status: UPDATED · Priority: LOW · Quick Win
 - **Location:** CLAUDE.md UI rule + `docs/PRODUCT.md` design principle 1 ("every status word/pill/
   badge ships with a discoverable explanation"); components `Pill.jsx`, `Badge.jsx`,
   `ReferenceTooltip.jsx`, `Tooltip.jsx`.
-- **Description:** The system provides the tools (Tooltip/ReferenceTooltip) and the rule, but there's
-  no gate proving every `Pill`/`Badge`/status word actually has an attached explanation. Given the
-  density of jargon (KEV, EPSS, momentum, correlation confidence), an unexplained badge is a real UX
-  gap for newer analysts.
+- **Description:** The system provides the tools (Tooltip/ReferenceTooltip) and now has
+  `domainTermTips.test.js` coverage for key jargon/rate-limit bucket explanations, but there's no
+  generic gate proving every `Pill`/`Badge`/status word carries or links to an explanation.
 - **Recommended solution:** Add a gate/lint that `Pill`/`Badge` for status semantics must be wrapped
   in or carry a `ReferenceTooltip`/`title`; audit existing usages.
 - **Acceptance criteria:** Every status pill/badge has a discoverable explanation; gate enforces it.
@@ -218,13 +194,29 @@ enforcement, not foundational design failure.
 
 ---
 
-## Overall Score: **8 / 10**
+## Status Table
+
+| ID | Status | Note |
+|---|---|---|
+| F5.1 | UPDATED | Inline-style count refreshed: 434 total / 142 same-line token-var. |
+| F5.2 | UPDATED | Font-size count refreshed: 924 total / 12 semantic `--font-size-*`. |
+| F5.3 | UPDATED | Legacy alias refs measured: 1,817 color/surface + 224 `--type-*`. |
+| F5.4 | OPEN | Light theme remains a parity target, not a shipped/imported feature. |
+| F5.5 | UPDATED | Lucide adoption is high, but Open-Q3 remains unresolved. |
+| F5.6 | CLOSED | `AsyncState` no-data error path fixed and tested. |
+| F5.7 | UPDATED | 56 frontend tests exist; CI still omits `npm run test:unit`. |
+| F5.8 | OPEN | IA/nav Open-Q2 remains. |
+| F5.9 | OPEN | No automated contrast lint found. |
+| F5.10 | UPDATED | Shared grid/gate improved, but ad-hoc table-role gate is incomplete. |
+| F5.11 | UPDATED | Jargon tips improved; generic status/pill explanation gate missing. |
+
+## Overall Score: **8.1 / 10**
 
 | Sub-audit | Score | | Sub-audit | Score |
 |---|---|---|---|---|
-| Product Experience | 8 | | Accessibility | 8.5 |
+| Product Experience | 8.2 | | Accessibility | 8.6 |
 | User Journey | 7.5 | | Responsive Design | 8 |
-| Information Architecture | 7 | | Empty/Loading/Error States | 8 |
+| Information Architecture | 7 | | Empty/Loading/Error States | 8.7 |
 | Navigation | 7 | | Table & Data Presentation | 8 |
 | UI Consistency | 7 | | Forms & Inputs | 8 |
 | UX Consistency | 7.5 | | Search & Filtering | 8 |
@@ -234,25 +226,26 @@ enforcement, not foundational design failure.
 
 ## Strengths
 - Real, documented 24-section design system with WCAG 2.1 AA target and a permanent repo-wide UX
-  standards section (§23); 238 tokens; 30-component library.
+  standards section (§23); semantic tokens wired; Radix primitives without Tailwind.
 - Serious accessibility in practice: 580 `aria-*`, correct roles, `aria-live`/`aria-busy` async
   states, accessible charts (`role="img"` + `ChartDataTable` tabular alternative), 14
   `prefers-reduced-motion`.
-- Centralized four-state discipline (`AsyncState`/`EmptyState`/`ErrorState`/`Skeleton`); shared
-  `DateTimePicker`/`DataGrid`; zero hardcoded hex colors in JSX; 69 responsive media queries.
-- UX contracts encoded as executable gate-tests.
+- Centralized four-state discipline (`AsyncState`/`EmptyState`/`ErrorState`/`Skeleton`) with the
+  prior no-data error bug fixed; shared `DateTimePicker`/`DataGrid`.
+- UX contracts encoded as 56 executable frontend unit/gate tests.
 
 ## Weaknesses
 - Inline-style sprawl (F5.1) and under-used type tokens (F5.2) erode consistency.
 - Mid-flight token migration with no cut-line (F5.3); light theme half-built (F5.4); icon strategy
   undecided (F5.5).
-- Gate-tests not CI-enforced (F5.7); `AsyncState` silent-error edge (F5.6); no automated contrast
-  lint (F5.9).
+- Gate-tests not CI-enforced (F5.7); no automated contrast lint (F5.9); status explanation coverage
+  still lacks a generic enforcement gate (F5.11).
 
 ## Immediate Action Items
-1. Fix `AsyncState` first-load-error surfacing (F5.6) — a real silent-failure UX bug.
-2. Wire gate-tests into CI (F5.7) and add the contrast lint (F5.9).
-3. Add stylelint bans for raw `font-size`/inline raw colors + legacy aliases (F5.1, F5.2, F5.3).
+1. Wire `npm run test:unit` into CI so existing gate tests protect the product (F5.7).
+2. Add a contrast lint for documented token pairings (F5.9).
+3. Add stylelint/gate bans for raw `font-size`, raw inline style values, and legacy aliases
+   (F5.1, F5.2, F5.3).
 
 ## Long-Term Recommendations
 1. Complete the token migration to a cut-line and delete legacy aliases (F5.3).
@@ -261,10 +254,25 @@ enforcement, not foundational design failure.
 4. Route all tables through the shared grid; enforce status-word explanations (F5.10, F5.11).
 
 ## Production-Readiness Assessment (Phase 5 areas)
-**Ready with polish — 8/10.** This is production-grade product design: the system, accessibility
+**Ready with polish — 8.1/10.** This is production-grade product design: the system, accessibility
 posture, and component library exceed the bar for most self-hosted security tools. The blockers for
 an **enterprise procurement** context are specifically: a VPAT-grade automated contrast proof (F5.9)
 and CI-enforced UX gates (F5.7) so accessibility can't silently regress; the light-theme decision
 (F5.4) will come up in enterprise deals. The consistency-erosion items (F5.1–F5.3) are not
-launch-blocking but should be gated before the frontend doubles in size. Fix F5.6 promptly — it's a
-user-facing silent-error bug, not just a consistency issue.
+launch-blocking but should be gated before the frontend doubles in size.
+
+## Resolved since last audit
+
+### F5.6 — `AsyncState` no-data errors now surface correctly · Status: CLOSED · Priority: MEDIUM · Quick Win
+- **Location:** `src/components/ui/AsyncState.jsx`; `src/components/ui/AsyncState.test.js`.
+- **Description:** The prior silent-error path is fixed. `AsyncState` now derives `hasData`, renders
+  `ErrorState` for `error && !hasData`, and keeps stale data with a compact non-blocking
+  `ErrorState` for refresh failures.
+- **Why it matters:** First-load fetch failures now render a designed error state instead of an
+  empty body.
+- **Evidence:** `AsyncState.test.js` asserts the old `if (error && empty)` guard is gone, checks
+  `error && !hasData`, and verifies the compact refresh-error notice.
+- **Recommended solution:** None for this finding; keep the regression test in the CI gate tracked
+  by F5.7.
+- **Acceptance criteria:** Met.
+- **Effort:** Complete. **Type:** Quick Win.
