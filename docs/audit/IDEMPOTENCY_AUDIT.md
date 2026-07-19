@@ -3,18 +3,19 @@
 *Supplementary to the 11-phase engineering audit (README index). Scope: every path where a
 duplicate trigger, a retry, or a crash-and-resume could cause double execution, double
 counting, or a silently dropped side effect — scheduler jobs, the Procrastinate durable
-outbound queue, webhook delivery, ingest upserts, and mutating HTTP endpoints. Reviewed at
-commit `f7dd1a7` on branch `claude/next-steps-plan-kl6fhe`.*
+outbound queue, webhook delivery, ingest upserts, and mutating HTTP endpoints. Refreshed from
+pinned baseline `ff23c18a4925b3b7082a2b1d1600884324d90d02`; re-verified on current branch HEAD
+`267f174b`.*
 
 > Findings are written to be directly executable: concrete `file:line`, evidence, remediation
 > with code sketch, acceptance criteria, effort, and Quick-Win/Architectural classification.
 > Answers the outstanding recommendation in Phase 2 **F2.2** ("each job owned by exactly one
 > system with a documented idempotency key").
 
-> **Resolution status (updated):** every finding is now dispositioned. **IDEM-A, IDEM-B,
-> IDEM-C, IDEM-D — ✅ implemented** (#665 + follow-up). **IDEM-E — accepted** (no change).
-> **IDEM-F — deferred** (non-goal until a versioned programmatic API). No open idempotency
-> work remains.
+> **Resolution status (2026-07-19 refresh):** every finding is dispositioned. **IDEM-A,
+> IDEM-B, IDEM-C, IDEM-D — ✅ implemented** and re-verified against commits `89e8ee1c` /
+> `1dfbad9f` plus current source. **IDEM-E — accepted** (no change). **IDEM-F — deferred**
+> (non-goal until a versioned programmatic API). No open idempotency work remains.
 
 ---
 
@@ -26,21 +27,20 @@ cannot overlap within a process (`max_instances=1` + `coalesce=True`), the manua
 endpoints share the *same* lock objects as the scheduled jobs, and notification/webhook
 fan-out use atomic claim-before-send dedupe.
 
-The **one weak surface is the newest one**: the Tier-A **stack backfill** durable task (Q4).
-It is the only custom Procrastinate task, and it does **not** follow the idempotency
-discipline the rest of the codebase already demonstrates — it has no "already-running" guard
-and its enqueue carries no `queueing_lock`, so a double-clicked *Agree/Resume* or a
-Procrastinate retry overlapping the in-process fallback can run the same `run_id` twice and
-corrupt its progress accounting (the underlying CVE upserts stay correct; the run's
-`cves_upserted` / checkpoint bookkeeping does not).
+The prior weak surface, Tier-A **stack backfill**, is now idempotent at both enqueue and execution:
+duplicate durable defers share a per-run `queueing_lock`, and duplicate/resumed/retried workers must
+win `claim_run_running()` before advancing counters or checkpoints. The webhook crash-stranded
+dedupe edge now self-heals in retention cleanup, and dual APScheduler/Procrastinate ownership is
+documented and guarded.
 
-Procrastinate is **at-least-once** — a worker crash re-runs the job — so every durable task
-*must* be idempotent. The webhook path (`IDEM-001`) is the model to copy; the stack backfill
-is the gap to close.
+The remaining two items are deliberate dispositions, not open bugs: IDEM-E accepts the
+single-process check-then-acquire scheduler pattern because there is no `await` between check and
+acquire and deployments use one scheduler owner; IDEM-F defers HTTP-level `Idempotency-Key` until a
+retrying, versioned programmatic API exists.
 
-**Idempotency posture score: 7.5 / 10.** No data-corruption class in the CVE corpus itself;
-the gaps are in one feature's run-state accounting and a couple of low-severity durability
-edges.
+**Idempotency posture score: 8.5 / 10.** No open double-run or silently-dropped-side-effect finding
+remains in the audited surfaces. The score is not higher because the posture still depends on
+documented single-owner scheduler operation and does not yet implement general HTTP idempotency keys.
 
 ---
 
@@ -60,112 +60,18 @@ edges.
 
 ## Findings
 
-### IDEM-A — Stack backfill has no "already-running" guard → concurrent double-run · Priority: MEDIUM · Quick Win · ✅ RESOLVED
-> **Resolved:** `db.stack_backfill.claim_run_running` (atomic conditional `UPDATE … WHERE status NOT IN (terminal) AND (status <> 'running' OR stale)`) now gates `_process`; a crash-stalled `running` run is reclaimable after `STACK_BACKFILL_STALE_SECONDS` (default 900s). Tests in `tests/test_stack_backfill_idempotency.py`.
+| ID | Status | Priority | Class | Current disposition |
+|---|---|---:|---|---|
+| IDEM-A | RESOLVED | MEDIUM | Quick Win | `claim_run_running()` is an atomic single-winner execution gate; stale `running` runs are reclaimable. |
+| IDEM-B | RESOLVED | MEDIUM | Quick Win | Procrastinate defer uses per-run `queueing_lock`; `AlreadyEnqueued` is an idempotent no-op. |
+| IDEM-C | RESOLVED | LOW–MEDIUM | Architectural | Background-job ownership registry + disjoint namespace test; duplicate execution contained by IDEM-A/B. |
+| IDEM-D | RESOLVED | LOW | Quick Win | Daily retention cleanup purges only crash-stranded webhook dedupe claims. |
+| IDEM-E | ACCEPTED | LOW | Quick Win | No change; safe under current single-process / single scheduler-owner assumptions. |
+| IDEM-F | DEFERRED | LOW | Architectural | Non-goal until a versioned programmatic API with retrying clients exists. |
 
-- **Location:** `backend/services/stack_backfill_worker.py:42-53` (`_process`). The early-return
-  guard at `:49` covers `status in ("completed", "partial", "failed")` but **not `"running"`**;
-  `:52` then sets `status="running"` unconditionally.
-- **Description:** Two concurrent invocations of `_process(run_id)` for the same run both pass
-  the guard (neither sees a terminal status), both set `running`, and both enter the page loop —
-  reading the same `next_pending_checkpoint`, fetching the same NVD keyword pages, and both
-  incrementing `cves_upserted` / advancing checkpoints against the same rows.
-- **Why it matters:** Concurrency arises easily: a double-clicked *Agree/Resume* (`_kick_backfill`
-  is called once per request with no debounce), a Procrastinate **retry** overlapping the still-
-  running original, or the Procrastinate job overlapping the in-process fallback (IDEM-C). The CVE
-  rows themselves stay correct (idempotent upserts), but the run's progress accounting double-counts
-  and the checkpoint state races — the operator sees wrong coverage numbers and possibly a run that
-  flips between `running`/`partial` nondeterministically.
-- **Evidence:** `:49` `if run.get("status") in ("completed", "partial", "failed"): return`;
-  no `"running"` in that set; no advisory lock or atomic claim around the transition.
-- **Risk:** Corrupted run accounting; wasted NVD quota (Q2 metering shows inflated calls);
-  operator confusion. Not CVE-corpus corruption.
-- **Recommended solution:** Claim the run atomically before processing — turn the read-then-write
-  into a single conditional update, or take a Postgres advisory lock keyed on `run_id`:
-  ```python
-  # Atomic claim: only one caller wins the transition into "running".
-  claimed = await claim_run_running(db, run_id)   # UPDATE stack_backfill_runs
-  #   SET status='running' WHERE id=$1 AND status <> 'running' RETURNING id
-  if not claimed:
-      return {"ok": True, "status": "already_running"}
-  ```
-  (On Postgres, `pg_try_advisory_lock(hashtext('stack_backfill:'||$run_id))` is an alternative
-  that also self-releases on connection loss — preferable once F3.1/F6.6 externalize locking.)
-- **Acceptance criteria:** Two overlapping `process_stack_backfill_run(run_id)` calls result in
-  exactly one advancing the run; the other returns `already_running` without touching counters.
-  Regression test drives two concurrent calls and asserts `cves_upserted` is not double-counted.
-- **Effort:** Quick Win. **Type:** Quick Win.
+## Active dispositions
 
-### IDEM-B — Procrastinate defer carries no `queueing_lock` → duplicate pending jobs · Priority: MEDIUM · Quick Win · ✅ RESOLVED
-> **Resolved:** `routers/stack_catalog.py:_kick_backfill` now defers with `.configure(queueing_lock=f"stack_backfill:{run_id}")` and treats `AlreadyEnqueued` as an idempotent no-op (returns without also kicking the in-process fallback).
-
-- **Location:** `backend/routers/stack_catalog.py:154` — `await stack_backfill_tick.defer_async(run_id=run_id)`.
-- **Description:** The defer passes no `queueing_lock`, so repeated *Agree/Resume* clicks enqueue
-  multiple `jobs:stack_backfill` rows for the same `run_id`. Procrastinate's `queueing_lock` exists
-  precisely to reject a duplicate *pending* job.
-- **Why it matters:** With `concurrency=1` (`jobs/app.py:56`) duplicates run sequentially, so the
-  second usually sees a terminal status and no-ops — **but** if the first paused at `partial`, the
-  second resumes it, and combined with IDEM-A (no running-guard) the overlap window is real. It also
-  inflates the `procrastinate_jobs` table and the admin outbound-jobs list with redundant rows.
-- **Evidence:** `defer_async(run_id=run_id)` with no `queueing_lock=`; `db/outbound_jobs.py:15`
-  selects a `queueing_lock` column that is always NULL for this task.
-- **Recommended solution:** Give the task a per-run queueing lock so a duplicate defer is rejected
-  while one is pending:
-  ```python
-  await stack_backfill_tick.configure(
-      queueing_lock=f"stack_backfill:{run_id}",
-  ).defer_async(run_id=run_id)
-  ```
-  Handle `procrastinate.exceptions.AlreadyEnqueued` (or the AlreadyEnqueued no-op, per version) as
-  "resume already queued" rather than an error.
-- **Acceptance criteria:** Two rapid resume requests for the same run enqueue **one** pending job;
-  the admin outbound list shows a single row; a test asserts the second defer is rejected/no-op.
-- **Effort:** Quick Win. **Type:** Quick Win.
-
-### IDEM-C — Dual job systems can double-run a backfill across the enabled/disabled boundary · Priority: LOW–MEDIUM · Architectural · ✅ RESOLVED
-> **Resolved:** documented **Background-job ownership registry** in `docs/SYSTEM_DESIGN.md` (each job owned by exactly one system, disjoint namespaces — APScheduler ids never carry the `jobs:` prefix) and added `tests/test_job_ownership_registry.py` asserting no job id is registered in both and the registry stays current (closes audit F2.2). Execution-level exactly-once is already guaranteed by IDEM-A (`claim_run_running`) regardless of how many kicks reach a run, and duplicate enqueues are rejected by IDEM-B's `queueing_lock` — so a durable/in-process overlap cannot double-run. A `procrastinate_jobs` pre-check in `_kick_backfill` was considered unnecessary given those two guarantees.
-
-- **Location:** `backend/routers/stack_catalog.py:144-163` (`_kick_backfill`); `backend/main.py:130`
-  (`start_inprocess_worker`) + `start_scheduler()` in the same lifespan. Cross-references Phase 2 **F2.2**.
-- **Description:** `_kick_backfill` chooses Procrastinate **or** an in-process `asyncio.create_task`
-  per call based on `PROCRASTINATE_ENABLED`. A durable job deferred while enabled can survive a
-  restart where the flag flips, and a subsequent resume then kicks an **in-process** task for the
-  same `run_id` — two systems advancing one run.
-- **Why it matters:** This is the exact "mid-migration double-run" risk F2.2 called out, concretized
-  for the one custom durable task. IDEM-A's guard contains the damage; without it, the two systems
-  race.
-- **Evidence:** feature-flag branch at `:148`; in-process fallback at `:161`; both worker and
-  scheduler started in `main.py` lifespan.
-- **Recommended solution:** Land IDEM-A (single-winner run claim) as the safety net, then per F2.2
-  add a job-registry note declaring `jobs:stack_backfill` **owned by exactly one system**, and make
-  `_kick_backfill` refuse the in-process path when a durable job for that run is already pending
-  (query `procrastinate_jobs` by the IDEM-B queueing lock).
-- **Acceptance criteria:** With a pending durable job for `run_id`, a second kick does not spawn an
-  in-process task; the job-registry doc lists each task's owner-system + idempotency key.
-- **Effort:** Medium. **Type:** Architectural.
-
-### IDEM-D — Webhook "stuck claim" on crash between claim-commit and clear · Priority: LOW · Quick Win · ✅ RESOLVED
-> **Resolved:** `db.cache_retention.purge_stranded_webhook_dedupe` (wired into the daily `run_retention_cleanup`) removes dedupe claims that have **no successful delivery-log row** once they are older than a 1h grace window but still within the delivery-log retention window — so a crash-stranded claim self-heals without ever removing a legitimately-sent claim (which would re-alert). Tests in `tests/test_webhook_dedupe_stranded.py`. A TTL/`pending`-state schema change was rejected as heavier than the finding warrants: the dedupe keys are semantic and long-lived, and the delivery-log join distinguishes stranded from sent without a migration.
-
-- **Location:** `backend/webhooks/engine.py:179-245`. The dedupe claim is committed at `:185`
-  **before** the HTTP send (`:189`); a failed send clears it at `:240`.
-- **Description:** Correct under normal flow, but if the process crashes (or the DB connection drops)
-  **after** the claim commit and **before** the failure-path clear, the `webhook_destination_dedupe`
-  row persists with no successful delivery — permanently suppressing that
-  `(destination_id, event_type, dedupe_key)` alert.
-- **Why it matters:** A silently dropped operator alert (e.g. a KEV or backup-failure webhook) is
-  exactly the kind of missed signal webhooks exist to prevent. Low probability, high-ish impact per
-  occurrence.
-- **Evidence:** claim commit at `:185`, send at `:189`, clear only on the reached failure branch `:236`.
-- **Recommended solution:** Give `webhook_destination_dedupe` a TTL and sweep it in the existing
-  `cache_retention_cleanup` job (it already ages `ai_operations`/`webhook_delivery_log`), so a stuck
-  claim self-heals after, say, 24h. Alternatively record the claim with a `pending` vs `sent` state
-  and only treat `sent` as suppressing.
-- **Acceptance criteria:** A dedupe row with no matching successful `webhook_delivery_log` entry is
-  purged after the TTL; delivery can then be re-attempted.
-- **Effort:** Quick Win. **Type:** Quick Win.
-
-### IDEM-E — Manual-refresh guard is check-then-acquire, not an atomic acquire · Priority: LOW · Quick Win · ⏸ ACCEPTED (no change)
+### IDEM-E — Manual-refresh guard is check-then-acquire, not an atomic acquire · Status: ACCEPTED (no change) · Priority: LOW · Quick Win
 > **Disposition:** accepted as-is. Single-process asyncio has no `await` between the `.locked()` check and the acquire, so it is not a real TOCTOU today, and multi-process safety is already provided by the single-owner `BRIEFR_SCHEDULER_ENABLED` flag. Churning the scheduler hot paths for a cosmetic tightening isn't warranted; revisit only if the single-owner assumption is removed.
 
 - **Location:** `backend/scheduler.py:298-301` — `run_nvd_incremental_sync` (and siblings) check
@@ -182,7 +88,7 @@ edges.
   safe once the owner-flag assumption is removed.
 - **Effort:** Quick Win. **Type:** Quick Win.
 
-### IDEM-F — No HTTP-level idempotency keys on mutating endpoints · Priority: LOW · Architectural (context) · ⏸ DEFERRED (non-goal)
+### IDEM-F — No HTTP-level idempotency keys on mutating endpoints · Status: DEFERRED (non-goal) · Priority: LOW · Architectural (context)
 > **Disposition:** deferred as a deliberate non-goal for the current single-operator, human-driven product. Mutations are already guarded by job-lock 409s and idempotent upserts. Adopt an `Idempotency-Key` convention only if/when a versioned programmatic API (Phase 2 F2.3) with retrying clients lands.
 
 - **Location:** `routers/refresh.py:32+`, `routers/admin.py:2038` (`/feeds/epss/force-resync`),
@@ -197,6 +103,56 @@ edges.
   deliberate non-goal until then.
 - **Acceptance criteria:** N/A (documented decision).
 - **Effort:** — **Type:** Architectural (deferred).
+
+---
+
+## Resolved since last audit
+
+### IDEM-A — Stack backfill has no "already-running" guard → concurrent double-run · Status: RESOLVED · Priority: MEDIUM · Quick Win
+
+- **Original risk:** overlapping `_process(run_id)` invocations could both set a run to `running`,
+  fetch the same NVD pages, and double-count `cves_upserted` / checkpoint progress.
+- **Fix confirmed:** commit `89e8ee1c` added `db.stack_backfill.claim_run_running()`, a conditional
+  `UPDATE` that wins only when the run is non-terminal and not freshly `running`; stale `running`
+  runs are reclaimable after `STACK_BACKFILL_STALE_SECONDS` (default 900s).
+- **Current evidence:** `services/stack_backfill_worker.py` returns `already_running` when the claim
+  loses; `tests/test_stack_backfill_idempotency.py` covers first-claim-wins, fresh-running loses,
+  stale-running reclaims, and terminal runs do not reclaim.
+
+### IDEM-B — Procrastinate defer carries no `queueing_lock` → duplicate pending jobs · Status: RESOLVED · Priority: MEDIUM · Quick Win
+
+- **Original risk:** repeated Agree/Resume clicks could enqueue multiple pending
+  `jobs:stack_backfill` rows for the same `run_id`.
+- **Fix confirmed:** commit `89e8ee1c` changed `_kick_backfill()` to call
+  `stack_backfill_tick.configure(queueing_lock=f"stack_backfill:{run_id}").defer_async(...)` and to
+  treat `AlreadyEnqueued` as a no-op without falling back to in-process execution.
+- **Current evidence:** `routers/stack_catalog.py` still carries the per-run queueing lock; the
+  structural guard is asserted in `tests/test_stack_backfill_idempotency.py`.
+
+### IDEM-C — Dual job systems can double-run a backfill across the enabled/disabled boundary · Status: RESOLVED · Priority: LOW–MEDIUM · Architectural
+
+- **Original risk:** a durable Procrastinate job plus an in-process fallback task could both advance
+  the same run across a `PROCRASTINATE_ENABLED` flip.
+- **Fix confirmed:** commit `1dfbad9f` added the Background-job ownership registry in
+  `docs/SYSTEM_DESIGN.md` and `tests/test_job_ownership_registry.py`, which keeps APScheduler and
+  Procrastinate namespaces disjoint and documents each durable task's idempotency key.
+- **Current evidence:** execution-level duplication is contained by IDEM-A and duplicate enqueues by
+  IDEM-B; `jobs:stack_backfill` remains documented with `queueing_lock` + `claim_run_running`.
+
+### IDEM-D — Webhook "stuck claim" on crash between claim-commit and clear · Status: RESOLVED · Priority: LOW · Quick Win
+
+- **Original risk:** a crash after dedupe claim commit but before HTTP send/failure cleanup could
+  permanently suppress that `(destination_id, event_type, dedupe_key)` alert.
+- **Fix confirmed:** commit `1dfbad9f` added `db.cache_retention.purge_stranded_webhook_dedupe()` and
+  wired it into `run_retention_cleanup()`.
+- **Current evidence:** the sweep deletes only claims older than the 1h grace window, still within
+  delivery-log retention, and with no successful delivery-log row; `tests/test_webhook_dedupe_stranded.py`
+  covers stranded vs delivered vs mid-flight vs ancient claims.
+
+### NEW-A — Placeholder (no new idempotency finding filed)
+
+No new idempotency finding is opened in this refresh. Placeholder reserved for a future issue not
+covered by IDEM-A–F.
 
 ---
 
