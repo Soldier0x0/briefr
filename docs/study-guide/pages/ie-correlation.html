@@ -3,21 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>The correlation engine — a five-phase build, and why it had to move off the request path — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="../assets/book.css">
 </head>
 <body data-page-id="ie-correlation" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
 <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
-<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
 <div class="shell">
-  <aside id="book-aside">
+  <aside id="book-aside" aria-label="Table of contents">
     <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
     <p class="brand-sub">A full architecture textbook</p>
-    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
-    <p id="search-empty">No matches. Try a shorter term.</p>
-    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
     <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
-    <nav id="toc">
+    <nav id="toc" aria-label="Chapters">
       <div class="toc-group">
         <a class="toc-link" href="preface.html">Preface — how to use this book</a>
         <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
@@ -127,7 +129,7 @@
       </div>
     </nav>
   </aside>
-  <main>
+  <main id="main-content">
     <section class="page active chapter" id="ie-correlation">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 20</span>
@@ -244,10 +246,11 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
         </ol>
       </div>
     </section>
-    <div class="page-nav" id="page-nav"><a class="prev" href="ie-matching.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Asset and CPE matching — the mechanical layer under the 0.35 weight</span></a><a class="next" href="ie-detection.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Detection engineering — a generator, deliberately not a live detector</span></a></div>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="ie-matching.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Asset and CPE matching — the mechanical layer under the 0.35 weight</span></a><a class="next" href="ie-detection.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Detection engineering — a generator, deliberately not a live detector</span></a></nav>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
       · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
       · Regenerate: <code>scripts/build_study_guide_book.py</code>
     </footer>
   </main>

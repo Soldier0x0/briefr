@@ -96,6 +96,14 @@ def test_build_learn_links_sibling_study_guide(learn_mod, tmp_path: Path):
     assert "../study-guide/pages/preface.html" in page
     assert "../study-guide/pages/fe-analyst-shell.html" in page
     assert (out / "pathways.json").is_file()
+    css = (out / "assets" / "learn.css").read_text(encoding="utf-8")
+    assert "--bg: #0a0a08" in css
+    assert "--accent: #e85533" in css
+    assert "color-scheme: dark" in css
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert 'href="#main-content"' in index
+    assert 'id="main-content"' in index
+    assert 'name="color-scheme" content="dark"' in index
 
 
 def test_build_fails_on_missing_step(learn_mod, tmp_path: Path):

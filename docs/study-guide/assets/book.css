@@ -1,59 +1,143 @@
-/* Palette lifted directly from frontend/src/styles/tokens.css — BRIEFR's
-     actual dark-terminal token system (--c-neutral-*, --c-accent, --c-chart-*),
-     not an invented one. Light theme follows the same file's :root[data-theme="light"]
-     block, extending its darken-for-AA pattern to the two roles (faq/security tags)
-     that have no direct severity-scale counterpart there. */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
-      --border: #2a2a25; --border-soft: #222220;
-      --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
-      --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
-      --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
-      --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
-      --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
-      --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
-      --primer-bg: #111110;
-    }
+/* =============================================================================
+ * BRIEFR docs surfaces — shared dark-only palette
+ * -----------------------------------------------------------------------------
+ * Authority: frontend/src/styles/tokens.css (product dark terminal).
+ * Consumers: docs/study-guide (book builder) + docs/learn (pathway builder).
+ * Product UI is dark-only; these surfaces match — no light theme flip.
+ *
+ * Do not invent cooler/warmer neutrals here. Change tokens.css first, then
+ * mirror the dark semantic values into this file.
+ * ========================================================================== */
+
+:root {
+  /* Surfaces (← --c-neutral-0/1/raised) */
+  --bg: #0a0a08;
+  --bg-elevated: #111110;
+  --bg-card: #121211;
+
+  /* Borders (← --c-line-*) */
+  --border: #2a2a25;
+  --border-soft: #222220;
+  --border-strong: #3d3d38;
+  --border-active: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+
+  /* Text (← --c-ink-* — muted raised for WCAG AA on --bg) */
+  --text: #e8e6df;
+  --text-muted: #a7a396;
+  --text-faint: #6c6a62;
+  --text-heading: #f2f0ea;
+  --text-link: #7eb8f0;
+
+  /* Brand (← --c-accent) */
+  --accent: #e85533;
+  --accent-soft: rgba(232, 85, 51, 0.14);
+  --accent-strong: #f26b4a;
+  --accent-indicator: color-mix(in srgb, var(--accent) 65%, transparent);
+
+  /* Role tags (← chart / severity hues) */
+  --tag-what: #7eb8f0;
+  --tag-why: #d4860a;
+  --tag-how: #5cb87e;
+  --tag-faq: #b07dd6;
+  --tag-security: #e0715a;
+  --tag-what-bg: rgba(126, 184, 240, 0.13);
+  --tag-why-bg: rgba(212, 134, 10, 0.14);
+  --tag-how-bg: rgba(92, 184, 126, 0.13);
+  --tag-faq-bg: rgba(176, 125, 214, 0.13);
+  --tag-security-bg: rgba(224, 113, 90, 0.15);
+
+  /* Code */
+  --code-bg: #1a1a17;
+  --code-border: #333330;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --primer-bg: #111110;
+
+  /* Soft focus (← product --focus-ring; not neon full-strength borders) */
+  --focus-ring: 0 0 0 1px var(--bg),
+    0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+
+  /* Motion / radius (docs-local aliases of product scales) */
+  --motion-fast: 120ms;
+  --motion-normal: 160ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-normal: 0ms;
   }
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
-      --border: #b8b2a8; --border-soft: #c9c4bb;
-      --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
-      --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
-      --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
-      --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
-      --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
-      --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
-      --primer-bg: #f4f1ea;
-    }
-  }
-  :root[data-theme="dark"] {
+}
+
+/* Shared a11y primitives */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 100;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--focus-ring);
+  text-decoration: none;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+.card:focus-visible,
+.toc-link:focus-visible,
+.nav-toggle:focus-visible,
+.steps a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Component styles only — palette/a11y tokens live in briefr-docs-tokens.css.
+     Inline :root below is a dark-only fallback when the link is unavailable (file open).
+     Matches product dark terminal (frontend/src/styles/tokens.css); no light theme. */
+  :root {
     --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
-    --border: #2a2a25; --border-soft: #222220;
-    --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
+    --border: #2a2a25; --border-soft: #222220; --border-strong: #3d3d38;
+    --border-active: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+    --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62; --text-heading: #f2f0ea;
     --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
+    --accent-indicator: color-mix(in srgb, var(--accent) 65%, transparent);
     --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
     --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
     --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
     --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
     --primer-bg: #111110;
-  }
-  :root[data-theme="light"] {
-    --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
-    --border: #b8b2a8; --border-soft: #c9c4bb;
-    --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
-    --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
-    --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
-    --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
-    --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
-    --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
-    --primer-bg: #f4f1ea;
+    --focus-ring: 0 0 0 1px var(--bg), 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+    --motion-fast: 120ms; --motion-normal: 160ms;
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 10px;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
-  html { color-scheme: light dark; }
+  html { color-scheme: dark; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font-family: ui-sans-serif, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
@@ -83,11 +167,11 @@
   .brand-sub { color: var(--text-faint); font-size: 0.76rem; margin: 0 0 18px; letter-spacing: 0.03em; text-transform: uppercase; }
 
   #search {
-    width: 100%; padding: 9px 11px; border-radius: 7px; border: 1px solid var(--border);
+    width: 100%; padding: 9px 11px; border-radius: var(--radius-md, 8px); border: 1px solid var(--border);
     background: var(--bg-card); color: var(--text); font-size: 0.86rem; margin-bottom: 16px;
     outline: none;
   }
-  #search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #search:focus-visible { border-color: var(--border-active); box-shadow: var(--focus-ring); }
   #search-empty { display: none; color: var(--text-faint); font-size: 0.82rem; padding: 8px 4px; }
 
   .toc-group { margin-bottom: 4px; }
@@ -100,7 +184,10 @@
     font-size: 0.85rem; line-height: 1.35;
   }
   .toc-link:hover { background: var(--bg-card); color: var(--text); }
-  .toc-link.active { background: var(--accent-soft); color: var(--text); }
+  .toc-link.active {
+    background: var(--accent-soft); color: var(--text);
+    box-shadow: inset 3px 0 0 var(--accent-indicator);
+  }
   .toc-sub { padding-left: 16px; font-size: 0.8rem; }
 
   /* ---------- Main content ---------- */
@@ -232,15 +319,22 @@
     border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg);
   }
   .toc-link .toc-label { flex: 1; }
-  .toc-link.active { background: var(--accent-soft); color: var(--text); }
+  .toc-link.active {
+    background: var(--accent-soft); color: var(--text);
+    box-shadow: inset 3px 0 0 var(--accent-indicator);
+  }
   .toc-progress {
     font-size: 0.7rem; color: var(--text-faint); padding: 8px 6px 2px; display: flex;
     justify-content: space-between; align-items: center;
   }
   .toc-progress-bar { height: 3px; border-radius: 2px; background: var(--border-soft); overflow: hidden; margin: 4px 6px 10px; }
-  .toc-progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s ease-out; }
-  .toc-reset { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .toc-progress-bar-fill {
+    height: 100%; background: var(--accent); width: 0%;
+    transition: width var(--motion-normal, 160ms) var(--ease-standard, ease-out);
+  }
+  .toc-reset { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0; min-height: 24px; }
   .toc-reset:hover { color: var(--text); }
+  .toc-reset:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 
   /* ---------- Diagram figures ---------- */
   .diagram-figure { margin: 22px 0 28px; }
@@ -254,23 +348,27 @@
 .shell { position: relative; }
 .nav-toggle {
   display: none; position: fixed; top: 12px; left: 12px; z-index: 40;
-  width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border);
+  width: 42px; height: 42px; border-radius: var(--radius-lg, 10px); border: 1px solid var(--border);
   background: var(--bg-elevated); color: var(--text); cursor: pointer;
   box-shadow: 0 4px 16px var(--shadow);
 }
-.nav-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.nav-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .nav-backdrop {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 25;
 }
 body.nav-open .nav-backdrop { display: block; }
-aside .toc-link.active { box-shadow: inset 3px 0 0 var(--accent); }
+aside .toc-link.active {
+  background: var(--accent-soft); color: var(--text);
+  box-shadow: inset 3px 0 0 var(--accent-indicator);
+}
 .page { display: block; animation: none; }
 @media (max-width: 880px) {
   .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
   aside {
     position: fixed; top: 0; left: 0; bottom: 0; width: min(320px, 88vw);
     height: 100vh; z-index: 30; transform: translateX(-105%);
-    transition: transform 0.16s ease-out; border-right: 1px solid var(--border);
+    transition: transform var(--motion-fast, 120ms) var(--ease-standard, ease-out);
+    border-right: 1px solid var(--border);
     box-shadow: 8px 0 24px var(--shadow);
   }
   body.nav-open aside { transform: none; }

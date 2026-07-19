@@ -16,29 +16,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SRC = ROOT / "docs" / "STUDY_GUIDE.html"
 DEFAULT_OUT = ROOT / "docs" / "study-guide"
+DOCS_TOKENS = ROOT / "docs" / "assets" / "briefr-docs-tokens.css"
 
 CSS_EXTRA = """
 /* ---- Multi-file book responsive shell ---- */
 .shell { position: relative; }
 .nav-toggle {
   display: none; position: fixed; top: 12px; left: 12px; z-index: 40;
-  width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border);
+  width: 42px; height: 42px; border-radius: var(--radius-lg, 10px); border: 1px solid var(--border);
   background: var(--bg-elevated); color: var(--text); cursor: pointer;
   box-shadow: 0 4px 16px var(--shadow);
 }
-.nav-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.nav-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .nav-backdrop {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 25;
 }
 body.nav-open .nav-backdrop { display: block; }
-aside .toc-link.active { box-shadow: inset 3px 0 0 var(--accent); }
+aside .toc-link.active {
+  background: var(--accent-soft); color: var(--text);
+  box-shadow: inset 3px 0 0 var(--accent-indicator);
+}
 .page { display: block; animation: none; }
 @media (max-width: 880px) {
   .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
   aside {
     position: fixed; top: 0; left: 0; bottom: 0; width: min(320px, 88vw);
     height: 100vh; z-index: 30; transform: translateX(-105%);
-    transition: transform 0.16s ease-out; border-right: 1px solid var(--border);
+    transition: transform var(--motion-fast, 120ms) var(--ease-standard, ease-out);
+    border-right: 1px solid var(--border);
     box-shadow: 8px 0 24px var(--shadow);
   }
   body.nav-open aside { transform: none; }
@@ -52,6 +57,12 @@ aside .toc-link.active { box-shadow: inset 3px 0 0 var(--accent); }
 }
 """
 
+
+def _load_docs_tokens() -> str:
+    if not DOCS_TOKENS.is_file():
+        raise SystemExit(f"missing shared docs tokens: {DOCS_TOKENS}")
+    return DOCS_TOKENS.read_text(encoding="utf-8").strip() + "\n"
+
 BOOK_JS = r"""
 (function () {
   const PROGRESS_KEY = 'briefr-study-progress-v1';
@@ -63,6 +74,10 @@ BOOK_JS = r"""
   function setNav(open) {
     document.body.classList.toggle('nav-open', open);
     if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (backdrop) {
+      if (open) backdrop.removeAttribute('hidden');
+      else backdrop.setAttribute('hidden', '');
+    }
   }
   if (toggle) toggle.addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
   if (backdrop) backdrop.addEventListener('click', () => setNav(false));
@@ -254,28 +269,31 @@ def render_shell(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>{title} — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="{assets_prefix}book.css">
 </head>
 <body data-page-id="{page_id}" data-pages-base="{pages_prefix}" data-assets-base="{assets_prefix}">
+<a class="skip-link" href="#main-content">Skip to content</a>
 <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
-<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
 <div class="shell">
-  <aside id="book-aside">
+  <aside id="book-aside" aria-label="Table of contents">
     <div class="brand"><span class="mark">▮</span><h1><a href="{pages_prefix}preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
     <p class="brand-sub">A full architecture textbook</p>
-    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
-    <p id="search-empty">No matches. Try a shorter term.</p>
-    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
     <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
     {toc_local}
   </aside>
-  <main>
+  <main id="main-content">
     {content}
-    <div class="page-nav" id="page-nav">{nav_prev}{nav_next}</div>
+    <nav class="page-nav" id="page-nav" aria-label="Page">{nav_prev}{nav_next}</nav>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
       · <a href="{pages_prefix}preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
       · Regenerate: <code>scripts/build_study_guide_book.py</code>
     </footer>
   </main>
@@ -289,7 +307,7 @@ def render_shell(
 def build(src: Path, out: Path) -> int:
     html = src.read_text(encoding="utf-8")
     style_m = re.search(r"<style>(.*?)</style>", html, re.S)
-    toc_m = re.search(r"(<nav id=\"toc\">.*?</nav>)", html, re.S)
+    toc_m = re.search(r'(<nav\b[^>]*\bid="toc"[^>]*>.*?</nav>)', html, re.S)
     if not style_m or not toc_m:
         raise SystemExit("STUDY_GUIDE.html missing <style> or #toc")
     pages = extract_pages(html)
@@ -301,7 +319,10 @@ def build(src: Path, out: Path) -> int:
     assets.mkdir(parents=True, exist_ok=True)
     page_dir.mkdir(parents=True, exist_ok=True)
 
-    (assets / "book.css").write_text(style_m.group(1).strip() + "\n" + CSS_EXTRA, encoding="utf-8")
+    (assets / "book.css").write_text(
+        _load_docs_tokens() + style_m.group(1).strip() + "\n" + CSS_EXTRA,
+        encoding="utf-8",
+    )
     (assets / "book.js").write_text(BOOK_JS, encoding="utf-8")
     index = [{"id": p["id"], "title": p["title"], "text": p["text"][:12000]} for p in pages]
     (assets / "search-index.json").write_text(json.dumps(index), encoding="utf-8")
@@ -349,7 +370,9 @@ Open [`index.html`](index.html) in a browser.
 
 Generated from `docs/STUDY_GUIDE.html` by `scripts/build_study_guide_book.py`.
 
-Features: responsive sidebar drawer (≤880px), cross-page search index, read progress, prev/next.
+Features: shared BRIEFR dark palette (`docs/assets/briefr-docs-tokens.css`),
+responsive sidebar drawer (≤880px), skip link + landmarks, cross-page search,
+read progress, prev/next. Sibling learn pathways: [`../learn/`](../learn/).
 """,
         encoding="utf-8",
     )
