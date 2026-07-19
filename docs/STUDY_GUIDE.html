@@ -201,6 +201,55 @@
 
   .hidden-by-search { display: none !important; }
 
+  /* ---------- Paginated navigation model ---------- */
+  .page { display: none; animation: page-in 0.16s ease-out; }
+  .page.active { display: block; }
+  @keyframes page-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .page { animation: none; } }
+
+  .page-nav {
+    display: flex; justify-content: space-between; gap: 16px; margin-top: 56px;
+    padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .page-nav a {
+    flex: 1; text-decoration: none; color: var(--text); border: 1px solid var(--border);
+    background: var(--bg-card); border-radius: 10px; padding: 14px 18px; font-size: 0.9rem;
+    transition: border-color 0.15s ease-out, background 0.15s ease-out;
+  }
+  .page-nav a:hover { border-color: var(--accent); background: var(--bg-elevated); }
+  .page-nav a.next { text-align: right; }
+  .page-nav .nav-label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 4px; }
+  .page-nav .nav-title { color: var(--accent); font-family: ui-serif, Georgia, serif; }
+  .page-nav .spacer { flex: 1; }
+
+  /* ---------- Sidebar: progress checkboxes + active page state ---------- */
+  .toc-link { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toc-link .toc-check {
+    flex-shrink: 0; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border);
+    background: var(--bg-card); position: relative; cursor: pointer;
+  }
+  .toc-link .toc-check.done { background: var(--accent); border-color: var(--accent); }
+  .toc-link .toc-check.done::after {
+    content: ""; position: absolute; left: 3px; top: 0px; width: 4px; height: 8px;
+    border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .toc-link .toc-label { flex: 1; }
+  .toc-link.active { background: var(--accent-soft); color: var(--text); }
+  .toc-progress {
+    font-size: 0.7rem; color: var(--text-faint); padding: 8px 6px 2px; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+  .toc-progress-bar { height: 3px; border-radius: 2px; background: var(--border-soft); overflow: hidden; margin: 4px 6px 10px; }
+  .toc-progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s ease-out; }
+  .toc-reset { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .toc-reset:hover { color: var(--text); }
+
+  /* ---------- Diagram figures ---------- */
+  .diagram-figure { margin: 22px 0 28px; }
+  .diagram-figure figcaption { font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; text-align: center; }
+  .diagram-grid { display: grid; grid-template-columns: 1fr; gap: 28px; }
+  @media (min-width: 1400px) { .diagram-grid.two-col { grid-template-columns: 1fr 1fr; } }
+
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -210,12 +259,17 @@
     <p class="brand-sub">A full architecture textbook</p>
     <input id="search" type="text" placeholder="Search files, functions, concepts…" autocomplete="off">
     <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
     <nav id="toc">
-      <div class="toc-group"><a class="toc-link" href="#preface">Preface — how to use this book</a></div>
+      <div class="toc-group">
+        <a class="toc-link" href="#preface">Preface — how to use this book</a>
+        <a class="toc-link" href="#system-design">System Design — 4 diagrams</a>
+      </div>
 
       <div class="toc-group">
         <div class="toc-group-title">Part 0 · Foundations</div>
-        <a class="toc-link toc-sub" href="#primer">Concepts primer</a>
+        <a class="toc-link toc-sub" href="#primer-mechanics">Concepts primer</a>
       </div>
 
       <div class="toc-group">
@@ -278,17 +332,37 @@
       </div>
 
       <div class="toc-group">
-        <div class="toc-group-title">Part VI · Closing</div>
-        <a class="toc-link toc-sub" href="#security-posture">Security posture, in full</a>
-        <a class="toc-link toc-sub" href="#roadmap">Roadmap, reversals &amp; open gaps</a>
-        <a class="toc-link toc-sub" href="#glossary">Glossary</a>
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="#devops-deploy">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="#devops-ci">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="#sec-identity">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="#sec-network">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="#sec-secrets">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="#sec-availability">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="#sec-selfassess">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="#roadmap-nongoals">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="#roadmap-reversed">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="#roadmap-future">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="#glossary-content">Glossary</a>
         <a class="toc-link toc-sub" href="#self-check">Self-check index</a>
       </div>
     </nav>
   </aside>
 
   <main>
-    <header class="hero" id="preface">
+    <header class="page hero" id="preface">
       <span class="eyebrow">Preface</span>
       <h1>How BRIEFR is built, and why — the long version</h1>
       <p class="lede">This is not a quick reference. It's written to be read start to finish, the way you'd work through a textbook chapter by chapter: a concept, then real code, then the reasoning behind it, then questions to check you actually absorbed it — not just recognized it.</p>
@@ -302,12 +376,22 @@
           <li>Answer every self-check question at the end without looking back. If you can't, that's the signal to re-read — not a failure, that's what the question is for.</li>
           <li>Move on only when you could defend a design decision, not just describe it.</li>
         </ol>
-        <p style="margin-bottom:0;">Part 0 covers concepts you'll need before anything else makes sense — read it first even if some of it is familiar, because a few terms (watermark, hub suppression, operational priority) are BRIEFR-specific and get redefined here.</p>
+        <p style="margin-bottom:0;">Part 0 covers concepts you'll need before anything else makes sense — read it first even if some of it is familiar, because a few terms (watermark, hub suppression, operational priority) are BRIEFR-specific and get redefined here. Before that, the <a href="#system-design">System Design</a> page gives you the whole shape of the system in four pictures — worth a first look now, and worth returning to after every Part as a reality check.</p>
       </div>
     </header>
 
-    <div class="diagram-wrap">
-      <pre class="mermaid">
+    <section class="page chapter" id="system-design">
+      <div class="chapter-head">
+        <span class="chapter-num">Start here · Visual map</span>
+        <h3>System Design — the whole shape, in four diagrams</h3>
+        <p class="dek">Everything else in this book zooms into one box from these pictures. Come back here whenever you feel lost about where a file fits.</p>
+      </div>
+
+      <h4 class="subhead concept">1 — Overall architecture</h4>
+      <div class="prose"><p>One process, one database, five logical layers. The single rule that shapes almost everything downstream: nothing in the top two rows (browser, API routers) is allowed to do slow work — that's reserved for the scheduler row, which writes its results to the database for the API to read back cheaply.</p></div>
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
 flowchart LR
   subgraph Client["Browser"]
     UI["React 19 SPA\n(Radix + tokens, no Tailwind)"]
@@ -344,18 +428,121 @@ flowchart LR
   FE -- "outbound queue + circuit breaker" --> Ext
   JB -.-> DB
   DB --- ALB
-      </pre>
-    </div>
-    <p style="color:var(--text-muted); font-size:0.9rem; margin-top:-10px;">Keep this picture in your head as you read: the top row (browser → router) never does heavy lifting. Every box in the middle and bottom rows exists so the request path can stay fast — that single constraint, stated in the project's own rules as "heavy work never runs on the request path," explains a surprising number of decisions in the chapters ahead.</p>
+          </pre>
+        </div>
+        <figcaption>The top row never does heavy lifting — Chapters 15, 16, and 20 each exist because that rule was violated once and had to be fixed.</figcaption>
+      </figure>
+
+      <h4 class="subhead concept">2 — Request lifecycle: from a login to a CVE detail view</h4>
+      <div class="prose"><p>A concrete trace through Chapters 6 and 11: a login exchanges credentials for two cookies, then every later request rides on the short-lived one, with a silent refresh if it's expired. Notice the detail-view fetch fans out to <em>reads</em> only — nothing here computes a score or a correlation live, it all comes from tables the scheduler already filled in.</p></div>
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+sequenceDiagram
+    participant B as Browser
+    participant N as nginx
+    participant A as FastAPI (uvicorn, 1 worker)
+    participant D as Postgres / SQLite
+
+    B->>N: POST /api/auth/login
+    N->>A: proxy
+    A->>D: bcrypt.checkpw(password, stored_hash)
+    D-->>A: user row (or DUMMY_HASH compare)
+    A-->>B: Set-Cookie briefr_at (JWT, 15m) + briefr_rt (opaque, hashed in DB)
+
+    Note over B,A: ...later, browsing the CVE feed...
+
+    B->>N: GET /api/cves/{id}/drawer
+    N->>A: proxy (cookie attached)
+    A->>A: require_user() decodes JWT
+    alt access token expired
+        A-->>B: 401
+        B->>A: POST /api/auth/refresh (briefr_rt)
+        A->>D: rotate_session() — verify + reissue
+        A-->>B: fresh briefr_at
+        B->>A: retry GET .../drawer
+    end
+    par read-only fan-out (Chapter 25's cves.py)
+        A->>D: read cached risk/threat score
+        A->>D: read precomputed correlation snapshot
+        A->>D: read cached detection context
+    end
+    A-->>B: drawer JSON (score + correlation + detection, all pre-computed)
+          </pre>
+        </div>
+        <figcaption>Every branch inside the <code>par</code> block is a cheap indexed read — none of them are the live compute paths this book spends a whole chapter explaining why to avoid on this exact request.</figcaption>
+      </figure>
+
+      <h4 class="subhead concept">3 — The ingest &amp; scheduling pipeline</h4>
+      <div class="prose"><p>How a CVE gets from CISA's servers into an analyst's browser, restated visually: everything left of the database is scheduler-only, everything right of it is the read-only API. The outbound queue is the one gate every external call passes through, in both directions of this pipeline.</p></div>
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart LR
+  subgraph Ext["External sources"]
+    NVD["NVD / KEV / EPSS / cvelistV5"]
+    OTX["OTX / ThreatFox / GitHub"]
+    LLM["Groq / Cerebras / OpenRouter / Gemini"]
+  end
+  Q["resilient_client.py + api_queue.py\ncircuit breaker + RPM/TPM pacing"]
+  SCH["scheduler.py\nAPScheduler jobs, one lock per job"]
+  ENG["scoring/ · correlation/ · detection/\nrisk, campaigns, Sigma/SIEM"]
+  DB[("cves · correlation_* · embeddings\n(the message bus between scheduler and API)")]
+  API["routers/*.py\nread-only, cheap, indexed"]
+  UI["Browser"]
+
+  Ext --> Q --> SCH --> ENG --> DB
+  SCH -.direct writes.-> DB
+  DB --> API --> UI
+          </pre>
+        </div>
+        <figcaption>"The database is the message bus" (Chapter A3) is this picture, drawn literally: scheduler and API never call each other's functions, only the same tables.</figcaption>
+      </figure>
+
+      <h4 class="subhead concept">4 — Deployment topology: what actually runs on the box</h4>
+      <div class="prose"><p>The reference production deployment (Chapter 32), matched exactly to the real <code>nginx-briefr.conf</code> and <code>briefr-backend.service</code> files in the repo — not a generic "here's how you'd deploy a web app" diagram.</p></div>
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart TB
+  U["Analyst browser"]
+  subgraph Edge["Edge"]
+    CF["cloudflared tunnel\n(TLS termination option)"]
+  end
+  subgraph Host["Self-hosted Debian box"]
+    NG["nginx\nstatic SPA + reverse proxy\n+ security headers + gzip"]
+    SVC["systemd: briefr-backend.service\nuvicorn main:app --workers 1\nNoNewPrivileges, ProtectSystem=strict"]
+    PG[("Postgres\n(or SQLite for dev/eval)")]
+    BK["backup/\nscheduled dumps, X25519-encrypted\nkey stored off-box"]
+  end
+  U -->|HTTPS| CF --> NG
+  NG -->|"/api/* proxy_pass"| SVC
+  NG -->|"/assets/* immutable cache"| NG
+  SVC --> PG
+  SVC -.->|nightly| BK
+          </pre>
+        </div>
+        <figcaption>The <code>--workers 1</code> flag isn't a placeholder default — it's load-bearing (Chapter 12's in-memory rate-limit buckets depend on it) and the real systemd unit comments say so directly.</figcaption>
+      </figure>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Point to the exact spot in diagram 1 where ADR-004's 61-second incident (Chapter 20) happened, and explain why it wasn't visible from this picture alone until it was measured.</li>
+          <li>In diagram 2, why does the <code>par</code> block never include a live call to <code>correlation/engine.py</code>'s compute function?</li>
+          <li>In diagram 4, what would break if <code>--workers 1</code> were changed to <code>--workers 4</code> without also changing anything else?</li>
+        </ol>
+      </div>
+    </section>
 
     <!-- ================= PART 0 ================= -->
-    <div class="part-divider" id="primer">
+    <div class="page part-divider" id="primer">
       <span class="part-eyebrow">Part 0 · Foundations</span>
       <h2>Concepts primer</h2>
       <p class="part-intro">You have a security background, so some of this will be review — skim those and slow down for the ones marked BRIEFR-specific. Every concept here gets reused, unexplained, in every chapter that follows.</p>
     </div>
 
-    <section class="chapter" id="primer-mechanics">
+    <section class="page chapter" id="primer-mechanics">
       <div class="chapter-head">
         <span class="chapter-num">Part 0 · Mechanics</span>
         <h3>The engineering patterns you'll see everywhere</h3>
@@ -449,13 +636,13 @@ flowchart LR
     </section>
 
     <!-- ================= PART 0B — SYSTEM ARCHITECTURE ================= -->
-    <div class="part-divider" id="arch-part">
+    <div class="page part-divider" id="arch-part">
       <span class="part-eyebrow">Part 0B · System architecture</span>
       <h2>The shape of the whole system, before the parts</h2>
       <p class="part-intro">Three chapters answering the questions a "how is this actually put together" review always asks first: is it a monolith or microservices, and why; what hardware footprint the design choices actually target; and — the one that ties every later chapter together — what talks to what, and just as importantly, what was deliberately kept from talking to what.</p>
     </div>
 
-    <section class="chapter" id="arch-monolith">
+    <section class="page chapter" id="arch-monolith">
       <div class="chapter-head">
         <span class="chapter-num">Part 0B · Chapter A1</span>
         <h3>Monolith by design — and why not microservices</h3>
@@ -493,7 +680,7 @@ flowchart LR
       </div>
     </section>
 
-    <section class="chapter" id="arch-resources">
+    <section class="page chapter" id="arch-resources">
       <div class="chapter-head">
         <span class="chapter-num">Part 0B · Chapter A2</span>
         <h3>The resource-consciousness thread — designed for modest hardware</h3>
@@ -527,7 +714,7 @@ flowchart LR
       </div>
     </section>
 
-    <section class="chapter" id="arch-connectivity">
+    <section class="page chapter" id="arch-connectivity">
       <div class="chapter-head">
         <span class="chapter-num">Part 0B · Chapter A3</span>
         <h3>How the pieces connect — and why some deliberately don't</h3>
@@ -563,13 +750,13 @@ flowchart LR
     </section>
 
     <!-- ================= PART I ================= -->
-    <div class="part-divider" id="fe-part">
+    <div class="page part-divider" id="fe-part">
       <span class="part-eyebrow">Part I · Frontend</span>
       <h2>The interface layer</h2>
       <p class="part-intro">Covered at the level of stack decisions, as you asked — not a tour of 165 individual components. Five chapters: why React at all, the design-token system that replaced "no component library," the governance registry that keeps it that way, how state actually flows through the app, and the smaller tooling choices that round it out.</p>
     </div>
 
-    <section class="chapter" id="fe-react">
+    <section class="page chapter" id="fe-react">
       <div class="chapter-head">
         <span class="chapter-num">Part I · Chapter 1</span>
         <h3>Why React 19, and why nothing else was seriously in the running</h3>
@@ -631,7 +818,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="fe-design">
+    <section class="page chapter" id="fe-design">
       <div class="chapter-head">
         <span class="chapter-num">Part I · Chapter 2</span>
         <h3>ADR-003 — semantic tokens and Radix, explicitly not Tailwind</h3>
@@ -683,7 +870,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="fe-libs">
+    <section class="page chapter" id="fe-libs">
       <div class="chapter-head">
         <span class="chapter-num">Part I · Chapter 3</span>
         <h3>ADR-005 — the component-library allow/deny registry</h3>
@@ -726,7 +913,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="fe-state">
+    <section class="page chapter" id="fe-state">
       <div class="chapter-head">
         <span class="chapter-num">Part I · Chapter 4</span>
         <h3>State and data flow: React Context, not Redux</h3>
@@ -778,7 +965,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="fe-tooling">
+    <section class="page chapter" id="fe-tooling">
       <div class="chapter-head">
         <span class="chapter-num">Part I · Chapter 5</span>
         <h3>Fonts, exports, and testing — the smaller decisions that round out the stack</h3>
@@ -815,13 +1002,13 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <div class="part-divider" id="be-part">
+    <div class="page part-divider" id="be-part">
       <span class="part-eyebrow">Part II · Backend foundations</span>
       <h2>Core, data &amp; auth</h2>
       <p class="part-intro">Everything else in the backend sits on top of these eight chapters. This is also, not coincidentally, where most of the security-relevant design decisions live — read it slowly.</p>
     </div>
 
-    <section class="chapter" id="be-bootstrap">
+    <section class="page chapter" id="be-bootstrap">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 6</span>
         <h3>App bootstrap and dependency injection</h3>
@@ -890,7 +1077,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="be-config">
+    <section class="page chapter" id="be-config">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 7</span>
         <h3>Configuration and encrypted settings</h3>
@@ -937,7 +1124,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="be-shim">
+    <section class="page chapter" id="be-shim">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 8</span>
         <h3>The <code>database.py</code> compatibility shim</h3>
@@ -959,7 +1146,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
-    <section class="chapter" id="be-data">
+    <section class="page chapter" id="be-data">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 9</span>
         <h3>The data layer — BRIEFR's most important module</h3>
@@ -1043,7 +1230,7 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <section class="chapter" id="be-alembic">
+    <section class="page chapter" id="be-alembic">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 10</span>
         <h3>Alembic migrations — forward-only, Postgres-only</h3>
@@ -1070,7 +1257,7 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <section class="chapter" id="be-auth">
+    <section class="page chapter" id="be-auth">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 11</span>
         <h3>Authentication — sessions, tokens, and passwords</h3>
@@ -1154,7 +1341,7 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <section class="chapter" id="be-ratelimit">
+    <section class="page chapter" id="be-ratelimit">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 12</span>
         <h3>Rate limiting — inbound, and the residual risk that's accepted rather than solved</h3>
@@ -1215,7 +1402,7 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <section class="chapter" id="be-logging">
+    <section class="page chapter" id="be-logging">
       <div class="chapter-head">
         <span class="chapter-num">Part II · Chapter 13</span>
         <h3>Logging and redaction — two systems, and one real gap between them</h3>
@@ -1273,13 +1460,13 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <div class="part-divider" id="in-part">
+    <div class="page part-divider" id="in-part">
       <span class="part-eyebrow">Part III · Ingest &amp; scheduling</span>
       <h2>Where the data actually comes from</h2>
       <p class="part-intro">Four chapters tracing a CVE from an upstream API to a row in BRIEFR's own database, and the scheduling machinery that runs the whole pipeline unattended, every day, without duplicating work or overwhelming any upstream service.</p>
     </div>
 
-    <section class="chapter" id="in-feeds">
+    <section class="page chapter" id="in-feeds">
       <div class="chapter-head">
         <span class="chapter-num">Part III · Chapter 14</span>
         <h3>Feed sources — 29 files, four distinct shapes of the same problem</h3>
@@ -1355,7 +1542,7 @@ _UPSERT_PG = <span class="str">"""</span>
       </div>
     </section>
 
-    <section class="chapter" id="in-scheduler">
+    <section class="page chapter" id="in-scheduler">
       <div class="chapter-head">
         <span class="chapter-num">Part III · Chapter 15</span>
         <h3>The scheduler and its lock layer — a danger zone, verified line by line</h3>
@@ -1407,7 +1594,7 @@ _LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
       </div>
     </section>
 
-    <section class="chapter" id="in-queue">
+    <section class="page chapter" id="in-queue">
       <div class="chapter-head">
         <span class="chapter-num">Part III · Chapter 16</span>
         <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
@@ -1458,7 +1645,7 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
       </div>
     </section>
 
-    <section class="chapter" id="in-jobs">
+    <section class="page chapter" id="in-jobs">
       <div class="chapter-head">
         <span class="chapter-num">Part III · Chapter 17</span>
         <h3>Durable background jobs — a second job system, and why one wasn't enough</h3>
@@ -1484,13 +1671,13 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
       </div>
     </section>
 
-    <div class="part-divider" id="ie-part">
+    <div class="page part-divider" id="ie-part">
       <span class="part-eyebrow">Part IV · Intelligence engines</span>
       <h2>The product's actual brain</h2>
       <p class="part-intro">Seven chapters on how a CVE becomes a number, how numbers become priorities, how CVEs get linked into campaigns, and how all of that turns into something an analyst can act on. This is the deepest and most distinctive part of the codebase — most of what makes BRIEFR BRIEFR, rather than a generic CVE list, lives here.</p>
     </div>
 
-    <section class="chapter" id="ie-scoring">
+    <section class="page chapter" id="ie-scoring">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 18</span>
         <h3>Risk and Threat scoring — six weighted components, verified against the real code</h3>
@@ -1551,7 +1738,7 @@ WEIGHT_MOMENTUM = <span class="num">0.05</span></code></pre>
       </div>
     </section>
 
-    <section class="chapter" id="ie-matching">
+    <section class="page chapter" id="ie-matching">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 19</span>
         <h3>Asset and CPE matching — the mechanical layer under the 0.35 weight</h3>
@@ -1576,7 +1763,7 @@ WEIGHT_MOMENTUM = <span class="num">0.05</span></code></pre>
       </div>
     </section>
 
-    <section class="chapter" id="ie-correlation">
+    <section class="page chapter" id="ie-correlation">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 20</span>
         <h3>The correlation engine — a five-phase build, and why it had to move off the request path</h3>
@@ -1593,6 +1780,26 @@ WEIGHT_MOMENTUM = <span class="num">0.05</span></code></pre>
       <div class="prose">
         <p>Almost every file in this package carries an inline "Phase N" or "CORR-PR-N" label in its docstring, and taken at face value they look inconsistent — <code>priority.py</code> calls itself "Correlation v3," while <code>config.py</code> still hardcodes <code>CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase2"</code> even though <code>campaigns.py</code>'s actual behavior (pulse-family deduplication, a later addition tagged <code>CORR-PR-9</code>) is well past what "Phase 2" meant in the original plan. The accurate story, reconstructed from a now-superseded planning document (<code>docs/archive/superseded/CORRELATION_V2_PLAN.md</code>) plus every file's own docstring: a phased plan (Phases 1 through 5) was written and largely built section-by-section — the plan's own quality-control subsections (§24.1 through §24.13) map almost one-to-one onto individual files here — and then, after the plan was formally superseded by a newer spec document, <em>more</em> was built on top without renumbering: a priority-scoring synthesis layer (informally "v3"), and later still, ADR-004's precompute architecture. Don't read the phase labels as a strict changelog — read them as archaeological layers, each still live in production, none of them replaced by the next.</p>
       </div>
+
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart TB
+  IN["Raw OTX pulse + IOC data"] --> N["ioc_normalize.py\ndefang, collapse types, flag noise IPs"]
+  N --> H["hub_suppress.py\ndrop IOCs over 50-pulse cap"]
+  H --> P["pulse_families.py\nunion-find dedup (CORR-PR-9)"]
+  P --> C["campaigns.py\nbuild one campaign per family"]
+  C --> E["ioc_graph.py + confidence.py + freshness.py\nshared-infra edges, scored"]
+  E --> A["attribution.py + threatfox_corroboration.py\nalias-aware actor match, 2nd-source corroboration"]
+  A --> L["lifecycle.py\nemerging / active / declining / stale"]
+  L --> PR["priority.py (v3)\none 0–100 number, capped &amp; explainable"]
+  PR --> OUT["engine.py::get_correlation_for_cve\nADR-004 precompute-or-fallback"]
+  F["suppressions.py + feedback.py"] -.->|analyst dismiss / confirm / reject| C
+  M["metrics.py + status.py"] -.->|nightly self-monitoring| OUT
+          </pre>
+        </div>
+        <figcaption>Five archaeological phases plus the later priority layer, drawn as one pipeline — each box below is one file, in the order data actually flows through them.</figcaption>
+      </figure>
 
       <h4 class="subhead how">Phase 1 — Foundation: normalize, suppress hubs, dedupe pulses into campaigns</h4>
       <div class="prose">
@@ -1673,7 +1880,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="ie-detection">
+    <section class="page chapter" id="ie-detection">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 21</span>
         <h3>Detection engineering — a generator, deliberately not a live detector</h3>
@@ -1706,6 +1913,23 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
         <p><code>context_sync.py</code> is the cheap, broad backfill job (disabled by default): it finds every CVE that has no context row at all yet and writes a bare, empty-artifacts envelope for it, prioritizing KEV/PoC/recency — its entire job is making sure every CVE has <em>something</em> to read, never adding real artifacts itself. <code>context_nuclei_sync.py</code> is a deterministic enrichment job (on by default), triggered specifically for CVEs just touched by the exploit-sync job (Chapter 14): it parses actual Nuclei template YAML (via <code>nuclei_parser.py</code>, no LLM at all) to extract real HTTP paths, parameters, and keywords, and <em>merges</em> new artifacts onto whatever already exists, capped at 8, deduping by content. <code>context_llm_sync.py</code> is the LLM-based sibling (disabled by default, needs an explicit flag and a configured provider): it targets CVEs with a public exploit that haven't had an LLM extraction attempt recently, runs inside the per-job provider-skip session from Chapter 24 (so one empty response from a provider doesn't waste the rest of a batch retrying it), and — worth flagging as a real, load-bearing difference from the Nuclei job — <em>overwrites</em> the artifacts field outright rather than merging. If both jobs eventually touch the same CVE, whichever ran more recently wins completely on the artifacts field, not just contributes to it.</p>
         <p>Both enrichment jobs converge on the same validation gate in <code>artifact_extract.py</code>: paths capped at 200 characters (max 5), params/keywords capped at 80 characters (max 10 each), HTTP method restricted to a real-verb whitelist, and an artifact that's entirely empty across all three fields is discarded outright rather than stored as a hollow shell. This shared gate is what lets a caller reading a <code>DetectionContext</code> never need to know or care whether Nuclei parsing or an LLM populated it — both paths are guaranteed to produce the same validated shape.</p>
       </div>
+
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart LR
+  CTX[("DetectionContext cache\ndetection_ctx:{CVE_ID}\ndefined by context.py")]
+  S["context_sync.py\n(off by default)\nbroad backfill — empty artifacts"]
+  NU["context_nuclei_sync.py\n(on by default)\ntriggered by exploit_sync\nMERGES artifacts, capped at 8"]
+  L["context_llm_sync.py\n(off by default)\nneeds a configured LLM provider\nOVERWRITES artifacts"]
+  V["artifact_extract.py\nshared validation gate"]
+  S --> CTX
+  NU --> V --> CTX
+  L --> V
+          </pre>
+        </div>
+        <figcaption>Three independent writers, one shared reader contract — a caller never needs to know which job last touched a given CVE's context.</figcaption>
+      </figure>
 
       <h4 class="subhead how">The fallback tier below ATT&amp;CK techniques: <code>class_queries.py</code></h4>
       <div class="prose">
@@ -1740,7 +1964,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="ie-brief">
+    <section class="page chapter" id="ie-brief">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 22</span>
         <h3>The morning brief — read-time aggregation, and a portability lesson worth remembering</h3>
@@ -1766,7 +1990,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="ie-threatmodel">
+    <section class="page chapter" id="ie-threatmodel">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 23</span>
         <h3>Threat modeling, provenance, and IOC retro-matching</h3>
@@ -1791,7 +2015,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="ie-ml">
+    <section class="page chapter" id="ie-ml">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 24</span>
         <h3>ML and LLM enrichment — three genuinely different categories, and zero Anthropic dependency</h3>
@@ -1845,7 +2069,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="ie-ml-providers">
+    <section class="page chapter" id="ie-ml-providers">
       <div class="chapter-head">
         <span class="chapter-num">Part IV · Chapter 24B</span>
         <h3>Inside the LLM failover chain — pacing, quota, audit trail, and the one request-path exception</h3>
@@ -1887,13 +2111,13 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <div class="part-divider" id="api-part">
+    <div class="page part-divider" id="api-part">
       <span class="part-eyebrow">Part V · API surface &amp; operations</span>
       <h2>Everything above, exposed over HTTP — and kept running</h2>
       <p class="part-intro">Seven chapters: the 23 router files that turn every engine in Part IV into an endpoint, the tool's own self-documented security posture, outbound webhook safety, and the operational plumbing — backups, migrations, diagnostics — that a self-hosted instance actually needs to survive being run by someone other than its authors.</p>
     </div>
 
-    <section class="chapter" id="api-routers">
+    <section class="page chapter" id="api-routers">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 25</span>
         <h3>Routers — 23 files, and the provenance that explains their shape</h3>
@@ -1924,7 +2148,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="api-secarch">
+    <section class="page chapter" id="api-secarch">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 26</span>
         <h3>security_architecture/ — the tool documenting its own posture</h3>
@@ -1966,7 +2190,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
       </div>
     </section>
 
-    <section class="chapter" id="api-webhooks">
+    <section class="page chapter" id="api-webhooks">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 27</span>
         <h3>Webhooks and SSRF — a textbook mitigation, applied because the input is genuinely attacker-influenceable</h3>
@@ -2018,7 +2242,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="api-usersettings">
+    <section class="page chapter" id="api-usersettings">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 28</span>
         <h3>User-facing settings: notifications, onboarding, preferences</h3>
@@ -2042,7 +2266,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="api-proof">
+    <section class="page chapter" id="api-proof">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 29</span>
         <h3>Proof, services, and templates — three more names worth clarifying precisely</h3>
@@ -2072,7 +2296,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="api-ops">
+    <section class="page chapter" id="api-ops">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 30</span>
         <h3>Ops and observability — keeping a self-hosted instance alive without its authors watching over it</h3>
@@ -2105,7 +2329,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="api-scripts">
+    <section class="page chapter" id="api-scripts">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 31</span>
         <h3>Scripts and top-level admin guardrails</h3>
@@ -2152,13 +2376,70 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <div class="part-divider" id="security-posture">
+    <div class="page part-divider" id="devops-part">
+      <span class="part-eyebrow">Part V-B · Operations in production</span>
+      <h2>Deployment, CI, and testing</h2>
+      <p class="part-intro">Everything in this book so far describes what runs. This short part covers what makes it keep running unattended, and what stops a broken change from reaching that production box in the first place — a category this book hadn't covered on its own terms yet.</p>
+    </div>
+
+    <section class="page chapter" id="devops-deploy">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V-B · Chapter 32</span>
+        <h3>Deployment and infrastructure — the real systemd unit and nginx config, read closely</h3>
+        <p class="dek">Every hardening flag in these two files is a specific, named decision — not boilerplate copied from a tutorial.</p>
+        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span></div>
+      </div>
+
+      <h4 class="subhead how">The systemd unit — hardening flags that are each a real decision</h4>
+      <div class="prose">
+        <p>Reading <code>deploy/briefr-backend.service</code> directly rewards close attention, because nearly every line is a security or reliability decision with its own comment explaining why, not a default left in place. <code>ExecStart</code> runs <code>uvicorn main:app --workers 1</code> — and the file's own comment states plainly why this specific number is load-bearing rather than a starting point to tune upward: Chapter 12's rate-limit token buckets are in-memory per worker process; raising the worker count without also switching to the shared database-backed rate-limit store (<code>BRIEFR_RATE_LIMIT_STORE=db</code>) would silently multiply every configured limit by the worker count, exactly the failure mode that chapter described in the abstract, now confirmed as a real, named risk in the deployment config itself. <code>TimeoutStopSec=15</code> exists for a similarly specific reason: the same comment notes that when the database pool is exhausted (Chapter 9's <code>PoolExhaustedError</code>), in-flight requests hang on pool acquisition and a graceful uvicorn shutdown would otherwise block for systemd's ~90-second default — capped at 15 seconds so a restart doesn't stall that long.</p>
+        <p>The security hardening block is worth reading as a checklist of what a compromised BRIEFR process would <em>not</em> be able to do: <code>NoNewPrivileges=yes</code> blocks privilege escalation via setuid binaries; <code>ProtectSystem=strict</code> makes the entire filesystem read-only to the process except explicitly listed paths; <code>ReadWritePaths</code> is a short, deliberate allowlist (the backend directory, the backup directory, and the embeddings model cache, the last one marked optional with a leading <code>-</code> so its absence doesn't block startup); <code>ReadOnlyPaths</code> covers the Python virtual environment itself, so even a fully compromised application process can't modify its own interpreter or installed packages on disk. This is the same "least privilege, allowlist everything" instinct you've now seen in the DB explorer (Chapter 9), the SSRF blocklist (Chapter 27), and the search-token scoping (Chapter 11) — applied one more time, at the operating-system level.</p>
+      </div>
+
+      <h4 class="subhead how">nginx — TLS termination, security headers, and a caching split that matters</h4>
+      <div class="prose">
+        <p><code>deploy/nginx-briefr.conf</code> sits in front of uvicorn and does three jobs. First, unconditional HTTP→HTTPS redirect plus certbot-managed TLS. Second, a layered set of security headers <em>in addition to</em> the ones FastAPI's own middleware already sets (Chapter 6) — defense in depth rather than relying on the application layer alone, including <code>server_tokens off</code> to stop nginx from advertising its own version in response headers. Third, and worth understanding precisely because getting it wrong breaks deploys in a confusing way: a deliberate caching split between two kinds of static asset. Hashed Vite build output under <code>/assets/</code> gets <code>Cache-Control: public, max-age=31536000, immutable</code> — safe to cache essentially forever, because Vite's build process changes the filename itself whenever the content changes, so a stale cache simply can't serve wrong content. <code>index.html</code> — the SPA shell — gets the opposite treatment, explicitly never cached, because it's the one file that references the current build's hashed asset filenames; caching it would mean a browser could keep loading old references to asset files a fresh deploy already deleted, breaking the app in a way that only clears on a hard refresh.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why is <code>--workers 1</code> a load-bearing constraint rather than a conservative default, and what exact change would you need to make elsewhere before safely raising it?</li>
+          <li>Walk through what <code>ProtectSystem=strict</code> plus the specific <code>ReadWritePaths</code> allowlist would prevent, concretely, if an attacker achieved code execution inside the BRIEFR process.</li>
+          <li>Why must <code>index.html</code> never be cached while everything under <code>/assets/</code> is cached for a full year — what would a stale <code>index.html</code> actually cause a returning user to experience?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="devops-ci">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V-B · Chapter 33</span>
+        <h3>CI/CD and testing — the pipeline that's been running in the background of this very book</h3>
+        <p class="dek">Two workflow files, four backend-test jobs, 207 backend test files, 56 frontend test files — and the two jobs that are red on every run, by policy, not by accident.</p>
+        <div class="files"><span class="chip">.github/workflows/backend-tests.yml</span><span class="chip">.github/workflows/gitleaks.yml</span><span class="chip">backend/tests/</span></div>
+      </div>
+      <div class="prose">
+        <p>If you've been watching this document's own pull request, you've already seen this chapter's subject matter fire, repeatedly, as live CI events. <code>backend-tests.yml</code> ("Backend tests") defines four jobs: <strong><code>test</code></strong> (the default suite against SQLite — the zero-config path, matching Chapter 9's dev/test story exactly), <strong><code>test-postgres</code></strong> (the same suite, run again against a real Postgres instance — the concrete enforcement mechanism behind Chapter 9's warning that a query can pass the SQLite suite and still break in production), <strong><code>dependency-audit</code></strong>, and <strong><code>playwright-smoke</code></strong> (a thin browser smoke test using the same Playwright/Chromium setup Chapter 5 covers). A second, separate workflow, <code>gitleaks.yml</code> ("Secret scan"), runs an independent secret-scanning pass over every commit. Two of these five jobs — <code>dependency-audit</code> and <code>gitleaks</code> — are documented project-wide as known-red on every run, a deliberate, explicit decision (not silently broken CI) that keeps them visible without treating them as merge blockers until someone specifically prioritizes fixing their underlying findings.</p>
+        <p>The test suite itself is substantial enough to be a real subject in its own right: 207 backend test files exercise everything from admin config to Alembic revision integrity to AI quota tracking, and 56 frontend test files run through Node's built-in <code>node:test</code> (Chapter 5). The <code>test-postgres</code> job is the single most direct piece of evidence in this entire repository for why Chapter 9 spends as long as it does on the SQLite/Postgres split: it exists purely because relying on the default suite alone was judged insufficient to trust a data-layer change, and running the identical test files against a fundamentally different database engine is the actual mechanism that catches the class of bug (looser SQLite type coercion, different aggregate-function syntax) this book has named specifically in Chapters 9 and 22.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does a project deliberately keep two CI jobs (<code>dependency-audit</code>, <code>gitleaks</code>) permanently red rather than either fixing them immediately or removing them from CI entirely?</li>
+          <li>What specific class of bug does <code>test-postgres</code> catch that the default <code>test</code> job structurally cannot, no matter how thorough the SQLite-side test suite is?</li>
+          <li>If you were reviewing this exact PR's CI output and saw <code>dependency-audit</code> and <code>gitleaks</code> fail alongside a genuinely new failure in <code>test-postgres</code>, how would you tell which one actually needs your attention?</li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="page part-divider" id="security-posture">
       <span class="part-eyebrow">Part VI · Closing</span>
       <h2>Security posture, in full</h2>
       <p class="part-intro">You've now met every security-relevant decision in this book once, embedded in the chapter where it belonged. This closing chapter pulls them together into one connected argument, organized by the kind of risk each one addresses, so you can hold the whole posture in your head at once rather than as 25 scattered facts.</p>
     </div>
 
-    <section class="chapter" id="sec-identity">
+    <section class="page chapter" id="sec-identity">
       <div class="chapter-head">
         <span class="chapter-num">Security posture · 1</span>
         <h3>Identity and session security</h3>
@@ -2169,7 +2450,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="sec-network">
+    <section class="page chapter" id="sec-network">
       <div class="chapter-head">
         <span class="chapter-num">Security posture · 2</span>
         <h3>Network trust boundaries</h3>
@@ -2180,7 +2461,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="sec-secrets">
+    <section class="page chapter" id="sec-secrets">
       <div class="chapter-head">
         <span class="chapter-num">Security posture · 3</span>
         <h3>Secrets, at rest and in logs</h3>
@@ -2191,7 +2472,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="sec-availability">
+    <section class="page chapter" id="sec-availability">
       <div class="chapter-head">
         <span class="chapter-num">Security posture · 4</span>
         <h3>Availability, and the request-path discipline underneath all of it</h3>
@@ -2202,7 +2483,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="sec-selfassess">
+    <section class="page chapter" id="sec-selfassess">
       <div class="chapter-head">
         <span class="chapter-num">Security posture · 5</span>
         <h3>Self-assessment as a first-class feature</h3>
@@ -2212,13 +2493,13 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <div class="part-divider" id="roadmap">
+    <div class="page part-divider" id="roadmap">
       <span class="part-eyebrow">Part VI · Closing</span>
       <h2>Roadmap, reversals, and open gaps</h2>
       <p class="part-intro">Everything so far described what BRIEFR is today. This chapter covers the other three tenses: what it deliberately will never be, what it used to be before a decision reversed it, and what nobody has gotten to yet — pulled from the project's own roadmap, backlog, and change history, not speculation.</p>
     </div>
 
-    <section class="chapter" id="roadmap-nongoals">
+    <section class="page chapter" id="roadmap-nongoals">
       <div class="chapter-head">
         <span class="chapter-num">Roadmap · 1</span>
         <h3>Explicit non-goals — what this will never try to be</h3>
@@ -2247,7 +2528,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="roadmap-reversed">
+    <section class="page chapter" id="roadmap-reversed">
       <div class="chapter-head">
         <span class="chapter-num">Roadmap · 2</span>
         <h3>What was tried, shipped, and later reversed</h3>
@@ -2269,7 +2550,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <section class="chapter" id="roadmap-future">
+    <section class="page chapter" id="roadmap-future">
       <div class="chapter-head">
         <span class="chapter-num">Roadmap · 3</span>
         <h3>What's next, what's parked, and what hasn't been considered yet</h3>
@@ -2291,12 +2572,13 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
     </section>
 
-    <div class="part-divider" id="glossary">
+    <div class="page part-divider" id="glossary">
       <span class="part-eyebrow">Reference</span>
       <h2>Glossary</h2>
       <p class="part-intro">Every term this book used without re-defining it a second time, in one place.</p>
     </div>
-    <section class="chapter">
+    <section class="page chapter" id="glossary-content">
+      <div class="chapter-head"><span class="chapter-num">Reference</span><h3>Glossary</h3></div>
       <dl class="glossary-list">
         <dt>Watermark</dt><dd>A saved checkpoint (timestamp, ID, or commit SHA) marking how far an incremental sync has progressed, so a resumed run knows exactly where to continue from.</dd>
         <dt>Idempotent</dt><dd>An operation whose repeated application has the same effect as applying it once — the property that makes crash-and-retry safe.</dd>
@@ -2316,15 +2598,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </dl>
     </section>
 
-    <section class="doc-section" id="self-check">
-      <div class="part-divider">
-        <span class="part-eyebrow">Part VII</span>
-        <h2>Self-check index</h2>
-        <p class="part-intro">Every question from every chapter, gathered in one list — use it for a full oral run-through once you've read the book, without hunting back chapter by chapter.</p>
+    <section class="page chapter" id="self-check">
+      <div class="chapter-head">
+        <span class="chapter-num">Part VII</span>
+        <h3>Self-check index</h3>
+        <p class="dek">Every question from every chapter, gathered in one list — use it for a full oral run-through once you've read the book, without hunting back chapter by chapter.</p>
       </div>
       <div class="faq-index" id="faq-index"><!-- populated by JS from the chapters above --></div>
     </section>
 
+    <div class="page-nav" id="page-nav"><!-- populated by JS: prev/next links --></div>
     <footer>
       Built from a direct read of the BRIEFR codebase at a point in time — real function names, real numbers, real code. Code moves faster than any book; when this disagrees with the repo, trust the repo, then come tell me what changed so this can catch up.
     </footer>
@@ -2332,52 +2615,160 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
 </div>
 
 <script>
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   (function buildFaqIndex() {
     const container = document.getElementById('faq-index');
     document.querySelectorAll('.self-check').forEach(block => {
-      const chapter = block.closest('section.chapter');
-      const titleEl = chapter ? chapter.querySelector('.chapter-head h3') : null;
+      const chapter = block.closest('.page');
+      const titleEl = chapter ? chapter.querySelector('h1, h2, h3') : null;
       const title = titleEl ? titleEl.textContent : 'Untitled';
       block.querySelectorAll('li').forEach(li => {
         const item = document.createElement('div');
         item.className = 'faq-index-item';
-        item.innerHTML = li.innerHTML + '<span class="src">— ' + title + '</span>';
+        item.innerHTML = li.innerHTML + '<span class="src">— ' + escapeHtml(title) + '</span>';
         container.appendChild(item);
       });
     });
   })();
 
+  // ---------- Pagination: one .page visible at a time, hash-routed ----------
+  const PAGES = Array.from(document.querySelectorAll('main > .page'));
+
+  function pageTitle(el) {
+    const h = el.querySelector('h1, h2, h3');
+    return h ? h.textContent.trim() : (el.id || 'Untitled');
+  }
+
+  function renderPageNav(target) {
+    const nav = document.getElementById('page-nav');
+    if (!nav) return;
+    const idx = PAGES.indexOf(target);
+    const prev = idx > 0 ? PAGES[idx - 1] : null;
+    const next = idx >= 0 && idx < PAGES.length - 1 ? PAGES[idx + 1] : null;
+    let html = '';
+    html += prev
+      ? '<a class="prev" href="#' + prev.id + '"><span class="nav-label">&larr; Previous</span><span class="nav-title">' + escapeHtml(pageTitle(prev)) + '</span></a>'
+      : '<span class="spacer"></span>';
+    html += next
+      ? '<a class="next" href="#' + next.id + '"><span class="nav-label">Next &rarr;</span><span class="nav-title">' + escapeHtml(pageTitle(next)) + '</span></a>'
+      : '<span class="spacer"></span>';
+    nav.innerHTML = html;
+  }
+
+  function showPage(id, opts) {
+    opts = opts || {};
+    let target = document.getElementById(id);
+    if (!target || !target.classList.contains('page')) {
+      target = PAGES[0];
+    }
+    PAGES.forEach(p => p.classList.toggle('active', p === target));
+    document.querySelectorAll('.toc-link').forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + target.id);
+    });
+    renderPageNav(target);
+    if (!opts.noScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  window.addEventListener('hashchange', () => {
+    showPage(location.hash.replace(/^#/, ''));
+  });
+
+  // ---------- Sidebar: inject a progress checkbox into every nav link ----------
+  document.querySelectorAll('.toc-link').forEach(link => {
+    const id = (link.getAttribute('href') || '').replace(/^#/, '');
+    const labelHtml = link.innerHTML;
+    link.innerHTML = '';
+    const check = document.createElement('span');
+    check.className = 'toc-check';
+    check.dataset.page = id;
+    check.title = 'Mark as read';
+    const label = document.createElement('span');
+    label.className = 'toc-label';
+    label.innerHTML = labelHtml;
+    link.appendChild(check);
+    link.appendChild(label);
+  });
+
+  const PROGRESS_KEY = 'briefr-study-progress-v1';
+  function loadProgress() {
+    try { return new Set(JSON.parse(localStorage.getItem(PROGRESS_KEY) || '[]')); }
+    catch (e) { return new Set(); }
+  }
+  function saveProgress(set) {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(Array.from(set))); }
+    catch (e) { /* localStorage unavailable — progress just won't persist */ }
+  }
+  let progress = loadProgress();
+
+  function renderProgress() {
+    const checks = document.querySelectorAll('.toc-check');
+    checks.forEach(cb => cb.classList.toggle('done', progress.has(cb.dataset.page)));
+    const total = checks.length;
+    const done = Array.from(checks).filter(cb => progress.has(cb.dataset.page)).length;
+    const label = document.getElementById('progress-label');
+    const fill = document.getElementById('progress-fill');
+    if (label) label.textContent = done + ' / ' + total + ' read';
+    if (fill) fill.style.width = (total ? (done / total * 100) : 0) + '%';
+  }
+
+  document.getElementById('toc').addEventListener('click', (e) => {
+    const check = e.target.closest('.toc-check');
+    if (!check) return;
+    e.preventDefault();
+    const id = check.dataset.page;
+    if (progress.has(id)) progress.delete(id); else progress.add(id);
+    saveProgress(progress);
+    renderProgress();
+  });
+
+  const resetBtn = document.getElementById('progress-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    progress = new Set();
+    saveProgress(progress);
+    renderProgress();
+  });
+
+  renderProgress();
+
+  // ---------- Search: filters the sidebar (and jumps to the first match on Enter) ----------
   const searchInput = document.getElementById('search');
   const emptyMsg = document.getElementById('search-empty');
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
-    const chapters = document.querySelectorAll('section.chapter, .concept-card');
-    let anyVisible = false;
+    const links = document.querySelectorAll('.toc-link');
+    const groups = document.querySelectorAll('.toc-group');
     if (!q) {
-      chapters.forEach(c => c.classList.remove('hidden-by-search'));
+      links.forEach(l => l.classList.remove('hidden-by-search'));
+      groups.forEach(g => g.classList.remove('hidden-by-search'));
       emptyMsg.style.display = 'none';
       return;
     }
-    chapters.forEach(el => {
-      const match = el.textContent.toLowerCase().includes(q);
-      el.classList.toggle('hidden-by-search', !match);
-      if (match) anyVisible = true;
-    });
-    emptyMsg.style.display = anyVisible ? 'none' : 'block';
-  });
-
-  const links = Array.from(document.querySelectorAll('.toc-link'));
-  const targets = links.map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const id = '#' + entry.target.id;
-      const link = links.find(l => l.getAttribute('href') === id);
-      if (!link) return;
-      if (entry.isIntersecting) {
-        links.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
+    let anyVisible = false;
+    groups.forEach(g => { g.dataset.anyMatch = '0'; });
+    links.forEach(l => {
+      const id = (l.getAttribute('href') || '').replace(/^#/, '');
+      const target = document.getElementById(id);
+      const haystack = (target ? target.textContent : l.textContent).toLowerCase();
+      const match = haystack.includes(q);
+      l.classList.toggle('hidden-by-search', !match);
+      if (match) {
+        anyVisible = true;
+        const g = l.closest('.toc-group');
+        if (g) g.dataset.anyMatch = '1';
       }
     });
-  }, { rootMargin: '-10% 0px -70% 0px' });
-  targets.forEach(t => observer.observe(t));
+    groups.forEach(g => g.classList.toggle('hidden-by-search', g.dataset.anyMatch !== '1'));
+    emptyMsg.style.display = anyVisible ? 'none' : 'block';
+  });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const firstMatch = document.querySelector('.toc-link:not(.hidden-by-search)');
+    if (firstMatch) location.hash = firstMatch.getAttribute('href');
+  });
+
+  // ---------- Boot ----------
+  showPage(location.hash.replace(/^#/, ''), { noScroll: true });
 </script>
