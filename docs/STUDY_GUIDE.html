@@ -1,52 +1,57 @@
 <title>BRIEFR — The Study Guide</title>
 <style>
+  /* Palette lifted directly from frontend/src/styles/tokens.css — BRIEFR's
+     actual dark-terminal token system (--c-neutral-*, --c-accent, --c-chart-*),
+     not an invented one. Light theme follows the same file's :root[data-theme="light"]
+     block, extending its darken-for-AA pattern to the two roles (faq/security tags)
+     that have no direct severity-scale counterpart there. */
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0b0e11; --bg-elevated: #12161a; --bg-card: #101417;
-      --border: #232a30; --border-soft: #1a2025;
-      --text: #e9e6de; --text-muted: #9aa3aa; --text-faint: #62696f;
-      --accent: #c9a227; --accent-soft: rgba(201,162,39,0.14); --accent-strong: #e2bc3f;
-      --tag-what: #5b8dd6; --tag-why: #c9a227; --tag-how: #4fae8c; --tag-faq: #a48ade; --tag-security: #dd6b66;
-      --tag-what-bg: rgba(91,141,214,0.13); --tag-why-bg: rgba(201,162,39,0.13); --tag-how-bg: rgba(79,174,140,0.13);
-      --tag-faq-bg: rgba(164,138,222,0.13); --tag-security-bg: rgba(221,107,102,0.14);
-      --code-bg: #14191d; --code-border: #262d34; --shadow: rgba(0,0,0,0.35);
-      --primer-bg: #12161a;
+      --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
+      --border: #2a2a25; --border-soft: #222220;
+      --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
+      --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
+      --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
+      --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
+      --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
+      --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
+      --primer-bg: #111110;
     }
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --bg: #f6f4ee; --bg-elevated: #ffffff; --bg-card: #ffffff;
-      --border: #ded8c8; --border-soft: #e8e3d5;
-      --text: #201d17; --text-muted: #5b564a; --text-faint: #8b8474;
-      --accent: #8a6a10; --accent-soft: rgba(138,106,16,0.10); --accent-strong: #6e5309;
-      --tag-what: #2f5fa8; --tag-why: #8a6a10; --tag-how: #2f7d63; --tag-faq: #6a4fae; --tag-security: #b23f39;
-      --tag-what-bg: rgba(47,95,168,0.08); --tag-why-bg: rgba(138,106,16,0.08); --tag-how-bg: rgba(47,125,99,0.08);
-      --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(178,63,57,0.09);
-      --code-bg: #ece6d6; --code-border: #ddd4bc; --shadow: rgba(0,0,0,0.08);
-      --primer-bg: #fbf9f3;
+      --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
+      --border: #b8b2a8; --border-soft: #c9c4bb;
+      --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
+      --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
+      --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
+      --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
+      --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
+      --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
+      --primer-bg: #f4f1ea;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0b0e11; --bg-elevated: #12161a; --bg-card: #101417;
-    --border: #232a30; --border-soft: #1a2025;
-    --text: #e9e6de; --text-muted: #9aa3aa; --text-faint: #62696f;
-    --accent: #c9a227; --accent-soft: rgba(201,162,39,0.14); --accent-strong: #e2bc3f;
-    --tag-what: #5b8dd6; --tag-why: #c9a227; --tag-how: #4fae8c; --tag-faq: #a48ade; --tag-security: #dd6b66;
-    --tag-what-bg: rgba(91,141,214,0.13); --tag-why-bg: rgba(201,162,39,0.13); --tag-how-bg: rgba(79,174,140,0.13);
-    --tag-faq-bg: rgba(164,138,222,0.13); --tag-security-bg: rgba(221,107,102,0.14);
-    --code-bg: #14191d; --code-border: #262d34; --shadow: rgba(0,0,0,0.35);
-    --primer-bg: #12161a;
+    --bg: #0a0a08; --bg-elevated: #111110; --bg-card: #121211;
+    --border: #2a2a25; --border-soft: #222220;
+    --text: #e8e6df; --text-muted: #a7a396; --text-faint: #6c6a62;
+    --accent: #e85533; --accent-soft: rgba(232,85,51,0.14); --accent-strong: #f26b4a;
+    --tag-what: #7eb8f0; --tag-why: #d4860a; --tag-how: #5cb87e; --tag-faq: #b07dd6; --tag-security: #e0715a;
+    --tag-what-bg: rgba(126,184,240,0.13); --tag-why-bg: rgba(212,134,10,0.14); --tag-how-bg: rgba(92,184,126,0.13);
+    --tag-faq-bg: rgba(176,125,214,0.13); --tag-security-bg: rgba(224,113,90,0.15);
+    --code-bg: #1a1a17; --code-border: #333330; --shadow: rgba(0,0,0,0.35);
+    --primer-bg: #111110;
   }
   :root[data-theme="light"] {
-    --bg: #f6f4ee; --bg-elevated: #ffffff; --bg-card: #ffffff;
-    --border: #ded8c8; --border-soft: #e8e3d5;
-    --text: #201d17; --text-muted: #5b564a; --text-faint: #8b8474;
-    --accent: #8a6a10; --accent-soft: rgba(138,106,16,0.10); --accent-strong: #6e5309;
-    --tag-what: #2f5fa8; --tag-why: #8a6a10; --tag-how: #2f7d63; --tag-faq: #6a4fae; --tag-security: #b23f39;
-    --tag-what-bg: rgba(47,95,168,0.08); --tag-why-bg: rgba(138,106,16,0.08); --tag-how-bg: rgba(47,125,99,0.08);
-    --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(178,63,57,0.09);
-    --code-bg: #ece6d6; --code-border: #ddd4bc; --shadow: rgba(0,0,0,0.08);
-    --primer-bg: #fbf9f3;
+    --bg: #f0ece4; --bg-elevated: #ffffff; --bg-card: #ffffff;
+    --border: #b8b2a8; --border-soft: #c9c4bb;
+    --text: #1a1814; --text-muted: #55514a; --text-faint: #8a857c;
+    --accent: #b93312; --accent-soft: rgba(185,51,18,0.10); --accent-strong: #d1481f;
+    --tag-what: #14568f; --tag-why: #8f5a00; --tag-how: #22693f; --tag-faq: #6a4fae; --tag-security: #a54430;
+    --tag-what-bg: rgba(20,86,143,0.08); --tag-why-bg: rgba(143,90,0,0.09); --tag-how-bg: rgba(34,105,63,0.08);
+    --tag-faq-bg: rgba(106,79,174,0.08); --tag-security-bg: rgba(165,68,48,0.09);
+    --code-bg: #ebe7df; --code-border: #c9c4bb; --shadow: rgba(26,24,20,0.08);
+    --primer-bg: #f4f1ea;
   }
 
   * { box-sizing: border-box; }
@@ -214,6 +219,13 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="#arch-monolith">Monolith by design</a>
+        <a class="toc-link toc-sub" href="#arch-resources">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="#arch-connectivity">How the pieces connect</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part I · Frontend</div>
         <a class="toc-link toc-sub" href="#fe-react">Ch 1 · Why React 19</a>
         <a class="toc-link toc-sub" href="#fe-design">Ch 2 · Tokens + Radix (ADR-003)</a>
@@ -267,6 +279,7 @@
       <div class="toc-group">
         <div class="toc-group-title">Part VI · Closing</div>
         <a class="toc-link toc-sub" href="#security-posture">Security posture, in full</a>
+        <a class="toc-link toc-sub" href="#roadmap">Roadmap, reversals &amp; open gaps</a>
         <a class="toc-link toc-sub" href="#glossary">Glossary</a>
         <a class="toc-link toc-sub" href="#self-check">Self-check index</a>
       </div>
@@ -431,6 +444,120 @@ flowchart LR
           <p>A vendor-neutral, YAML-based format for writing detection logic once and translating it into any SIEM's native query language (Splunk SPL, Elastic KQL, Microsoft Sentinel KQL, and others) via a converter.</p>
           <p class="why-it-matters"><strong>Why it matters here:</strong> BRIEFR both fetches community Sigma rules and generates its own from templates (Chapter 21), then translates them into concrete SIEM queries for whichever platform an analyst actually runs.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- ================= PART 0B — SYSTEM ARCHITECTURE ================= -->
+    <div class="part-divider" id="arch-part">
+      <span class="part-eyebrow">Part 0B · System architecture</span>
+      <h2>The shape of the whole system, before the parts</h2>
+      <p class="part-intro">Three chapters answering the questions a "how is this actually put together" review always asks first: is it a monolith or microservices, and why; what hardware footprint the design choices actually target; and — the one that ties every later chapter together — what talks to what, and just as importantly, what was deliberately kept from talking to what.</p>
+    </div>
+
+    <section class="chapter" id="arch-monolith">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A1</span>
+        <h3>Monolith by design — and why not microservices</h3>
+        <p class="dek">One process, one database, one deploy artifact. The absence of microservices here isn't a gap to fill later — it's a fit to the actual problem.</p>
+        <div class="files"><span class="chip">ROADMAP.md</span><span class="chip">deploy/briefr-backend.service</span></div>
+      </div>
+
+      <h4 class="subhead concept">What "microservices" would even mean here</h4>
+      <div class="prose">
+        <p>A microservices architecture splits a system into independently deployable services, each usually owning its own database, talking to each other over the network (HTTP or a message queue), so that different teams can develop, deploy, and scale each piece separately. BRIEFR is the opposite of that on every axis: one FastAPI process (<code>main.py</code>) serves every route, one Postgres (or SQLite) database holds every table, one <code>systemd</code> unit (<code>deploy/briefr-backend.service</code>) is the entire deployable artifact, and the scheduler that runs feeds, scoring, and correlation lives <em>inside that same process</em>, not as a separate worker service. Even Procrastinate (Chapter 17) — which sounds like it might be a separate job-queue service — is a library running an in-process worker inside the same Python process, coordinating purely through shared Postgres tables, not through a network call to some other running service.</p>
+      </div>
+
+      <h4 class="subhead why">Why a monolith fits this specific problem, not just "monoliths are simpler in general"</h4>
+      <div class="prose">
+        <p>The generic case for microservices is real but conditional: it pays off when different parts of a system need independent scaling (one component gets 100x the traffic of another), independent deployment cadence (different teams shipping on different schedules without blocking each other), or genuine fault isolation (one component crashing shouldn't take down an unrelated one). None of those conditions hold for BRIEFR as it's actually used. It's explicitly a <strong>single-operator tool</strong> today (ROADMAP.md's non-goals table states plainly: "Multi-tenant SaaS in V1.x" is out of scope, with schema seams left for a possible future, not built now) — there's no independent traffic pattern to scale one piece against another, because there's fundamentally one analyst's browser making requests. There's no multi-team deploy-cadence problem to solve, because one person (or a small team) maintains the whole thing. And fault isolation between, say, the correlation engine and the CVE list view is achieved more simply — and more cheaply — by the request-path discipline you've now seen enforced everywhere in this book (heavy work happens in the scheduler, never blocking a request) than by splitting them into separate network-connected services.</p>
+        <p>What microservices would have actually cost here is concrete, not abstract: every cross-component call that's currently a Python function call within one process would become a network request, needing its own error handling, retries, timeouts, and versioning story — exactly the kind of complexity Chapter 16's circuit breakers and Chapter 15's locking already have to solve for BRIEFR's genuinely external dependencies (NVD, OTX, GitHub). Multiplying that same complexity across internal components that don't need it would be pure overhead, paid for a scaling and fault-isolation benefit the system doesn't currently need.</p>
+      </div>
+
+      <h4 class="subhead concept">The one thing that looks like a second service — and how it's actually kept separate correctly</h4>
+      <div class="prose">
+        <p>ROADMAP.md's non-goals table names the one place BRIEFR's own team considered something closer to a real second service: an optional telemetry/log-analytics sidecar referred to internally as "Jupiter" (built on ClickStack), explicitly kept <em>optional</em> and <em>outside core</em> — the table states the core app is deliberately not becoming "log firehose ingestion" and that this capability, if wanted, is "an optional Jupiter sidecar," not a rebuild of the core system's architecture. The same table rules out forking or rebuilding a tool like Kibana/HyperDX for that purpose ("use stock ClickStack for telemetry UI if needed") — the instinct to reach for off-the-shelf infrastructure rather than building and maintaining a bespoke second service is the same monolith-favoring instinct applied one level up: even the one legitimate case for "another service" gets handled by adopting an existing tool as an optional add-on, not by growing BRIEFR's own architecture into a distributed system.</p>
+      </div>
+
+      <div class="pitfall-box">
+        <p><strong>Also explicitly ruled out, and worth knowing precisely why:</strong> ROADMAP.md's non-goals also name "commercial SIEM replacement" and "generic LLM chat SOC" — both real products other tools already build well. BRIEFR positions itself narrowly as an intel, detection-content, and investigation pane, not a log-ingestion platform or a chatbot wrapper — a scope decision that, not coincidentally, is also what keeps the monolith viable: a SIEM's log-firehose ingestion volume is exactly the kind of workload that would eventually force a distributed architecture, and BRIEFR has deliberately scoped that requirement out rather than build toward it.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the three usual justifications for microservices (independent scaling, independent deploy cadence, fault isolation) and explain, for each one, why it doesn't currently apply to BRIEFR.</li>
+          <li>Why is the "Jupiter" telemetry sidecar not a counter-example to "BRIEFR is a monolith" — what specifically keeps it from being a second core service?</li>
+          <li>If BRIEFR did become a genuine multi-tenant SaaS product, which of today's monolith assumptions would be the first to break, and why?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="chapter" id="arch-resources">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A2</span>
+        <h3>The resource-consciousness thread — designed for modest hardware</h3>
+        <p class="dek">A recurring, mostly-unstated design bias runs through nearly every chapter in this book: keep the footprint small enough to run comfortably on a low-end VPS. This chapter names it explicitly and is honest about where it isn't yet backed by a documented number.</p>
+        <div class="files"><span class="chip">ml/embeddings.py</span><span class="chip">rate_limit.py</span><span class="chip">docs/audit/PHASE_06_performance.md</span></div>
+      </div>
+
+      <h4 class="subhead concept">Naming the thread — a design bias visible only once you look across chapters</h4>
+      <div class="prose">
+        <p>No single file in this codebase says "keep memory under X gigabytes." But look back across the chapters you've already read and a consistent pattern emerges, choice after choice, each one individually justified on its own terms and collectively adding up to a system that stays lightweight: <strong>CPU-only ONNX embeddings</strong> (Chapter 24 — <code>BAAI/bge-small-en-v1.5</code> via <code>fastembed</code>, no GPU, no PyTorch runtime) instead of a larger transformer model that would need meaningfully more RAM and ideally a GPU to run at reasonable speed. <strong>A single uvicorn worker</strong> (Chapter 12's rate-limiting chapter noted this explicitly — <code>--workers 1</code>) instead of a multi-process pool that would multiply baseline memory by however many workers ran. <strong>In-memory rate-limit buckets, the outbound API queue, and the read cache</strong> (Chapters 12, 16, and the API surface chapters) instead of standing up a separate Redis instance purely to hold small, ephemeral counters. <strong>SQLite as the zero-config default</strong> (Chapter 9) rather than requiring Postgres even for a first-time evaluator just trying the tool out. <strong>Free and cheap-tier hosted LLM APIs</strong> (Chapter 24) rather than self-hosting an open-weight LLM locally, which would require the single largest chunk of RAM and compute of anything in this list by a wide margin. <strong>Client-side PDF generation</strong> (Chapter 5) instead of a headless-Chromium rendering process living inside the backend. <strong>Lazy-loaded, code-split chart and export libraries</strong> on the frontend (also Chapter 5) instead of one enormous eagerly-loaded bundle.</p>
+        <p>None of these were framed, in the code or docs, as "we did this to hit a RAM budget" — each has its own local justification (privacy, cost, simplicity, avoiding a new dependency). But taken together, they describe a system whose default configuration is comfortable running on genuinely modest hardware: a small VPS with a couple of CPU cores and a few gigabytes of RAM, not a dedicated machine with a GPU and dozens of gigabytes free.</p>
+      </div>
+
+      <h4 class="subhead why">The honest gap: this isn't a documented, benchmarked number yet</h4>
+      <div class="prose">
+        <p>It would overstate the case to claim BRIEFR has an official "runs in 2GB RAM on 2 cores" specification — it doesn't, and it's worth being precise about that rather than inventing a certainty the project itself doesn't claim. The project's own performance audit (<code>docs/audit/PHASE_06_performance.md</code>) says so directly, listing it as an open gap in its own words: "what's missing is guidance/limits: recommended CPU/RAM/disk envelopes." The same audit's overall score of 7/10 for performance readiness reflects real, specific findings worth knowing precisely rather than a vague "needs work": the Postgres connection pool defaults to a minimum size of 1 and maximum of 10 (modest, and consistent with a small-footprint target, but also a real concurrency ceiling nobody has load-tested against); the CVE feed defaults to OFFSET-based pagination rather than the more scalable keyset pagination that already exists but is opt-in; <code>recharts</code> is imported statically in chart wrappers with no bundle-size budget enforced in <code>vite.config.js</code>; and roughly twenty places in the <code>db/</code> layer run an <code>await execute/fetch</code> call inside a loop, a pattern worth watching for N+1-style query cost as data volume grows. None of these are urgent given today's usage pattern (a single operator's browser), and the audit says as much — but they are the concrete reasons "how much hardware does BRIEFR actually need" doesn't yet have a number attached to it, only a design direction.</p>
+      </div>
+
+      <h4 class="subhead how">What the design direction is consistent with, stated as a target rather than a guarantee</h4>
+      <div class="prose">
+        <p>Given the choices actually made — a single worker process, CPU-only small-model inference, in-memory ephemeral state instead of a separate cache service, and a SQLite path that needs no database server at all for evaluation — the natural, honest way to state the target is: <strong>this architecture is built to be comfortable on a small VPS in the low single-digit gigabytes of RAM and one or two CPU cores, for a single operator's traffic pattern</strong> — not "requires 16GB and a GPU," and not "certified to run in 512MB" either. If you're sizing a box to run this yourself, a couple of cores and 2–4GB of RAM is the range every individual choice in this system points toward, even though — per the paragraph above — nobody has yet run the load test that would turn that direction into a documented, verified number. Chapter titled "Roadmap, reversals & open gaps" later in this book lists exactly this as an open item: publishing a real recommended CPU/RAM/disk envelope, backed by measurement rather than inference from design choices.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>List four separate design decisions from earlier chapters that each independently reduce BRIEFR's resource footprint, and state each one's <em>primary</em> stated justification (which usually isn't "save RAM" directly).</li>
+          <li>Why is it inaccurate to describe BRIEFR as having an official minimum hardware requirement, even though its design choices clearly point toward a lightweight footprint?</li>
+          <li>Of the five concrete performance-audit findings named in this chapter, which one would you expect to matter first as CVE corpus size grows, and why?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="chapter" id="arch-connectivity">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A3</span>
+        <h3>How the pieces connect — and why some deliberately don't</h3>
+        <p class="dek">The single most useful mental model for holding this entire codebase in your head at once: the database is the message bus, and most "why isn't X wired to Y" questions have a real, considered answer.</p>
+      </div>
+
+      <h4 class="subhead concept">The one connectivity fact that explains most of the others: the database is the message bus</h4>
+      <div class="prose">
+        <p>Read across every chapter so far and one structural fact keeps recurring in different clothes: the scheduler (feeds, scoring, correlation, detection-context sync, embeddings backfill) and the request path (routers) essentially never call each other's functions directly. They communicate almost entirely by writing to, and reading from, the same Postgres/SQLite tables. A scheduled job computes a correlation snapshot and writes it to a table; a router reads that table. A scheduled job upserts a CVE's EPSS score; a router reads it. This is, functionally, the same pattern a message queue or event bus gives you in a distributed system — a durable, asynchronous handoff point between producer and consumer — except BRIEFR gets it for free from the database it already needs for everything else, with no extra infrastructure. Once you see this pattern, most of the "why does A never call B directly" questions in this codebase have the same one-line answer: because A writes to a table, and B reads that table, on its own schedule.</p>
+      </div>
+
+      <h4 class="subhead how">A map of what's actually connected to what</h4>
+      <div class="prose">
+        <p><strong>Connected, one-way, through the database:</strong> feeds → the <code>cves</code>/<code>kev</code>/<code>epss_history</code> tables → scoring reads them on request; correlation's nightly job → per-CVE snapshot tables → <code>routers/cves.py</code>'s correlation endpoint reads them; the embeddings backfill job → stored vectors → semantic search reads them (Chapter 24's "must use stored vectors only" rule is this exact pattern, stated as an explicit constraint rather than left implicit); webhook-alert trigger functions (Chapter 27) are called <em>only</em> from scheduler jobs, never from a router, and dispatch outward to Discord/Telegram/generic HTTPS — a one-way fan-out, nothing calls back in.</p>
+        <p><strong>Connected, directly, as ordinary function calls within one request:</strong> a CVE detail request calls into scoring, matching, and template-sentence generation synchronously, because those are cheap, deterministic, in-process computations appropriate for the request path (Chapter 18's whole "explainable formula, not a request-path bottleneck" design is precisely what makes this direct call safe, where a slow correlation join was not — Chapter 20's ADR-004 incident is the cautionary tale for what happens when something that should be an async, database-mediated handoff gets called synchronously instead).</p>
+        <p><strong>Deliberately not connected, and each for a stated reason:</strong> correlation and detection engineering (Chapters 20–21) never call each other — correlation only ever hands scoring a boolean escalation flag, and detection never queries correlation state at all, because the two answer genuinely independent questions (is this CVE part of a real campaign, versus what would a detection rule for it look like) that don't need each other's internals to function correctly. The <code>security_architecture/</code> module (Chapter 26) deliberately does not implement its own matching or scoring logic, reusing existing functions instead — a connectivity choice as much as a code-reuse one, since a hand-rolled second implementation would be a second thing that could silently drift from the first. Generated Sigma/SIEM rules (Chapter 21) are never automatically deployed into a live SIEM — the pipeline stops at "here's a rule for a human to review and paste in," a deliberate air gap between "BRIEFR generated this" and "this is now running in production detection," because unreviewed generated content becoming live detection logic without a human in the loop is a risk nobody chose to accept. The wallboard (Chapter 30) runs its own separate cookie-session scheme rather than reusing the main JWT auth system, and the scoped search-token bearer credential (Chapter 11) is deliberately walled off from the admin permission system entirely — two different flavors of the same instinct: a narrower credential for a narrower job, not wired into the broader system.</p>
+      </div>
+
+      <h4 class="subhead why">The browser never talks to the outside world directly — everything is proxied</h4>
+      <div class="prose">
+        <p>One connectivity boundary is easy to take for granted precisely because it's so consistently enforced: the React frontend never calls NVD, OTX, GitHub, or any LLM provider directly from the browser. Every external call is proxied through the FastAPI backend, which is the only thing that ever holds an API key for any of those services. This isn't a performance optimization — it's a security boundary stated in different terms than Chapter 11's authentication chapter, but built on the same underlying principle: a credential should live in exactly as many places as it needs to, and the browser, being fully visible to whoever is sitting at it, is never one of those places for a third-party API key.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Explain "the database is the message bus" in your own words, and name two subsystem pairs from earlier chapters whose connection is best described this way.</li>
+          <li>Why don't correlation and detection engineering call each other directly, even though they both ultimately relate to the same CVE?</li>
+          <li>What specific risk does BRIEFR avoid by never letting a generated Sigma rule deploy itself automatically into a live SIEM?</li>
+          <li>Why does the wallboard need its own separate session scheme instead of just reusing the main login system it otherwise resembles?</li>
+        </ol>
       </div>
     </section>
 
@@ -1610,9 +1737,29 @@ WEIGHT_MOMENTUM = <span class="num">0.05</span></code></pre>
         <p>This is the detail that ties the whole chapter together: BRIEFR must fully function for an operator who configures zero LLM API keys at all — a real, expected, and fully-supported deployment mode, not an edge case. A single gate function, <code>any_llm_provider_configured()</code>, controls whether LLM-dependent features attempt to run at all; when it's false, PDF executive summaries fall back to a template-based <code>_template_executive_summary</code> instead of an LLM-generated one, product extraction and detection-artifact extraction simply don't run (CPE data and deterministic Nuclei-YAML parsing still populate the same underlying fields through non-LLM paths), and semantic search degrades to keyword-only matching, reporting that fact honestly in its response metadata rather than silently pretending to be semantic. Every one of these enrichments is additive polish layered on top of a fully-functional core product — never something the core product's correctness depends on.</p>
       </div>
 
+      <h4 class="subhead concept">The actual algorithm underneath "semantic search" — cosine similarity, made concrete</h4>
+      <div class="prose">
+        <p>It's worth de-mystifying exactly what "embeddings" computes, since the term gets used as if it were magic. An embedding model turns a piece of text into a fixed-length list of numbers — a vector — positioned in a high-dimensional space such that texts with similar <em>meaning</em> end up as nearby vectors, even if they share few or no exact words in common. "Semantic search" then reduces to a genuinely simple piece of arithmetic: compute the embedding vector for a search query, compute (or, in BRIEFR's case, already have stored) the embedding vector for every candidate CVE description, and rank candidates by <strong>cosine similarity</strong> — the cosine of the angle between two vectors, which is 1 when they point in exactly the same direction (maximally similar in meaning) and 0 when they're orthogonal (unrelated). There's no learning or inference happening at search time at all — the model already did the hard work once, ahead of time, when it produced the stored vectors; a live search is pure vector arithmetic, which is exactly why it's cheap enough to run on the request path when a live LLM call would not be.</p>
+        <p>At real scale, comparing a query vector against every single stored vector one by one (a brute-force linear scan) becomes too slow to do on every request once the CVE corpus is large. This is what pgvector's ANN (Approximate Nearest Neighbor) index solves — a data structure that finds vectors <em>very close to</em> the true nearest matches, in a fraction of the time a brute-force scan would take, trading a small, usually irrelevant amount of ranking precision for a large, very relevant speed gain. BRIEFR's hybrid search then blends this vector-similarity ranking with ordinary keyword search rather than relying on vectors alone — deliberately, because embeddings are excellent at "this text means something similar" and comparatively weak at exact-token matching (a CVE ID, a specific product version string, an exact error code an analyst pastes in verbatim) — the two techniques cover each other's blind spots.</p>
+      </div>
+
+      <h4 class="subhead why">Why <code>BAAI/bge-small-en-v1.5</code> specifically — and why not a bigger, "better" model</h4>
+      <div class="prose">
+        <p>Embedding models span an enormous size range — from tens of millions of parameters up to models comparable in size to a full LLM. BRIEFR's choice sits deliberately at the small end for reasons that connect directly to Chapter 25's resource-consciousness thread: <code>bge-small-en-v1.5</code> is a compact model (roughly on the order of tens of millions of parameters, not billions) specifically chosen so it runs acceptably fast on ordinary CPU hardware via ONNX through <code>fastembed</code> — no GPU, no PyTorch runtime dependency, no meaningful extra RAM budget beyond loading one small model file. A larger, more capable embedding model would very likely produce marginally better semantic rankings, but at a real cost this project has explicitly declined to pay: slower CPU inference (mattering directly for how long a bulk backfill job takes, since Chapter 24 established this only ever runs in the scheduler, never on the request path), a meaningfully larger memory footprint just to hold the model in memory, and — for anyone considering a hosted embedding API instead of a local model — a recurring per-call cost and a dependency on sending CVE and asset-stack text to a third party, which cuts directly against BRIEFR's self-hosted, privacy-conscious posture (the same instinct behind self-hosting fonts in Chapter 5, stated again at the ML layer). A small, local, CPU-only model is the one choice that satisfies "works fully offline," "costs nothing per query," and "keeps analyst data on the box" simultaneously — three properties a larger or hosted model would each individually break.</p>
+      </div>
+
+      <h4 class="subhead pitfall">The real restrictions this choice imposes — worth naming precisely, not glossing over</h4>
+      <div class="pitfall-box">
+        <p>A small local model is not a free lunch, and the honest restrictions are worth stating explicitly rather than only praising the upside. <strong>Fixed dimensionality:</strong> every vector this model produces has the same fixed length, set once by the model architecture — switching to a different embedding model later isn't a drop-in config change, because old and new vectors would live in incompatible spaces, meaning a model change requires re-embedding the entire historical corpus from scratch, not a quiet migration. <strong>English-biased:</strong> the model name says it plainly (<code>-en-</code>) — this is trained predominantly on English text, so semantic quality for non-English CVE descriptions or analyst queries would be meaningfully weaker, a real limitation for any future internationalization of the product. <strong>No fine-tuning on BRIEFR's own domain data:</strong> the model is used exactly as published, off the shelf, with no additional training on CVE-specific or security-specific text — it brings general-purpose semantic understanding, not a specialized notion of, say, which CVEs security professionals consider "similar" in a way a general text model wouldn't naturally capture. <strong>CPU-bound throughput:</strong> embedding a large historical backlog of CVEs is measurably slower on CPU than it would be on a GPU, which is precisely why the backfill is scheduler-only, resumable, and explicitly never something the request path can trigger inline — a direct, load-bearing consequence of the CPU-only choice, not an unrelated design decision.</p>
+      </div>
+
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
+          <li>Explain cosine similarity in your own words, and say precisely why a search request needs to compute only <em>one</em> new embedding (the query's), not embed every CVE again.</li>
+          <li>Why does an ANN index trade a small amount of ranking accuracy for a large speed gain, and why is that trade acceptable for this specific use case?</li>
+          <li>Name three properties a larger or hosted embedding model would break for BRIEFR that <code>bge-small-en-v1.5</code> preserves — connect each one back to a specific project value (cost, privacy, offline capability).</li>
+          <li>If BRIEFR wanted to switch embedding models in the future, why couldn't it simply swap the model name in a config file and move on?</li>
           <li>An operator configures zero LLM API keys. Walk through, category by category, exactly what breaks — and justify why the honest answer is "nothing user-visible."</li>
           <li>Why is the LLM provider chain a fixed-priority failover rather than round-robin load balancing across providers?</li>
           <li>Give a concrete example of enrichment that sounds like "AI" but is actually plain deterministic code, and explain what specifically makes it deterministic rather than learned.</li>
@@ -1895,6 +2042,85 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       </div>
       <div class="prose">
         <p>Chapter 26's <code>security_architecture/</code> module deserves a place in this closing chapter specifically because it's an unusually mature thing for a project of this size to have built at all: a structured, evidence-gated, self-updating record of the system's own trust boundaries and controls, engineered so it cannot silently drift from what the code actually does, and that ages out of validity automatically rather than silently going stale. Most projects treat "our threat model" as a document written once and never revisited; BRIEFR treats it as a living artifact with the same freshness discipline as anything else that matters — a design instinct worth noticing on its own, independent of any of the specific findings it happens to surface.</p>
+      </div>
+    </section>
+
+    <div class="part-divider" id="roadmap">
+      <span class="part-eyebrow">Part VI · Closing</span>
+      <h2>Roadmap, reversals, and open gaps</h2>
+      <p class="part-intro">Everything so far described what BRIEFR is today. This chapter covers the other three tenses: what it deliberately will never be, what it used to be before a decision reversed it, and what nobody has gotten to yet — pulled from the project's own roadmap, backlog, and change history, not speculation.</p>
+    </div>
+
+    <section class="chapter" id="roadmap-nongoals">
+      <div class="chapter-head">
+        <span class="chapter-num">Roadmap · 1</span>
+        <h3>Explicit non-goals — what this will never try to be</h3>
+        <p class="dek">A short, deliberately-scoped list, stated once in <code>ROADMAP.md</code> and treated as binding until explicitly revisited.</p>
+      </div>
+      <div class="prose">
+        <p>Five non-goals are recorded as standing decisions, each with a stated reason rather than left as an assumption:</p>
+      </div>
+      <table class="mini-table">
+        <tr><th>Non-goal</th><th>Reason on record</th></tr>
+        <tr><td>Commercial SIEM replacement</td><td>BRIEFR is an intel / detection-content / investigation pane, not a log-ingestion platform</td></tr>
+        <tr><td>Log firehose ingestion in core app</td><td>Handled by an optional Jupiter (ClickStack) sidecar if wanted, kept out of core</td></tr>
+        <tr><td>Multi-tenant SaaS in V1.x</td><td>Single operator today; schema seams left for future multi-user support, not built now</td></tr>
+        <tr><td>Forking HyperDX / rebuilding Kibana</td><td>Use stock ClickStack for a telemetry UI instead of maintaining a bespoke fork</td></tr>
+        <tr><td>Generic LLM chat SOC</td><td>Considered a commodity; BRIEFR uses LLMs sparingly, only for summaries and detection-card enrichment</td></tr>
+      </table>
+      <div class="prose">
+        <p>Read together, these five decisions are what keep Chapter A1's monolith architecture viable — each one rules out exactly the kind of workload (massive log ingestion, many independent tenants, a general-purpose chat interface) that would eventually force the system toward the distributed architecture it currently, deliberately, doesn't have.</p>
+      </div>
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Pick one non-goal and explain, concretely, what would break in BRIEFR's current monolith architecture if that boundary were crossed.</li>
+          <li>Why does the project prefer adopting an existing tool (ClickStack) for optional telemetry rather than building the equivalent feature natively?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="chapter" id="roadmap-reversed">
+      <div class="chapter-head">
+        <span class="chapter-num">Roadmap · 2</span>
+        <h3>What was tried, shipped, and later reversed</h3>
+        <p class="dek">Real decisions this codebase made and then deliberately undid — the most honest way to understand a system is to see what it tried and walked back, not just what it currently does.</p>
+      </div>
+      <div class="prose">
+        <p><strong>The legacy admin-key header, replaced by real accounts (Spec A0, decided 2026-07-05).</strong> Before Chapter 11's login system existed, BRIEFR authenticated administrative access with a single shared secret header (<code>X-BRIEFR-Admin-Key</code>) — effectively one shared password for anyone who needed admin access, with no per-user identity, no audit trail of <em>which</em> admin did something, and no way to revoke one person's access without rotating the key for everyone. It was removed in favor of the full account system this book covers in Chapter 11 — individual users, roles checked live against the database, sessions that can be revoked per-account. This is worth reading as the clearest single example in this codebase of "we shipped the simple version first, learned its limits, and replaced it" rather than getting the design right on the first attempt.</p>
+        <p><strong>Anthropic/Claude, removed from the LLM failover chain.</strong> Track K's own record states plainly: "No paid APIs — no Anthropic (removed from the chain for now)." Chapter 24 already established that BRIEFR's current LLM chain (Groq → Cerebras → OpenRouter → Gemini) contains no Anthropic client anywhere in the code — this entry confirms that's a reversal, not an oversight: a premium-tier provider was in the chain at some point and was deliberately taken back out, consistent with the project's stated goal of keeping a self-hosted tool's operating cost near zero. "For now" signals this is a scoping decision tied to the free-tier cost strategy, not a permanent technical exclusion.</p>
+        <p><strong><code>db/dialect.py</code>, a general SQL translation layer, deleted entirely (Post-B, 2026-07).</strong> Chapter 9 already covers what replaced it — paired <code>_SQLITE</code>/<code>_PG</code> query constants written by hand — but it's worth naming this explicitly as a reversal rather than just a current-state fact: a general-purpose translator that tried to make one SQL string work on both databases automatically was tried, and abandoned in favor of deliberately writing both dialects out by hand. The lesson embedded in that reversal: an automatic translation layer that almost works is more dangerous in a data layer than an explicit, slightly more verbose approach that always works.</p>
+        <p><strong>Chart.js, mid-reversal right now.</strong> Chapter 3's library registry already covers this as a live migration rather than a completed one: Chart.js is explicitly deprecated in favor of Recharts, ported chart-by-chart, page-atomic, with both libraries coexisting temporarily and Chart.js scheduled for full removal once the last chart moves. Worth including here specifically because it's a reversal you can watch happen in real time across pull requests, rather than one you only see after the fact in a changelog.</p>
+      </div>
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>What specific capability did the legacy admin-key header lack that the current per-user system provides — name the exact gap, not just "it was less secure."</li>
+          <li>Why might a project deliberately exclude a premium-tier LLM provider from its failover chain even if that provider would produce marginally better output?</li>
+          <li>What made a general-purpose SQL dialect translator riskier than writing both dialects by hand — tie your answer back to Chapter 9's data-layer discussion.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="chapter" id="roadmap-future">
+      <div class="chapter-head">
+        <span class="chapter-num">Roadmap · 3</span>
+        <h3>What's next, what's parked, and what hasn't been considered yet</h3>
+        <p class="dek">Pulled directly from the open backlog and the performance audit's own findings — the honest "not yet" list, not a guess at future features.</p>
+      </div>
+      <div class="prose">
+        <p><strong>Explicitly parked, by the maintainer's own signal (not forgotten, just deprioritized):</strong> a STIX/Sigma bulk export feature planned for an earlier release phase; a full, production-grade <code>docker-compose.yml</code> covering the entire stack (today's compose file covers Postgres alone, per Chapter 9); and the remainder of one performance-hardening track beyond what's already shipped. These are recorded as deliberately paused, not abandoned — a distinction worth preserving when discussing them, since "parked" and "rejected" mean different things in this project's own vocabulary.</p>
+        <p><strong>Explicitly out of scope for the resource-benchmarking program, by decision rather than oversight:</strong> synthetic load simulation, Prometheus/Grafana metrics export, per-endpoint latency histograms, and alerting on resource thresholds. What <em>did</em> ship in that same program is real and already covered in Chapter 30's territory: a resource-metrics table with a <code>psutil</code>-based collector job and retention policy, plus an admin-facing Resources page showing CPU/memory trends over 1/3/7/30-day windows. The gap between what shipped and what's out of scope is precise: BRIEFR can show an operator their own instance's resource trend, but does not (yet, by decision) simulate load, export to external monitoring stacks, or alert automatically when something crosses a threshold.</p>
+        <p><strong>Genuinely not yet considered, per the performance audit's own words:</strong> a documented, recommended CPU/RAM/disk sizing envelope — the exact gap Chapter A2 discussed in detail, restated here as a concrete backlog item rather than an abstract observation. Alongside it, the same audit flags the connection-pool sizing defaults, the OFFSET-pagination default, and the unbounded frontend vendor chunk as measured-but-unaddressed findings — real, specific, and modest in scale today, but the first places load would show up if usage grew meaningfully beyond a single operator.</p>
+        <p><strong>Near-term "next," in the project's own words from its most recent working sessions:</strong> admin-facing retrieval health monitoring and operator-tunable knobs for the semantic search system (Chapter 24), following directly on from the embeddings work covered in this book. This is the kind of "next" that's genuinely close — already scoped, waiting on the current program to close out — rather than a distant aspiration.</p>
+      </div>
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>What's the practical difference, in this project's own usage, between something "parked" and something "rejected as a non-goal" (Chapter Roadmap·1)? Give one example of each.</li>
+          <li>Why would a team deliberately ship resource-trend visibility (the Resources admin page) while explicitly declining to build alerting on top of the same data?</li>
+          <li>Connect one item from this chapter's "not yet considered" list back to a specific design decision from an earlier chapter that makes it a natural next step rather than an arbitrary one.</li>
+        </ol>
       </div>
     </section>
 
