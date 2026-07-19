@@ -169,23 +169,57 @@ BOOK_JS = r"""
 """
 
 
+def _has_exact_class(attrs: str, name: str) -> bool:
+    m = re.search(r'\bclass="([^"]*)"', attrs)
+    if not m:
+        return False
+    return name in m.group(1).split()
+
+
 def extract_pages(html: str) -> list[dict]:
-    page_pat = re.compile(
-        r'<(section|header|div)\b([^>]*\bclass="[^"]*\bpage\b[^"]*"[^>]*)>(.*?)</\1>',
-        re.S,
+    """Extract top-level .page elements with depth-aware tag matching."""
+    opener = re.compile(
+        r"<(section|header|div)\b([^>]*)>",
+        re.I,
     )
     pages: list[dict] = []
-    for m in page_pat.finditer(html):
-        tag, attrs, body = m.group(1), m.group(2), m.group(3)
+    pos = 0
+    while True:
+        m = opener.search(html, pos)
+        if not m:
+            break
+        tag, attrs = m.group(1).lower(), m.group(2)
+        if not _has_exact_class(attrs, "page"):
+            pos = m.end()
+            continue
         id_m = re.search(r'\bid="([^"]+)"', attrs)
         if not id_m:
+            pos = m.end()
             continue
+        start = m.start()
+        i = m.end()
+        depth = 1
+        tag_re = re.compile(rf"</?{tag}\b[^>]*>", re.I)
+        end = None
+        for tm in tag_re.finditer(html, i):
+            token = tm.group(0)
+            if token.startswith("</"):
+                depth -= 1
+                if depth == 0:
+                    end = tm.end()
+                    break
+            elif not token.endswith("/>"):
+                depth += 1
+        if end is None:
+            pos = m.end()
+            continue
+        full = html[start:end]
         pid = id_m.group(1)
-        full = f"<{tag}{attrs}>{body}</{tag}>"
-        tm = re.search(r"<h[123][^>]*>(.*?)</h[123]>", full, re.S)
-        title = re.sub("<[^>]+>", "", tm.group(1)).strip() if tm else pid
+        title_m = re.search(r"<h[123][^>]*>(.*?)</h[123]>", full, re.S)
+        title = re.sub("<[^>]+>", "", title_m.group(1)).strip() if title_m else pid
         text = re.sub(r"\s+", " ", re.sub("<[^>]+>", " ", full)).strip()
         pages.append({"id": pid, "title": title, "html": full, "text": text})
+        pos = end
     return pages
 
 
