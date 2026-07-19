@@ -16,7 +16,7 @@ on the same CVE within the retry window; errors are not cached and retry on
 the next run.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

@@ -278,7 +278,7 @@
         <a class="toc-link toc-sub" href="#arch-resources">The resource-consciousness thread</a>
         <a class="toc-link toc-sub" href="#arch-connectivity">How the pieces connect</a>
         <a class="toc-link toc-sub" href="#arch-ai-restraint">Why AI is used sparingly</a>
-        <a class="toc-link toc-sub" href="#arch-license">Why AGPL-3.0</a>
+        <a class="toc-link toc-sub" href="#arch-license">Why BSL-1.1</a>
       </div>
 
       <div class="toc-group">
@@ -797,34 +797,34 @@ flowchart TB
     <section class="page chapter" id="arch-license">
       <div class="chapter-head">
         <span class="chapter-num">Part 0B · Chapter A5</span>
-        <h3>Why AGPL-3.0 — the one license decision, and what it's honestly missing</h3>
-        <p class="dek">A short chapter, because the source material is short: the project's own planning docs record the decision and its date, not a written rationale. What follows is the well-established reasoning behind that license choice in general, stated plainly as such.</p>
+        <h3>Why Business Source License 1.1 — and the AGPL decision it reversed</h3>
+        <p class="dek">The license changed twice before the public flip: proprietary → AGPL-3.0-or-later → BSL-1.1. This chapter explains the current model and is honest about the reversal, since a study guide that hides its own subject's history isn't trustworthy.</p>
         <div class="files"><span class="chip">LICENSE</span><span class="chip">docs/planning/STRATEGY.md</span></div>
       </div>
 
-      <h4 class="subhead concept">What's actually on record</h4>
+      <h4 class="subhead concept">What's actually on record — including the reversal</h4>
       <div class="prose">
-        <p><code>docs/planning/STRATEGY.md</code> records this as a dated, closed decision — "Decided 2026-07-10 (Track F2): AGPL-3.0-or-later" — applied across <code>LICENSE</code>, <code>CONTRIBUTING.md</code>, and SPDX headers. It's worth being precise about what that record does and doesn't contain: it states <em>that</em> the decision was made and <em>when</em>, not a written "here's why AGPL over MIT/Apache/plain GPL" argument. So the reasoning below is general, well-established open-source licensing logic — the standard case for AGPL specifically — not a claim about what BRIEFR's own documents say motivated it.</p>
+        <p><code>docs/planning/STRATEGY.md</code> §6 records two decisions in sequence, both dated: "Decided 2026-07-10 (Track F2): AGPL-3.0-or-later," then "Superseded 2026-07-19 (Track F2-R)" in favor of the Business Source License 1.1 (BSL). Both were made before the public repository flip, which matters for exactly one reason: no external party had received code under the AGPL grant yet, so reversing it carried none of the legacy-grant complications that revoking a license already held by outside forks would create. The current, governing license is BSL-1.1 — <code>LICENSE</code>, <code>CONTRIBUTING.md</code>, and every active source file's SPDX header (<code>SPDX-License-Identifier: BUSL-1.1</code>) all agree on this.</p>
       </div>
 
-      <h4 class="subhead why">The gap AGPL closes that GPL, MIT, and Apache all leave open</h4>
+      <h4 class="subhead why">What BSL-1.1 actually does — a paywall with a built-in expiry, not permanent copyleft</h4>
       <div class="prose">
-        <p>Ordinary copyleft (plain GPL) triggers its share-the-source obligation on <em>distributing</em> the software — handing someone a binary or a copy of the code. That has a well-known loophole once software mostly runs as a network service rather than something installed locally: a company can take GPL-licensed code, modify it, run it as a paid SaaS product, and never distribute a single file to anyone — so the obligation to share modifications never triggers, even though every one of that service's users is, in every meaningful sense, "using" the modified software. Permissive licenses (MIT, Apache-2.0) don't even have that obligation to begin with — anyone can take the code, modify it, and never share anything back, open-source or not. AGPL closes exactly this gap: its distinguishing clause extends the share-your-modifications obligation to <em>network use</em>, not just distribution — if you run a modified version of an AGPL-licensed program as a network-accessible service, you must offer its source to the people interacting with it over that network, even though you never handed anyone a copy in the traditional sense.</p>
-        <p>For a project like BRIEFR — self-hosted, but exactly the kind of tool someone could otherwise wrap in a hosted offering without ever releasing their changes — that's the specific scenario AGPL is built to prevent: a fork running as somebody else's paid, closed product, built on this project's own work, with no obligation to contribute anything back. Plain GPL wouldn't prevent that (no distribution occurs in a SaaS deployment); MIT or Apache wouldn't even try.</p>
+        <p>BSL is a different shape of license than either AGPL or a permissive license, and it's worth being precise about the difference rather than treating "source-available" as a synonym for "open source." BRIEFR's specific terms (set in the <code>LICENSE</code> file's "Additional Use Grant"): anyone may read, copy, modify, and self-host the code free of charge for personal, non-commercial purposes — but use by or on behalf of a for-profit organization ("Commercial Use") requires a one-time, lifetime commercial license purchased from the Licensor. That is the paywall AGPL does not have — AGPL would let a business self-host and even modify BRIEFR commercially for free, as long as they shared modifications back over the network; BSL asks that same business to pay once, with no such carve-out. The second defining feature is the "Change Date": four years after each version's publication, that version automatically converts to the Apache License 2.0 — fully permissive, no restrictions at all. So BSL isn't a permanent restriction; it's a time-boxed head start, letting the Licensor capture commercial-use revenue on recent versions while guaranteeing that revenue window eventually closes and the code becomes as open as it gets.</p>
+        <p>This is the same license family HashiCorp used for Terraform/Vault and IBM continues to use for Terraform since its BSL-authoring MariaDB origin — a well-understood, if debated, pattern for source-available commercial software that wants public code review and free non-commercial self-hosting without giving competitors a free ride to build a paid hosted clone.</p>
       </div>
 
-      <h4 class="subhead pitfall">What this costs, honestly — AGPL is not a free upgrade</h4>
-      <div class="prose">
-        <p>The tradeoff is real and worth stating plainly rather than only praising the upside. AGPL is the most restrictive of the common open-source licenses in this exact dimension, and some organizations have blanket policies against depending on AGPL-licensed code at all, out of caution about the network-use clause's reach into their own internal tooling — a permissively-licensed or plain-GPL alternative would face less friction in that kind of environment. It also has no bearing at all on the single-operator, self-hosted deployment this book has described throughout — an individual running their own instance is not "distributing" or offering network access to third parties in the sense the license cares about, so AGPL's obligations are essentially dormant for BRIEFR's actual primary use case today. Where it matters is entirely prospective: it's a bet about what happens if BRIEFR becomes popular enough for someone else to want to build a competing hosted product on top of it without contributing anything back — a scenario the project hasn't yet faced, but chose, in advance, not to leave undefended.</p>
+      <h4 class="subhead pitfall">What this costs, honestly — and why AGPL was considered first</h4>
+      <div class="pitfall-box">
+        <p>The tradeoff is real. Some organizations and distros flatly exclude BSL-licensed dependencies from "open source" bundles (it isn't OSI-approved), which AGPL — however restrictive — clears. AGPL's specific worry (a hosted competitor built on BRIEFR's own code, contributing nothing back) is answered differently by each license: AGPL answers it by forcing that competitor to publish their modifications; BSL answers it by making that competitor pay for the right to run it commercially at all, a blunter but more directly monetizable mechanism. The Track F2 → F2-R sequence in this project's own history is itself worth understanding as a real example of a team trying the reciprocal-sharing answer first, and switching to the direct-payment answer once — reflected in <code>STRATEGY.md</code>'s "Adoption engineering" pillar — commercial-license revenue became the more important goal than guaranteed source-sharing by commercial forks.</p>
       </div>
 
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
-          <li>Explain the specific loophole in plain GPL that AGPL's network-use clause closes.</li>
-          <li>Why are AGPL's obligations essentially dormant for a single operator running their own private BRIEFR instance?</li>
-          <li>Name one real cost of choosing AGPL over a permissive license like MIT or Apache-2.0.</li>
-          <li>What does <code>docs/planning/STRATEGY.md</code> actually record about this decision, and what does it <em>not</em> record?</li>
+          <li>What does BSL's "Additional Use Grant" require of a for-profit organization that AGPL would not?</li>
+          <li>Explain the "Change Date" mechanism — what happens to a given BRIEFR version four years after it's published, and why is that different from AGPL's permanence?</li>
+          <li>Why could the AGPL → BSL reversal happen cleanly, with no legacy-grant problem to manage?</li>
+          <li>Name one real reason an organization might refuse to depend on BSL-licensed code even though it's source-available.</li>
         </ol>
       </div>
     </section>
@@ -980,14 +980,14 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
 
       <h4 class="subhead how">The governance gate itself</h4>
       <div class="prose">
-        <p>Adding anything new to the approved list — or promoting something out of "conditional" — requires all of: an update to the ADR text itself with rationale, design-review sign-off against the design-system doc, a license compatibility check (the project is AGPL-3.0-or-later, so dependencies must carry a compatible permissive license — MIT, Apache-2.0, or BSD), a bundle-size justification against recorded budgets (the primitives layer is capped at ≤35 kB gzip incremental; Recharts' lazy chunk at ≤110 kB), and accessibility parity at least equal to the Radix baseline. This is deliberately high friction — the point of the friction is that it's cheaper to update one ADR than to discover six months later that three different component kits crept in one at a time.</p>
+        <p>Adding anything new to the approved list — or promoting something out of "conditional" — requires all of: an update to the ADR text itself with rationale, design-review sign-off against the design-system doc, a license compatibility check (the project is licensed under BSL-1.1 (Chapter A5), so dependencies must carry a permissive license — MIT, Apache-2.0, or BSD — that can be bundled without conflicting terms), a bundle-size justification against recorded budgets (the primitives layer is capped at ≤35 kB gzip incremental; Recharts' lazy chunk at ≤110 kB), and accessibility parity at least equal to the Radix baseline. This is deliberately high friction — the point of the friction is that it's cheaper to update one ADR than to discover six months later that three different component kits crept in one at a time.</p>
       </div>
 
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Both Recharts and Chart.js exist in the repo during migration. What specific mechanism — not just written policy — prevents a single page from ever loading both chunks at once?</li>
-          <li>Why does the registry require a license check specifically, and why does that check matter more for BRIEFR (AGPL-3.0) than it would for a permissively-licensed project?</li>
+          <li>Why does the registry require a license check specifically, and why does that check matter for BRIEFR's source-available BSL-1.1 model even though BSL isn't a copyleft license the way AGPL is?</li>
           <li>A future contributor wants to add a date-picker library that isn't on any list here. Walk through, step by step, what has to happen before that's allowed.</li>
         </ol>
       </div>

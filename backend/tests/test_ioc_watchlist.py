@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from database import get_db, init_db
 from feeds.threatfox import parse_threatfox_ioc
 from ioc.retro_match import find_retro_matches
-from tests.conftest import run_db_test
+from tests.conftest import run_db_test, seed_pytest_auth_user_if_missing
 
 
 @pytest.fixture
@@ -127,8 +127,10 @@ def test_retro_match_local_join(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
+    run_db_test(init_db())
+    seed_pytest_auth_user_if_missing()
+
     async def seed() -> None:
-        await init_db()
         db = await get_db()
         try:
             await db.execute(

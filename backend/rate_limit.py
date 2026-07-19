@@ -21,7 +21,7 @@ acceptable for the Access-gated private beta; revisit with built-in login.
 Limits exceeded → HTTP 429 with a `Retry-After` header (whole seconds).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 import math

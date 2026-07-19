@@ -6,7 +6,7 @@ tokens are opaque random strings; only their SHA-256 hash is ever persisted
 tokens.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 import hashlib

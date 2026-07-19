@@ -22,5 +22,5 @@ with no framework mapping are surfaced as their own bucket so the totals stay
 honest (spec central principle: no invented arithmetic, no confident lies).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """

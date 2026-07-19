@@ -1,6 +1,6 @@
 # BRIEFR System Design
 
-Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
 **Version:** 1.1 (beta)  
 **Last updated:** 2026-06-19  

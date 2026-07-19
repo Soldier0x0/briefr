@@ -14,7 +14,7 @@ Disabled by default (``EMBEDDINGS_ENABLED=0``). Set ``EMBEDDINGS_PGVECTOR=0``
 to skip writes to the ``embeddings`` table (legacy-only).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

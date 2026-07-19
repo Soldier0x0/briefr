@@ -105,9 +105,9 @@ Ops (not a code PR): publish `briefr-intel-YYYY-MM.pgdump.gz` from export script
 | First-hour onboarding checklist + external Postgres profile | #371 |
 | Intel snapshot versioning + upgrade runbook | #372 |
 
-**Still open for open-core flip:** Track **F2** (AGPL `LICENSE` + `CONTRIBUTING` +
-`FUNDING.yml` + F3-tail header reconciliation). Full V2.0 platform compose remains
-parked per `ROADMAP.md`.
+**Track F2 (license) is done** — `LICENSE`, `CONTRIBUTING.md`, `FUNDING.yml`, and SPDX
+headers now reflect the Business Source License 1.1 (see `STRATEGY.md` §6, Track F2-R).
+Full V2.0 platform compose remains parked per `ROADMAP.md`.
 
 ---
 

@@ -4,7 +4,7 @@ All routes require an authenticated admin session. Read-only GETs use a
 generous token bucket; POSTs share the refresh ingest limit.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

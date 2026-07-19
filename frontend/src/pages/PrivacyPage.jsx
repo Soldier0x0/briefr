@@ -102,6 +102,7 @@ export default function PrivacyPage() {
         <li>abuse.ch (MalwareBazaar + URLhaus) — one Auth-Key — IOC Lookup for hashes and domains</li>
         <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
         <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
+        <li>Groq, Cerebras, OpenRouter, Gemini (LLM providers, tried in that failover order) — receive CVE findings, IOC values you looked up, and threat-actor names as part of a prompt — only when you click "Export PDF" (executive summary) or during scheduled product/detection-artifact extraction on newly published CVEs. If no provider is configured, these features fall back to a template with no data sent anywhere.</li>
       </ul>
       <p className="legal-p">
         Fonts are self-hosted — your browser makes no requests to Google Fonts
@@ -111,14 +112,19 @@ export default function PrivacyPage() {
       <h2 className="legal-section-heading">6. Your rights</h2>
       <p className="legal-p">
         Sai Harsha Vardhan, sole operator of projectjupiter.in, is the Data
-        Fiduciary for this hosted instance. Because no persistent personal
-        data is stored, requests to access, correct, or erase your data will
-        generally resolve to "nothing is held" — but the right to ask, and to
-        raise a grievance, applies regardless. You can also clear
-        localStorage at any time, and IOC cache entries auto-purge after 6
-        hours. To exercise any of these rights or raise a grievance, contact
-        our Grievance Officer, Sai Harsha Vardhan, at
-        harsha@projectjupiter.in.
+        Fiduciary for this hosted instance. Section 3 above is the complete
+        list of what is persisted against your account: your username, a
+        bcrypt hash of your password, your saved stack terms/inventory (only
+        if you enable "Remember on server"), and your display preferences.
+        Nothing else about your usage is retained. You can already view and
+        change your stack terms and display preferences yourself, at any
+        time, from within the app. Full account erasure — deleting the
+        account row and everything tied to it — is not yet self-service; it
+        is performed by the operator on request, typically within 7 days.
+        You can also clear localStorage at any time, and IOC cache entries
+        auto-purge after 6 hours. To request erasure, correction, or to
+        raise a grievance, contact our Grievance Officer, Sai Harsha
+        Vardhan, at harsha@projectjupiter.in.
       </p>
 
       <h2 className="legal-section-heading">7. Children</h2>

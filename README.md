@@ -7,7 +7,7 @@
 <p align="center"><strong>CVE Intelligence &amp; Threat Investigation for Security Analysts</strong></p>
 
 <p align="center">
-  <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg">
+  <img alt="License: BSL-1.1" src="https://img.shields.io/badge/License-BSL--1.1-blue.svg">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue.svg">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.139-009688.svg">
   <img alt="React 19" src="https://img.shields.io/badge/React-19.2-61DAFB.svg?logo=react&logoColor=white">
@@ -29,7 +29,7 @@ BRIEFR is a self-hosted CVE intelligence dashboard for security analysts, small 
 
 **Live demo:** [briefr.projectjupiter.in](https://briefr.projectjupiter.in)
 
-This repository is open source under AGPL-3.0-or-later — clone it, self-host it, read every line of it. See [Contributing](CONTRIBUTING.md) if you want to send a PR.
+This repository is source-available under the Business Source License 1.1 — clone it, self-host it, read every line of it, free for personal, non-commercial use. Commercial use requires a one-time license (see [License](#license) below). See [Contributing](CONTRIBUTING.md) if you want to send a PR.
 
 ---
 
@@ -434,7 +434,7 @@ BRIEFR collects no personal data beyond your self-hosted login account, uses htt
 
 ## License
 
-BRIEFR is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See [`LICENSE`](LICENSE) for the full text.
+BRIEFR is licensed under the **Business Source License 1.1** (BSL). Self-hosting and use of the source code is free for personal, non-commercial purposes. Any use by or on behalf of a for-profit organization or business ("commercial use") requires a one-time, lifetime commercial license — contact harsha@projectjupiter.in. Four years after first publication of a given version, that version converts to the Apache License 2.0. See [`LICENSE`](LICENSE) for the full text.
 
 Copyright © 2026 Sai Harsha Vardhan.
 

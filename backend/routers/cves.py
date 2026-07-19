@@ -34,7 +34,7 @@ Four review fixes on top of the verbatim move (PR #96 review):
   writes JSON, column default is '[]').
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 import asyncio

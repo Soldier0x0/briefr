@@ -692,7 +692,7 @@ async def init_db() -> None:
 
             CREATE TABLE IF NOT EXISTS ioc_watchlist (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
                 label TEXT NOT NULL DEFAULT '',
@@ -1033,7 +1033,7 @@ async def init_db() -> None:
             """
             CREATE TABLE IF NOT EXISTS ioc_watchlist (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
                 label TEXT NOT NULL DEFAULT '',
