@@ -12,6 +12,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-19 — Study guide completeness audit (automated)
+
+**Done**
+- Design + plan: `docs/superpowers/specs/2026-07-19-study-guide-audit-design.md`,
+  `docs/superpowers/plans/2026-07-19-study-guide-audit.md`.
+- Auditor: `scripts/audit_study_guide.py` + `backend/tests/test_audit_study_guide.py`.
+- Reports: `docs/planning/specs/study-guide-audit/` (inventory, gaps, summary,
+  curated `CORRECTED_TOC.md`, `INTERVIEW_COVERAGE.md`, `STALE_CLAIMS.md`).
+- Headline: backend textbook mostly interview-ready; ~350 frontend source files
+  unmapped; retrieval-ops / operator_settings / deploy satellites are the main
+  content deltas vs `PRODUCT_STATUS`. Only path orphan left is intentional
+  historical `db/dialect.py` (Post-B deletion, correctly taught).
+
+**Next (approved sequence):** multi-file responsive shell under corrected TOC,
+then Part-by-Part deep rewrites (start Part I-B + retrieval ops).
+
+---
+
 ## 2026-07-19 — RH-1/RH-2: retrieval health + auto-on-ingest default on
 
 **Done**
