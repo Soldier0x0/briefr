@@ -1,228 +1,206 @@
-# PHASE 4 — Functional · E2E Workflow · Feature Completeness · Integration · Regression · Data Integrity
+# PHASE 4 - Functional / E2E Workflow / Feature Completeness / Integration / Regression / Data Integrity
 
-*Reviewed at commit `61c686f`. 187 backend test files (~28.6k LOC), 47 frontend `*.test.js`,
-`backend/tests/conftest.py`, CI `.github/workflows/backend-tests.yml`.*
+*Refresh reviewed for pinned SHA `ff23c18a4925b3b7082a2b1d1600884324d90d02`.
+Workspace HEAD during refresh was `267f174ba1f50e0335ad82b28b984f5e46ac5e61` (later docs-only
+work). Evidence checked: `.github/workflows/backend-tests.yml`, `.github/workflows/gitleaks.yml`,
+`CLAUDE.md`, newest `docs/HANDOVER.md` entries, `docs/PRODUCT_STATUS.md`,
+`scripts/verify-local.sh`, `frontend/package.json`, `backend/requirements*.txt`, and current test
+file inventory.*
 
 ---
 
 ## Executive Summary
 
-Test **investment is high and the culture is real**: 187 backend test files spread sensibly
-across modules (db 17, security 8, correlation 8, admin 7, detection 6, llm/ai 10, epss 5,
-auth 5, backup 4…), plus 47 frontend tests — many of them **"gate" tests** that codify
-design-system/UX/accessibility rules (`iconOnlyAriaGate`, `nativeSelectGate`,
-`dataGridStandardGate`, `activeStateGate`, `motion`, `safeExternalUrl`…). `conftest.py` shows
-mature hygiene: per-test Postgres TRUNCATE isolation and a documented past isolation bug
-(`test_db_explorer.py` polluting `os.environ`) that was fixed with a settings-safe resolver.
-Feature completeness is high — `PRODUCT_STATUS.md` frames most surfaces as *shipped*, with a
-small explicit "planned/open" set and only 7 skipped tests and no meaningful stubs.
+Testing investment has grown since the prior audit: the repo now has **210 backend `test_*.py`
+files** and **56 frontend `*.test.js` files**. The backend suite covers many reliability,
+security, DB, admin, detection, retrieval, correlation, backup, and UI-build support paths. The
+frontend test suite continues to encode useful product gates (`nativeSelectGate`,
+`dataGridStandardGate`, `iconOnlyAriaGate`, URL-state, motion, Recharts, DateTimePicker, and other
+design-system rules). `PRODUCT_STATUS.md` remains a strong shipped/planned ledger, and Postgres CI
+still declares both a backup round-trip smoke and the full backend suite.
 
-But the **testing safety net has three holes that matter at enterprise scale**: (1) **CI is
-baseline-red** — every push in this PR (docs-only) produced identical `test` / `test-postgres`
-/ `playwright-smoke` / `dependency-audit` / `gitleaks` failures, so the primary regression
-signal is currently untrustworthy (a red baseline means real regressions hide in the noise);
-(2) the excellent frontend gate-tests are **not run in CI** (Phase 1 F1.11), so the UX/a11y
-contracts they encode protect nothing automatically; (3) **coverage is unmeasured** — no
-`pytest-cov`/coverage/property/mutation tooling exists, so test *effectiveness* is unknown, and
-**E2E/integration depth is thin** (essentially one Playwright smoke + one backup round-trip).
-Separately, the suite is **not reproducible off Python 3.12** — `requirements.txt` pins
-`numpy==2.5.1` (requires-python ≥3.12), so a contributor on 3.11 cannot install deps (verified:
-this sandbox is 3.11.15 and the install failed on numpy).
+The release signal is still not trustworthy enough for enterprise readiness. The pinned SHA has
+verified GitHub failures for `test`, `test-postgres`, `playwright-smoke`, `dependency-audit`, and
+`gitleaks`; `CLAUDE.md` only pre-labels `dependency-audit` and `gitleaks` as known-red, so the
+backend and Playwright failures cannot be waived from repo policy. GitHub job logs were unavailable
+(`gh run view --log` returned `log not found`), so this refresh does **not** claim a root cause.
+The CI workflow still omits the 56 frontend unit/gate tests, coverage remains unmeasured, and
+integration/E2E coverage remains narrow relative to the product surface.
 
 **Overall Score: 6.5 / 10.**
 
 ---
 
+## Status Table
+
+| ID | Status | Priority | Type | Refresh disposition |
+|---|---|---:|---|---|
+| F4.1 | UPDATED | CRITICAL | Architectural | Pinned-SHA CI failures verified; root cause unknown because logs are unavailable. |
+| F4.2 | UPDATED | HIGH | Quick Win | Frontend gate suite grew to 56 files; CI still does not run `npm run test:unit`. |
+| F4.3 | OPEN | HIGH | Quick Win | No `pytest-cov`, coverage config, Hypothesis, or mutation tooling found. |
+| F4.4 | UPDATED | HIGH | Architectural | More tests exist, but full workflow/pipeline E2E remains thin. |
+| F4.5 | UPDATED | HIGH | Architectural | Production is Postgres-first now, but failure-injection integrity tests are still missing. |
+| F4.6 | UPDATED | MEDIUM | Quick Win | Old "no `.python-version`" claim is stale; current contract is inconsistent (`3.13` file vs CI/cloud 3.12). |
+| F4.7 | UPDATED | MEDIUM | Quick Win | Isolation fixtures remain mature; no structural guard against module-scope env mutation found. |
+| F4.8 | UPDATED | LOW | Quick Win | `PRODUCT_STATUS.md` is strong, but shipped feature -> passing test traceability is still manual. |
+
+---
+
 ## Findings
 
-### F4.1 — CI is baseline-red; the primary regression signal is untrustworthy · Priority: CRITICAL · Architectural
+### F4.1 — CI is red at the pinned SHA; the primary regression signal is untrustworthy · Status: UPDATED · Priority: CRITICAL · Architectural
 - **Location:** `.github/workflows/backend-tests.yml` jobs `test`, `test-postgres`,
-  `playwright-smoke` (+ known-red `dependency-audit`, `gitleaks`). Observed on PR #661 commits
-  `db65e31`, `ea3eab6`, `f7c1fad` — all docs-only, all five jobs `failure`.
-- **Description:** A change that touches only `docs/audit/*.md` cannot break pytest, Playwright,
-  pip-audit, or gitleaks logic, yet all jobs fail identically on every push. Therefore the base
-  pipeline (branch/`main`) is red independent of the diff. CLAUDE.md pre-declares
-  `dependency-audit`+`gitleaks` as "known-red," but `test`/`test-postgres`/`playwright-smoke`
-  being red is a far stronger problem: green is no longer the expected state, so a genuine
-  regression cannot be distinguished from the standing failure.
-- **Why it matters:** A red baseline is the single most damaging condition for a test suite —
-  it trains everyone to ignore CI, and it means "tests pass" is not a merge gate. For a platform
-  meant for thousands of orgs, this must be green-by-default before any correctness claim holds.
-- **Evidence:** three consecutive docs-only pushes → identical 5-job failure set; job logs
-  returned HTTP 404 via the MCP proxy (could not fetch the stack traces). Independent local
-  reproduction was blocked by F4.6 (Python 3.11 vs required 3.12).
-- **Risk:** Real regressions merge undetected; CI provides false confidence / is ignored.
-- **Recommended solution:** (1) Fetch the failing `test` job log on a GitHub-hosted runner and
-  root-cause it (do NOT assume flaky). (2) Get `test`+`test-postgres` green and **keep them
-  required**; if a subset is genuinely environmental, quarantine those specific tests with
-  `@pytest.mark.xfail(reason=...)` and an issue link rather than tolerating a red job. (3) Move
-  `dependency-audit`/`gitleaks` to non-blocking `continue-on-error: true` **only** with tracking
-  issues, so "red" always means "action needed." (4) Add branch protection requiring green
-  `test`/`test-postgres` before merge to `main`.
-- **Acceptance criteria:** A no-op PR shows all required jobs green; branch protection blocks
-  merge on a red `test`/`test-postgres`.
-- **Effort:** Medium (root-cause dependent). **Type:** Architectural (process).
+  `dependency-audit`, `playwright-smoke`; `.github/workflows/gitleaks.yml` job `gitleaks`;
+  `CLAUDE.md` PR workflow notes.
+- **Current evidence:** `gh run list --commit ff23c18a4925b3b7082a2b1d1600884324d90d02` returned
+  failed workflow runs for **Backend tests** and **Secret scan**. `gh run view` showed failed jobs:
+  `test`, `test-postgres`, `playwright-smoke`, `dependency-audit`, and `gitleaks`. `CLAUDE.md`
+  explicitly says only `dependency-audit` and `gitleaks` are known-red, not pytest or Playwright.
+- **Do not overclaim:** The logs were not retrievable (`log not found`), and the jobs show no step
+  detail in `gh run view`; classify this as a verified red baseline/run, not a diagnosed pytest
+  failure.
+- **Risk:** Required correctness gates cannot distinguish a real regression from standing CI
+  failure.
+- **Recommended solution:** Root-cause the workflow/job-start failure first; then require green
+  `test` and `test-postgres` before merge. Keep known-red audit/secret jobs either fixed or
+  explicitly non-blocking with tracked issues so red means action needed.
+- **Acceptance criteria:** A no-op PR at current `main` produces green `test` and `test-postgres`;
+  Playwright smoke either passes or is quarantined with an issue and a narrow reason.
 
-### F4.2 — Frontend gate-tests (47 files) are not executed in CI · Priority: HIGH · Quick Win
-- **Location:** `frontend/package.json` `"test:unit": "node --test 'src/**/*.test.js'"`; 47
-  `*.test.js` incl. many `*Gate.test.js`; CI has no job invoking it (Phase 1 F1.11).
-- **Description:** The frontend encodes real product contracts as tests — accessibility
-  (`iconOnlyAriaGate`, `nativeSelectGate`), design-system (`dataGridStandardGate`,
-  `selectionAccentGate`, `activeStateGate`), motion (`motion.test.js`), security
-  (`safeExternalUrl.test.js`), URL-state (`shellUrlState`, `adminUrlPageClearGate`). None run in
-  CI, so a change violating any of these contracts merges silently.
-- **Why it matters:** These gates are the automated enforcement of the CLAUDE.md UI/UX/a11y rules
-  — the very standards this audit's Phase 5 will assess. Un-run, they are documentation, not gates.
-- **Evidence:** CI YAML lacks `npm run test:unit`; 47 test files present.
-- **Risk:** Silent regressions of a11y/design-system/security-URL contracts.
-- **Recommended solution:** Add a `frontend-tests` CI job: `npm ci --ignore-scripts && npm run
-  test:unit`, required on PRs. Pair with the standalone `npm run build` gate.
-- **Acceptance criteria:** CI fails if any `*.test.js` fails or the FE build breaks.
-- **Effort:** Quick Win (~1h). **Type:** Quick Win.
+### F4.2 — Frontend gate-tests are still not executed in CI · Status: UPDATED · Priority: HIGH · Quick Win
+- **Location:** `frontend/package.json` has `"test:unit": "node --test 'src/**/*.test.js'"`;
+  `.github/workflows/backend-tests.yml` does not invoke it.
+- **Current evidence:** `frontend/src` contains **56** `*.test.js` files, up from 47 in the prior
+  audit. The workflow installs/builds the frontend only inside `playwright-smoke`; no job runs
+  `npm run test:unit`.
+- **Risk:** Design-system, accessibility, URL-state, and frontend security gates are real tests but
+  not merge gates.
+- **Recommended solution:** Add a required `frontend-tests` job:
+  `npm ci --ignore-scripts && npm run test:unit`, alongside the existing build step.
+- **Acceptance criteria:** A failing frontend gate test fails CI on PRs.
 
-### F4.3 — Coverage is unmeasured (no coverage/property/mutation tooling) · Priority: HIGH · Quick Win
-- **Location:** `backend/requirements-dev.txt` (pytest + playwright only — no `pytest-cov`,
-  `coverage`, `hypothesis`, `mutmut`); no coverage config anywhere.
-- **Description:** With 28.6k test LOC there is genuine coverage, but it is unquantified. Nobody
-  can say which correctness-critical paths (risk math, dialect-specific SQL, auth, backup/restore)
-  are actually exercised, or whether new code is tested.
-- **Why it matters:** Unmeasured coverage means regressions in untested branches are invisible;
-  it also prevents a coverage-ratchet policy that would keep quality from eroding over years.
-- **Recommended solution:** Add `pytest-cov`; run `pytest --cov=. --cov-report=xml --cov-report=term`
-  in CI; publish the number and set a floor (start at the current measured value, ratchet up).
-  Add `hypothesis` property tests for the deterministic engines (risk scoring, IOC
-  normalization). Consider `mutmut` on `scoring/` and `detection/` to test the tests.
-- **Acceptance criteria:** CI reports coverage %; PRs that drop coverage below the floor fail.
-- **Effort:** Quick Win (cov wiring) / Medium (property + mutation). **Type:** Quick Win.
+### F4.3 — Coverage is unmeasured · Status: OPEN · Priority: HIGH · Quick Win
+- **Location:** `backend/requirements-dev.txt`, workflow YAML, repo config.
+- **Current evidence:** `backend/requirements-dev.txt` still contains only `pytest` and
+  `playwright` over app requirements; searches found no `pytest-cov`, coverage config,
+  `hypothesis`, or `mutmut` in active test/build config.
+- **Risk:** The test suite is large, but the team cannot tell which shipped behavior is untested or
+  whether coverage regresses.
+- **Recommended solution:** Add `pytest-cov` and publish terminal/XML coverage from CI; start the
+  gate at the measured baseline and ratchet. Add property tests where deterministic scoring,
+  normalization, and query-building logic makes that cheap.
+- **Acceptance criteria:** CI reports coverage and fails when coverage drops below the configured
+  floor.
 
-### F4.4 — E2E / integration depth is thin (≈1 smoke + 1 round-trip) · Priority: HIGH · Architectural
-- **Location:** only `backend/tests/test_playwright_smoke.py` and
-  `test_backup_roundtrip_postgres.py` are true cross-boundary tests; the other ~185 are
-  module/unit tests. (`test_intel_snapshot_export.py` adds an export→restore smoke.)
-- **Description:** Critical multi-component user workflows — login → feed → filter → open drawer →
-  generate detection → export; nightly ingest → enrich → correlate → risk; webhook alert delivery
-  end-to-end — are not covered by full-stack integration tests. Most tests mock external feeds and
-  exercise one module.
-- **Why it matters:** Unit tests can all pass while the *wiring between* correlation, scoring,
-  detection, and the API is broken — exactly the failure class integration tests exist to catch.
-  For an intelligence platform, the end-to-end pipeline correctness is the product.
-- **Evidence:** filename scan shows two integration-class files; heavy per-module unit structure.
-- **Recommended solution:** Add a small set of high-value integration tests against a Postgres
-  Testcontainer: (a) ingest fixture CVEs → assert enrichment+correlation+risk materialize
-  consistently; (b) API contract tests hitting real routers with a seeded DB for the top 10
-  endpoints; (c) one Playwright E2E of the core analyst journey. Keep them in a separate,
-  required-but-tagged CI job so they don't slow the unit lane.
-- **Acceptance criteria:** The ingest→enrich→correlate→risk pipeline and top-10 API contracts are
-  covered end-to-end; the core UI journey has one green Playwright path.
-- **Effort:** Medium–Large. **Type:** Architectural.
+### F4.4 — E2E and integration depth is still thin for the shipped surface · Status: UPDATED · Priority: HIGH · Architectural
+- **Location:** `backend/tests/test_playwright_smoke.py`, `backend/tests/test_backup_roundtrip_postgres.py`,
+  `backend/tests/test_intel_snapshot_export.py`, API/router tests.
+- **Current evidence:** The Playwright smoke now exercises several analyst interactions in Chromium
+  (brief cards, filter anchoring, drawer focus restore, IOC input, incidents/news). Postgres CI
+  declares a backup round-trip smoke before the full Postgres suite. This is better than the prior
+  "one smoke + one round-trip" framing, but it still does not cover complete ingest -> enrich ->
+  correlate -> risk -> API -> UI workflows or webhook delivery end-to-end.
+- **Risk:** Cross-module wiring can still break while unit and router tests pass.
+- **Recommended solution:** Add a small Postgres-backed integration lane for the top product
+  workflows: seeded ingest/enrichment/correlation/risk materialization, top API contracts, and one
+  full analyst UI journey.
+- **Acceptance criteria:** A broken ingest-to-risk pipeline, drawer contract, or webhook delivery
+  path fails CI.
 
-### F4.5 — Data integrity for multi-write flows relies on ad-hoc transactions (carries F2.9/F3.8) · Priority: HIGH · Architectural
-- **Location:** `backend/correlation/engine.py::_recover_db_transaction` / `run_nightly_correlation`;
-  ingest/enrich flows in `feeds/`, `db/*`; no `UnitOfWork`/`@transactional` boundary.
-- **Description:** Multi-step writes (ingest+enrich+correlate; nightly correlation materialization)
-  don't run under an enforced transaction boundary, and the correlation engine carries bespoke
-  transaction-recovery — a sign a partial write can occur. Combined with the dual-dialect layer,
-  Postgres-only integrity semantics (FK, `ON CONFLICT`, savepoints) may differ from the SQLite
-  default suite.
-- **Why it matters:** Data integrity is foundational for an intelligence product — a partially
-  applied correlation or a half-ingested CVE produces silently wrong analyst output.
-- **Evidence:** `_recover_db_transaction` exists; conftest documents dialect-specific integrity
-  checks (`PRAGMA integrity_check` vs `pg_catalog` probes) — integrity behavior differs by backend.
-- **Recommended solution:** Introduce explicit transaction/savepoint boundaries for the known
-  multi-write flows (Phase 2 F2.9, Phase 3 F3.8) and add integrity regression tests that inject a
-  mid-flow failure and assert no partial rows — run on **Postgres** (the production dialect).
-- **Acceptance criteria:** Injected mid-flow failure leaves consistent state; integrity tests run
-  against Postgres in CI.
-- **Effort:** Medium. **Type:** Architectural.
+### F4.5 — Data integrity failure-injection is still missing for multi-write flows · Status: UPDATED · Priority: HIGH · Architectural
+- **Location:** DB/correlation/ingest flows, Postgres CI, Phase 9 chaos coverage.
+- **Current evidence:** `PRODUCT_STATUS.md` says production is PostgreSQL-required and Postgres CI
+  runs backup/export smokes, which reduces the older "SQLite primary" risk. However the audit found
+  no system-level mid-flow failure injection (DB restart, connection drop, partial write assertion)
+  for ingest/enrich/correlate/risk materialization.
+- **Risk:** Partial writes and transaction-recovery bugs are most likely to appear under composed
+  production failures, not unit-level mocks.
+- **Recommended solution:** Add Postgres failure-injection tests that abort mid-flow and assert no
+  partial materialized state, aligned with F9.2.
+- **Acceptance criteria:** A forced DB disconnect/restart during a representative multi-write flow
+  leaves a consistent database and fails if partial rows remain.
 
-### F4.6 — Dev environment not reproducible off Python 3.12 (`numpy==2.5.1` pin) · Priority: MEDIUM · Quick Win
-- **Location:** `backend/requirements.txt` (`numpy==2.5.1`, which is Requires-Python ≥3.12);
-  no `.python-version`, no `pyproject`-declared `requires-python`, no lockfile.
-- **Description:** `pip install -r requirements.txt` fails on Python 3.11 (verified: this sandbox
-  is 3.11.15 → "No matching distribution found for numpy==2.5.1"). The suite is therefore only
-  installable on exactly 3.12, but nothing in the repo *declares* that requirement, so a
-  contributor discovers it as a cryptic pip error.
-- **Why it matters:** Onboarding friction and non-reproducible local runs (this audit could not
-  run the suite locally for that reason); "works on CI only" hides environment-coupled bugs.
-- **Recommended solution:** Add `requires-python = ">=3.12"` to a `backend/pyproject.toml` and a
-  `.python-version` (3.12); document in `CONTRIBUTING.md`. Consider a hash-pinned lockfile
-  (`pip-tools`/`uv`) so installs are byte-reproducible.
-- **Acceptance criteria:** A fresh clone on the documented Python installs cleanly; wrong Python
-  fails with a clear message, not a numpy resolver error.
-- **Effort:** Quick Win. **Type:** Quick Win.
+### F4.6 — Python version contract is inconsistent · Status: UPDATED · Priority: MEDIUM · Quick Win
+- **Location:** `backend/.python-version`, `.github/workflows/backend-tests.yml`,
+  `backend/requirements.txt`, `CLAUDE.md`.
+- **Current evidence:** CI uses Python `3.12`; `CLAUDE.md` says CI/cloud use Python 3.12 and the
+  repo is supported there; `backend/.python-version` pins `3.13`; `requirements.txt` pins
+  `numpy==2.5.1`, which excludes Python 3.11.
+- **Risk:** Contributors and agents can select different Python versions than CI, causing install
+  or behavior drift before tests even run.
+- **Recommended solution:** Pick and document one supported development/CI range. If 3.12 is the
+  contract, change `.python-version` to 3.12 and add an explicit `requires-python >=3.12` note in
+  Python packaging/onboarding docs.
+- **Acceptance criteria:** A fresh clone selects the same supported Python as CI, and unsupported
+  Python versions fail with a clear message.
 
-### F4.7 — Test isolation has been fragile; enforce it structurally · Priority: MEDIUM · Quick Win
-- **Location:** `backend/tests/conftest.py` (session-autouse Postgres TRUNCATE isolation; the
-  `_postgres_dsn_or_none` docstring documents a real past cross-test pollution via module-level
-  `os.environ["DATABASE_URL"] = ""`).
-- **Description:** The fixtures are well-built, but the documented incident shows module-level env
-  mutation can defeat isolation for every subsequent test. There's no guard preventing a new test
-  file from re-introducing the same class of bug.
-- **Why it matters:** Order-dependent test pollution produces flaky, hard-to-debug failures and
-  can *mask* real regressions — dangerous given F4.1.
-- **Recommended solution:** Add a lint/guard test that fails if any test module mutates
-  `os.environ["DATABASE_URL"]` at module scope (AST/grep check), and prefer `monkeypatch`
-  everywhere. Consider `pytest-randomly` to surface order-dependence deliberately.
-- **Acceptance criteria:** A module-level `os.environ["DATABASE_URL"]=...` fails the guard;
-  suite passes under randomized order.
-- **Effort:** Quick Win. **Type:** Quick Win.
+### F4.7 — Test isolation has strong fixtures but no structural guard for env mutation · Status: UPDATED · Priority: MEDIUM · Quick Win
+- **Location:** `backend/tests/conftest.py` and backend tests.
+- **Current evidence:** The Playwright/session fixtures and Postgres isolation remain substantial,
+  and `conftest.py` still carries guardrails around smoke setup and DB health. The prior class of
+  bug--module-scope mutation of `DATABASE_URL`--is not protected by an AST/lint gate found during
+  refresh.
+- **Risk:** A new test can reintroduce order-dependent environment pollution and create flaky
+  SQLite/Postgres behavior.
+- **Recommended solution:** Add a guard test that rejects module-scope `os.environ["DATABASE_URL"]`
+  mutation in `backend/tests`, and prefer `monkeypatch` in tests that need env changes.
+- **Acceptance criteria:** A module-scope `DATABASE_URL` assignment in a test file fails the guard.
 
-### F4.8 — Feature completeness is high but not machine-verified against a spec · Priority: LOW · Quick Win
-- **Location:** `docs/PRODUCT_STATUS.md` ("Shipped vs planned" table), `docs/planning/ROADMAP.md`.
-- **Description:** Completeness is tracked in prose (mostly "shipped," small "planned/open" set, 7
-  skipped tests, no real stubs). There's no automated link between the shipped-feature list and a
-  test proving each shipped feature exists/works, so drift between "documented as shipped" and
-  "actually working" is possible.
-- **Why it matters:** For release/enterprise readiness (Phase 11), each advertised capability
-  should map to a passing test.
-- **Recommended solution:** Maintain a lightweight feature→test traceability matrix (even a table
-  in `docs/audit/` or a `@pytest.mark.feature("...")` marker) so "shipped" is provable.
-- **Acceptance criteria:** Every "shipped" row maps to at least one passing test id.
-- **Effort:** Quick Win–Medium. **Type:** Quick Win.
+### F4.8 — Feature completeness is tracked well, but not machine-verified · Status: UPDATED · Priority: LOW · Quick Win
+- **Location:** `docs/PRODUCT_STATUS.md`, sprint/roadmap docs, tests.
+- **Current evidence:** `PRODUCT_STATUS.md` is current enough to list v1.5.0, shipped Postgres,
+  auth, Track I, UI design-system, LLM, Admin, embeddings, wallboard, and planned/open rows. That
+  is useful operational truth, but there is still no generated feature -> test traceability matrix.
+- **Risk:** A feature can remain documented as shipped after its implementation or test coverage
+  drifts.
+- **Recommended solution:** Maintain a lightweight shipped-feature matrix mapping each
+  `PRODUCT_STATUS.md` row to one or more backend/frontend test IDs.
+- **Acceptance criteria:** Every shipped row has at least one passing test reference or an explicit
+  "manual-only" exception.
+
+---
+
+## Resolved since last audit
+
+None. Several findings were narrowed or updated with better evidence, but no F4 finding is fully
+closed.
 
 ---
 
 ## Overall Score: **6.5 / 10**
 
 | Sub-audit | Score |
-|---|---|
-| Functional Testing | 7.5 / 10 |
-| End-to-End Workflow | 5 / 10 |
-| Feature Completeness | 8 / 10 |
-| Integration Testing | 5 / 10 |
-| Regression Testing | 6 / 10 |
+|---|---:|
+| Functional Testing | 7.8 / 10 |
+| End-to-End Workflow | 5.5 / 10 |
+| Feature Completeness | 8.0 / 10 |
+| Integration Testing | 5.5 / 10 |
+| Regression Testing | 5.5 / 10 |
 | Data Integrity | 6.5 / 10 |
 
 ## Strengths
-- Large, well-distributed unit suite (187 files) with mature isolation (per-test Postgres
-  TRUNCATE) and documented, fixed isolation incidents.
-- Strong "gate test" culture encoding a11y/design-system/security contracts in the frontend.
-- Real backup/restore and intel-snapshot round-trip smokes on Postgres; dialect-aware integrity
-  probes (`pg_catalog` vs `PRAGMA`).
-- High feature completeness with an explicit shipped-vs-planned ledger.
+- Large and growing backend suite: 210 `test_*.py` files.
+- Strong frontend gate-test culture: 56 `*.test.js` files encoding real UX/a11y/security rules.
+- Postgres CI includes a backup round-trip smoke and a full-suite lane by workflow definition.
+- `PRODUCT_STATUS.md` remains a useful shipped/planned ledger.
 
 ## Weaknesses
-- CI baseline-red → untrustworthy regression signal (F4.1).
-- FE gate-tests not CI-run (F4.2); coverage unmeasured (F4.3); thin E2E/integration (F4.4).
-- Ad-hoc multi-write transactions (F4.5); non-reproducible off 3.12 (F4.6).
+- Pinned SHA CI is red across pytest, Playwright, dependency audit, and gitleaks; only the last two
+  are documented known-red.
+- Frontend unit/gate tests are not run in CI.
+- Coverage remains unmeasured.
+- Workflow-level integration and failure-injection depth trails the shipped product surface.
+- Python version selection is inconsistent (`.python-version` 3.13 vs CI/cloud 3.12).
 
 ## Immediate Action Items
-1. **Root-cause and green the `test`/`test-postgres` jobs; add branch protection (F4.1).**
-2. Add `frontend-tests` + `build` CI jobs (F4.2).
-3. Add `pytest-cov` and publish coverage with a floor (F4.3).
-4. Declare `requires-python>=3.12` + `.python-version` (F4.6); add env-mutation guard test (F4.7).
-
-## Long-Term Recommendations
-1. Build a focused E2E/integration layer on a Postgres Testcontainer (pipeline + top-10 API +
-   one UI journey) (F4.4).
-2. Add transaction boundaries + integrity regression tests on Postgres (F4.5).
-3. Add property tests for deterministic engines and mutation testing on `scoring/`+`detection/`
-   (F4.3).
-4. Feature→test traceability matrix (F4.8).
+1. Root-cause the pinned/main CI workflow failures and make `test` + `test-postgres` green.
+2. Add a required frontend unit/gate-test CI job.
+3. Add coverage reporting and a starting floor.
+4. Align `.python-version` and docs with the supported Python version.
 
 ## Production-Readiness Assessment (Phase 4 areas)
-**Not ready until CI is green — 6.5/10.** The suite is substantial and the culture is strong, but
-a **red baseline (F4.1) is a release blocker**: no correctness claim is verifiable while the
-required jobs fail by default, and the best regression protection (FE gate-tests) doesn't run in
-CI (F4.2). Once CI is trustworthy again, the next-order gaps are E2E/integration depth (F4.4) and
-measured coverage (F4.3). Fix F4.1 + F4.2 before any release-readiness sign-off.
+
+**Not release-signoff ready until CI is trustworthy - 6.5/10.** The amount of test code and the
+quality of many local gates are real strengths, but the pinned SHA's red CI baseline prevents a
+clean regression signal. After F4.1 and F4.2 are fixed, the remaining risk is less about test
+culture and more about measured coverage plus a small number of high-value integration workflows.
