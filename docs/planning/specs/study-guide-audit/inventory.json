@@ -2,8 +2,8 @@
   "generated": "2026-07-19",
   "guide": "docs/STUDY_GUIDE.html",
   "counts": {
-    "weak": 308,
-    "covered": 259,
+    "weak": 284,
+    "covered": 283,
     "gap": 118,
     "orphan_mention": 1,
     "out_of_scope": 1
@@ -77,17 +77,17 @@
     {
       "id": "fe-analyst-shell",
       "title": "Ch 5B \u00b7 Analyst shell",
-      "mention_count": 7
+      "mention_count": 11
     },
     {
       "id": "fe-admin-shell",
       "title": "Ch 5C \u00b7 Admin shell",
-      "mention_count": 9
+      "mention_count": 28
     },
     {
       "id": "fe-forge-wallboard",
       "title": "Ch 5D \u00b7 Forge, ATLAS & wallboard",
-      "mention_count": 7
+      "mention_count": 10
     },
     {
       "id": "fe-shared-utils",
@@ -3673,13 +3673,12 @@
     },
     {
       "path": "frontend/src/components/NotificationBell.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-analyst-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/PdfExportModal.css",
@@ -4002,12 +4001,12 @@
     },
     {
       "path": "frontend/src/components/forge/CampaignsView.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
         "fe-forge-wallboard"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/forge/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/forge/CoverageView.jsx",
@@ -4029,21 +4028,21 @@
     },
     {
       "path": "frontend/src/components/forge/LibraryView.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
         "fe-forge-wallboard"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/forge/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/forge/ScenariosView.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
         "fe-forge-wallboard"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/forge/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/forge/mitreTacticOrder.js",
@@ -4339,6 +4338,7 @@
       "path": "frontend/src/context/AssetProfileContext.jsx",
       "status": "covered",
       "chapters": [
+        "fe-analyst-shell",
         "fe-react",
         "fe-state"
       ],
@@ -4349,6 +4349,7 @@
       "path": "frontend/src/context/AuthContext.jsx",
       "status": "covered",
       "chapters": [
+        "fe-analyst-shell",
         "fe-react",
         "fe-state"
       ],
@@ -4422,6 +4423,7 @@
       "path": "frontend/src/pages/AdminPage.css",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4431,6 +4433,7 @@
       "path": "frontend/src/pages/LegalPage.css",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4440,6 +4443,7 @@
       "path": "frontend/src/pages/LegalPage.jsx",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4449,6 +4453,7 @@
       "path": "frontend/src/pages/LoginPage.css",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4456,17 +4461,18 @@
     },
     {
       "path": "frontend/src/pages/LoginPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-forge-wallboard"
+        "fe-analyst-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/PrivacyPage.jsx",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4476,6 +4482,7 @@
       "path": "frontend/src/pages/TermsPage.jsx",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4485,6 +4492,7 @@
       "path": "frontend/src/pages/WallboardPage.css",
       "status": "weak",
       "chapters": [
+        "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "sibling/dir coverage under frontend/src/pages/",
@@ -4520,93 +4528,84 @@
     },
     {
       "path": "frontend/src/pages/admin/AlertsPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/ApiKeyHealthPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/ApiKeysPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/AuditLogPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/BackupsPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/ComingSoonPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/DatabasePage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/DbExplorerPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/DisplayPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/FeedHealthPage.jsx",
@@ -4619,13 +4618,12 @@
     },
     {
       "path": "frontend/src/pages/admin/IngestLogPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/OverviewPage.jsx",
@@ -4638,23 +4636,21 @@
     },
     {
       "path": "frontend/src/pages/admin/RateLimitPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/ResourcesPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/SchedulerPage.jsx",
@@ -4667,23 +4663,21 @@
     },
     {
       "path": "frontend/src/pages/admin/SearchTokensPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/SecurityPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/SecurityPosturePage.css",
@@ -4697,23 +4691,21 @@
     },
     {
       "path": "frontend/src/pages/admin/SecurityPosturePage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/SessionsPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/Sidebar.jsx",
@@ -4744,23 +4736,21 @@
     },
     {
       "path": "frontend/src/pages/admin/WatchlistPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/WebhookDestinationCard.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/WebhooksPage.css",
@@ -4963,13 +4953,12 @@
     },
     {
       "path": "frontend/src/pages/admin/resourcesChartsRecharts.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-admin-shell",
-        "ie-retrieval-ops"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/admin/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/ActionProgress.jsx",

@@ -4,8 +4,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 
 | Status | Count |
 |--------|------:|
-| `covered` | 259 |
-| `weak` | 308 |
+| `covered` | 283 |
+| `weak` | 284 |
 | `gap` | 118 |
 | `orphan_mention` | 1 |
 | `out_of_scope` | 1 |
@@ -367,7 +367,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/MorningBrief.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/MorningBrief.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/NotificationBell.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
-| `frontend/src/components/NotificationBell.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/NotificationBell.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
 | `frontend/src/components/PdfExportModal.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/PdfExportModal.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/RequireAdmin.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
@@ -400,11 +400,11 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/WhatChangedPanel.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/briefVendorChartRecharts.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/forge/BacklogView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
-| `frontend/src/components/forge/CampaignsView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/CampaignsView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
 | `frontend/src/components/forge/CoverageView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
 | `frontend/src/components/forge/HuntPackRail.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
-| `frontend/src/components/forge/LibraryView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
-| `frontend/src/components/forge/ScenariosView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/LibraryView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/forge/ScenariosView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
 | `frontend/src/components/forge/mitreTacticOrder.js` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
 | `frontend/src/components/forge/shared.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
 | `frontend/src/components/timeWindowDateUtils.js` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
@@ -445,8 +445,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/ui/ui.css` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/config/assetCatalog.js` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/config/caseStudySources.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/context/AssetProfileContext.jsx` | `covered` | `fe-react`, `fe-state` | exact path mention in chapter body/chips |
-| `frontend/src/context/AuthContext.jsx` | `covered` | `fe-react`, `fe-state` | exact path mention in chapter body/chips |
+| `frontend/src/context/AssetProfileContext.jsx` | `covered` | `fe-analyst-shell`, `fe-react`, `fe-state` | exact path mention in chapter body/chips |
+| `frontend/src/context/AuthContext.jsx` | `covered` | `fe-analyst-shell`, `fe-react`, `fe-state` | exact path mention in chapter body/chips |
 | `frontend/src/context/InvestigationContext.jsx` | `covered` | `fe-state` | exact path mention in chapter body/chips |
 | `frontend/src/hooks/useAsync.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/hooks/useInactivityTimeout.js` | `weak` | `fe-shared-utils` | sibling/dir coverage under frontend/src/hooks/; File never named; only directory-level association |
@@ -454,42 +454,42 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/hooks/useVisibilityAwareInterval.js` | `weak` | `fe-shared-utils` | sibling/dir coverage under frontend/src/hooks/; File never named; only directory-level association |
 | `frontend/src/hooks/useWatchlist.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/main.jsx` | `covered` | `fe-react` | exact path mention in chapter body/chips |
-| `frontend/src/pages/AdminPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/LegalPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/LegalPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/LoginPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/LoginPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/PrivacyPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/TermsPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
-| `frontend/src/pages/WallboardPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/AdminPage.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LegalPage.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LegalPage.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LoginPage.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LoginPage.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/PrivacyPage.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/TermsPage.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/WallboardPage.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
 | `frontend/src/pages/WallboardPage.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/AdminPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/AiOperationsPage.jsx` | `covered` | `fe-admin-shell`, `ie-retrieval-ops` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/AlertsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/ApiKeyHealthPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/ApiKeysPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/AuditLogPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/BackupsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/ComingSoonPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/DatabasePage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/DbExplorerPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/DisplayPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/AlertsPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/ApiKeyHealthPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/ApiKeysPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/AuditLogPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/BackupsPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/ComingSoonPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/DatabasePage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/DbExplorerPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/DisplayPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/FeedHealthPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/IngestLogPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/IngestLogPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/OverviewPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/RateLimitPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/ResourcesPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/RateLimitPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/ResourcesPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/SchedulerPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/SearchTokensPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/SecurityPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SearchTokensPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/SecurityPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/SecurityPosturePage.css` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/SecurityPosturePage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/SessionsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SecurityPosturePage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/SessionsPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/Sidebar.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/StatusBar.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/StoragePage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/WatchlistPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/WebhookDestinationCard.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/WatchlistPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/WebhookDestinationCard.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/WebhooksPage.css` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/WebhooksPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/adminFormFieldGate.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
@@ -510,7 +510,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/rateLimits.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/resourceChartUtils.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/resourceChartUtils.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
-| `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/ActionProgress.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/AdminDataGrid.jsx` | `gap` | — | ; No study-guide ownership found |

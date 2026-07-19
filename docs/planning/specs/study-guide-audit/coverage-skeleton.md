@@ -17,9 +17,9 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `fe-libs` | Ch 3 · The library registry (ADR-005) | 0 |  |  |  |  |  |
 | `fe-state` | Ch 4 · State & data flow | 4 |  |  |  |  |  |
 | `fe-tooling` | Ch 5 · Fonts, exports, testing | 0 |  |  |  |  |  |
-| `fe-analyst-shell` | Ch 5B · Analyst shell | 7 |  |  |  |  |  |
-| `fe-admin-shell` | Ch 5C · Admin shell | 9 |  |  |  |  |  |
-| `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 7 |  |  |  |  |  |
+| `fe-analyst-shell` | Ch 5B · Analyst shell | 11 |  |  |  |  |  |
+| `fe-admin-shell` | Ch 5C · Admin shell | 28 |  |  |  |  |  |
+| `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 10 |  |  |  |  |  |
 | `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 7 |  |  |  |  |  |
 | `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 3 |  |  |  |  |  |
 | `be-config` | Ch 7 · Config & encrypted secrets | 5 |  |  |  |  |  |

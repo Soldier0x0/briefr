@@ -4,8 +4,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`._
 
 ## Counts
 
-- Covered: **259**
-- Weak (dir-only): **308**
+- Covered: **283**
+- Weak (dir-only): **284**
 - Gaps: **118**
 - Orphan mentions: **1**
 - Out of scope rows: **1**
