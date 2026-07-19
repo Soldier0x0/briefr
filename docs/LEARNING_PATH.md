@@ -19,7 +19,9 @@ Existing deep references when stuck: `SYSTEM_DESIGN.md`,
 For full textbook-depth coverage of every subsystem (concept primers, real
 code walkthroughs, and self-check questions per chapter) open
 [`STUDY_GUIDE.html`](STUDY_GUIDE.html) in a browser — a single self-contained
-interactive document, not part of the reader-facing doc set.
+interactive document, not part of the reader-facing doc set. Completeness
+audit (file inventory, gaps, corrected TOC for the planned multi-file shell):
+[`planning/specs/study-guide-audit/`](planning/specs/study-guide-audit/README.md).
 
 ---
 
