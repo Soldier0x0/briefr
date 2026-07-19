@@ -1,6 +1,6 @@
 # Retrieval ops: health + auto-on-ingest (fail-safe) — design
 
-**Status:** Draft for maintainer review (2026-07-19)  
+**Status:** Accepted (maintainer 2026-07-19) — auto-on-ingest **default on**; proceed to implementation plan  
 **Parent:** [`embeddings-pgvector-hybrid-search-design.md`](embeddings-pgvector-hybrid-search-design.md),  
 [`retrieval-engine-e7-design.md`](retrieval-engine-e7-design.md)  
 **HANDOVER cue:** “admin retrieval health / operator knobs” after E8  
@@ -22,7 +22,8 @@ if something breaks, FEED still works (keyword) and Admin shows *why*.
 | Order | **Fail-safe visibility first**, then auto coupling |
 | Live index truth | Counts and pending from multi-entity **`embeddings`** table (not legacy `cve_embeddings`) |
 | `EMBEDDINGS_PGVECTOR` | Stay **env-only** escape hatch (default on). Do not add to Admin UI |
-| Master kill | `EMBEDDINGS_ENABLED=0` stops model, ingest-tail, scheduled backfill |
+| Master kill | `EMBEDDINGS_ENABLED=0` stops model, ingest-tail, scheduled backfill (master stays **opt-in**, default off) |
+| Auto default | **`EMBEDDINGS_AUTO_ON_INGEST` default on (`1`)** — when embeddings are enabled, ingest-tail runs unless explicitly set to `0` |
 | Auto kill | `EMBEDDINGS_AUTO_ON_INGEST=0` stops ingest-tail only; hybrid search can stay on |
 | Caps (fail-safe) | Keep `EMBEDDINGS_INGEST_MAX_PER_RUN` (default 25) and `EMBEDDINGS_MAX_PER_RUN` (default 2000) |
 | Search path fail-safe | Unchanged: keyword fallback + FEED quiet status label |
@@ -30,18 +31,21 @@ if something breaks, FEED still works (keyword) and Admin shows *why*.
 
 ## Approach B (auto coupling) — exact behavior
 
-1. Admin config already has `EMBEDDINGS_ENABLED`.
+1. Admin config already has `EMBEDDINGS_ENABLED` (default **off** — master opt-in).
 2. Promote `EMBEDDINGS_AUTO_ON_INGEST` and `EMBEDDINGS_INGEST_MAX_PER_RUN` into
    `config_schema` (ml section) so they are Admin-editable.
-3. **Coupling rule (UI/apply path only — no “unset means on” magic):**
+3. **Runtime default:** `EMBEDDINGS_AUTO_ON_INGEST` defaults to **`1`** (on) in
+   code, `.env.example`, and config schema. Effective ingest-tail still requires
+   `EMBEDDINGS_ENABLED=1` (existing `embeddings_auto_on_ingest_enabled()` gate).
+4. **Coupling rule (UI/apply path — belt and suspenders with the new default):**
    - When the operator saves `EMBEDDINGS_ENABLED` from `0` → `1`, if
      `EMBEDDINGS_AUTO_ON_INGEST` is not explicitly being set in the same save,
-     **also set `EMBEDDINGS_AUTO_ON_INGEST=1`**.
+     **also set `EMBEDDINGS_AUTO_ON_INGEST=1`** (covers installs that still have
+     an old `=0` in `.env` / `app_settings`).
    - Operator may later set `AUTO_ON_INGEST=0` while leaving embeddings on
      (fail-safe under CPU load).
    - Enabling embeddings does **not** change ingest max; defaults stay 25.
-4. Runtime code keeps reading env as today; no silent reinterpretation of
-   unset → on outside the Admin enable path.
+5. Do **not** force `EMBEDDINGS_ENABLED=1` on existing deploys.
 
 ## Fail-safe visibility (health)
 
@@ -122,7 +126,7 @@ RH-1 before RH-2 so auto never lands without a truthful gauge.
 
 - [ ] AI ops vector number matches `embeddings` (or clearly labels both).
 - [ ] Health endpoint shows coverage/pending/extension/flags without loading the model.
-- [ ] Enabling embeddings in Admin turns auto-on-ingest on; operator can turn auto off alone.
+- [ ] `EMBEDDINGS_AUTO_ON_INGEST` defaults to on; enabling embeddings in Admin also sets it on (covers stale `=0`); operator can turn auto off alone.
 - [ ] Caps remain enforced; keyword fallback unchanged.
 - [ ] `EMBEDDINGS_PGVECTOR` not in Admin UI.
 - [ ] Docs updated in the same PRs.
