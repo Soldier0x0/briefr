@@ -27,10 +27,12 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 - Auditor: `--strict` (fail on gap/weak); FE `*.test.js` + empty `__init__.py` → `out_of_scope`.
 - Guide chips/globs drove inventory to **covered=612 / weak=0 / gap=0** (orphan=1 intentional `dialect.py`).
 - Book regenerated; `--strict` exit 0.
+- Gemini #692: clarified inventory scope (scripts/ not walked); G5 pytest asserts committed book == fresh rebuild.
+- Preface + `primer-mechanics` self-checks added (sec-* digests already had them).
 
 **Update protocol (unchanged):** maintainer says “update” after features/audits → re-inventory HEAD → close new weak/gap/stale → `--strict` green → rebuild book.
 
-**Next:** Phase 1 design (separate learn repo + System Design / Analyst / Architect pathways on `docs.`) — **only after** maintainer green-lights Phase 1. Optional: primer/digest self-check polish (non-blocking).
+**Next:** Phase 1 design (separate learn repo + System Design / Analyst / Architect pathways on `docs.`) — **only after** maintainer green-lights Phase 1.
 
 ---
 
