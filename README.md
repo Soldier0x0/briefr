@@ -74,6 +74,8 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 
 - [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) — the short version, with diagrams
 - [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) — the long version: a full, paginated architecture textbook covering every backend subsystem, the frontend stack decisions, ML/LLM internals, deployment, CI, and security posture, file by file, with self-check questions. Open it in a browser.
+- [`docs/study-guide/`](docs/study-guide/) — the same textbook as a multi-file book (regenerate with `python scripts/build_study_guide_book.py`)
+- [`docs/learn/`](docs/learn/) — pathway chooser (System Design / Security analyst / Security architect) linking into the study guide
 - [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) — the reference architecture essay
 
 ---
@@ -203,6 +205,10 @@ On first start with fewer than 10 CVEs, the backend automatically runs a full in
 bash deploy/setup.sh          # initial Debian/systemd + nginx setup
 bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
 ```
+
+Full ops notes: [`docs/OPERATIONS.md`](docs/OPERATIONS.md) and [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
+
+**Maintainer note (not a BRIEFR requirement):** For my own public demo I put edge access control in front of the host using [Cloudflare Zero Trust](https://www.cloudflare.com/products/zero-trust/) (free tier) with DNS on Cloudflare. That is a personal security choice for domain-fronted access — not part of the app, not required to run BRIEFR, and not the only way to expose a self-hosted instance. If your domain’s DNS is already on Cloudflare, it is one convenient option among many.
 
 Set `ALLOWED_ORIGINS` in `backend/.env` to your public URL (not `:5173`). Production serves `frontend/dist` via nginx; the Vite dev server is not used.
 

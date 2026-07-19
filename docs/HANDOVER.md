@@ -20,6 +20,16 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — Learn pathways (thin static overlays)
+
+**Done**
+- `docs/learn/` chooser + System Design / Analyst / Architect pathways link into `docs/study-guide/` (no nested book copy).
+- Builder: `scripts/build_learn_site.py`. Edit `docs/learn/pathways.json`, regenerate.
+
+**Next:** publish the `docs/` tree (or those folders) however you already serve static files from the repo.
+
+---
+
 ## 2026-07-19 — Study guide Phase 0 inventory gates green
 
 **Done**
@@ -32,7 +42,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **Update protocol (unchanged):** maintainer says “update” after features/audits → re-inventory HEAD → close new weak/gap/stale → `--strict` green → rebuild book.
 
-**Next:** Phase 1 design (separate learn repo + System Design / Analyst / Architect pathways on `docs.`) — **only after** maintainer green-lights Phase 1.
+**Next:** thin learn pathways under `docs/learn/` (done in follow-on); say “update” after features for re-audit.
 
 ---
 
