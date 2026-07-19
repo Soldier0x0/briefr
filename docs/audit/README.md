@@ -1,5 +1,7 @@
 # BRIEFR Comprehensive Engineering Audit
 
+> **2026-07-19 refresh** against `main` @ `ff23c18a`. Same finding IDs; closed items live in each phase’s **Resolved since last audit** appendix. Scores below are from the refresh (see Phase 11). Docs only — no code fixes in this pass.
+
 An exhaustive 11-phase engineering assessment of BRIEFR, written to be **directly
 executable by an AI coding agent (e.g. Cursor Composer 2.5)**: every finding carries a
 concrete location, evidence, remediation with code sketch, acceptance criteria, effort,

@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-07-19 refresh (delta + thermo-nuclear)
+
+- **Mode:** delta refresh of same finding IDs; Resolved appendix for closed; NEW IDs for thermo-nuclear gaps only.
+- **Implementation:** docs only — no product code changes.
+- **Pinned SHA:** `ff23c18a4925b3b7082a2b1d1600884324d90d02`
+- **Prior baseline:** `61c686f` (2026-07-17 original audit).
+- **Branch / PR:** `cursor/audit-refresh-91c2` / #695
+- **Agent wave status:**
+
+| Agent | Scope | Status |
+|-------|-------|--------|
+| A1 | Phase 1 + 2 | ⬜ |
+| A2 | Phase 3 + IDEMPOTENCY | ⬜ |
+| A3 | Phase 4 + 9 | ⬜ |
+| A4 | Phase 5 + 6 | ⬜ |
+| A5 | Phase 7 + 8 | ⬜ |
+| A6 | Phase 10 | ⬜ |
+| Synth | Phase 11 + README | ⬜ |
+
+---
+
+## Original 2026-07-17 audit (historical)
+
 ## 0. Prime directive (from the user)
 
 - Conduct an **exhaustive 11-phase engineering audit** of BRIEFR (see phase list below).
