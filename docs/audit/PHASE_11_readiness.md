@@ -1,145 +1,133 @@
 # PHASE 11 — Enterprise SaaS Readiness · Production Readiness · Release Readiness
 
-*Capstone synthesis at commit `61c686f`, consolidating Phases 1–10. This phase does not introduce
-much new evidence; it integrates prior findings into an overall verdict and a prioritized roadmap.*
+*2026-07-19 refresh synthesis at pinned commit `ff23c18a4925b3b7082a2b1d1600884324d90d02`
+(`ff23c18`), consolidating refreshed Phases 1-10 plus the idempotency appendix. Prior baseline:
+`61c686f`. This phase introduces no new product findings; it synthesizes current open findings,
+closed appendices, scores, and release gates.*
 
 ---
 
 ## Executive Summary
 
-BRIEFR is a **genuinely well-engineered, single-tenant, self-hosted CVE-intelligence platform** built
-by someone who knows how to build software: clean modular backend, a real 238-token design system with
-serious accessibility, textbook security primitives (SSRF defense, bcrypt+timing, at-rest encryption,
-full security headers), production-grade self-host ops tooling (systemd/nginx/backup/restore runbooks,
-CI-tested backup round-trip), and unusually thorough documentation (ADRs, diagrams, rich API reference).
-Across ten phases it scores **7–8/10 in most areas** — clearly above the bar for a self-hosted security
-tool.
+BRIEFR remains a strong **single-tenant, self-hosted CVE-intelligence platform**. The refreshed audit
+keeps most phases in the 7-8 range, with product UX, security, operations, and documentation as clear
+strengths. The strongest positive delta since the prior capstone is closure of several former blockers:
+**F2.6**, **F5.6**, **F7.1**, **F10.1**, **F10.3**, and **IDEM-A through IDEM-D**. No other refreshed
+phase appendix claims a fully closed finding.
 
-Two framings must be separated because they yield very different verdicts:
+The self-hosted release conversation has therefore narrowed. The prior JWT, license, README-version,
+`AsyncState`, admin-auth-convention, and idempotency items should not appear in blocker lists anymore.
+The remaining likely **P0** is **F4.1**: CI is verified red at the pinned SHA and Phase 4 explicitly
+marks it `Status: UPDATED · Priority: CRITICAL`. Until `test`, `test-postgres`, and the release-relevant
+smoke signal are trustworthy, the program cannot prove that a release candidate is clean.
 
-- **Production readiness (self-hosted, single-node):** *Nearly ready.* The blockers are a **small set of
-  concrete must-fixes**, not architectural rewrites: the **red CI baseline** (F4.1) makes "it works"
-  unverifiable; the **dead production JWT-secret guard** (F7.1) silently auto-generates signing keys in
-  prod; the **license contradiction** (F10.1) is a legal-clarity issue; and the **`AsyncState`
-  silent-error edge** (F5.6) is a user-facing bug. Close these and single-node self-host is
-  production-grade.
+The SaaS conversation is still a separate product-shape question, not a bug-fix backlog. BRIEFR has no
+multi-tenancy, no SSO/SCIM, no billing/entitlements, coarse RBAC, and several single-process foundations
+that are appropriate for self-hosted operation but not for a multi-tenant service.
 
-- **Enterprise SaaS readiness (multi-tenant, sold as a service):** *Not built — and that appears
-  intentional.* There is **no multi-tenancy** (0 tenant/org scoping in `db/`), **no SSO/SAML/OIDC/SCIM**,
-  **no billing/seats/entitlements**, **binary RBAC only** (F7.8), and the horizontal-scale foundations
-  (process-local caches + in-process locks + per-process rate limits + runtime JWT generation:
-  F3.1/F3.2/F6.6/F7.1/F7.2) assume a single owner process. BRIEFR is architected as **self-hosted OSS
-  (AGPL-3.0)**, not a multi-tenant SaaS. Reaching "Enterprise SaaS" is a **product-shape change**, not a
-  bug-fix list.
-
-**Overall Program Score: 7.4 / 10** (self-hosted lens). Enterprise-SaaS lens: **4.5 / 10** (correctly,
-because that product wasn't the goal).
+**Overall Program Score: 7.4 / 10** (weighted self-hosted lens; prior published score was 7.4).
+Unweighted phase mean is 7.46. Enterprise-SaaS lens: **4.7 / 10** because the product is not currently
+architected or packaged as multi-tenant SaaS.
 
 ---
 
 ## Consolidated phase scorecard
 
 | Phase | Area | Score |
-|------|------|-------|
-| 1 | Repo Org · Code Quality · Technical Debt | 7.5 |
-| 2 | Backend/Frontend/DB/API/State Architecture | 7.0 |
+|------|------|------:|
+| 1 | Repo Org · Code Quality · Technical Debt | 7.2 |
+| 2 | Backend/Frontend/DB/API/State Architecture | 7.2 |
 | 3 | Correlation/Risk/Detection/AI/Scheduler/Caching Engines | 7.0 |
 | 4 | Functional/E2E/Integration/Regression/Data-Integrity Testing | 6.5 |
-| 5 | Product/UX/UI/Design-System/A11y/Data-Presentation | 8.0 |
-| 6 | Performance/Scalability/Resource | 7.0 |
-| 7 | Security/Auth/RBAC/Secrets/Privacy/Supply-Chain | 8.0 |
-| 8 | Logging/Monitoring/Observability/Backup/DR/Deploy | 7.5 |
-| 9 | Compatibility/Reliability/Chaos/Recovery | 7.0 |
-| 10 | User/Admin/Developer/API/Architecture Docs | 7.5 |
+| 5 | Product/UX/UI/Design-System/A11y/Data-Presentation | 8.1 |
+| 6 | Performance/Scalability/Resource | 7.2 |
+| 7 | Security/Auth/RBAC/Secrets/Privacy/Supply-Chain | 8.3 |
+| 8 | Logging/Monitoring/Observability/Backup/DR/Deploy | 7.8 |
+| 9 | Compatibility/Reliability/Chaos/Recovery | 7.1 |
+| 10 | User/Admin/Developer/API/Architecture Docs | 8.2 |
 | **—** | **Weighted program (self-hosted)** | **7.4** |
 
----
-
-## The cross-cutting themes (each spans multiple phases)
-
-### T1 — Trustworthy CI is the keystone (F4.1 → F4.2, F5.7, F8.5, F9.x)
-Every quality claim depends on green CI, and the pipeline is red by default on this docs-only PR. It
-also means the excellent frontend gate-tests and future guardrails protect nothing. **Nothing else on
-this list can be verified until CI is green and required.** This is the single highest-leverage fix.
-
-### T2 — Single-process assumptions block horizontal scale (F3.1, F3.2, F6.6, F7.1, F7.2, F8.1)
-Process-local unbounded caches, in-process `asyncio.Lock` scheduler exclusion, per-process rate limits,
-and runtime-generated JWT secrets all assume exactly one process. This is fine (even sensible) for
-single-node self-host, but it is the concrete ceiling for both throughput scaling and any SaaS ambition.
-
-### T3 — Forward-compatibility is thin (F2.3, F2.1/F1.4, F10.2, F10.4)
-No API versioning, a dual-dialect DB whose default test path isn't the production engine, hand-written
-API docs, and no single version source — the product can evolve, but breaking changes have no migration
-runway and drift has no guard.
-
-### T4 — Enterprise/compliance surface is unbuilt (F5.9, F7.7, F7.8, F8.1/F8.2/F8.3, F10.1)
-No VPAT-grade contrast proof, undocumented LLM data egress, binary RBAC, no `/metrics`, no container
-image, no stated/drilled RPO-RTO, and a license contradiction. These are the items procurement and
-compliance teams check first.
-
-### T5 — Consistency-erosion guards are missing, not the consistency itself (F1.1, F5.1/F5.2/F5.3, F1.6)
-No linter/formatter/type gate; inline-style and raw-font sprawl; mid-flight token migration. The system
-is coherent today but has no automated forcing function to keep it that way as it grows.
+**Weighting:** self-hosted readiness weights architecture/engines/security/ops/testing most heavily:
+P1 10%, P2 11%, P3 11%, P4 13%, P5 8%, P6 9%, P7 13%, P8 11%, P9 8%, P10 6%. This yields **7.420**,
+rounded to **7.4**; the low Phase 4 score and open critical CI finding cap the otherwise improved mean.
 
 ---
 
-## Release-readiness gate (do these before tagging any release)
+## Cross-cutting themes
 
-**P0 — release blockers (must fix, all Quick Win / small):**
-1. **Root-cause and green `test` + `test-postgres`; add branch protection** (F4.1). *Nothing ships on red.*
-2. **Reorder the production JWT-secret guard so prod fails closed without `JWT_SECRET`** (F7.1).
-3. **Fix the AGPL-vs-proprietary license contradiction** in `API_REFERENCE.md` + repo-wide grep (F10.1).
-4. **Fix `AsyncState` first-load-error surfacing** — silent blank-panel bug (F5.6).
-5. **Update README "v1.1 beta" framing to v1.5.0** (F10.3).
+### T1 — CI trust is still the keystone (F4.1, F4.2, F5.7, F8.5)
+The audit now has fewer release blockers, which makes the red CI baseline more important, not less.
+Existing backend, Postgres, Playwright, dependency, and frontend gate signals must become actionable so
+closed findings stay closed and new guardrails can protect the product.
 
-**P1 — production-hardening (weeks, before scaling the install base):**
-6. Wire frontend gate-tests + `build` into CI; add `pytest-cov` floor (F4.2, F4.3).
-7. Introduce ruff + eslint/prettier gate via a formatting-only PR (F1.1).
-8. Make keyset the default feed pagination (F6.1); raise pool `min_size` (F6.3).
-9. Triage + green the `dependency-audit` job (F7.3); default/warn shared rate-limit store (F7.2).
-10. Add scoring FE/BE weight-parity contract test (F1.3/F3.5); scheduler lock-id parity test (F3.4).
-11. Export `openapi.json` + adopt `/api/v1` versioning (F2.3, F10.2).
-12. Document RPO/RTO + add a restore drill (F8.3); add `/metrics` endpoint (F8.1).
+### T2 — Single-process assumptions define the supported scale ceiling (F3.1, F3.2, F3.6, F6.6, F7.2)
+Process-local caches, in-process scheduler locks, process-local LLM circuit/quota state, and opt-in
+shared rate limits are acceptable with one scheduler owner and documented API-only workers. They block
+"just add replicas" horizontal scale until cache, lock, quota, and rate-limit state are shared or fenced.
 
-**P2 — enterprise/scale enablers (quarters; product decisions first):**
-13. Externalize cache (Redis) + move exclusion to Postgres advisory locks/Procrastinate (F3.1/F3.2/F6.6, F2.2).
-14. Ship a container image + compose + minimal Helm/k8s with health probes (F8.2).
-15. Decide the tenancy/RBAC model; add SSO (OIDC/SAML) + richer roles if multi-org SaaS is the goal (F7.8).
-16. VPAT-grade contrast lint + document LLM data-flow + no-external-egress mode (F5.9, F7.7).
-17. Build E2E/integration + chaos suites on a Postgres Testcontainer (F4.4, F9.2); load tests + SLOs (F6.5, F9.4).
+### T3 — Contract drift needs automation (F1.3, F2.1, F2.3, F2.10, F3.5, F10.2, F10.4)
+Dual scoring logic, dual DB compatibility surfaces, unversioned APIs, no committed OpenAPI artifact, and
+duplicated version strings are all manageable today but require executable contracts before external API
+or long-lived customer integrations expand.
+
+### T4 — Enterprise procurement surfaces remain incomplete (F5.9, F7.7, F7.8, F8.1, F8.2, F8.3, F8.4, F9.4)
+The current self-hosted product is operationally credible, but enterprise buyers will ask for VPAT-grade
+contrast proof, documented LLM egress/no-egress mode, richer authorization, standard metrics/tracing,
+container or k8s packaging, stated RPO/RTO, and recurring recovery drills.
+
+### T5 — Consistency erosion is a guardrail problem (F1.1, F1.11, F5.1, F5.2, F5.3, F5.7)
+The codebase is coherent because conventions are written down and many tests exist. It stays coherent
+only if lint/type/format, frontend unit gates, token/type/style ratchets, and CI enforcement become
+required rather than reviewer-memory checks.
+
+---
+
+## Release-readiness gate
+
+**P0 — release blocker:**
+1. **Root-cause and restore trustworthy CI for `test`, `test-postgres`, and release-relevant smoke**
+   (F4.1). Phase 4 verified red jobs at `ff23c18`; logs were unavailable, so this remains a verified
+   red baseline, not a diagnosed pytest or Playwright root cause.
+
+**P1 — self-hosted production hardening:**
+2. Run frontend gate-tests and coverage in CI (F4.2, F4.3, F5.7).
+3. Add lint/format/type gates and frontend unit-test/build CI (F1.1, F1.11).
+4. Protect risk/API/DB contracts: scoring parity, Postgres-first dialect confidence, `/api/v1`, and
+   OpenAPI export/drift checks (F1.3, F2.1, F2.3, F2.10, F3.5, F10.2).
+5. Make performance and recovery measurable: load tests, keyset-by-default feed, pool sizing, metrics,
+   RPO/RTO, and restore drills (F6.1, F6.3, F6.5, F8.1, F8.3).
+6. Restore supply-chain signal quality and production rate-limit posture (F7.3, F7.2).
+
+**P2 — scale, enterprise, and long-horizon enablers:**
+7. Externalize or fence cache, scheduler locks, LLM circuit/quota, and shared rate-limit state (F3.1,
+   F3.2, F3.6, F6.6, F7.2).
+8. Finish durable job ownership and split oversized scheduler/router/frontend surfaces (F2.2, F1.2,
+   F1.5, F1.12, F2.5).
+9. Add container/k8s packaging, OpenTelemetry, browser matrix, chaos/failure-injection, SLO/error budget,
+   and stale-data callout gates (F8.2, F8.4, F9.1, F9.2, F9.4, F9.6).
+10. Decide the enterprise target: authorization model, tenancy, SSO/SCIM, LLM data-flow/no-egress, VPAT
+    evidence, and fuller support docs (F7.7, F7.8, F5.9, F10.5, F10.6, F10.7).
 
 ---
 
 ## Production Readiness Assessment
 
-**Self-hosted, single-node: CONDITIONALLY READY (7.4/10).** After the five P0 fixes — all small and
-well-scoped — BRIEFR is a solid, secure, well-documented v1.5 that a single organization can run in
-production with confidence. The foundations (security, design, ops tooling, docs, test volume) are
-genuinely strong; the blockers are a trustworthy pipeline and a handful of concrete correctness/legal
-fixes, not deep rework.
+**Self-hosted, single-node: CONDITIONALLY READY (7.4/10), but not release-signoff ready while F4.1 is
+open.** The foundations are good: security posture improved, idempotency risks were resolved, product UX
+is strong, backup/update tooling is credible, and docs are better aligned. Once CI is green and required,
+the remaining P1 work is production hardening rather than evidence of an unsafe core.
 
-**Horizontal scale / high-throughput: NOT READY (blocked by T2).** Requires the P2 cache/lock/JWT work
-before running more than one scheduler-owning process safely.
+**Horizontal scale / high-throughput: NOT READY without topology constraints.** BRIEFR can support a
+single scheduler owner plus API-only workers, but full multi-replica scheduler/cache/rate-limit behavior
+requires the P2 state-externalization work.
 
-**Enterprise SaaS (multi-tenant, sold as a service): NOT READY / OUT OF CURRENT SCOPE (4.5/10).** This is
-a different product: multi-tenancy, SSO/SCIM, billing, per-tenant isolation, and the T2/T4 enablers do
-not exist. This is not a defect — it reflects a deliberate self-hosted-OSS product shape. If Enterprise
-SaaS becomes a goal, treat it as a new program with the P2 list as its foundation, sequenced after the
-P0/P1 self-host hardening.
+**Enterprise SaaS: NOT READY / OUT OF CURRENT PRODUCT SCOPE (4.7/10).** The gap is not a handful of bugs;
+it is missing multi-tenant product architecture, enterprise identity, billing/entitlements, standardized
+observability, and compliance evidence. Treat SaaS as a separate program if it becomes a goal.
 
 ## Release Readiness Verdict
 
-> **Ship v1.5 as self-hosted software once the five P0 items are closed and CI is green.** Do not market
-> or sell it as multi-tenant "Enterprise SaaS" without the P2 program. The engineering quality is high;
-> the gap to *self-host production* is a short, concrete checklist, and the gap to *enterprise SaaS* is a
-> deliberate, larger product investment — keep those two conversations separate.
-
----
-
-## Closing note
-
-This audit found **no evidence of careless or unsafe engineering** — the opposite. The recurring pattern
-is a strong system that lacks the **automated forcing functions** (green CI, lint gates, contract tests,
-metrics, versioning) that keep strong systems strong over "many years and thousands of organizations."
-Investing in those guardrails (T1, T5) will pay back faster than any single feature, because they protect
-every strength this audit documented.
+> **Do not tag a self-hosted release from the refreshed baseline until F4.1 is closed or narrowly
+> quarantined with a documented reason.** Closed appendix items should stay out of blocker lists. After
+> CI trust is restored, ship self-hosted with the P1 hardening backlog tracked; do not market the product
+> as enterprise SaaS until the P2 product-shape decisions are funded and implemented.

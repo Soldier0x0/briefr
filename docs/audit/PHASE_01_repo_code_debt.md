@@ -29,7 +29,7 @@ The thermo-nuclear bar still exposes several structural debt centers that should
 | F1.9 | OPEN | Settings/config ownership remains split across five modules. |
 | F1.10 | OPEN | `backend/correlation/copy.py` still exists and is imported by four modules. |
 | F1.11 | UPDATED | FE tests grew to 56 files but `test:unit` is still not wired into CI; five production `console.error` calls remain. |
-| NEW-A | NEW | Scheduler god-file debt called out as a placeholder for coordinator numbering. |
+| F1.12 | NEW | Scheduler god-file debt now has a final Phase 1 finding ID. |
 
 ---
 
@@ -149,13 +149,13 @@ The thermo-nuclear bar still exposes several structural debt centers that should
 - **Acceptance criteria:** A failing FE unit test fails CI; build has its own job; console policy is explicit and enforced.
 - **Estimated effort:** Quick Win. **Type:** Quick Win.
 
-### NEW-A — Scheduler god-file exceeds the thermo-nuclear size bar · Status: NEW · Priority: MEDIUM · Architectural placeholder
+### F1.12 — Scheduler god-file exceeds the thermo-nuclear size bar · Status: NEW · Priority: MEDIUM · Architectural
 - **Location:** `backend/scheduler.py`.
 - **Description:** The scheduler module is now 2,600 LOC, larger than either prior Phase 1 router finding except `admin.py`. It owns job definitions, orchestration, lock coupling, and operational behavior in one file while the durable-job migration is also active.
 - **Why it matters:** Background jobs are where heavy work belongs, so scheduler clarity is a production-safety concern. At 2.6k LOC, new jobs are likely to be added by copy/paste into the same file instead of through a registry or per-domain owner modules.
 - **Evidence:** `wc -l backend/scheduler.py` → 2,600. `backend/main.py:123-133` starts APScheduler and the Procrastinate worker in the same lifespan. `backend/tests/test_job_ownership_registry.py:1-10` exists because this area now needs executable ownership invariants.
 - **Risk:** Double-run/dropped jobs, lock drift, and hard-to-review scheduler changes.
-- **Recommended solution:** Treat this as the coordinator's `NEW-A` placeholder. Split scheduler ownership by job domain behind a registry (`feeds`, `ai`, `retention`, `watchlist`, `stack`, `embeddings`), leaving `scheduler.py` as composition/root wiring only.
+- **Recommended solution:** Split scheduler ownership by job domain behind a registry (`feeds`, `ai`, `retention`, `watchlist`, `stack`, `embeddings`), leaving `scheduler.py` as composition/root wiring only.
 - **Acceptance criteria:** `scheduler.py` <700 LOC; job IDs/locks remain tested via the existing ownership registry; adding a job requires a registry entry and owner module.
 - **Estimated effort:** Medium-Large. **Type:** Architectural.
 
@@ -177,7 +177,7 @@ The thermo-nuclear bar still exposes several structural debt centers that should
 
 ## Weaknesses
 - No lint/format/type gate (F1.1), which keeps many written rules unenforced.
-- Multiple god-files exceed the ~1k LOC bar (F1.2, F1.5, NEW-A).
+- Multiple god-files exceed the ~1k LOC bar (F1.2, F1.5, F1.12).
 - Dual-maintained correctness surfaces remain in risk scoring and DB SQL (F1.3, F1.4).
 - Frontend tests and console policy remain outside CI enforcement (F1.11).
 
