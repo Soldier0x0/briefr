@@ -44,7 +44,8 @@ timeline within **10 business days** for confirmed issues.
 
 This repository runs [gitleaks](https://github.com/gitleaks/gitleaks) in CI on every
 push and pull request. If you believe a real credential was committed, **rotate the
-credential immediately** — git history cannot be made private after an open-source flip.
+credential immediately** — this is a public repository, so git history cannot be
+scrubbed after the fact; rotation is the only real fix.
 
 ## Secure deployment reminders
 

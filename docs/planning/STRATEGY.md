@@ -155,12 +155,13 @@ A tool becomes "must-have" through installs and word of mouth, not features.
 Current blockers, in order:
 
 1. **License.** **Decided 2026-07-10 (Track F2):** **AGPL-3.0-or-later**
-   (`LICENSE`, `CONTRIBUTING.md`, SPDX headers). Repo flip to public GitHub
-   remains gated on beta feedback; the license is in force in-tree now.
+   (`LICENSE`, `CONTRIBUTING.md`, SPDX headers). **Repo is now public on
+   GitHub** — the license has been in force in-tree since the decision and
+   now applies to a public audience.
 2. **Install friction.** `docker compose up` must work, first try, on a
    clean machine, in under 10 minutes, with sensible no-API-key defaults.
-   V2.0's compose work was parked "while the deployment is private" — the
-   open-source goal reverses that rationale. Unpark **only the compose
+   V2.0's compose work was parked "while the deployment is private" — now
+   that the repo is public, that rationale no longer applies. Unpark **only the compose
    part** of V2.0 (not multi-user).
 3. **The demo instance** (briefr.projectjupiter.in) is the funnel — keep it
    seeded, fast, and linked from everything.

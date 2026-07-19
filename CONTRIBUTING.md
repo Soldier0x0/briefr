@@ -2,8 +2,8 @@
 
 Thank you for your interest in BRIEFR. This project is licensed under
 **AGPL-3.0-or-later** (see [`LICENSE`](LICENSE)). The repository is maintained
-by [Sai Harsha Vardhan](https://projectjupiter.in); the public flip is planned
-after beta feedback — contributions are welcome on `main` via pull request.
+by [Sai Harsha Vardhan](https://projectjupiter.in) — contributions are welcome
+on `main` via pull request.
 
 ## Before you start
 
