@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -124,7 +133,7 @@
         <span class="chapter-num">Part II · Chapter 7</span>
         <h3>Configuration and encrypted settings</h3>
         <p class="dek">Three files, three different jobs: what the process reads at boot, what an operator can change without redeploying, and how the sensitive half of that gets protected at rest.</p>
-        <div class="files"><span class="chip">config_schema.py</span><span class="chip">settings.py</span><span class="chip">settings_crypto.py</span><span class="chip">ADR-006</span></div>
+        <div class="files"><span class="chip">config_schema.py</span><span class="chip">settings.py</span><span class="chip">settings_crypto.py</span><span class="chip">operator_settings.py</span><span class="chip">ADR-006</span></div>
       </div>
 
       <h4 class="subhead concept">Two different kinds of configuration</h4>
@@ -156,7 +165,12 @@
         <p><strong>Fails closed, on purpose, in production only:</strong> if <code>BRIEFR_ENV=production</code> and <code>JWT_SECRET</code> is unset, <code>settings.py</code> raises <code>RuntimeError</code> immediately — the process refuses to start rather than silently generating a throwaway secret that would invalidate every session on the next restart. In dev/test, by contrast, an unset secret is auto-generated with <code>secrets.token_hex(32)</code> and persisted back into <code>.env</code> so it survives restarts during local development. Same missing value, deliberately different behavior depending on environment.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Operator settings in the database</h4>
+      <div class="prose">
+        <p><code>operator_settings.py</code> is the writable admin-config path that persists keys to <code>app_settings</code> so values survive a <code>.env</code> refresh on deploy. Precedence remains process env → DB → <code>.env</code>. Secret-typed keys encrypt at rest when <code>BRIEFR_SETTINGS_KEY</code> is set (ADR-006); without it, secrets stay env-only and are not written to the DB. Admin Save still mirrors to <code>.env</code> for compatibility.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>If <code>BRIEFR_SETTINGS_KEY</code> is generated once, used to encrypt several secrets, and then lost without a backup, what happens to those secrets — and is there any recovery path other than re-entering them?</li>

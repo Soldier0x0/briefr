@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -124,7 +133,7 @@
         <span class="chapter-num">Part V · Chapter 30</span>
         <h3>Ops and observability — keeping a self-hosted instance alive without its authors watching over it</h3>
         <p class="dek">Backup, a genuinely separate data-migration path, redacted diagnostics, and a kiosk dashboard with its own auth scheme.</p>
-        <div class="files"><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span></div>
+        <div class="files"><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span><span class="chip">read_cache.py</span><span class="chip">storage_metrics.py</span><span class="chip">resource_collector.py</span></div>
       </div>
       <div class="prose">
         <p><strong>Backup</strong> is dual-backend, matching Chapter 9's split: SQLite uses its own online backup API (<code>sqlite3.Connection.backup()</code>) plus a <code>PRAGMA integrity_check</code> both before and after, with automatic restore-from-backup on startup if the live file is found corrupt (this is the exact recovery path Chapter 6's <code>lifespan()</code> invokes). Postgres instead shells out to <code>pg_dump --format=custom</code> and restores with <code>pg_restore --clean --if-exists</code>. Both backends produce tar bundles with optional X25519 encryption — and the encryption key is required, by an explicit enforced check, to live <em>outside</em> the backup directory itself, for a reason that should be obvious once stated: an encrypted backup whose decryption key sits right next to it in the same backup archive or directory provides no real protection at all if that directory is ever copied, leaked, or compromised as a whole.</p>
@@ -139,7 +148,12 @@
         <p><code>monitoring/notifications.py</code> is the aggregation layer sitting one level above the API-key health checker: it merges recent audit-log rows, job-error entries, and unhealthy-key alerts into a single, time-ordered operator notification feed — reusing Chapter 13's audit-log redaction rather than re-implementing it. <code>metrics/request_counter.py</code> is genuinely trivial, confirmed directly rather than assumed: a thread-locked integer counter with an atomic read-and-reset, existing purely to answer "how many requests came in since the last resource sample" for the resource-monitoring collector this chapter's Chapter 31 companion covers.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Read cache, storage, and resource collectors</h4>
+      <div class="prose">
+        <p><code>read_cache.py</code> is the short-TTL in-process cache used by hot read paths (including health-style endpoints) so polling UIs do not stampede the database. <code>storage_metrics.py</code> and <code>resource_collector.py</code> feed Admin Storage / Resources charts — table sizes, host disk, CPU/memory trends — without standing up Prometheus.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why must a backup's encryption key live outside the backup directory itself — what specific failure scenario does this prevent?</li>

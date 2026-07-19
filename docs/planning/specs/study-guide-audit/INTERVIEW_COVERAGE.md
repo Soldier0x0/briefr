@@ -63,18 +63,19 @@ Legend: C=Concept, W=Why, H=How, S=Self-check, IR=interview-ready?
 | glossary-content | Glossary | adequate | weak | weak | missing | n/a | Reference |
 | self-check | Self-check index | adequate | weak | weak | missing | n/a | Index only |
 
-## Proposed new chapters (not yet written)
+| fe-analyst-shell | Analyst shell | strong | strong | strong | strong | yes | Added 2026-07-19 |
+| fe-admin-shell | Admin shell | strong | strong | strong | strong | yes | Added 2026-07-19 |
+| fe-forge-wallboard | Forge / wallboard | strong | strong | strong | strong | yes | Added 2026-07-19 |
+| fe-shared-utils | Hooks & utils | strong | strong | strong | strong | yes | Pattern chapter |
+| ie-retrieval-ops | Retrieval ops | strong | strong | strong | strong | yes | Added 2026-07-19 |
+| api-secarch | Security architecture | adequate | strong | strong | adequate | yes | Self-check added |
+| sec-identity | Identity & session | adequate | adequate | adequate | adequate | yes | Self-check added |
+| sec-network | Network trust | adequate | adequate | adequate | adequate | yes | Self-check added |
+| sec-secrets | Secrets | adequate | adequate | adequate | adequate | yes | Self-check added |
+| sec-availability | Availability | adequate | adequate | adequate | adequate | yes | Self-check added |
+| sec-selfassess | Self-assessment | adequate | adequate | adequate | adequate | yes | Self-check added |
 
-| Chapter id | Target IR bar | Must cover |
-|------------|---------------|------------|
-| `fe-analyst-shell` | yes | Feed, drawer, tab URL sync, analyst chrome |
-| `fe-admin-shell` | yes | Admin nav `?p=`, grids, health/storage/scheduler pages |
-| `fe-forge-wallboard` | yes | Forge views, wallboard kiosk cookie UX |
-| `fe-shared-utils` | adequate | Hooks/utils patterns; not file dump |
-| `ie-retrieval-ops` | yes | Retrieval health, auto-on-ingest, pending/backfill caps |
+## Remaining gaps (post 2026-07-19 content pass)
 
-## Summary
-
-- **Already interview-ready:** most architecture + backend + intel chapters (≈35).  
-- **Fix in place (small):** `api-secarch` self-check; `sec-*` self-checks; chip misses listed in `STALE_CLAIMS.md`.  
-- **Structural hole:** frontend file inventory (Part I-B) and retrieval ops narrative.
+- ~118 file gaps left (down from ~399): mostly secondary admin page modules, niche components, and corpus YAML data files.
+- Next depth pass: narrate remaining `pages/admin/*` satellites and corpus YAML as data assets, not leave as silent gaps.

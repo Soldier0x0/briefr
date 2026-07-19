@@ -4,9 +4,9 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 
 | Status | Count |
 |--------|------:|
-| `covered` | 218 |
-| `weak` | 67 |
-| `gap` | 399 |
+| `covered` | 259 |
+| `weak` | 308 |
+| `gap` | 118 |
 | `orphan_mention` | 1 |
 | `out_of_scope` | 1 |
 
@@ -62,7 +62,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/alembic.ini` | `gap` | — | ; No study-guide ownership found |
 | `backend/api_metering.py` | `gap` | — | ; No study-guide ownership found |
 | `backend/api_queue.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
-| `backend/api_queue_operations.py` | `gap` | — | ; No study-guide ownership found |
+| `backend/api_queue_operations.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
 | `backend/auth/__init__.py` | `weak` | `be-auth` | sibling/dir coverage under backend/auth/; File never named; only directory-level association |
 | `backend/auth/passwords.py` | `covered` | `be-auth` | exact path mention in chapter body/chips |
 | `backend/auth/repo.py` | `covered` | `be-auth` | exact path mention in chapter body/chips |
@@ -101,7 +101,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/database.py` | `covered` | `be-shim` | exact path mention in chapter body/chips |
 | `backend/db/__init__.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/ai_operations.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
-| `backend/db/api_metering.py` | `covered` | `api-scripts`, `be-data`, `system-design` | exact path mention in chapter body/chips |
+| `backend/db/api_metering.py` | `covered` | `api-scripts`, `be-data`, `in-queue`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/app_settings.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/cache.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/cache_retention.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
@@ -201,8 +201,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/metrics/request_counter.py` | `covered` | `api-ops`, `api-scripts` | exact path mention in chapter body/chips |
 | `backend/migration/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/migration/; File never named; only directory-level association |
 | `backend/migration/sqlite_to_postgres.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
-| `backend/ml/__init__.py` | `weak` | `arch-ai-restraint`, `arch-resources`, `ie-ml` | sibling/dir coverage under backend/ml/; File never named; only directory-level association |
-| `backend/ml/embeddings.py` | `covered` | `arch-ai-restraint`, `arch-resources`, `ie-ml` | exact path mention in chapter body/chips |
+| `backend/ml/__init__.py` | `weak` | `arch-ai-restraint`, `arch-resources`, `ie-ml`, `ie-retrieval-ops` | sibling/dir coverage under backend/ml/; File never named; only directory-level association |
+| `backend/ml/embeddings.py` | `covered` | `arch-ai-restraint`, `arch-resources`, `ie-ml`, `ie-retrieval-ops` | exact path mention in chapter body/chips |
 | `backend/ml/product_extraction.py` | `covered` | `ie-ml` | exact path mention in chapter body/chips |
 | `backend/monitoring/__init__.py` | `weak` | `api-ops` | sibling/dir coverage under backend/monitoring/; File never named; only directory-level association |
 | `backend/monitoring/api_key_health.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
@@ -210,7 +210,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/notifications/emit.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/onboarding/__init__.py` | `weak` | `api-usersettings` | sibling/dir coverage under backend/onboarding/; File never named; only directory-level association |
 | `backend/onboarding/checklist.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
-| `backend/operator_settings.py` | `gap` | — | ; No study-guide ownership found |
+| `backend/operator_settings.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/preferences/display_validate.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/preferences/repo.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/preferences/validate.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
@@ -219,13 +219,13 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/pytest.ini` | `gap` | — | ; No study-guide ownership found |
 | `backend/rate_limit.py` | `covered` | `arch-resources`, `be-ratelimit` | exact path mention in chapter body/chips |
 | `backend/rate_limit_store.py` | `covered` | `be-ratelimit` | exact path mention in chapter body/chips |
-| `backend/read_cache.py` | `gap` | — | ; No study-guide ownership found |
+| `backend/read_cache.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/redact.py` | `covered` | `be-logging` | exact path mention in chapter body/chips |
 | `backend/resilient_client.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
-| `backend/resource_collector.py` | `gap` | — | ; No study-guide ownership found |
+| `backend/resource_collector.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/routers/__init__.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
 | `backend/routers/_validators.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/admin.py` | `covered` | `api-routers`, `api-scripts`, `be-config`, `in-scheduler`, `system-design` | exact path mention in chapter body/chips |
+| `backend/routers/admin.py` | `covered` | `api-routers`, `api-scripts`, `be-config`, `ie-retrieval-ops`, `in-scheduler`, `system-design` | exact path mention in chapter body/chips |
 | `backend/routers/atlas.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
 | `backend/routers/auth.py` | `covered` | `api-routers`, `system-design` | exact path mention in chapter body/chips |
 | `backend/routers/brief.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
@@ -275,7 +275,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/security_architecture/corpus/trust_boundaries.yaml` | `gap` | — | ; No study-guide ownership found |
 | `backend/security_architecture/corpus_drift.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/corpus_loader.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
-| `backend/security_architecture/frameworks/__init__.py` | `weak` | `api-secarch` | sibling/dir coverage under backend/security_architecture/frameworks/; File never named; only directory-level association |
+| `backend/security_architecture/frameworks/__init__.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/frameworks/aggregate.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/frameworks/reference.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/frameworks/scope.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
@@ -283,14 +283,14 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/security_architecture/merge.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
 | `backend/security_architecture/routers/__init__.py` | `weak` | `api-secarch` | sibling/dir coverage under backend/security_architecture/routers/; File never named; only directory-level association |
 | `backend/security_architecture/routers/security_architecture.py` | `covered` | `api-secarch` | exact path mention in chapter body/chips |
-| `backend/services/__init__.py` | `weak` | `api-proof`, `in-jobs` | sibling/dir coverage under backend/services/; File never named; only directory-level association |
-| `backend/services/retrieval_health.py` | `weak` | `api-proof`, `in-jobs` | sibling/dir coverage under backend/services/; File never named; only directory-level association |
+| `backend/services/__init__.py` | `weak` | `api-proof`, `ie-retrieval-ops`, `in-jobs` | sibling/dir coverage under backend/services/; File never named; only directory-level association |
+| `backend/services/retrieval_health.py` | `covered` | `ie-retrieval-ops` | exact path mention in chapter body/chips |
 | `backend/services/semantic_search.py` | `covered` | `api-proof` | exact path mention in chapter body/chips |
 | `backend/services/stack_backfill_worker.py` | `covered` | `api-proof`, `in-jobs` | exact path mention in chapter body/chips |
 | `backend/settings.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/settings_crypto.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/source_rate_limits.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
-| `backend/storage_metrics.py` | `gap` | — | ; No study-guide ownership found |
+| `backend/storage_metrics.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/structured_logging.py` | `covered` | `be-logging` | exact path mention in chapter body/chips |
 | `backend/task_registry.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
 | `backend/templates/__init__.py` | `weak` | `api-proof` | sibling/dir coverage under backend/templates/; File never named; only directory-level association |
@@ -308,107 +308,107 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/webhooks/sender.py` | `covered` | `api-webhooks` | exact path mention in chapter body/chips |
 | `backend/webhooks/ssrf.py` | `covered` | `api-webhooks` | exact path mention in chapter body/chips |
 | `frontend/src/App.css` | `covered` | `fe-design` | exact path mention in chapter body/chips |
-| `frontend/src/App.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/api.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AboutModal.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AboutModal.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ApiQueueIndicator.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ApiQueueIndicator.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AppErrorBoundary.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetProfileManage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetRememberToggle.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetWarning.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetWarning.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetWizard.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/AssetWizard.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/BriefCharts.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/BriefCharts.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CVECard.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CVECard.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CVEFeed.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CVEFeed.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CaseStudies.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CaseStudies.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CommandPalette.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CommandPalette.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ControlTooltip.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ControlTooltip.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CveDescriptionClamp.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/CveDescriptionClamp.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/CorrelationSuppressModal.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/CorrelationSuppressModal.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/DetectTab.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/IntelProvenanceLine.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/IntelTab.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/OverviewTab.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/RelatedTab.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/helpers.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer/index.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DetailDrawer.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DigestModal.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DigestModal.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/DrawerAtlasSection.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ExplainTip.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ExplainTip.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/FeedVisibleRange.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/FilterBar.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/FilterBar.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Forge.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Forge.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Header.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Header.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/HeaderClock.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Hero.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Hero.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/IOCLookup.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/IOCLookup.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/InvestigationPanel.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/InvestigationPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/MorningBrief.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/MorningBrief.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/NotificationBell.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/NotificationBell.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/PdfExportModal.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/PdfExportModal.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/RequireAdmin.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/RequireAuth.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ScrollToTop.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ScrollToTop.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SessionIdleWarning.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SessionIdleWarning.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SessionLockOverlay.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SessionLockOverlay.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SeverityLegend.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/SeverityLegend.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ShortcutsPanel.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ShortcutsPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Sidebar.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Sidebar.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/StatsRow.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/StatsRow.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TimeWindowPicker.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TimeWindowPicker.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TimelineHeatmap.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TimelineHeatmap.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/Toast.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/ToolErrorBoundary.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TutorialOverlay.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/TutorialOverlay.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/UserMenu.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/UserMenu.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/WhatChangedPanel.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/WhatChangedPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/briefVendorChartRecharts.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/BacklogView.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/CampaignsView.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/CoverageView.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/HuntPackRail.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/LibraryView.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/ScenariosView.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/mitreTacticOrder.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/forge/shared.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/timeWindowDateUtils.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/components/timeWindowDateUtils.test.js` | `gap` | — | ; No study-guide ownership found |
+| `frontend/src/App.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/api.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/components/AboutModal.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AboutModal.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ApiQueueIndicator.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ApiQueueIndicator.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AppErrorBoundary.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetProfileManage.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetRememberToggle.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetWarning.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetWarning.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetWizard.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/AssetWizard.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/BriefCharts.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/BriefCharts.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/CVECard.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CVECard.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/components/CVEFeed.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CVEFeed.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/components/CaseStudies.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CaseStudies.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/CommandPalette.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CommandPalette.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/components/ControlTooltip.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ControlTooltip.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CveDescriptionClamp.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/CveDescriptionClamp.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/CorrelationSuppressModal.css` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/CorrelationSuppressModal.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/DetectTab.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/IntelProvenanceLine.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/IntelTab.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/OverviewTab.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/RelatedTab.jsx` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/helpers.js` | `weak` | `fe-analyst-shell` | sibling/dir coverage under frontend/src/components/DetailDrawer/; File never named; only directory-level association |
+| `frontend/src/components/DetailDrawer/index.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/components/DetailDrawer.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/DigestModal.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/DigestModal.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/DrawerAtlasSection.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ExplainTip.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ExplainTip.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/FeedVisibleRange.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/FilterBar.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/FilterBar.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
+| `frontend/src/components/Forge.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Forge.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/Header.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Header.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/HeaderClock.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Hero.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Hero.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/IOCLookup.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/IOCLookup.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/InvestigationPanel.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/InvestigationPanel.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/MorningBrief.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/MorningBrief.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/NotificationBell.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/NotificationBell.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/PdfExportModal.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/PdfExportModal.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/RequireAdmin.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/RequireAuth.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ScrollToTop.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ScrollToTop.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SessionIdleWarning.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SessionIdleWarning.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SessionLockOverlay.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SessionLockOverlay.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SeverityLegend.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/SeverityLegend.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ShortcutsPanel.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ShortcutsPanel.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Sidebar.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Sidebar.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/StatsRow.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/StatsRow.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TimeWindowPicker.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TimeWindowPicker.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TimelineHeatmap.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TimelineHeatmap.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/Toast.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/ToolErrorBoundary.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TutorialOverlay.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/TutorialOverlay.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/UserMenu.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/UserMenu.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/WhatChangedPanel.css` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/WhatChangedPanel.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/briefVendorChartRecharts.jsx` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/forge/BacklogView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/forge/CampaignsView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/CoverageView.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/forge/HuntPackRail.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/components/forge/LibraryView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/ScenariosView.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/mitreTacticOrder.js` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/forge/shared.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/forge/; File never named; only directory-level association |
+| `frontend/src/components/timeWindowDateUtils.js` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
+| `frontend/src/components/timeWindowDateUtils.test.js` | `weak` | `fe-analyst-shell`, `fe-forge-wallboard` | sibling/dir coverage under frontend/src/components/; File never named; only directory-level association |
 | `frontend/src/components/ui/AlertDialog.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/components/ui/AsyncState.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/components/ui/AsyncState.test.js` | `gap` | — | ; No study-guide ownership found |
@@ -448,69 +448,69 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/context/AssetProfileContext.jsx` | `covered` | `fe-react`, `fe-state` | exact path mention in chapter body/chips |
 | `frontend/src/context/AuthContext.jsx` | `covered` | `fe-react`, `fe-state` | exact path mention in chapter body/chips |
 | `frontend/src/context/InvestigationContext.jsx` | `covered` | `fe-state` | exact path mention in chapter body/chips |
-| `frontend/src/hooks/useAsync.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/hooks/useInactivityTimeout.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/hooks/useModalLayer.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/hooks/useVisibilityAwareInterval.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/hooks/useWatchlist.js` | `gap` | — | ; No study-guide ownership found |
+| `frontend/src/hooks/useAsync.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/hooks/useInactivityTimeout.js` | `weak` | `fe-shared-utils` | sibling/dir coverage under frontend/src/hooks/; File never named; only directory-level association |
+| `frontend/src/hooks/useModalLayer.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/hooks/useVisibilityAwareInterval.js` | `weak` | `fe-shared-utils` | sibling/dir coverage under frontend/src/hooks/; File never named; only directory-level association |
+| `frontend/src/hooks/useWatchlist.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/main.jsx` | `covered` | `fe-react` | exact path mention in chapter body/chips |
-| `frontend/src/pages/AdminPage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/LegalPage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/LegalPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/LoginPage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/LoginPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/PrivacyPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/TermsPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/WallboardPage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/WallboardPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/AdminPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/AiOperationsPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/AlertsPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/ApiKeyHealthPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/ApiKeysPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/AuditLogPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/BackupsPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/ComingSoonPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/DatabasePage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/DbExplorerPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/DisplayPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/FeedHealthPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/IngestLogPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/OverviewPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/RateLimitPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/ResourcesPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SchedulerPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SearchTokensPanel.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SecurityPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SecurityPosturePage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SecurityPosturePage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/SessionsPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/Sidebar.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/StatusBar.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/StoragePage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/WatchlistPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/WebhookDestinationCard.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/WebhooksPage.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/WebhooksPage.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/adminFormFieldGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/adminJobAck.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/adminNav.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/adminUrlPageClearGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/catalog.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/circuitLabels.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/constants.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/formatters.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/formatters.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/intelStatus.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/jobActions.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/jobActions.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/jobStatus.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/needsAttention.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/needsAttention.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/rateLimits.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/resourceChartUtils.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/resourceChartUtils.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `gap` | — | ; No study-guide ownership found |
+| `frontend/src/pages/AdminPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LegalPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LegalPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LoginPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/LoginPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/PrivacyPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/TermsPage.jsx` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/WallboardPage.css` | `weak` | `fe-forge-wallboard` | sibling/dir coverage under frontend/src/pages/; File never named; only directory-level association |
+| `frontend/src/pages/WallboardPage.jsx` | `covered` | `fe-forge-wallboard` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/AdminPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/AiOperationsPage.jsx` | `covered` | `fe-admin-shell`, `ie-retrieval-ops` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/AlertsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/ApiKeyHealthPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/ApiKeysPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/AuditLogPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/BackupsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/ComingSoonPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/DatabasePage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/DbExplorerPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/DisplayPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/FeedHealthPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/IngestLogPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/OverviewPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/RateLimitPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/ResourcesPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SchedulerPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/SearchTokensPanel.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SecurityPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SecurityPosturePage.css` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SecurityPosturePage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/SessionsPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/Sidebar.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/StatusBar.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/StoragePage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/WatchlistPage.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/WebhookDestinationCard.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/WebhooksPage.css` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/WebhooksPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/adminFormFieldGate.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/adminJobAck.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/adminNav.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/adminUrlPageClearGate.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/catalog.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/circuitLabels.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/constants.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/formatters.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/formatters.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/intelStatus.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/jobActions.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/jobActions.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/jobStatus.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/needsAttention.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/needsAttention.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/rateLimits.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/resourceChartUtils.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/resourceChartUtils.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/admin/shared/ActionProgress.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/AdminDataGrid.jsx` | `gap` | — | ; No study-guide ownership found |
@@ -538,8 +538,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/shared/backupChartUtils.js` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/backupChartUtils.test.js` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/admin/shared/opsChartsRecharts.jsx` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/toastCopy.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/pages/admin/toastCopy.test.js` | `gap` | — | ; No study-guide ownership found |
+| `frontend/src/pages/admin/toastCopy.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
+| `frontend/src/pages/admin/toastCopy.test.js` | `weak` | `fe-admin-shell`, `ie-retrieval-ops` | sibling/dir coverage under frontend/src/pages/admin/; File never named; only directory-level association |
 | `frontend/src/pages/security-architecture/ContextRail.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/security-architecture/GlobalSearch.jsx` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/pages/security-architecture/SecurityArchitecturePage.css` | `gap` | — | ; No study-guide ownership found |
@@ -563,126 +563,126 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/scoring/riskScore.test.js` | `gap` | — | ; No study-guide ownership found |
 | `frontend/src/styles/tokens.css` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/theme/light-theme.css` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/activeStateGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/adminLinks.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/adminMode.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/aiAssets.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/apiQueuePresentation.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/apiQueuePresentation.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/appLinks.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/archAnalystCleanupGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/archLayoutGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/archTabRemovalGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/architectureGraphGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/architectureGraphLayout.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/architectureGraphView.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/architectureGraphView.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/assetProfileIo.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/backendRestart.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/campaignClusterOpen.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/caseStudyFeed.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/chartTheme.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/correlationPresentation.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/correlationPresentation.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/cveAge.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/cveFilters.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/dataGridStandardGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/dateTimePickerSimpleGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/dateTimePickerStandardGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/detectLabels.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/detectLabels.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/displayPrefs.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/displayPrefsCore.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/displayText.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/domainTermTips.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/domainTermTips.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/domainValidation.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/drawerDatetimeFixes.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/drawerForgeMitreLinksGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/epssSparkline.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/epssSparkline.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/exploitationDisplay.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/exploitationDisplay.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/exportCommon.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/exportCsv.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/exportXlsx.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/extractIndicatorsFromCve.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/feedEpssUiCleanupGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/feedHealthStatus.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/forgeDeadControlsGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/forgeMitreNavigatorGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/forgeUrlTabClearGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/heatmapGrid.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/huntPackPdf.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/hybridFeedSearch.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/hybridFeedSearch.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/iconOnlyAriaGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/intelProvenance.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/investigationActors.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/investigationLabels.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/investigationLabels.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/investigationPdf.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/iocLookupMessages.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/iocLookupMessages.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/kevDeadline.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/kevDeadline.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/keyboardScope.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/keyboardScope.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/lazyWithReload.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/mitreNavigatorHelpers.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/momentumCache.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/morningBriefFormat.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/morningBriefFormat.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/motion.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/motion.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/nativeRangeGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/nativeSelectGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/notificationChime.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/notificationsApi.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/observableExtraction.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/openCveDrawer.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/patchReferences.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/patchReferences.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/patchRemediation.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/patchRemediation.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/pdfAiSummary.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/pdfReport.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/rechartsTheme.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/rechartsVersionGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/referenceRows.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/referenceRows.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/report.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/safeExternalUrl.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/safeExternalUrl.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/sectionLabels.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/securityArchitecturePdf.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/securityPostureGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/selectionAccentGate.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/severitySemantics.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/sharedObservables.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/sharedObservables.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/shellUrlState.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/shellUrlState.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/stackLocalSync.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/stackLocalSync.test.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/timezone.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/tutorial.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/typographyPrefs.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/userPreferences.js` | `gap` | — | ; No study-guide ownership found |
-| `frontend/src/utils/userStack.js` | `gap` | — | ; No study-guide ownership found |
+| `frontend/src/utils/activeStateGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/adminLinks.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/adminMode.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/aiAssets.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/apiQueuePresentation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/apiQueuePresentation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/appLinks.js` | `covered` | `fe-analyst-shell`, `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/archAnalystCleanupGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/archLayoutGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/archTabRemovalGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/architectureGraphGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/architectureGraphLayout.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/architectureGraphView.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/architectureGraphView.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/assetProfileIo.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/backendRestart.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/campaignClusterOpen.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/caseStudyFeed.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/chartTheme.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/correlationPresentation.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/correlationPresentation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/cveAge.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/cveFilters.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/dataGridStandardGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/dateTimePickerSimpleGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/dateTimePickerStandardGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/detectLabels.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/detectLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/displayPrefs.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/displayPrefsCore.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/displayText.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/domainTermTips.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/domainTermTips.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/domainValidation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/drawerDatetimeFixes.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/drawerForgeMitreLinksGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/epssSparkline.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/epssSparkline.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exploitationDisplay.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exploitationDisplay.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exportCommon.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exportCsv.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/exportXlsx.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/extractIndicatorsFromCve.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/feedEpssUiCleanupGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/feedHealthStatus.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/forgeDeadControlsGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/forgeMitreNavigatorGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/forgeUrlTabClearGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/heatmapGrid.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/huntPackPdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/hybridFeedSearch.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/hybridFeedSearch.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/iconOnlyAriaGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/intelProvenance.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/investigationActors.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/investigationLabels.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/investigationLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/investigationPdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/iocLookupMessages.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/iocLookupMessages.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/kevDeadline.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/kevDeadline.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/keyboardScope.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/keyboardScope.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/lazyWithReload.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/mitreNavigatorHelpers.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/momentumCache.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/morningBriefFormat.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/morningBriefFormat.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/motion.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/motion.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/nativeRangeGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/nativeSelectGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/notificationChime.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/notificationsApi.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/observableExtraction.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/openCveDrawer.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchReferences.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchReferences.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchRemediation.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/patchRemediation.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/pdfAiSummary.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/pdfReport.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/rechartsTheme.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/rechartsVersionGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/referenceRows.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/referenceRows.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/report.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/safeExternalUrl.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/safeExternalUrl.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/sectionLabels.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/securityArchitecturePdf.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/securityPostureGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/selectionAccentGate.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/severitySemantics.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/sharedObservables.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/sharedObservables.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/shellUrlState.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/shellUrlState.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/stackLocalSync.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/stackLocalSync.test.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/timezone.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/tutorial.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/typographyPrefs.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/userPreferences.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
+| `frontend/src/utils/userStack.js` | `weak` | `fe-analyst-shell`, `fe-shared-utils` | sibling/dir coverage under frontend/src/utils/; File never named; only directory-level association |
 | `deploy/briefr-backend.service` | `covered` | `arch-monolith`, `devops-deploy` | exact path mention in chapter body/chips |
 | `deploy/briefr-backup.service` | `gap` | — | ; No study-guide ownership found |
-| `deploy/briefr-backup.sh` | `gap` | — | ; No study-guide ownership found |
+| `deploy/briefr-backup.sh` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `deploy/briefr-backup.timer` | `gap` | — | ; No study-guide ownership found |
-| `deploy/briefr-doctor.sh` | `gap` | — | ; No study-guide ownership found |
+| `deploy/briefr-doctor.sh` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `deploy/briefr-pg-backup.service` | `gap` | — | ; No study-guide ownership found |
 | `deploy/briefr-pg-backup.sh` | `gap` | — | ; No study-guide ownership found |
 | `deploy/briefr-pg-backup.timer` | `gap` | — | ; No study-guide ownership found |
 | `deploy/briefr-restore.sh` | `gap` | — | ; No study-guide ownership found |
-| `deploy/briefr-update.sh` | `gap` | — | ; No study-guide ownership found |
+| `deploy/briefr-update.sh` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `deploy/briefr.target` | `gap` | — | ; No study-guide ownership found |
 | `deploy/check-backend.sh` | `gap` | — | ; No study-guide ownership found |
-| `deploy/docker-compose.postgres.yml` | `gap` | — | ; No study-guide ownership found |
+| `deploy/docker-compose.postgres.yml` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `deploy/external-postgres.env.example` | `gap` | — | ; No study-guide ownership found |
 | `deploy/lib.sh` | `gap` | — | ; No study-guide ownership found |
 | `deploy/logrotate-briefr.conf` | `gap` | — | ; No study-guide ownership found |
@@ -695,6 +695,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `deploy/smoke-intel.sh` | `gap` | — | ; No study-guide ownership found |
 | `backend/db/dialect.py` | `orphan_mention` | `be-data`, `roadmap-reversed` | named in STUDY_GUIDE.html; Path does not exist on disk — likely stale |
 | `backend/tests/test_router_split.py` | `covered` | `be-bootstrap` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
+| `scripts/build_study_guide_book.py` | `covered` | `preface` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
 | `scripts/export_intel_snapshot.py` | `covered` | `be-data` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
 | `scripts/generate_security_corpus.py` | `covered` | `api-secarch` | mentioned; outside primary inventory roots; Exists on disk but not under backend/frontend/src/deploy inventory roots |
 | `backend/tests/**` | `out_of_scope` | — | ; Aggregate into Testing strategy chapter; not file-mapped |

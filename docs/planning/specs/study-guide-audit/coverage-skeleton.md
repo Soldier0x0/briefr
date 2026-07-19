@@ -4,7 +4,7 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 
 | Chapter id | Title | Mentions | Concept | Why | How | Self-check | Interview-ready? |
 |------------|-------|---------:|---------|-----|-----|------------|------------------|
-| `preface` | Preface — how to use this book | 0 |  |  |  |  |  |
+| `preface` | Preface — how to use this book | 1 |  |  |  |  |  |
 | `system-design` | System Design — 4 diagrams | 58 |  |  |  |  |  |
 | `primer-mechanics` | Concepts primer | 0 |  |  |  |  |  |
 | `arch-monolith` | Monolith by design | 1 |  |  |  |  |  |
@@ -17,8 +17,12 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `fe-libs` | Ch 3 · The library registry (ADR-005) | 0 |  |  |  |  |  |
 | `fe-state` | Ch 4 · State & data flow | 4 |  |  |  |  |  |
 | `fe-tooling` | Ch 5 · Fonts, exports, testing | 0 |  |  |  |  |  |
+| `fe-analyst-shell` | Ch 5B · Analyst shell | 7 |  |  |  |  |  |
+| `fe-admin-shell` | Ch 5C · Admin shell | 9 |  |  |  |  |  |
+| `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 7 |  |  |  |  |  |
+| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 7 |  |  |  |  |  |
 | `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 3 |  |  |  |  |  |
-| `be-config` | Ch 7 · Config & encrypted secrets | 4 |  |  |  |  |  |
+| `be-config` | Ch 7 · Config & encrypted secrets | 5 |  |  |  |  |  |
 | `be-shim` | Ch 8 · The database.py shim | 3 |  |  |  |  |  |
 | `be-data` | Ch 9 · The data layer | 39 |  |  |  |  |  |
 | `be-alembic` | Ch 10 · Alembic migrations | 35 |  |  |  |  |  |
@@ -27,7 +31,7 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `be-logging` | Ch 13 · Logging & redaction | 2 |  |  |  |  |  |
 | `in-feeds` | Ch 14 · Feed sources | 4 |  |  |  |  |  |
 | `in-scheduler` | Ch 15 · Scheduler & locks | 3 |  |  |  |  |  |
-| `in-queue` | Ch 16 · Outbound queue & circuit breakers | 3 |  |  |  |  |  |
+| `in-queue` | Ch 16 · Outbound queue & circuit breakers | 5 |  |  |  |  |  |
 | `in-jobs` | Ch 17 · Durable jobs (Procrastinate) | 6 |  |  |  |  |  |
 | `ie-scoring` | Ch 18 · Risk & Threat scoring | 5 |  |  |  |  |  |
 | `ie-matching` | Ch 19 · Asset/CPE matching | 2 |  |  |  |  |  |
@@ -37,14 +41,15 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `ie-threatmodel` | Ch 23 · Threat modeling & provenance | 3 |  |  |  |  |  |
 | `ie-ml` | Ch 24 · ML & LLM enrichment | 7 |  |  |  |  |  |
 | `ie-ml-providers` | Ch 24B · Inside the LLM chain | 5 |  |  |  |  |  |
+| `ie-retrieval-ops` | Ch 24C · Retrieval ops & auto-on-ingest | 4 |  |  |  |  |  |
 | `api-routers` | Ch 25 · Routers | 5 |  |  |  |  |  |
-| `api-secarch` | Ch 26 · Security architecture (self-doc) | 12 |  |  |  |  |  |
+| `api-secarch` | Ch 26 · Security architecture (self-doc) | 13 |  |  |  |  |  |
 | `api-webhooks` | Ch 27 · Webhooks & SSRF | 6 |  |  |  |  |  |
 | `api-usersettings` | Ch 28 · User-facing settings | 5 |  |  |  |  |  |
 | `api-proof` | Ch 29 · Proof, services & templates | 7 |  |  |  |  |  |
-| `api-ops` | Ch 30 · Ops & observability | 10 |  |  |  |  |  |
+| `api-ops` | Ch 30 · Ops & observability | 13 |  |  |  |  |  |
 | `api-scripts` | Ch 31 · Scripts & guardrails | 9 |  |  |  |  |  |
-| `devops-deploy` | Ch 32 · Deployment & infrastructure | 3 |  |  |  |  |  |
+| `devops-deploy` | Ch 32 · Deployment & infrastructure | 7 |  |  |  |  |  |
 | `devops-ci` | Ch 33 · CI/CD & testing | 0 |  |  |  |  |  |
 | `sec-identity` | 1 · Identity & session security | 0 |  |  |  |  |  |
 | `sec-network` | 2 · Network trust boundaries | 0 |  |  |  |  |  |
@@ -59,6 +64,7 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `primer` | primer | 0 |  |  |  |  |  |
 | `arch-part` | arch-part | 0 |  |  |  |  |  |
 | `fe-part` | fe-part | 0 |  |  |  |  |  |
+| `fe-surface-part` | fe-surface-part | 0 |  |  |  |  |  |
 | `be-part` | be-part | 0 |  |  |  |  |  |
 | `in-part` | in-part | 0 |  |  |  |  |  |
 | `ie-part` | ie-part | 0 |  |  |  |  |  |

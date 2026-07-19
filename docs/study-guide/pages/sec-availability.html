@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -128,7 +137,16 @@
         <p>It would be easy to read Chapters 15, 16, and 20 as three unrelated stories — scheduler locking, outbound circuit breakers, and a correlation-engine performance incident — but they're really the same underlying architectural rule, enforced in three different places: heavy or unbounded work never runs on the request path. Chapter 20's ADR-004 is the clearest illustration of what happens when that rule gets violated even briefly — a 61-second query that silently broke an entire unrelated UI element (Operational Priority) simply because it shared a code path with the actual slow computation. Every subsystem built <em>after</em> that incident — precomputed correlation snapshots, the outbound queue's never-drop-a-request design, the scheduler's dual-lock protection against manual/scheduled collisions — is, in effect, institutional memory from that one production failure, generalized into a standing constraint the rest of the codebase now respects by default rather than by accident.</p>
         <p>Rate limiting (Chapter 12) closes a more conventional availability gap — protecting BRIEFR's own endpoints from a client, human or automated, that simply sends too many requests — with an honestly-stated residual gap (the LAN-adjacent header-forging scenario) rather than a false claim of completeness.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the standing rule tying scheduler locks, circuit breakers, and ADR-004 together.</li>
+          <li>What UI symptom did the 61-second correlation query cause, and why was that surprising?</li>
+          <li>What residual rate-limit gap does Chapter 12 still admit?</li>
+        </ol>
+      </div>
+</section>
     <div class="page-nav" id="page-nav"><a class="prev" href="sec-secrets.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Secrets, at rest and in logs</span></a><a class="next" href="sec-selfassess.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Self-assessment as a first-class feature</span></a></div>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

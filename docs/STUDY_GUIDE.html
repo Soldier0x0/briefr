@@ -292,6 +292,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="#fe-analyst-shell">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="#fe-admin-shell">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="#fe-forge-wallboard">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="#fe-shared-utils">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="#be-bootstrap">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="#be-config">Ch 7 · Config &amp; encrypted secrets</a>
@@ -321,6 +329,7 @@
         <a class="toc-link toc-sub" href="#ie-threatmodel">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="#ie-ml">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="#ie-ml-providers">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="#ie-retrieval-ops">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -386,6 +395,7 @@
           <li>Close the chapter and explain it out loud, unaided, as if to an interviewer who will ask a follow-up.</li>
           <li>Answer every self-check question at the end without looking back. If you can't, that's the signal to re-read — not a failure, that's what the question is for.</li>
           <li>Move on only when you could defend a design decision, not just describe it.</li>
+          <li>Prefer the multi-file book at <code>docs/study-guide/</code> for reading (responsive TOC drawer, faster page loads). Edit this monolith, then run <code>python scripts/build_study_guide_book.py</code> to regenerate.</li>
         </ol>
         <p style="margin-bottom:0;">Part 0 covers concepts you'll need before anything else makes sense — read it first even if some of it is familiar, because a few terms (watermark, hub suppression, operational priority) are BRIEFR-specific and get redefined here. Before that, the <a href="#system-design">System Design</a> page gives you the whole shape of the system in four pictures — worth a first look now, and worth returning to after every Part as a reality check.</p>
       </div>
@@ -1091,6 +1101,182 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
       </div>
     </section>
 
+
+    <div class="page part-divider" id="fe-surface-part">
+      <span class="part-eyebrow">Part I-B · Frontend surface</span>
+      <h2>Where the UI actually lives</h2>
+      <p class="part-intro">Chapters 1–5 explained <em>why</em> the frontend stack looks the way it does. This part is the map: which files own the analyst shell, the admin control plane, Forge/wallboard, and the shared helpers — so an interview answer can name a path, not just a slogan.</p>
+    </div>
+
+    <section class="page chapter" id="fe-analyst-shell">
+      <div class="chapter-head">
+        <span class="chapter-num">Part I-B · Chapter 5B</span>
+        <h3>Analyst shell — tabs, feed, drawer, URL nav</h3>
+        <p class="dek">The day-to-day CVE workstation: URL-owned tabs, a filterable feed, and a detail drawer that must survive tab switches without losing scroll or filters.</p>
+        <div class="files">
+          <span class="chip">App.jsx</span>
+          <span class="chip">components/CVEFeed.jsx</span>
+          <span class="chip">components/FilterBar.jsx</span>
+          <span class="chip">components/DetailDrawer/index.jsx</span>
+          <span class="chip">components/CVECard.jsx</span>
+          <span class="chip">components/CommandPalette.jsx</span>
+          <span class="chip">utils/appLinks.js</span>
+        </div>
+      </div>
+
+      <h4 class="subhead concept">URL-owned primary nav</h4>
+      <div class="prose">
+        <p><code>App.jsx</code> keeps the analyst primary nav in the URL via <code>?tab=brief|feed|ioc|atlas|forge</code> (Forge still layers <code>view</code>/<code>technique</code>/<code>pack</code>). Refresh and back/forward follow the URL; React state is kept in sync rather than treated as the source of truth. That is why deep-links from notifications or MITRE pills can land on the right surface without a second "open tab" protocol.</p>
+        <p>Main nav panels use <code>hidden</code> rather than unmounting where scroll/filter survival matters — especially FEED — so switching away and back does not reset the analyst's place in the list. Lazy routes (<code>Forge</code>, <code>AdminPage</code>, <code>WallboardPage</code>) still code-split the heavy trees.</p>
+      </div>
+
+      <h4 class="subhead how">Feed, filters, drawer</h4>
+      <div class="prose">
+        <p>The feed path is composition, not one mega-component: <code>CVEFeed.jsx</code> + <code>CVECard.jsx</code> render the list; <code>FilterBar.jsx</code> owns filter chrome; <code>DetailDrawer/</code> (tabbed Overview / Intel / Detect / Related, plus correlation suppress and MITRE→Forge handoffs) is the investigation pane. Drawer open state ties to selected CVE loading with explicit loading/error paths — the same four-state rule the design system demands elsewhere.</p>
+        <p><code>CommandPalette.jsx</code> and header clock/toast wiring live at the shell layer so keyboard navigation and error toasts (including "View application log" deep-links with <code>requestId</code>) work regardless of which tab is visible.</p>
+      </div>
+
+      <h4 class="subhead why">Why this split matters in an interview</h4>
+      <div class="prose">
+        <p>If you only know "React SPA," you cannot explain why FEED scroll survives a Brief visit, why Forge URLs carry extra params, or why the drawer is a folder of tabs rather than a single dump. The shell is the product's muscle memory: URL sync + hidden panels + drawer composition.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the query param that owns analyst primary nav, and one Forge-only param that is <em>not</em> a primary tab.</li>
+          <li>Why does the FEED panel prefer <code>hidden</code> over unmounting when switching tabs?</li>
+          <li>Where would you look first to change drawer MITRE → Forge navigation behavior?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="fe-admin-shell">
+      <div class="chapter-head">
+        <span class="chapter-num">Part I-B · Chapter 5C</span>
+        <h3>Admin shell — sidebar, grids, ops pages</h3>
+        <p class="dek">The operator control plane under <code>pages/admin/</code>: URL <code>?p=</code> routing, shared sidebar/status chrome, and one page module per ops concern.</p>
+        <div class="files">
+          <span class="chip">pages/admin/AdminPage.jsx</span>
+          <span class="chip">pages/admin/Sidebar.jsx</span>
+          <span class="chip">pages/admin/StatusBar.jsx</span>
+          <span class="chip">pages/admin/OverviewPage.jsx</span>
+          <span class="chip">pages/admin/FeedHealthPage.jsx</span>
+          <span class="chip">pages/admin/SchedulerPage.jsx</span>
+          <span class="chip">pages/admin/AiOperationsPage.jsx</span>
+          <span class="chip">pages/admin/StoragePage.jsx</span>
+          <span class="chip">pages/admin/WebhooksPage.jsx</span>
+        </div>
+      </div>
+
+      <h4 class="subhead concept">One router, many pages</h4>
+      <div class="prose">
+        <p><code>AdminPage.jsx</code> is the shell: it owns admin mode entry, sidebar selection synced to <code>?p=</code>, and lazy mounts of the concrete pages (<code>OverviewPage</code>, <code>FeedHealthPage</code>, <code>SchedulerPage</code>, <code>ApiKeysPage</code>, <code>AiOperationsPage</code>, <code>StoragePage</code>, <code>ResourcesPage</code>, <code>WebhooksPage</code>, <code>SecurityPage</code>, <code>DisplayPage</code>, …). <code>Sidebar.jsx</code> + <code>StatusBar.jsx</code> are shared chrome; page modules stay focused on one ops job.</p>
+      </div>
+
+      <h4 class="subhead how">Health vs freshness, jobs, retrieval</h4>
+      <div class="prose">
+        <p><code>FeedHealthPage.jsx</code> is the canonical "circuit OK ≠ sync fresh" surface — operators need both. <code>SchedulerPage.jsx</code> surfaces job locks and progress while <code>LOCKED</code>. <code>AiOperationsPage.jsx</code> is where retrieval health (Chapter 24C) lands for humans. <code>StoragePage.jsx</code> includes the allowlisted DB explorer; <code>WebhooksPage.jsx</code> is the destination CRUD UI. Shared helpers under <code>pages/admin/</code> (<code>formatters.js</code>, <code>jobStatus.js</code>, <code>needsAttention.js</code>) keep presentation consistent without copying logic into every page.</p>
+      </div>
+
+      <h4 class="subhead why">Density over marketing</h4>
+      <div class="prose">
+        <p>Admin follows the same design-system rules as analyst: fill width, semantic tokens, shared grids — not a separate "admin theme." That is deliberate: operators live here under stress; inventing a second visual language would slow them down.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Which URL param selects the admin sidebar page?</li>
+          <li>Name two admin pages that encode "healthy but stale" vs "job in progress" respectively.</li>
+          <li>Where does the retrieval health panel surface for an operator?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="fe-forge-wallboard">
+      <div class="chapter-head">
+        <span class="chapter-num">Part I-B · Chapter 5D</span>
+        <h3>Forge, ATLAS, wallboard, and brief UI</h3>
+        <p class="dek">Detection-engineering and kiosk surfaces: Forge's view tree, wallboard's separate cookie session, and the brief as a first-class tab — not afterthoughts bolted onto the feed.</p>
+        <div class="files">
+          <span class="chip">components/Forge.jsx</span>
+          <span class="chip">components/forge/CoverageView.jsx</span>
+          <span class="chip">components/forge/HuntPackRail.jsx</span>
+          <span class="chip">components/forge/BacklogView.jsx</span>
+          <span class="chip">components/BriefCharts.jsx</span>
+          <span class="chip">pages/WallboardPage.jsx</span>
+          <span class="chip">components/CaseStudies.jsx</span>
+        </div>
+      </div>
+
+      <h4 class="subhead concept">Forge is a product inside the product</h4>
+      <div class="prose">
+        <p><code>Forge.jsx</code> orchestrates ATT&amp;CK coverage, hunt packs, backlog, campaigns, library, and scenarios via <code>components/forge/*</code>. URL params beyond <code>tab=forge</code> select the internal view — the same pattern as admin <code>?p=</code>, scoped to detection engineering. Drawer MITRE pills hand off here (<code>openForgeTechnique</code> in <code>App.jsx</code>) so investigation and rule work stay one click apart without merging their data models.</p>
+      </div>
+
+      <h4 class="subhead how">Wallboard isolation</h4>
+      <div class="prose">
+        <p><code>WallboardPage.jsx</code> is a separate route/surface for kiosk display. Backend wallboard auth uses a dedicated signed cookie after exchanging <code>WALLBOARD_TOKEN</code> — the raw token is not left sitting in a long-lived browser tab. That isolation is a security decision you should be able to restate: kiosk credential ≠ analyst session JWT.</p>
+      </div>
+
+      <h4 class="subhead how">Brief charts</h4>
+      <div class="prose">
+        <p>Morning brief UI leans on <code>BriefCharts.jsx</code> / Recharts helpers with fixed-height wrappers and empty states — matching the design-system chart rules so a zero-day brief does not blow the layout.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does Forge keep its own view/technique/pack params instead of only using <code>tab=</code>?</li>
+          <li>What credential isolation does the wallboard cookie scheme buy you versus reusing the analyst JWT?</li>
+          <li>Name one <code>components/forge/</code> module you would open to change KEV backlog UX.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="fe-shared-utils">
+      <div class="chapter-head">
+        <span class="chapter-num">Part I-B · Chapter 5E</span>
+        <h3>Shared hooks, utils, and scoring helpers</h3>
+        <p class="dek">The glue: hooks for async/watchlist/modals, utils for filters/links/presentation, and frontend scoring mirrors — patterns to learn, not a file dump of a hundred modules.</p>
+        <div class="files">
+          <span class="chip">hooks/useAsync.js</span>
+          <span class="chip">hooks/useWatchlist.js</span>
+          <span class="chip">hooks/useModalLayer.js</span>
+          <span class="chip">utils/cveFilters.js</span>
+          <span class="chip">utils/appLinks.js</span>
+          <span class="chip">utils/correlationPresentation.js</span>
+          <span class="chip">scoring/</span>
+          <span class="chip">api.js</span>
+        </div>
+      </div>
+
+      <h4 class="subhead concept">Where logic goes when it is not a page</h4>
+      <div class="prose">
+        <p><code>hooks/</code> holds reusable React behaviors (<code>useAsync</code>, <code>useWatchlist</code>, <code>useModalLayer</code>, visibility-aware intervals, inactivity timeout). <code>utils/</code> holds pure or DOM-light helpers: CVE filtering, admin/analyst deep-links, correlation presentation, chart themes, display prefs. <code>scoring/</code> mirrors server-facing constants the UI must display consistently. <code>api.js</code> is the fetch façade (errors carry <code>requestId</code> for operator grepping).</p>
+      </div>
+
+      <h4 class="subhead why">Pattern over inventory</h4>
+      <div class="prose">
+        <p>The audit found ~100+ util files and ~130 components. Teaching every filename would be a phone book. The interview skill is: know the <em>buckets</em>, know when to add a util vs a component, and know that gate tests (<code>*Gate.test.js</code>) encode design-system regressions the CI suite actually runs.</p>
+      </div>
+
+      <h4 class="subhead how">How to navigate</h4>
+      <div class="prose">
+        <p>Start from the user action → <code>App.jsx</code> / page → component → util/hook → <code>api.js</code>. If the behavior is presentation of server truth (priority bands, EPSS sparkline), look under <code>utils/</code> or <code>scoring/</code> before inventing a new formatter in a JSX file.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Give one example each of a hook vs a util vs a scoring helper — and why those three live in different folders.</li>
+          <li>Why do many <code>*Gate.test.js</code> files exist under <code>utils/</code> and admin pages?</li>
+          <li>Where does an API error's <code>requestId</code> get attached for toast deep-links?</li>
+        </ol>
+      </div>
+    </section>
+
     <div class="page part-divider" id="be-part">
       <span class="part-eyebrow">Part II · Backend foundations</span>
       <h2>Core, data &amp; auth</h2>
@@ -1171,7 +1357,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
         <span class="chapter-num">Part II · Chapter 7</span>
         <h3>Configuration and encrypted settings</h3>
         <p class="dek">Three files, three different jobs: what the process reads at boot, what an operator can change without redeploying, and how the sensitive half of that gets protected at rest.</p>
-        <div class="files"><span class="chip">config_schema.py</span><span class="chip">settings.py</span><span class="chip">settings_crypto.py</span><span class="chip">ADR-006</span></div>
+        <div class="files"><span class="chip">config_schema.py</span><span class="chip">settings.py</span><span class="chip">settings_crypto.py</span><span class="chip">operator_settings.py</span><span class="chip">ADR-006</span></div>
       </div>
 
       <h4 class="subhead concept">Two different kinds of configuration</h4>
@@ -1203,7 +1389,12 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
         <p><strong>Fails closed, on purpose, in production only:</strong> if <code>BRIEFR_ENV=production</code> and <code>JWT_SECRET</code> is unset, <code>settings.py</code> raises <code>RuntimeError</code> immediately — the process refuses to start rather than silently generating a throwaway secret that would invalidate every session on the next restart. In dev/test, by contrast, an unset secret is auto-generated with <code>secrets.token_hex(32)</code> and persisted back into <code>.env</code> so it survives restarts during local development. Same missing value, deliberately different behavior depending on environment.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Operator settings in the database</h4>
+      <div class="prose">
+        <p><code>operator_settings.py</code> is the writable admin-config path that persists keys to <code>app_settings</code> so values survive a <code>.env</code> refresh on deploy. Precedence remains process env → DB → <code>.env</code>. Secret-typed keys encrypt at rest when <code>BRIEFR_SETTINGS_KEY</code> is set (ADR-006); without it, secrets stay env-only and are not written to the DB. Admin Save still mirrors to <code>.env</code> for compatibility.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>If <code>BRIEFR_SETTINGS_KEY</code> is generated once, used to encrypt several secrets, and then lost without a backup, what happens to those secrets — and is there any recovery path other than re-entering them?</li>
@@ -1688,7 +1879,7 @@ _LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
         <span class="chapter-num">Part III · Chapter 16</span>
         <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
         <p class="dek">One shared choke point every feed passes through before it ever touches the network, built around a single stated principle: wait, don't fail.</p>
-        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">source_rate_limits.py</span></div>
+        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
       </div>
       <div class="prose">
         <p>Every outbound call any feed module makes — to NVD, GitHub, OTX, CISA, FIRST.org, any of it — is routed through <code>resilient_client.py</code>'s <code>resilient_get</code>/<code>resilient_request</code>, never a raw <code>httpx</code> call made directly by a feed module. This centralization is what makes it possible to reason about outbound reliability in one place instead of 29 separate, inconsistent implementations.</p>
@@ -1724,7 +1915,12 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
         <p><strong>A specific, non-obvious detail:</strong> GitHub's rate-limit headers (<code>x-ratelimit-remaining</code>, <code>x-ratelimit-reset</code>) work differently from the generic <code>Retry-After</code> header most APIs use. <code>Retry-After</code> is a relative delay ("wait 30 seconds"); GitHub's <code>x-ratelimit-reset</code> is an absolute Unix epoch timestamp marking when its rolling window resets. BRIEFR's pause-duration calculation branches on which kind of header a given source actually sends — computing <code>reset_at - time.time()</code> for GitHub specifically, rather than naively parsing it as if it were a relative delay, which would produce a wildly wrong (usually enormous) wait time.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Queue operations and metering</h4>
+      <div class="prose">
+        <p><code>api_queue_operations.py</code> and <code>api_metering.py</code> sit beside the in-memory <code>api_queue.py</code> pacing layer: operations helpers for queue introspection/control paths, and metering for usage accounting — neither replaces the token-bucket / circuit-breaker story in this chapter; they extend the operational surface around it.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why does the circuit breaker require three consecutive failures to open but only one success to close? What would go wrong with the opposite asymmetry?</li>
@@ -2200,7 +2396,47 @@ flowchart LR
       </div>
     </section>
 
-    <div class="page part-divider" id="api-part">
+    
+    <section class="page chapter" id="ie-retrieval-ops">
+      <div class="chapter-head">
+        <span class="chapter-num">Part IV · Chapter 24C</span>
+        <h3>Retrieval ops — health, auto-on-ingest, and honest degraded states</h3>
+        <p class="dek">Embeddings are not "set and forget." After E1–E8 shipped, operators need a live picture of index health, pending work, and whether new ingest tails are embedding automatically — without loading the model on the request path.</p>
+        <div class="files">
+          <span class="chip">services/retrieval_health.py</span>
+          <span class="chip">routers/admin.py</span>
+          <span class="chip">ml/embeddings.py</span>
+          <span class="chip">pages/admin/AiOperationsPage.jsx</span>
+        </div>
+      </div>
+
+      <h4 class="subhead concept">What "retrieval health" reports</h4>
+      <div class="prose">
+        <p><code>GET /api/admin/retrieval/health</code> (admin router) delegates to <code>services/retrieval_health.py</code>'s <code>build_retrieval_health()</code>. The payload is ops honesty, not a search: embeddings enabled flag, <code>auto_on_ingest</code>, pgvector write posture, model name, whether the Postgres <code>vector</code> extension is present, live counts by entity type (CVE / technique / campaign), pending missing rows, last backfill summary, last ingest-tail summary, and a structured <code>degraded</code> reason (<code>disabled</code>, <code>no_vector_extension</code>, <code>cold_index</code>) when the index cannot serve semantic search meaningfully.</p>
+        <p>Importantly, this path does <strong>not</strong> load the embedding model. Counting and sync_state reads stay cheap enough for an admin panel poll.</p>
+      </div>
+
+      <h4 class="subhead why">Auto-on-ingest defaults on</h4>
+      <div class="prose">
+        <p><code>EMBEDDINGS_AUTO_ON_INGEST</code> defaults to <code>1</code> when embeddings are in play, still requiring <code>EMBEDDINGS_ENABLED</code>. Enabling embeddings (0→1) in admin config couples auto-on-ingest to on unless the operator explicitly sets auto off alone. Caps bound work (ingest max 25, backfill max 2000) so a sudden CVE flood cannot turn the scheduler into an unbounded embed storm. This is retrieval only — still no RAG chat.</p>
+      </div>
+
+      <h4 class="subhead how">Where operators see it</h4>
+      <div class="prose">
+        <p>Admin → AI operations (<code>AiOperationsPage.jsx</code>) renders the health panel from the retrieval endpoint. Pair it with Chapter 24's hybrid search story: search reports which method served a query; retrieval health explains whether the index is even warm enough for semantic hits to be plausible.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name three fields <code>build_retrieval_health()</code> returns that distinguish "feature on" from "index useful."</li>
+          <li>Why must the health endpoint avoid loading the embedding model?</li>
+          <li>What happens to <code>EMBEDDINGS_AUTO_ON_INGEST</code> when an operator flips embeddings from off to on in admin config?</li>
+        </ol>
+      </div>
+    </section>
+
+<div class="page part-divider" id="api-part">
       <span class="part-eyebrow">Part V · API surface &amp; operations</span>
       <h2>Everything above, exposed over HTTP — and kept running</h2>
       <p class="part-intro">Seven chapters: the 23 router files that turn every engine in Part IV into an endpoint, the tool's own self-documented security posture, outbound webhook safety, and the operational plumbing — backups, migrations, diagnostics — that a self-hosted instance actually needs to survive being run by someone other than its authors.</p>
@@ -2242,7 +2478,7 @@ flowchart LR
         <span class="chapter-num">Part V · Chapter 26</span>
         <h3>security_architecture/ — the tool documenting its own posture</h3>
         <p class="dek">Not exploit tracking, not a diagramming feature — BRIEFR turning its own threat model into a living, evidence-gated artifact instead of a document that goes stale the moment it's written.</p>
-        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span></div>
+        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span><span class="chip">security_architecture/corpus/*</span><span class="chip">security_architecture/frameworks/*.py</span></div>
       </div>
       <div class="prose">
         <p>The name is genuinely ambiguous on first encounter, so it's worth stating plainly what this module actually is, confirmed by reading the code rather than guessing from the directory name: BRIEFR introspectively documenting its <em>own</em> architecture, trust boundaries, security controls, and threat model — mounted at <code>/api/security-architecture/*</code>, gated behind session auth for analyst-and-above roles. The underlying data is a structured YAML corpus split cleanly into two categories with very different trust levels: <strong>generated</strong> facts (components, the API inventory, scheduler job list, database table list, BRIEFR's own detected tech-stack terms — all regenerated automatically by <code>scripts/generate_security_corpus.py</code> directly from the codebase) and <strong>curated</strong> judgment (trust boundaries, security controls, abuse-case scenarios, documented security decisions, known risks, and their review history — each curated record requires an explicit <code>review_date</code> and supporting <code>evidence</code>, not just an assertion).</p>
@@ -2390,7 +2626,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <span class="chapter-num">Part V · Chapter 30</span>
         <h3>Ops and observability — keeping a self-hosted instance alive without its authors watching over it</h3>
         <p class="dek">Backup, a genuinely separate data-migration path, redacted diagnostics, and a kiosk dashboard with its own auth scheme.</p>
-        <div class="files"><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span></div>
+        <div class="files"><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span><span class="chip">read_cache.py</span><span class="chip">storage_metrics.py</span><span class="chip">resource_collector.py</span></div>
       </div>
       <div class="prose">
         <p><strong>Backup</strong> is dual-backend, matching Chapter 9's split: SQLite uses its own online backup API (<code>sqlite3.Connection.backup()</code>) plus a <code>PRAGMA integrity_check</code> both before and after, with automatic restore-from-backup on startup if the live file is found corrupt (this is the exact recovery path Chapter 6's <code>lifespan()</code> invokes). Postgres instead shells out to <code>pg_dump --format=custom</code> and restores with <code>pg_restore --clean --if-exists</code>. Both backends produce tar bundles with optional X25519 encryption — and the encryption key is required, by an explicit enforced check, to live <em>outside</em> the backup directory itself, for a reason that should be obvious once stated: an encrypted backup whose decryption key sits right next to it in the same backup archive or directory provides no real protection at all if that directory is ever copied, leaked, or compromised as a whole.</p>
@@ -2405,7 +2641,12 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p><code>monitoring/notifications.py</code> is the aggregation layer sitting one level above the API-key health checker: it merges recent audit-log rows, job-error entries, and unhealthy-key alerts into a single, time-ordered operator notification feed — reusing Chapter 13's audit-log redaction rather than re-implementing it. <code>metrics/request_counter.py</code> is genuinely trivial, confirmed directly rather than assumed: a thread-locked integer counter with an atomic read-and-reset, existing purely to answer "how many requests came in since the last resource sample" for the resource-monitoring collector this chapter's Chapter 31 companion covers.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Read cache, storage, and resource collectors</h4>
+      <div class="prose">
+        <p><code>read_cache.py</code> is the short-TTL in-process cache used by hot read paths (including health-style endpoints) so polling UIs do not stampede the database. <code>storage_metrics.py</code> and <code>resource_collector.py</code> feed Admin Storage / Resources charts — table sizes, host disk, CPU/memory trends — without standing up Prometheus.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why must a backup's encryption key live outside the backup directory itself — what specific failure scenario does this prevent?</li>
@@ -2476,7 +2717,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <span class="chapter-num">Part V-B · Chapter 32</span>
         <h3>Deployment and infrastructure — the real systemd unit and nginx config, read closely</h3>
         <p class="dek">Every hardening flag in these two files is a specific, named decision — not boilerplate copied from a tutorial.</p>
-        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span></div>
+        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span></div>
       </div>
 
       <h4 class="subhead how">The systemd unit — hardening flags that are each a real decision</h4>
@@ -2490,7 +2731,12 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p><code>deploy/nginx-briefr.conf</code> sits in front of uvicorn and does three jobs. First, unconditional HTTP→HTTPS redirect plus certbot-managed TLS. Second, a layered set of security headers <em>in addition to</em> the ones FastAPI's own middleware already sets (Chapter 6) — defense in depth rather than relying on the application layer alone, including <code>server_tokens off</code> to stop nginx from advertising its own version in response headers. Third, and worth understanding precisely because getting it wrong breaks deploys in a confusing way: a deliberate caching split between two kinds of static asset. Hashed Vite build output under <code>/assets/</code> gets <code>Cache-Control: public, max-age=31536000, immutable</code> — safe to cache essentially forever, because Vite's build process changes the filename itself whenever the content changes, so a stale cache simply can't serve wrong content. <code>index.html</code> — the SPA shell — gets the opposite treatment, explicitly never cached, because it's the one file that references the current build's hashed asset filenames; caching it would mean a browser could keep loading old references to asset files a fresh deploy already deleted, breaking the app in a way that only clears on a hard refresh.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Doctor, backup, update, compose</h4>
+      <div class="prose">
+        <p>Beyond the systemd unit and nginx conf: <code>deploy/briefr-doctor.sh</code> runs health/import checks (and can fetch a support pack); <code>briefr-backup.sh</code> / timers and Postgres variants cover host backups; <code>briefr-update.sh</code> / <code>briefr-restore.sh</code> are the operator upgrade/restore path; <code>docker-compose.postgres.yml</code> is the local/dev Postgres+pgvector posture. Know the map even if you only run a subset on a given box.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why is <code>--workers 1</code> a load-bearing constraint rather than a conservative default, and what exact change would you need to make elsewhere before safely raising it?</li>
@@ -2537,7 +2783,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p>BRIEFR's authentication design (Chapter 11) rests on a genuinely coherent set of choices rather than a checklist of unrelated best practices bolted together. The two-token split — a stateless, fast, short-lived JWT paired with a database-backed, slower, fully-revocable refresh token — exists because "fast to check" and "instantly revocable" are in real tension, and rather than pick one property and accept the other's absence everywhere, BRIEFR picks the cheap option for routine requests and keeps the expensive-but-safe option in reserve for exactly the moment revocation matters. Bcrypt with a dummy-hash comparison closes a timing side-channel that a more naive login implementation would leave wide open; refresh-token hashing at rest means a database leak alone can't be replayed as a live session; rotation-with-reuse-detection means a stolen and replayed refresh token leaves a fingerprint rather than vanishing into ordinary-looking traffic. And <code>require_admin</code>'s live database re-check of role on every request is the one place BRIEFR deliberately pays a real performance cost — an extra query per admin request — specifically because staleness in <em>that one check</em> is the highest-value target for a real attacker (a demoted or offboarded admin retaining elevated access).</p>
         <p>The one tradeoff worth being able to state without hedging, because it's a genuine limitation rather than a mistake: an issued access token cannot be revoked before its 15-minute expiry, full stop, no matter what happens to the session it came from. A well-run incident response for a suspected token leak still has to account for that window.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does BRIEFR split access JWT from refresh-token session state?</li>
+          <li>What residual risk remains for a stolen access token inside its TTL?</li>
+          <li>Why does require_admin re-read role from the database?</li>
+        </ol>
+      </div>
+</section>
 
     <section class="page chapter" id="sec-network">
       <div class="chapter-head">
@@ -2548,7 +2803,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p>Two subsystems in this book deal directly with "can input from outside be trusted to shape a network request," and both get it right in ways worth naming specifically rather than vaguely. Chapter 27's webhook SSRF hardening does the full correct sequence — resolve, validate against a real blocklist, then connect to the pinned, already-validated IP while still presenting the correct hostname via SNI for TLS — closing the DNS-rebinding gap a naive "just check the hostname" mitigation would leave open. Chapter 12's rate-limiting client-key resolution applies the same underlying discipline to a different problem: forwarded headers (<code>X-Forwarded-For</code>, <code>CF-Connecting-IP</code>) are only ever trusted when the actual TCP peer is a known, trusted proxy — never trusted from a direct, untrusted connection, because trusting them unconditionally would let anyone mint unlimited fresh rate-limit buckets simply by lying in a header.</p>
         <p>Both mechanisms share the same underlying principle, worth generalizing beyond just these two examples: <strong>never trust something an adversary can influence without independently verifying it through a channel they can't equally influence.</strong> A hostname can be manipulated via DNS; a header can be set to anything by whoever sends the request. A resolved-and-validated IP, and a raw TCP socket's actual peer address, can't be forged the same way — which is exactly why both mechanisms anchor their trust decision there instead.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Walk the webhook SSRF resolve→validate→connect sequence and name the DNS-rebinding gap it closes.</li>
+          <li>When are X-Forwarded-For headers trusted for rate-limit keys?</li>
+          <li>State the shared principle behind both mechanisms in one sentence.</li>
+        </ol>
+      </div>
+</section>
 
     <section class="page chapter" id="sec-secrets">
       <div class="chapter-head">
@@ -2559,7 +2823,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p>Chapter 7 and Chapter 13 together describe how BRIEFR protects sensitive values in two different states — stored, and logged — and the honest thing to notice is that neither protection is total, and both say so about themselves rather than overclaiming. Fernet encryption for operator secrets (Chapter 7) is genuinely additive and non-breaking, but its safety is entirely contingent on <code>BRIEFR_SETTINGS_KEY</code> actually being backed up somewhere separate from the database itself — lose that key and the encrypted secrets are, by the very definition of encryption working correctly, unrecoverable. Log redaction (Chapter 13) only ever inspects the <em>keys</em> of structured <code>extra=</code> fields, never a message string's interpolated content — a documented, deliberate boundary rather than an oversight, which places real weight on every developer's discipline never to write a secret directly into an f-string passed to a logger.</p>
         <p>The unifying lesson, stated as plainly as possible: BRIEFR's security here comes from <em>structure</em> — a schema-typed secret field, a keyword argument passed correctly — not from a blanket scanner that catches mistakes regardless of how they're made. That's a real, deliberate design choice (a general-purpose secret-scanning system would be slower and noisier), and it means the actual security of any given piece of sensitive data depends on whether the code touching it followed the structural convention correctly. Auditing this codebase for a secret-handling issue means checking call sites against the convention, not just trusting that "redaction exists" as a blanket assurance.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>What must be backed up separately for Fernet-encrypted app_settings secrets to remain recoverable?</li>
+          <li>What does log redaction inspect — keys or interpolated message strings?</li>
+          <li>Why is security here described as structural rather than scanner-based?</li>
+        </ol>
+      </div>
+</section>
 
     <section class="page chapter" id="sec-availability">
       <div class="chapter-head">
@@ -2570,7 +2843,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <p>It would be easy to read Chapters 15, 16, and 20 as three unrelated stories — scheduler locking, outbound circuit breakers, and a correlation-engine performance incident — but they're really the same underlying architectural rule, enforced in three different places: heavy or unbounded work never runs on the request path. Chapter 20's ADR-004 is the clearest illustration of what happens when that rule gets violated even briefly — a 61-second query that silently broke an entire unrelated UI element (Operational Priority) simply because it shared a code path with the actual slow computation. Every subsystem built <em>after</em> that incident — precomputed correlation snapshots, the outbound queue's never-drop-a-request design, the scheduler's dual-lock protection against manual/scheduled collisions — is, in effect, institutional memory from that one production failure, generalized into a standing constraint the rest of the codebase now respects by default rather than by accident.</p>
         <p>Rate limiting (Chapter 12) closes a more conventional availability gap — protecting BRIEFR's own endpoints from a client, human or automated, that simply sends too many requests — with an honestly-stated residual gap (the LAN-adjacent header-forging scenario) rather than a false claim of completeness.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the standing rule tying scheduler locks, circuit breakers, and ADR-004 together.</li>
+          <li>What UI symptom did the 61-second correlation query cause, and why was that surprising?</li>
+          <li>What residual rate-limit gap does Chapter 12 still admit?</li>
+        </ol>
+      </div>
+</section>
 
     <section class="page chapter" id="sec-selfassess">
       <div class="chapter-head">
@@ -2580,7 +2862,16 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
       <div class="prose">
         <p>Chapter 26's <code>security_architecture/</code> module deserves a place in this closing chapter specifically because it's an unusually mature thing for a project of this size to have built at all: a structured, evidence-gated, self-updating record of the system's own trust boundaries and controls, engineered so it cannot silently drift from what the code actually does, and that ages out of validity automatically rather than silently going stale. Most projects treat "our threat model" as a document written once and never revisited; BRIEFR treats it as a living artifact with the same freshness discipline as anything else that matters — a design instinct worth noticing on its own, independent of any of the specific findings it happens to surface.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>What freshness discipline does security_architecture apply that a one-shot threat-model doc usually lacks?</li>
+          <li>Why must generated corpus layers be drift-checked against committed files?</li>
+          <li>Connect this chapter back to one control you already met in Part II or V.</li>
+        </ol>
+      </div>
+</section>
 
     <div class="page part-divider" id="roadmap">
       <span class="part-eyebrow">Part VI · Closing</span>

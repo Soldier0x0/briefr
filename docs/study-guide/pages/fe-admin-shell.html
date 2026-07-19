@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>What's next, what's parked, and what hasn't been considered yet — BRIEFR Study Guide</title>
+  <title>Admin shell — sidebar, grids, ops pages — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="../assets/book.css">
 </head>
-<body data-page-id="roadmap-future" data-pages-base="" data-assets-base="../assets/">
+<body data-page-id="fe-admin-shell" data-pages-base="" data-assets-base="../assets/">
 <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
 <div class="nav-backdrop" id="nav-backdrop"></div>
 <div class="shell">
@@ -128,28 +128,49 @@
     </nav>
   </aside>
   <main>
-    <section class="page active chapter" id="roadmap-future">
+    <section class="page active chapter" id="fe-admin-shell">
       <div class="chapter-head">
-        <span class="chapter-num">Roadmap · 3</span>
-        <h3>What's next, what's parked, and what hasn't been considered yet</h3>
-        <p class="dek">Pulled directly from the open backlog and the performance audit's own findings — the honest "not yet" list, not a guess at future features.</p>
+        <span class="chapter-num">Part I-B · Chapter 5C</span>
+        <h3>Admin shell — sidebar, grids, ops pages</h3>
+        <p class="dek">The operator control plane under <code>pages/admin/</code>: URL <code>?p=</code> routing, shared sidebar/status chrome, and one page module per ops concern.</p>
+        <div class="files">
+          <span class="chip">pages/admin/AdminPage.jsx</span>
+          <span class="chip">pages/admin/Sidebar.jsx</span>
+          <span class="chip">pages/admin/StatusBar.jsx</span>
+          <span class="chip">pages/admin/OverviewPage.jsx</span>
+          <span class="chip">pages/admin/FeedHealthPage.jsx</span>
+          <span class="chip">pages/admin/SchedulerPage.jsx</span>
+          <span class="chip">pages/admin/AiOperationsPage.jsx</span>
+          <span class="chip">pages/admin/StoragePage.jsx</span>
+          <span class="chip">pages/admin/WebhooksPage.jsx</span>
+        </div>
       </div>
+
+      <h4 class="subhead concept">One router, many pages</h4>
       <div class="prose">
-        <p><strong>Explicitly parked, by the maintainer's own signal (not forgotten, just deprioritized):</strong> a STIX/Sigma bulk export feature planned for an earlier release phase; a full, production-grade <code>docker-compose.yml</code> covering the entire stack (today's compose file covers Postgres alone, per Chapter 9); and the remainder of one performance-hardening track beyond what's already shipped. These are recorded as deliberately paused, not abandoned — a distinction worth preserving when discussing them, since "parked" and "rejected" mean different things in this project's own vocabulary.</p>
-        <p><strong>Explicitly out of scope for the resource-benchmarking program, by decision rather than oversight:</strong> synthetic load simulation, Prometheus/Grafana metrics export, per-endpoint latency histograms, and alerting on resource thresholds. What <em>did</em> ship in that same program is real and already covered in Chapter 30's territory: a resource-metrics table with a <code>psutil</code>-based collector job and retention policy, plus an admin-facing Resources page showing CPU/memory trends over 1/3/7/30-day windows. The gap between what shipped and what's out of scope is precise: BRIEFR can show an operator their own instance's resource trend, but does not (yet, by decision) simulate load, export to external monitoring stacks, or alert automatically when something crosses a threshold.</p>
-        <p><strong>Genuinely not yet considered, per the performance audit's own words:</strong> a documented, recommended CPU/RAM/disk sizing envelope — the exact gap Chapter A2 discussed in detail, restated here as a concrete backlog item rather than an abstract observation. Alongside it, the same audit flags the connection-pool sizing defaults, the OFFSET-pagination default, and the unbounded frontend vendor chunk as measured-but-unaddressed findings — real, specific, and modest in scale today, but the first places load would show up if usage grew meaningfully beyond a single operator.</p>
-        <p><strong>Near-term "next," in the project's own words from its most recent working sessions:</strong> admin-facing retrieval health monitoring and operator-tunable knobs for the semantic search system (Chapter 24), following directly on from the embeddings work covered in this book. This is the kind of "next" that's genuinely close — already scoped, waiting on the current program to close out — rather than a distant aspiration.</p>
+        <p><code>AdminPage.jsx</code> is the shell: it owns admin mode entry, sidebar selection synced to <code>?p=</code>, and lazy mounts of the concrete pages (<code>OverviewPage</code>, <code>FeedHealthPage</code>, <code>SchedulerPage</code>, <code>ApiKeysPage</code>, <code>AiOperationsPage</code>, <code>StoragePage</code>, <code>ResourcesPage</code>, <code>WebhooksPage</code>, <code>SecurityPage</code>, <code>DisplayPage</code>, …). <code>Sidebar.jsx</code> + <code>StatusBar.jsx</code> are shared chrome; page modules stay focused on one ops job.</p>
       </div>
+
+      <h4 class="subhead how">Health vs freshness, jobs, retrieval</h4>
+      <div class="prose">
+        <p><code>FeedHealthPage.jsx</code> is the canonical "circuit OK ≠ sync fresh" surface — operators need both. <code>SchedulerPage.jsx</code> surfaces job locks and progress while <code>LOCKED</code>. <code>AiOperationsPage.jsx</code> is where retrieval health (Chapter 24C) lands for humans. <code>StoragePage.jsx</code> includes the allowlisted DB explorer; <code>WebhooksPage.jsx</code> is the destination CRUD UI. Shared helpers under <code>pages/admin/</code> (<code>formatters.js</code>, <code>jobStatus.js</code>, <code>needsAttention.js</code>) keep presentation consistent without copying logic into every page.</p>
+      </div>
+
+      <h4 class="subhead why">Density over marketing</h4>
+      <div class="prose">
+        <p>Admin follows the same design-system rules as analyst: fill width, semantic tokens, shared grids — not a separate "admin theme." That is deliberate: operators live here under stress; inventing a second visual language would slow them down.</p>
+      </div>
+
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
-          <li>What's the practical difference, in this project's own usage, between something "parked" and something "rejected as a non-goal" (Chapter Roadmap·1)? Give one example of each.</li>
-          <li>Why would a team deliberately ship resource-trend visibility (the Resources admin page) while explicitly declining to build alerting on top of the same data?</li>
-          <li>Connect one item from this chapter's "not yet considered" list back to a specific design decision from an earlier chapter that makes it a natural next step rather than an arbitrary one.</li>
+          <li>Which URL param selects the admin sidebar page?</li>
+          <li>Name two admin pages that encode "healthy but stale" vs "job in progress" respectively.</li>
+          <li>Where does the retrieval health panel surface for an operator?</li>
         </ol>
       </div>
     </section>
-    <div class="page-nav" id="page-nav"><a class="prev" href="roadmap-reversed.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">What was tried, shipped, and later reversed</span></a><a class="next" href="glossary.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Glossary</span></a></div>
+    <div class="page-nav" id="page-nav"><a class="prev" href="fe-analyst-shell.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Analyst shell — tabs, feed, drawer, URL nav</span></a><a class="next" href="fe-forge-wallboard.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Forge, ATLAS, wallboard, and brief UI</span></a></div>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
       · <a href="preface.html">Book home</a>

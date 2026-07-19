@@ -16,6 +16,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-19 — Study guide content: Part I-B + retrieval ops + polish
+
+**Done**
+- New chapters in `STUDY_GUIDE.html` (+ regenerated `docs/study-guide/`):
+  `fe-analyst-shell`, `fe-admin-shell`, `fe-forge-wallboard`, `fe-shared-utils`,
+  `ie-retrieval-ops`.
+- Chip/How fixes: `operator_settings`, queue ops/metering, read_cache/storage/
+  resource collectors, deploy doctor/backup/update/compose, sec-arch corpus/
+  frameworks.
+- Self-checks added for `api-secarch` + all five `sec-*` digests; preface notes
+  multi-file reading workflow.
+- Audit after: covered 259 / weak 308 / gap 118 / orphan 1 (was gap 399).
+
+**Next:** deeper Part-by-Part prose (remaining FE page modules, corpus YAML
+narration), then optional split of editable source off the monolith.
+
+---
+
 ## 2026-07-19 — Study guide multi-file responsive shell
 
 **Done**

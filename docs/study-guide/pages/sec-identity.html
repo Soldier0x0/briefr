@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -128,7 +137,16 @@
         <p>BRIEFR's authentication design (Chapter 11) rests on a genuinely coherent set of choices rather than a checklist of unrelated best practices bolted together. The two-token split — a stateless, fast, short-lived JWT paired with a database-backed, slower, fully-revocable refresh token — exists because "fast to check" and "instantly revocable" are in real tension, and rather than pick one property and accept the other's absence everywhere, BRIEFR picks the cheap option for routine requests and keeps the expensive-but-safe option in reserve for exactly the moment revocation matters. Bcrypt with a dummy-hash comparison closes a timing side-channel that a more naive login implementation would leave wide open; refresh-token hashing at rest means a database leak alone can't be replayed as a live session; rotation-with-reuse-detection means a stolen and replayed refresh token leaves a fingerprint rather than vanishing into ordinary-looking traffic. And <code>require_admin</code>'s live database re-check of role on every request is the one place BRIEFR deliberately pays a real performance cost — an extra query per admin request — specifically because staleness in <em>that one check</em> is the highest-value target for a real attacker (a demoted or offboarded admin retaining elevated access).</p>
         <p>The one tradeoff worth being able to state without hedging, because it's a genuine limitation rather than a mistake: an issued access token cannot be revoked before its 15-minute expiry, full stop, no matter what happens to the session it came from. A well-run incident response for a suspected token leak still has to account for that window.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does BRIEFR split access JWT from refresh-token session state?</li>
+          <li>What residual risk remains for a stolen access token inside its TTL?</li>
+          <li>Why does require_admin re-read role from the database?</li>
+        </ol>
+      </div>
+</section>
     <div class="page-nav" id="page-nav"><a class="prev" href="security-posture.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Security posture, in full</span></a><a class="next" href="sec-network.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Network trust boundaries</span></a></div>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

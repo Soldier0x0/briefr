@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -128,7 +137,16 @@
         <p>Two subsystems in this book deal directly with "can input from outside be trusted to shape a network request," and both get it right in ways worth naming specifically rather than vaguely. Chapter 27's webhook SSRF hardening does the full correct sequence — resolve, validate against a real blocklist, then connect to the pinned, already-validated IP while still presenting the correct hostname via SNI for TLS — closing the DNS-rebinding gap a naive "just check the hostname" mitigation would leave open. Chapter 12's rate-limiting client-key resolution applies the same underlying discipline to a different problem: forwarded headers (<code>X-Forwarded-For</code>, <code>CF-Connecting-IP</code>) are only ever trusted when the actual TCP peer is a known, trusted proxy — never trusted from a direct, untrusted connection, because trusting them unconditionally would let anyone mint unlimited fresh rate-limit buckets simply by lying in a header.</p>
         <p>Both mechanisms share the same underlying principle, worth generalizing beyond just these two examples: <strong>never trust something an adversary can influence without independently verifying it through a channel they can't equally influence.</strong> A hostname can be manipulated via DNS; a header can be set to anything by whoever sends the request. A resolved-and-validated IP, and a raw TCP socket's actual peer address, can't be forged the same way — which is exactly why both mechanisms anchor their trust decision there instead.</p>
       </div>
-    </section>
+    
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Walk the webhook SSRF resolve→validate→connect sequence and name the DNS-rebinding gap it closes.</li>
+          <li>When are X-Forwarded-For headers trusted for rate-limit keys?</li>
+          <li>State the shared principle behind both mechanisms in one sentence.</li>
+        </ol>
+      </div>
+</section>
     <div class="page-nav" id="page-nav"><a class="prev" href="sec-identity.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Identity and session security</span></a><a class="next" href="sec-secrets.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Secrets, at rest and in logs</span></a></div>
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

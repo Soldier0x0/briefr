@@ -47,6 +47,14 @@
       </div>
 
       <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
         <div class="toc-group-title">Part II · Backend foundations</div>
         <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
         <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
@@ -76,6 +84,7 @@
         <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
         <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
         <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
       </div>
 
       <div class="toc-group">
@@ -124,7 +133,7 @@
         <span class="chapter-num">Part III · Chapter 16</span>
         <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
         <p class="dek">One shared choke point every feed passes through before it ever touches the network, built around a single stated principle: wait, don't fail.</p>
-        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">source_rate_limits.py</span></div>
+        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
       </div>
       <div class="prose">
         <p>Every outbound call any feed module makes — to NVD, GitHub, OTX, CISA, FIRST.org, any of it — is routed through <code>resilient_client.py</code>'s <code>resilient_get</code>/<code>resilient_request</code>, never a raw <code>httpx</code> call made directly by a feed module. This centralization is what makes it possible to reason about outbound reliability in one place instead of 29 separate, inconsistent implementations.</p>
@@ -160,7 +169,12 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
         <p><strong>A specific, non-obvious detail:</strong> GitHub's rate-limit headers (<code>x-ratelimit-remaining</code>, <code>x-ratelimit-reset</code>) work differently from the generic <code>Retry-After</code> header most APIs use. <code>Retry-After</code> is a relative delay ("wait 30 seconds"); GitHub's <code>x-ratelimit-reset</code> is an absolute Unix epoch timestamp marking when its rolling window resets. BRIEFR's pause-duration calculation branches on which kind of header a given source actually sends — computing <code>reset_at - time.time()</code> for GitHub specifically, rather than naively parsing it as if it were a relative delay, which would produce a wildly wrong (usually enormous) wait time.</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Queue operations and metering</h4>
+      <div class="prose">
+        <p><code>api_queue_operations.py</code> and <code>api_metering.py</code> sit beside the in-memory <code>api_queue.py</code> pacing layer: operations helpers for queue introspection/control paths, and metering for usage accounting — neither replaces the token-bucket / circuit-breaker story in this chapter; they extend the operational surface around it.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why does the circuit breaker require three consecutive failures to open but only one success to close? What would go wrong with the opposite asymmetry?</li>
