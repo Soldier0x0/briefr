@@ -1,4 +1,5 @@
 <title>BRIEFR — The Study Guide</title>
+<!-- Preferred: docs/study-guide/ (python scripts/build_study_guide_book.py). This file is the editable source. -->
 <style>
   /* Palette lifted directly from frontend/src/styles/tokens.css — BRIEFR's
      actual dark-terminal token system (--c-neutral-*, --c-accent, --c-chart-*),
@@ -364,6 +365,14 @@
   </aside>
 
   <main>
+    <div class="how-to-use" style="margin:16px clamp(20px,5vw,64px) 0;max-width:900px">
+      <h3>Multi-file book available</h3>
+      <p>Prefer the clean responsive edition: open
+        <a href="study-guide/index.html"><code>docs/study-guide/index.html</code></a>
+        (sidebar drawer on small screens, faster page loads). This single-file document
+        remains the editable source; regenerate the book with
+        <code>python scripts/build_study_guide_book.py</code>.</p>
+    </div>
     <header class="page hero" id="preface">
       <span class="eyebrow">Preface</span>
       <h1>How BRIEFR is built, and why — the long version</h1>

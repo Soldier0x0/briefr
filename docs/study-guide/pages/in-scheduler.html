@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The scheduler and its lock layer — a danger zone, verified line by line — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="in-scheduler" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="in-scheduler">
+      <div class="chapter-head">
+        <span class="chapter-num">Part III · Chapter 15</span>
+        <h3>The scheduler and its lock layer — a danger zone, verified line by line</h3>
+        <p class="dek">Why APScheduler's own overlap protection isn't enough, and the exact coupling CLAUDE.md warns you never to let drift.</p>
+        <div class="files"><span class="chip">scheduler.py</span><span class="chip">scheduler_locks.py</span><span class="chip">routers/admin.py</span></div>
+      </div>
+      <div class="prose">
+        <p><code>scheduler.py</code> builds an APScheduler <code>AsyncIOScheduler</code> and registers roughly 28 jobs on it — one per feed sync, plus the nightly correlation engine, scheduled backups, session cleanup, and more — each identified by a stable string passed as <code>id=</code> to <code>scheduler.add_job(...)</code>. Every job's coroutine is wrapped in <code>job_log_context(id)</code> so its log lines carry a consistent correlation ID back to Chapter 13's structured logging, and jobs are registered with <code>max_instances=1</code>, meaning APScheduler itself refuses to let a job overlap <em>its own</em> next scheduled run if the previous one is still executing.</p>
+      </div>
+
+      <h4 class="subhead why">The gap <code>max_instances=1</code> doesn't cover</h4>
+      <div class="prose">
+        <p><code>max_instances=1</code> only protects a job against colliding with its own next scheduled firing — it says nothing at all about a completely separate code path triggering the same underlying work. BRIEFR's admin UI has exactly such a path: an operator can click "sync NVD now" from <code>routers/admin.py</code>, invoking the same NVD sync function outside the scheduler's own timing entirely. Without additional protection, a manual "sync now" click could start running concurrently with a scheduled sync that happened to already be mid-flight — two processes racing to read the same watermark, fetch overlapping data, and write conflicting updates to the same rows at the same time.</p>
+        <p><code>scheduler_locks.py</code> closes exactly this gap with a second, independent layer: a plain Python dictionary mapping each job's ID string to its own <code>asyncio.Lock</code>. Both the scheduled job function <em>and</em> the manual-trigger admin endpoint check the same lock before proceeding — whichever one gets there first acquires it and the other is turned away (the admin endpoint returns HTTP 409 Conflict) rather than both running at once.</p>
+      </div>
+
+      <pre class="code"><code><span class="cmt"># Keys must match the `id=` strings passed to scheduler.add_job() exactly.</span>
+<span class="cmt"># incident_feed_refresh, backup_deadman_check, session_cleanup,</span>
+<span class="cmt"># cache_retention_cleanup, watchlist_monitor_alerts, and api_key_health_check</span>
+<span class="cmt"># have no entry here — they run without a lock today (each job is registered</span>
+<span class="cmt"># with max_instances=1, so APScheduler itself prevents overlap; this module</span>
+<span class="cmt"># only consolidates locks that already existed, it doesn't add new ones).</span>
+_LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
+    <span class="str">"nvd_incremental_sync"</span>: asyncio.Lock(),
+    <span class="str">"kev_metadata_sync"</span>: asyncio.Lock(),
+    <span class="str">"epss_score_sync"</span>: asyncio.Lock(),
+    <span class="str">"nightly_correlation"</span>: asyncio.Lock(),
+    <span class="str">"cvelistv5_incremental_sync"</span>: asyncio.Lock(),
+    <span class="cmt"># ...16 more, one per lockable job...</span>
+}</code></pre>
+      <p class="code-caption">scheduler_locks.py, real code and its own comment — note it documents which jobs are <em>intentionally</em> excluded, not just which ones are included</p>
+
+      <div class="prose">
+        <p>Checking this directly against <code>scheduler.py</code>'s actual <code>add_job(id=...)</code> calls confirms the two files agree exactly — every locked job ID here matches a real registered job, with no drift as of this reading. <code>routers/admin.py</code>'s own <code>_JOB_RUN_MAP</code> (which the manual "run now" endpoint uses to find each job's function) is a superset that also lists a handful of lock-free jobs — the file's own comment explains why that's fine rather than an inconsistency: those specific jobs rely on APScheduler's <code>max_instances=1</code> alone, because they don't have a manual-trigger button in the admin UI that could race them, so the second layer of protection genuinely isn't needed for them.</p>
+      </div>
+
+      <h4 class="subhead how">Tracing a real request end to end</h4>
+      <div class="prose">
+        <p>Follow <code>POST /api/refresh/nvd</code> concretely: the request passes <code>require_admin</code> (Chapter 6), then checks <code>refresh_in_progress()</code> — which ORs together the NVD, KEV, and EPSS locks — returning 409 immediately if any is held. If clear, it spawns the sync as a background task via <code>task_registry.spawn_background_task</code>, which holds a strong reference to the task specifically so Python's garbage collector can't silently collect and cancel it mid-flight (a real historical bug class, referenced again in Chapter 30). The spawned function re-checks and acquires its own lock, reads the current watermark (seeding one from the maximum <code>modified</code> timestamp already in the <code>cves</code> table if none exists yet and at least 10 CVEs are already present — a sane bootstrap for a database that already has data but no recorded watermark), fetches and upserts, advances the watermark <em>only after</em> the upsert has actually succeeded, and in a <code>finally</code> block always records the job's last-run time for the admin UI and releases the lock — regardless of whether the sync succeeded or raised partway through.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why isn't APScheduler's <code>max_instances=1</code> sufficient on its own, and what specific race does <code>scheduler_locks.py</code> close that it doesn't?</li>
+          <li>If the process crashed mid-sync, right after reading the watermark but before writing the new one, what state would the database be left in — and why is that state safe to resume from?</li>
+          <li>Why does <code>task_registry.spawn_background_task</code> need to hold a strong reference to a spawned task at all — what would silently go wrong without it?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="in-feeds.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Feed sources — 29 files, four distinct shapes of the same problem</span></a><a class="next" href="in-queue.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">The outbound queue and circuit breakers — never dropping a request on purpose</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

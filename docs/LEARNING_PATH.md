@@ -17,10 +17,10 @@ Existing deep references when stuck: `SYSTEM_DESIGN.md`,
 [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md), `docs/HOW_IT_WORKS.md`.
 
 For full textbook-depth coverage of every subsystem (concept primers, real
-code walkthroughs, and self-check questions per chapter) open
-[`STUDY_GUIDE.html`](STUDY_GUIDE.html) in a browser — a single self-contained
-interactive document, not part of the reader-facing doc set. Completeness
-audit (file inventory, gaps, corrected TOC for the planned multi-file shell):
+code walkthroughs, and self-check questions per chapter) open the multi-file
+book [`study-guide/index.html`](study-guide/index.html) (preferred) or the
+monolith source [`STUDY_GUIDE.html`](STUDY_GUIDE.html). Completeness audit
+(file inventory, gaps, corrected TOC):
 [`planning/specs/study-guide-audit/`](planning/specs/study-guide-audit/README.md).
 
 ---
