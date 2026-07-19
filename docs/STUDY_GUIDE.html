@@ -399,6 +399,14 @@
         </ol>
         <p style="margin-bottom:0;">Part 0 covers concepts you'll need before anything else makes sense — read it first even if some of it is familiar, because a few terms (watermark, hub suppression, operational priority) are BRIEFR-specific and get redefined here. Before that, the <a href="#system-design">System Design</a> page gives you the whole shape of the system in four pictures — worth a first look now, and worth returning to after every Part as a reality check.</p>
       </div>
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>State the study method in four steps (read → open the real file → re-explain unaided → self-check) without looking back.</li>
+          <li>Which file do you edit, and which command regenerates the multi-file reader book?</li>
+          <li>Why does this book tell you to prefer <code>docs/study-guide/</code> for reading even though the editable source is this monolith?</li>
+        </ol>
+      </div>
     </header>
 
     <section class="page chapter" id="system-design">
@@ -653,6 +661,21 @@ flowchart TB
           <p>A vendor-neutral, YAML-based format for writing detection logic once and translating it into any SIEM's native query language (Splunk SPL, Elastic KQL, Microsoft Sentinel KQL, and others) via a converter.</p>
           <p class="why-it-matters"><strong>Why it matters here:</strong> BRIEFR both fetches community Sigma rules and generates its own from templates (Chapter 21), then translates them into concrete SIEM queries for whichever platform an analyst actually runs.</p>
         </div>
+      </div>
+
+      <h4 class="subhead how">Where each primer idea shows up later</h4>
+      <div class="prose">
+        <p>Use this as a map, not a second textbook: circuit breaker → Chapter 16 (<code>resilient_client.py</code>); watermark/idempotency → Chapter 14 (feeds); JWT+refresh → Chapter 11 (auth); token bucket → Chapters 12 and 16; SSRF → Chapter 27 (webhooks); CVSS/EPSS/KEV/CPE → Chapter 18–19 (scoring/matching); ATT&amp;CK/Sigma → Chapter 21 (detection); connection pooling / no-ORM → Chapter 9 (data layer).</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name three primer concepts that are BRIEFR-specific in application (not just generic CS), and point to the later chapter each reappears in.</li>
+          <li>Explain watermark vs. “just re-fetch everything” using KEV as the counter-example where a watermark would be wrong.</li>
+          <li>Why does BRIEFR use both a JWT and a database-backed refresh token instead of picking one?</li>
+          <li>In one sentence each: what CVSS measures vs what EPSS predicts vs what KEV confirms.</li>
+        </ol>
       </div>
     </section>
 

@@ -219,6 +219,21 @@
           <p class="why-it-matters"><strong>Why it matters here:</strong> BRIEFR both fetches community Sigma rules and generates its own from templates (Chapter 21), then translates them into concrete SIEM queries for whichever platform an analyst actually runs.</p>
         </div>
       </div>
+
+      <h4 class="subhead how">Where each primer idea shows up later</h4>
+      <div class="prose">
+        <p>Use this as a map, not a second textbook: circuit breaker → Chapter 16 (<code>resilient_client.py</code>); watermark/idempotency → Chapter 14 (feeds); JWT+refresh → Chapter 11 (auth); token bucket → Chapters 12 and 16; SSRF → Chapter 27 (webhooks); CVSS/EPSS/KEV/CPE → Chapter 18–19 (scoring/matching); ATT&amp;CK/Sigma → Chapter 21 (detection); connection pooling / no-ORM → Chapter 9 (data layer).</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name three primer concepts that are BRIEFR-specific in application (not just generic CS), and point to the later chapter each reappears in.</li>
+          <li>Explain watermark vs. “just re-fetch everything” using KEV as the counter-example where a watermark would be wrong.</li>
+          <li>Why does BRIEFR use both a JWT and a database-backed refresh token instead of picking one?</li>
+          <li>In one sentence each: what CVSS measures vs what EPSS predicts vs what KEV confirms.</li>
+        </ol>
+      </div>
     </section>
     <div class="page-nav" id="page-nav"><a class="prev" href="primer.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Concepts primer</span></a><a class="next" href="arch-part.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">The shape of the whole system, before the parts</span></a></div>
     <footer>

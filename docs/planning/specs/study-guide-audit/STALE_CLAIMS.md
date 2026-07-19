@@ -30,7 +30,7 @@ Auditor: `scripts/audit_study_guide.py --strict`
 | API metering / queue ops | **Closed** — named in queue chapter |
 | Frontend surface inventory | **Closed** — Part I-B + globs (`utils/*.js`, `components/*.css`, admin pages, …); FE gate tests OOS |
 | Deploy helpers / sec-arch corpus | **Closed** in earlier coverage PRs |
-| Digest / primer self-checks | **Open (non-blocking for G1–G3)** — interview polish, not inventory truth |
+| Digest / primer self-checks | **Closed (2026-07-19 polish)** — `preface`, `primer-mechanics`, and all five `sec-*` digests have ≥3 self-check items |
 
 ## False assumptions to avoid
 

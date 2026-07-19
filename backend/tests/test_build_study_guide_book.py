@@ -56,3 +56,29 @@ def test_extract_and_build_minimal_book(build_mod, tmp_path: Path):
     assert 'href="ch1.html"' in preface
     assert "nav-toggle" in preface
     assert "book.css" in preface
+
+
+def test_committed_book_matches_fresh_rebuild(build_mod, tmp_path: Path):
+    """G5: committed docs/study-guide/ must match regenerating from STUDY_GUIDE.html."""
+    guide = ROOT / "docs" / "STUDY_GUIDE.html"
+    committed = ROOT / "docs" / "study-guide"
+    assert guide.is_file()
+    assert committed.is_dir()
+
+    out = tmp_path / "book"
+    n = build_mod.build(guide, out)
+    assert n >= 60
+
+    committed_pages = sorted(p.name for p in (committed / "pages").glob("*.html"))
+    fresh_pages = sorted(p.name for p in (out / "pages").glob("*.html"))
+    assert fresh_pages == committed_pages
+
+    for name in ("index.html", "assets/book.css", "assets/book.js", "assets/search-index.json"):
+        left = (committed / name).read_text(encoding="utf-8")
+        right = (out / name).read_text(encoding="utf-8")
+        assert left == right, f"G5 drift in {name}"
+
+    for page in fresh_pages:
+        left = (committed / "pages" / page).read_text(encoding="utf-8")
+        right = (out / "pages" / page).read_text(encoding="utf-8")
+        assert left == right, f"G5 drift in pages/{page}"

@@ -89,9 +89,11 @@ HEAD tree
 
 ### Inventory scope (unchanged from audit design unless expanded)
 
-**In scope:** `backend/` (runtime), `frontend/src/`, `deploy/`, load-bearing root scripts already used by the auditor.
+**Walked for gaps (auditor `INVENTORY_ROOTS`):** `backend/`, `frontend/src/`, `deploy/` only. Every file under those roots must be `covered`, `weak` (blocked by `--strict`), or explicit `out_of_scope`.
 
-**Out of scope categories:** `node_modules/`, `.venv/`, build artifacts, individual test files (aggregate), `docs/archive/`, vendor/minified assets.
+**Mention-resolved, not walked:** load-bearing paths outside those roots (e.g. `scripts/verify-local.sh`, `scripts/generate_security_corpus.py`) become inventory rows only when the guide names them. The auditor does **not** scan `scripts/` for gaps — clarifying so “root scripts in scope” is not read as “every file under `scripts/` must be covered.”
+
+**Out of scope categories:** `node_modules/`, `.venv/`, build artifacts, individual `backend/tests/**` and `frontend/src/**/*.test.js` (aggregate Testing strategy), `docs/archive/`, vendor/minified assets.
 
 ## 6. Ship gates (Phase 0 → Phase 1)
 
@@ -101,7 +103,7 @@ HEAD tree
 | G2 | Depth | `weak = 0` for in-scope files, **or** each remaining row is explicit `out_of_scope` with allowlisted reason in audit output |
 | G3 | Orphans | Only documented intentional historical mentions |
 | G4 | Claims | No open wrong-vs-truth items in `STALE_CLAIMS.md` |
-| G5 | Book | `python scripts/build_study_guide_book.py` succeeds; pages match SSOT; builder + auditor pytest green |
+| G5 | Book | `python scripts/build_study_guide_book.py` succeeds; committed `docs/study-guide/` matches a fresh rebuild (pytest G5 gate: rebuild to a temp dir and assert page set / content parity with committed tree); builder + auditor pytest green |
 
 **Phase 1 is forbidden** until G1–G5 pass on the commit that exports the truth bundle.
 
@@ -144,7 +146,8 @@ No learn-repo scaffolding, no `docs.` deploy pipeline for pathways, and no profi
 
 ## 10. Testing and verification
 
-- Extend pytest so local/CI verify can fail when G1–G3 regress under Phase 0 policy (exact API to be specified in the implementation plan).
+- Extend pytest so local/CI verify can fail when G1–G3 regress under Phase 0 policy (`audit_study_guide.py --strict`).
+- **G5 gate in pytest:** run `build_study_guide_book.py` into a temporary directory from `docs/STUDY_GUIDE.html` and assert the generated page set (and critical assets) matches the committed `docs/study-guide/` tree — so updating the monolith without regenerating the book fails CI.
 - Keep `backend/tests/test_audit_study_guide.py` and `backend/tests/test_build_study_guide_book.py` green.
 - After every content PR: rebuild book + re-run auditor; confirm `gap=0` and weak policy.
 - Prefer reading real modules over inventing How text that “sounds right.”
