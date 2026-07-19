@@ -93,6 +93,33 @@ def test_build_retrieval_health_disabled(tmp_path, monkeypatch):
             assert payload["extension_vector"] == "n/a"
             assert payload["degraded"] == {"reason": "disabled"}
             assert "counts" in payload and "pending" in payload
+            assert payload["pending"].get("includes_hash_drift") is False
+            assert "last_ingest_tail" in payload
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_pending_missing_is_cheap_sql_count(tmp_path, monkeypatch):
+    if os.environ.get("DATABASE_URL", "").startswith("postgresql"):
+        pytest.skip("SQLite pending path")
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "rh_pending.db"))
+    from db.embeddings_store import count_embeddings_pending_missing
+    from datetime import date
+
+    async def run():
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                "INSERT INTO cves (cve_id, description, published) VALUES (?, ?, ?)",
+                ("CVE-2024-PEND", "Needs embed", date.today().isoformat()),
+            )
+            await db.commit()
+            pending = await count_embeddings_pending_missing(db, MODEL)
+            assert pending["cve"] >= 1
+            assert pending["includes_hash_drift"] == 0
         finally:
             await db.close()
 

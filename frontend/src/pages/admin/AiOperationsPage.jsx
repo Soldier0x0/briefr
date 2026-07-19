@@ -111,13 +111,14 @@ function RetrievalHealthPanel({ health, loading, error, onRetry }) {
   const counts = health.counts || {}
   const pending = health.pending || {}
   const last = health.last_backfill || {}
+  const ingestTail = health.last_ingest_tail || {}
   const degraded = health.degraded
 
   return (
     <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
       <div className="admin-card-title">
         Retrieval health
-        <HelpTip text="Live embeddings index used by hybrid search. Counts are from the embeddings table (not legacy cve_embeddings)." />
+        <HelpTip text="Live embeddings index used by hybrid search. Counts are from the embeddings table for the active model. Pending = missing or migrated placeholders only (hash-drift is handled by scheduled backfill)." />
       </div>
       {degraded?.reason && (
         <div className="admin-callout admin-callout-amber" style={{ marginBottom: 'var(--space-3)' }}>
@@ -125,6 +126,13 @@ function RetrievalHealthPanel({ health, loading, error, onRetry }) {
           {degraded.reason === 'disabled' && ' — turn on EMBEDDINGS_ENABLED to use hybrid search.'}
           {degraded.reason === 'cold_index' && ' — run Rebuild search index on Scheduler.'}
           {degraded.reason === 'no_vector_extension' && ' — Postgres needs pgvector (vector extension).'}
+        </div>
+      )}
+      {ingestTail.had_error && (
+        <div className="admin-callout admin-callout-amber" style={{ marginBottom: 'var(--space-3)' }}>
+          Auto-on-ingest last error
+          {ingestTail.last_run_utc ? ` (${fmtIso(ingestTail.last_run_utc)})` : ''}
+          {ingestTail.error_message ? `: ${String(ingestTail.error_message).slice(0, 160)}` : ''}
         </div>
       )}
       <div className="admin-stat-grid" style={{ marginBottom: 'var(--space-3)' }}>
@@ -138,7 +146,7 @@ function RetrievalHealthPanel({ health, loading, error, onRetry }) {
           <tr>
             <th>Entity</th>
             <th>Indexed</th>
-            <th>Pending (capped)</th>
+            <th>Pending (missing/migrated)</th>
           </tr>
         </thead>
         <tbody>
@@ -157,6 +165,9 @@ function RetrievalHealthPanel({ health, loading, error, onRetry }) {
         Last backfill: {last.last_run_utc ? fmtIso(last.last_run_utc) : 'never'}
         {last.records_upserted != null ? ` (${last.records_upserted} records)` : ''}
         {last.had_error ? ' · error' : ''}
+        {' · '}
+        Ingest tail: {ingestTail.last_run_utc ? fmtIso(ingestTail.last_run_utc) : 'never'}
+        {ingestTail.embedded != null ? ` (${ingestTail.embedded} embedded)` : ''}
         {' · '}
         <Link to="/admin?p=scheduler" style={{ color: 'var(--accent)' }}>Scheduler</Link>
       </p>

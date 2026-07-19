@@ -61,9 +61,11 @@ if something breaks, FEED still works (keyword) and Admin shows *why*.
 | `model` | Active model name |
 | `extension_vector` | Postgres: present/absent; SQLite: `n/a` (BLOB shim) |
 | `counts` | `{ cve, technique, campaign, total }` from `embeddings` for active model |
-| `pending` | Approximate needing-embed counts (reuse `get_*_needing_embeddings` with a small limit or count query) |
+| `pending` | Cheap SQL count of **missing / `migrated:` only** (excludes Python-side hash-drift — Gemini medium) |
 | `last_backfill` | Last `embeddings_backfill` job summary if available (when, embedded totals, error) |
+| `last_ingest_tail` | Last auto-on-ingest result from `sync_state` (`embeddings.ingest_tail.last`) — success or error (Gemini medium) |
 | `degraded` | Optional `{ reason }` when search would be keyword-only (disabled / no extension / cold) |
+| `counts` | Always filtered by **active model** (`WHERE model = ?`) |
 
 No request-path model inference. Cheap SQL + existing job status only.
 
@@ -109,7 +111,7 @@ RH-1 before RH-2 so auto never lands without a truthful gauge.
 |---------|----------|
 | Embeddings disabled | Health `degraded.reason=disabled`; FEED keyword |
 | No `vector` extension (Postgres) | Health reports absent; hybrid falls back per existing code |
-| Auto-on-ingest errors mid-NVD | Log + continue NVD commit path (do not fail ingest); pending left for scheduled backfill |
+| Auto-on-ingest errors mid-NVD | Log + continue NVD commit path (do not fail ingest); record error in `sync_state` for health API; pending left for scheduled backfill |
 | Cap hit on ingest | Embed first N; remainder pending |
 | Health SQL fails | 500 with request_id; panel shows error state distinct from empty |
 

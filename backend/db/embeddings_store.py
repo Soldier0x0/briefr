@@ -504,3 +504,81 @@ async def count_embeddings_by_entity(
             out[et] = n
         out["total"] += n
     return out
+
+
+async def count_embeddings_pending_missing(
+    db: DbConnection, model: str
+) -> dict[str, int]:
+    """Cheap SQL pending counts: missing or ``migrated:`` placeholder only.
+
+    Excludes Python-side content_hash drift (E7 freshness) so Admin health stays
+    fast — drift is handled by the scheduled backfill, not this gauge.
+    """
+    pg = _is_postgres_connection(db)
+    if pg:
+        cve_sql = """
+            SELECT COUNT(*)::bigint AS cnt
+            FROM cves c
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = $1
+            WHERE c.description IS NOT NULL
+              AND c.description != ''
+              AND (e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%')
+        """
+        tech_sql = """
+            SELECT COUNT(*)::bigint AS cnt
+            FROM mitre_techniques t
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'technique' AND e.entity_id = t.technique_id
+             AND e.model = $1
+            WHERE e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%'
+        """
+        camp_sql = """
+            SELECT COUNT(*)::bigint AS cnt
+            FROM correlation_campaigns c
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id
+             AND e.model = $1
+            WHERE c.retracted_at IS NULL
+              AND (e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%')
+        """
+        params: tuple = (model,)
+    else:
+        cve_sql = """
+            SELECT COUNT(*) AS cnt
+            FROM cves c
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'cve' AND e.entity_id = c.cve_id AND e.model = ?
+            WHERE c.description IS NOT NULL
+              AND c.description != ''
+              AND (e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%')
+        """
+        tech_sql = """
+            SELECT COUNT(*) AS cnt
+            FROM mitre_techniques t
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'technique' AND e.entity_id = t.technique_id
+             AND e.model = ?
+            WHERE e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%'
+        """
+        camp_sql = """
+            SELECT COUNT(*) AS cnt
+            FROM correlation_campaigns c
+            LEFT JOIN embeddings e
+              ON e.entity_type = 'campaign' AND e.entity_id = c.campaign_id
+             AND e.model = ?
+            WHERE c.retracted_at IS NULL
+              AND (e.entity_id IS NULL OR e.content_hash LIKE 'migrated:%')
+        """
+        params = (model,)
+
+    async def _one(sql: str) -> int:
+        rows = await db.execute_fetchall(sql, params)
+        return int(rows[0]["cnt"] or 0) if rows else 0
+
+    return {
+        ENTITY_TYPE_CVE: await _one(cve_sql),
+        ENTITY_TYPE_TECHNIQUE: await _one(tech_sql),
+        ENTITY_TYPE_CAMPAIGN: await _one(camp_sql),
+        "includes_hash_drift": 0,
+    }

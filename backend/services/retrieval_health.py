@@ -12,10 +12,8 @@ from typing import Any
 
 from db.embeddings_store import (
     count_embeddings_by_entity,
+    count_embeddings_pending_missing,
     embeddings_pgvector_writes_enabled,
-    get_campaigns_needing_embeddings,
-    get_cves_needing_embeddings,
-    get_techniques_needing_embeddings,
 )
 from db.types import DbConnection
 from ml.embeddings import (
@@ -26,7 +24,7 @@ from ml.embeddings import (
 
 logger = logging.getLogger(__name__)
 
-_PENDING_CAP = 500
+INGEST_TAIL_SYNC_KEY = "embeddings.ingest_tail.last"
 
 
 def _is_postgres_connection(db: DbConnection) -> bool:
@@ -78,15 +76,33 @@ async def _last_backfill_summary(db: DbConnection) -> dict[str, Any]:
     }
 
 
-async def _pending_estimates(db: DbConnection, model: str) -> dict[str, int]:
-    cve = await get_cves_needing_embeddings(db, model, limit=_PENDING_CAP)
-    tech = await get_techniques_needing_embeddings(db, model, limit=_PENDING_CAP)
-    camp = await get_campaigns_needing_embeddings(db, model, limit=_PENDING_CAP)
+async def _last_ingest_tail_summary(db: DbConnection) -> dict[str, Any]:
+    empty = {
+        "last_run_utc": None,
+        "embedded": None,
+        "had_error": None,
+        "error_message": None,
+    }
+    try:
+        from db.sync_state import get_sync_state_value
+
+        raw = await get_sync_state_value(db, INGEST_TAIL_SYNC_KEY)
+    except Exception:
+        logger.exception("ingest_tail sync_state read failed")
+        return empty
+    if not raw:
+        return empty
+    try:
+        data = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return empty
+    if not isinstance(data, dict):
+        return empty
     return {
-        "cve": len(cve),
-        "technique": len(tech),
-        "campaign": len(camp),
-        "capped_at": _PENDING_CAP,
+        "last_run_utc": data.get("last_run_utc"),
+        "embedded": data.get("embedded"),
+        "had_error": data.get("had_error"),
+        "error_message": data.get("error_message"),
     }
 
 
@@ -112,8 +128,16 @@ async def build_retrieval_health(db: DbConnection) -> dict[str, Any]:
     pgvector_writes = embeddings_pgvector_writes_enabled()
     extension_vector = await _extension_vector_status(db)
     counts = await count_embeddings_by_entity(db, model)
-    pending = await _pending_estimates(db, model)
+    pending_raw = await count_embeddings_pending_missing(db, model)
+    pending = {
+        "cve": int(pending_raw.get("cve") or 0),
+        "technique": int(pending_raw.get("technique") or 0),
+        "campaign": int(pending_raw.get("campaign") or 0),
+        "includes_hash_drift": False,
+        "note": "missing_or_migrated_only",
+    }
     last_backfill = await _last_backfill_summary(db)
+    last_ingest_tail = await _last_ingest_tail_summary(db)
     degraded = _degraded_reason(
         enabled=enabled,
         extension_vector=extension_vector,
@@ -128,5 +152,6 @@ async def build_retrieval_health(db: DbConnection) -> dict[str, Any]:
         "counts": counts,
         "pending": pending,
         "last_backfill": last_backfill,
+        "last_ingest_tail": last_ingest_tail,
         "degraded": degraded,
     }
