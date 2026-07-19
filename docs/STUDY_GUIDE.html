@@ -277,6 +277,8 @@
         <a class="toc-link toc-sub" href="#arch-monolith">Monolith by design</a>
         <a class="toc-link toc-sub" href="#arch-resources">The resource-consciousness thread</a>
         <a class="toc-link toc-sub" href="#arch-connectivity">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="#arch-ai-restraint">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="#arch-license">Why AGPL-3.0</a>
       </div>
 
       <div class="toc-group">
@@ -724,6 +726,7 @@ flowchart TB
       <h4 class="subhead concept">The one connectivity fact that explains most of the others: the database is the message bus</h4>
       <div class="prose">
         <p>Read across every chapter so far and one structural fact keeps recurring in different clothes: the scheduler (feeds, scoring, correlation, detection-context sync, embeddings backfill) and the request path (routers) essentially never call each other's functions directly. They communicate almost entirely by writing to, and reading from, the same Postgres/SQLite tables. A scheduled job computes a correlation snapshot and writes it to a table; a router reads that table. A scheduled job upserts a CVE's EPSS score; a router reads it. This is, functionally, the same pattern a message queue or event bus gives you in a distributed system — a durable, asynchronous handoff point between producer and consumer — except BRIEFR gets it for free from the database it already needs for everything else, with no extra infrastructure. Once you see this pattern, most of the "why does A never call B directly" questions in this codebase have the same one-line answer: because A writes to a table, and B reads that table, on its own schedule.</p>
+        <p>It's worth asking the alternative directly, since "just use Postgres" can look like an oversight rather than a decision: why not a real message broker — Redis Streams, RabbitMQ, Kafka — sitting between the scheduler and the API the way a textbook distributed system would? A broker earns its cost when you need at-least-once delivery semantics across process boundaries, consumer groups scaling independently of producers, or replay from an arbitrary offset — none of which apply here, because there is exactly one producer process and one consumer process, and they're the <em>same</em> process (Chapter A1). Adding a broker would mean a new piece of infrastructure to deploy, monitor, and keep running on every self-hosted box, purely to re-implement a durable handoff Postgres already gives BRIEFR as a side effect of tables it needs anyway. The one thing a real broker buys that a table doesn't — a push notification the instant new data lands, instead of a poll or a fixed schedule — isn't needed either: nothing in BRIEFR promises sub-second freshness, every feed already runs on its own interval, and the API's own reads are already cheap indexed lookups regardless of exactly when the row was written. This is the same "adopt a dependency only when the simpler tool genuinely can't do the job" instinct behind the monolith decision in Chapter A1, applied one layer down.</p>
       </div>
 
       <h4 class="subhead how">A map of what's actually connected to what</h4>
@@ -745,6 +748,83 @@ flowchart TB
           <li>Why don't correlation and detection engineering call each other directly, even though they both ultimately relate to the same CVE?</li>
           <li>What specific risk does BRIEFR avoid by never letting a generated Sigma rule deploy itself automatically into a live SIEM?</li>
           <li>Why does the wallboard need its own separate session scheme instead of just reusing the main login system it otherwise resembles?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="arch-ai-restraint">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A4</span>
+        <h3>Why AI is used sparingly — the case against a bigger role, stated once</h3>
+        <p class="dek">Every chapter so far has made one small, local "why not more ML/LLM here" argument on its own turf. This chapter pulls all of them into a single line of reasoning, because the pattern across them is the actual answer, not any one instance of it.</p>
+        <div class="files"><span class="chip">scoring/risk.py</span><span class="chip">ai/llm_router.py</span><span class="chip">ml/embeddings.py</span><span class="chip">ROADMAP.md</span></div>
+      </div>
+
+      <h4 class="subhead concept">The question worth asking directly: this is 2026, AI is everywhere — why isn't BRIEFR built around it?</h4>
+      <div class="prose">
+        <p>It's a fair challenge, and worth answering directly rather than deflecting to "we use some AI." BRIEFR could plausibly have been built as an LLM-first product: a chat interface over your CVE data, an agent that decides what's a priority, a model that learns your organization's risk tolerance from feedback. None of that is what got built. Instead, across every chapter in this book, AI shows up in exactly two narrow, well-fenced roles — CPU-only local embeddings for semantic similarity (Chapter 24), and hosted-LLM calls for three specific, optional enrichment tasks (Chapter 24B) — and everywhere else, a deterministic formula, a fixed lookup table, or plain code does the job instead. That's not an oversight or a resource constraint alone; it's a position, and it's visible in four separate, independently-justified decisions that happen to all point the same direction.</p>
+      </div>
+
+      <h4 class="subhead why">Four decisions, one pattern: explainability beats raw predictive power for this problem</h4>
+      <div class="prose">
+        <p><strong>Risk Score is a fixed weighted formula, not a learned model (Chapter 18).</strong> A gradient-boosted tree trained on historical exploitation data could plausibly out-predict the six-component formula BRIEFR actually ships. It wasn't built, because a security analyst asking "why is this CVE ranked above that one" needs an answer that <em>is</em> the computation, not an approximation of it produced by a separate explainability layer bolted onto a black box afterward. A fixed formula is also perfectly reproducible — the same CVE and asset profile score identically today and a year from now, which matters when an analyst asks why a score changed and the honest answer needs to be a specific component delta, never "the model's weights drifted during retraining."</p>
+        <p><strong>Detection rules are generated by an LLM but never auto-deployed (Chapter 21, Chapter A3).</strong> An LLM extracts detection-rule artifacts from CVE text — genuinely useful, genuinely "AI" in the loose sense — but the pipeline stops at "here's a rule for a human to review," on purpose. Generated content becoming live detection logic in a real SIEM without a human reading it first is exactly the kind of unreviewed-automation risk this project has chosen not to accept, regardless of how good the model producing it is.</p>
+        <p><strong>Semantic search stays hybrid, never vectors-alone (Chapter 24).</strong> Embeddings are excellent at "this text means something similar" and comparatively weak at exact-token matching — a CVE ID, a specific version string, an error code pasted in verbatim. Rather than trust the model to cover that gap, BRIEFR blends vector similarity with ordinary keyword search deliberately, so the two techniques cover each other's blind spots instead of asking one imperfect technique to do a job it's structurally bad at.</p>
+        <p><strong>Every LLM feature has a deterministic fallback, without exception (Chapter 24).</strong> BRIEFR must fully function for an operator who configures zero LLM API keys — a real, supported deployment mode, not an edge case — because every LLM-touched feature is additive polish layered on a core product whose correctness never depends on it. That's the constraint that keeps the previous three decisions honest: nothing in the product is allowed to become load-bearing on a model's output, so nothing has the incentive to reach for one just because it's available.</p>
+      </div>
+
+      <h4 class="subhead why">"Generic LLM chat SOC" is a named non-goal, not an oversight</h4>
+      <div class="prose">
+        <p>ROADMAP.md states this as a standing decision with a reason on record, not a gap waiting to be filled: a chat-style SOC assistant is "considered a commodity" — plenty of other tools already build a general-purpose LLM chat layer over security data, and building another one wouldn't be BRIEFR's contribution. The project's actual bet is the opposite of "put a model in front of everything": pick the handful of places where a model's output is genuinely additive (summarizing, extracting structure from messy free text) and everywhere else, do the more boring thing that can be pinned down, tested, and explained exactly. That's a scope decision as much as a technical one, and it's the same instinct — see Chapter A1's non-goals table — that also keeps BRIEFR a monolith rather than a distributed system: narrow the problem on purpose, rather than reaching for the most powerful available tool by default.</p>
+      </div>
+
+      <h4 class="subhead how">What would have to change before AI's role grew</h4>
+      <div class="prose">
+        <p>None of this is a permanent ceiling — it's a statement about where the tradeoff currently lands, and it's worth being precise about what would actually move it. A learned risk-scoring model would become worth the explainability cost only once there's enough of BRIEFR's own labeled outcome data (which CVEs an operator actually acted on, and which they correctly ignored) to meaningfully outperform the fixed formula rather than just approximate it — data this project doesn't yet have because it's a young, single-operator-oriented tool, not a mature platform with years of feedback loops. Auto-deploying generated detection rules would need a much higher, independently-verified confidence bar than any current model realistically clears, plus a real rollback story if a bad rule shipped automatically. And a genuine chat interface would need to solve, honestly, the same problem every LLM-chat security product has to solve — hallucination on security-consequential answers — before it could be trusted anywhere near "should I act on this," which is precisely the question BRIEFR's fixed, auditable scoring answers today without that risk.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Name the two places in BRIEFR where AI genuinely does real work, and the boundary that keeps each one from becoming load-bearing.</li>
+          <li>Why would a more accurate learned risk-scoring model still be a worse fit for BRIEFR today than the fixed formula it has?</li>
+          <li>"Generic LLM chat SOC" is listed as a non-goal because it's "considered a commodity" — restate that argument in your own words, and say what BRIEFR's actual bet is instead.</li>
+          <li>What specific evidence would have to exist before a learned risk model became a reasonable replacement for the current formula?</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="page chapter" id="arch-license">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A5</span>
+        <h3>Why AGPL-3.0 — the one license decision, and what it's honestly missing</h3>
+        <p class="dek">A short chapter, because the source material is short: the project's own planning docs record the decision and its date, not a written rationale. What follows is the well-established reasoning behind that license choice in general, stated plainly as such.</p>
+        <div class="files"><span class="chip">LICENSE</span><span class="chip">docs/planning/STRATEGY.md</span></div>
+      </div>
+
+      <h4 class="subhead concept">What's actually on record</h4>
+      <div class="prose">
+        <p><code>docs/planning/STRATEGY.md</code> records this as a dated, closed decision — "Decided 2026-07-10 (Track F2): AGPL-3.0-or-later" — applied across <code>LICENSE</code>, <code>CONTRIBUTING.md</code>, and SPDX headers. It's worth being precise about what that record does and doesn't contain: it states <em>that</em> the decision was made and <em>when</em>, not a written "here's why AGPL over MIT/Apache/plain GPL" argument. So the reasoning below is general, well-established open-source licensing logic — the standard case for AGPL specifically — not a claim about what BRIEFR's own documents say motivated it.</p>
+      </div>
+
+      <h4 class="subhead why">The gap AGPL closes that GPL, MIT, and Apache all leave open</h4>
+      <div class="prose">
+        <p>Ordinary copyleft (plain GPL) triggers its share-the-source obligation on <em>distributing</em> the software — handing someone a binary or a copy of the code. That has a well-known loophole once software mostly runs as a network service rather than something installed locally: a company can take GPL-licensed code, modify it, run it as a paid SaaS product, and never distribute a single file to anyone — so the obligation to share modifications never triggers, even though every one of that service's users is, in every meaningful sense, "using" the modified software. Permissive licenses (MIT, Apache-2.0) don't even have that obligation to begin with — anyone can take the code, modify it, and never share anything back, open-source or not. AGPL closes exactly this gap: its distinguishing clause extends the share-your-modifications obligation to <em>network use</em>, not just distribution — if you run a modified version of an AGPL-licensed program as a network-accessible service, you must offer its source to the people interacting with it over that network, even though you never handed anyone a copy in the traditional sense.</p>
+        <p>For a project like BRIEFR — self-hosted, but exactly the kind of tool someone could otherwise wrap in a hosted offering without ever releasing their changes — that's the specific scenario AGPL is built to prevent: a fork running as somebody else's paid, closed product, built on this project's own work, with no obligation to contribute anything back. Plain GPL wouldn't prevent that (no distribution occurs in a SaaS deployment); MIT or Apache wouldn't even try.</p>
+      </div>
+
+      <h4 class="subhead pitfall">What this costs, honestly — AGPL is not a free upgrade</h4>
+      <div class="prose">
+        <p>The tradeoff is real and worth stating plainly rather than only praising the upside. AGPL is the most restrictive of the common open-source licenses in this exact dimension, and some organizations have blanket policies against depending on AGPL-licensed code at all, out of caution about the network-use clause's reach into their own internal tooling — a permissively-licensed or plain-GPL alternative would face less friction in that kind of environment. It also has no bearing at all on the single-operator, self-hosted deployment this book has described throughout — an individual running their own instance is not "distributing" or offering network access to third parties in the sense the license cares about, so AGPL's obligations are essentially dormant for BRIEFR's actual primary use case today. Where it matters is entirely prospective: it's a bet about what happens if BRIEFR becomes popular enough for someone else to want to build a competing hosted product on top of it without contributing anything back — a scenario the project hasn't yet faced, but chose, in advance, not to leave undefended.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Explain the specific loophole in plain GPL that AGPL's network-use clause closes.</li>
+          <li>Why are AGPL's obligations essentially dormant for a single operator running their own private BRIEFR instance?</li>
+          <li>Name one real cost of choosing AGPL over a permissive license like MIT or Apache-2.0.</li>
+          <li>What does <code>docs/planning/STRATEGY.md</code> actually record about this decision, and what does it <em>not</em> record?</li>
         </ol>
       </div>
     </section>
