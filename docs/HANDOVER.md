@@ -42,7 +42,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **Update protocol (unchanged):** maintainer says “update” after features/audits → re-inventory HEAD → close new weak/gap/stale → `--strict` green → rebuild book.
 
-**Next:** Phase 1 design (separate learn repo + System Design / Analyst / Architect pathways on `docs.`) — **only after** maintainer green-lights Phase 1.
+**Next:** thin learn pathways under `docs/learn/` (done in follow-on); say “update” after features for re-audit.
 
 ---
 
