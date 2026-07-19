@@ -4,42 +4,16 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`._
 
 ## Counts
 
-- Covered: **283**
-- Weak (dir-only): **284**
-- Gaps: **118**
+- Covered: **441**
+- Weak (dir-only): **244**
+- Gaps: **0**
 - Orphan mentions: **1**
 - Out of scope rows: **1**
 - TOC chapters: **69**
 
 ## Top gap directories
 
-| Prefix | Gap files |
-|--------|----------:|
-| `frontend/src/pages` | 46 |
-| `frontend/src/components` | 34 |
-| `backend/security_architecture/corpus` | 14 |
-| `frontend/src/config` | 2 |
-| `frontend/src/scoring` | 2 |
-| `backend/alembic.ini` | 1 |
-| `backend/api_metering.py` | 1 |
-| `backend/pytest.ini` | 1 |
-| `deploy/briefr-backup.service` | 1 |
-| `deploy/briefr-backup.timer` | 1 |
-| `deploy/briefr-pg-backup.service` | 1 |
-| `deploy/briefr-pg-backup.sh` | 1 |
-| `deploy/briefr-pg-backup.timer` | 1 |
-| `deploy/briefr-restore.sh` | 1 |
-| `deploy/briefr.target` | 1 |
-| `deploy/check-backend.sh` | 1 |
-| `deploy/external-postgres.env.example` | 1 |
-| `deploy/lib.sh` | 1 |
-| `deploy/logrotate-briefr.conf` | 1 |
-| `deploy/nginx-briefr-http.conf` | 1 |
-| `deploy/nginx-snippet-gzip.conf` | 1 |
-| `deploy/nginx-snippet-security-headers-https.conf` | 1 |
-| `deploy/nginx-snippet-security-headers.conf` | 1 |
-| `deploy/smoke-intel.sh` | 1 |
-| `frontend/src/theme` | 1 |
+_No gaps._
 
 ## Next curated docs
 

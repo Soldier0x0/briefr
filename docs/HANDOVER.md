@@ -18,6 +18,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-19 — Study guide coverage: zero file gaps
+
+**Done**
+- Expanded chips (admin shared, `components/ui`, corpus YAML, deploy satellites).
+- Auditor: shallower basename preference; glob supports yaml/json/conf; bare `.ini`.
+- Audit now **gap=0** (covered 441 / weak 244 / orphan 1 historical `dialect.py`).
+- Regenerated multi-file book.
+
+**Next:** optional deeper prose polish / split editable source off monolith.
+
+---
+
 ## 2026-07-19 — Study guide content: Part I-B + retrieval ops + polish
 
 **Done**

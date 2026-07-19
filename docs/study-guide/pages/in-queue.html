@@ -133,7 +133,7 @@
         <span class="chapter-num">Part III · Chapter 16</span>
         <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
         <p class="dek">One shared choke point every feed passes through before it ever touches the network, built around a single stated principle: wait, don't fail.</p>
-        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
+        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">backend/api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
       </div>
       <div class="prose">
         <p>Every outbound call any feed module makes — to NVD, GitHub, OTX, CISA, FIRST.org, any of it — is routed through <code>resilient_client.py</code>'s <code>resilient_get</code>/<code>resilient_request</code>, never a raw <code>httpx</code> call made directly by a feed module. This centralization is what makes it possible to reason about outbound reliability in one place instead of 29 separate, inconsistent implementations.</p>

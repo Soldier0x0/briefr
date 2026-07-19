@@ -75,7 +75,9 @@ Legend: C=Concept, W=Why, H=How, S=Self-check, IR=interview-ready?
 | sec-availability | Availability | adequate | adequate | adequate | adequate | yes | Self-check added |
 | sec-selfassess | Self-assessment | adequate | adequate | adequate | adequate | yes | Self-check added |
 
-## Remaining gaps (post 2026-07-19 content pass)
+## Coverage status (2026-07-19 evening)
 
-- ~118 file gaps left (down from ~399): mostly secondary admin page modules, niche components, and corpus YAML data files.
-- Next depth pass: narrate remaining `pages/admin/*` satellites and corpus YAML as data assets, not leave as silent gaps.
+Mechanical inventory: **0 gaps** for in-scope runtime/deploy files after Part I-B,
+retrieval-ops, UI primitives, corpus, and deploy chip expansion. Remaining
+`weak` rows are mostly `__init__.py` / sibling-dir associations — acceptable.
+Only `orphan_mention` remains intentional historical `db/dialect.py`.

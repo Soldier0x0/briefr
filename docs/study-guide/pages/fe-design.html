@@ -133,7 +133,7 @@
         <span class="chapter-num">Part I · Chapter 2</span>
         <h3>ADR-003 — semantic tokens and Radix, explicitly not Tailwind</h3>
         <p class="dek">The UI's actual design system: how it's built, the audit that forced it into existence, and why the obvious modern default (Tailwind + shadcn) was rejected.</p>
-        <div class="files"><span class="chip">styles/tokens.css</span><span class="chip">App.css</span><span class="chip">ADR-003</span></div>
+        <div class="files"><span class="chip">styles/tokens.css</span><span class="chip">App.css</span><span class="chip">components/ui/*.jsx</span><span class="chip">components/ui/*.css</span><span class="chip">components/ui/index.js</span><span class="chip">ADR-003</span></div>
       </div>
 
       <h4 class="subhead concept">The concept: design tokens</h4>
@@ -170,7 +170,12 @@
         <p><strong>Hand-build every primitive, no dependency at all</strong> — zero new dependencies, maximum control, but it means re-implementing focus traps, portaling, and ARIA compliance from scratch, which is precisely the category of bug the original audit found the team getting wrong. Rejected as high accessibility risk for a self-inflicted reason (avoiding one dependency).</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Shared UI primitives</h4>
+      <div class="prose">
+        <p><code>components/ui/</code> is the shared Radix-backed primitive layer (Dialog/AlertDialog, Select, Checkbox, Switch, Tabs, Tooltip, DataGrid, DateTimePicker, EmptyState/ErrorState/Skeleton, Toast, …) styled with BRIEFR tokens. Feature code should compose these rather than inventing one-off controls — that is how ADR-003 stays enforceable across analyst and admin.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why is "shadcn/ui as pattern reference only" a meaningfully different decision from "use shadcn/ui the library"? Concretely, what would a PR that ran <code>npx shadcn add</code> literally introduce that ADR-003 forbids?</li>

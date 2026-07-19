@@ -922,7 +922,7 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
         <span class="chapter-num">Part I · Chapter 2</span>
         <h3>ADR-003 — semantic tokens and Radix, explicitly not Tailwind</h3>
         <p class="dek">The UI's actual design system: how it's built, the audit that forced it into existence, and why the obvious modern default (Tailwind + shadcn) was rejected.</p>
-        <div class="files"><span class="chip">styles/tokens.css</span><span class="chip">App.css</span><span class="chip">ADR-003</span></div>
+        <div class="files"><span class="chip">styles/tokens.css</span><span class="chip">App.css</span><span class="chip">components/ui/*.jsx</span><span class="chip">components/ui/*.css</span><span class="chip">components/ui/index.js</span><span class="chip">ADR-003</span></div>
       </div>
 
       <h4 class="subhead concept">The concept: design tokens</h4>
@@ -959,7 +959,12 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
         <p><strong>Hand-build every primitive, no dependency at all</strong> — zero new dependencies, maximum control, but it means re-implementing focus traps, portaling, and ARIA compliance from scratch, which is precisely the category of bug the original audit found the team getting wrong. Rejected as high accessibility risk for a self-inflicted reason (avoiding one dependency).</p>
       </div>
 
-      <div class="self-check">
+      
+      <h4 class="subhead how">Shared UI primitives</h4>
+      <div class="prose">
+        <p><code>components/ui/</code> is the shared Radix-backed primitive layer (Dialog/AlertDialog, Select, Checkbox, Switch, Tabs, Tooltip, DataGrid, DateTimePicker, EmptyState/ErrorState/Skeleton, Toast, …) styled with BRIEFR tokens. Feature code should compose these rather than inventing one-off controls — that is how ADR-003 stays enforceable across analyst and admin.</p>
+      </div>
+<div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Why is "shadcn/ui as pattern reference only" a meaningfully different decision from "use shadcn/ui the library"? Concretely, what would a PR that ran <code>npx shadcn add</code> literally introduce that ADR-003 forbids?</li>
@@ -1184,6 +1189,15 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
           <span class="chip">pages/admin/SessionsPage.jsx</span>
           <span class="chip">pages/admin/DbExplorerPanel.jsx</span>
           <span class="chip">pages/admin/*.jsx</span>
+          <span class="chip">pages/admin/shared/*.jsx</span>
+          <span class="chip">pages/admin/shared/*.js</span>
+          <span class="chip">pages/LoginPage.jsx</span>
+          <span class="chip">pages/WallboardPage.jsx</span>
+          <span class="chip">pages/LegalPage.jsx</span>
+          <span class="chip">pages/security-architecture/*.jsx</span>
+          <span class="chip">pages/security-architecture/sections/*.jsx</span>
+          <span class="chip">pages/security-architecture/shared/*.jsx</span>
+          <span class="chip">theme/light-theme.css</span>
         </div>
       </div>
 
@@ -1269,8 +1283,13 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
           <span class="chip">utils/cveFilters.js</span>
           <span class="chip">utils/appLinks.js</span>
           <span class="chip">utils/correlationPresentation.js</span>
-          <span class="chip">scoring/</span>
+          <span class="chip">scoring/*.js</span>
           <span class="chip">api.js</span>
+          <span class="chip">styles/tokens.css</span>
+          <span class="chip">theme/</span>
+          <span class="chip">config/*.js</span>
+          <span class="chip">components/*.jsx</span>
+          <span class="chip">components/DetailDrawer/*.jsx</span>
         </div>
       </div>
 
@@ -1901,7 +1920,7 @@ _LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
         <span class="chapter-num">Part III · Chapter 16</span>
         <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
         <p class="dek">One shared choke point every feed passes through before it ever touches the network, built around a single stated principle: wait, don't fail.</p>
-        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
+        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">backend/api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
       </div>
       <div class="prose">
         <p>Every outbound call any feed module makes — to NVD, GitHub, OTX, CISA, FIRST.org, any of it — is routed through <code>resilient_client.py</code>'s <code>resilient_get</code>/<code>resilient_request</code>, never a raw <code>httpx</code> call made directly by a feed module. This centralization is what makes it possible to reason about outbound reliability in one place instead of 29 separate, inconsistent implementations.</p>
@@ -2500,7 +2519,7 @@ flowchart LR
         <span class="chapter-num">Part V · Chapter 26</span>
         <h3>security_architecture/ — the tool documenting its own posture</h3>
         <p class="dek">Not exploit tracking, not a diagramming feature — BRIEFR turning its own threat model into a living, evidence-gated artifact instead of a document that goes stale the moment it's written.</p>
-        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span><span class="chip">security_architecture/corpus/*</span><span class="chip">security_architecture/frameworks/*.py</span></div>
+        <div class="files"><span class="chip">security_architecture/*.py — 12 files</span><span class="chip">security_architecture/corpus/*.yaml</span><span class="chip">security_architecture/corpus/graphs/*.json</span><span class="chip">security_architecture/frameworks/*.py</span></div>
       </div>
       <div class="prose">
         <p>The name is genuinely ambiguous on first encounter, so it's worth stating plainly what this module actually is, confirmed by reading the code rather than guessing from the directory name: BRIEFR introspectively documenting its <em>own</em> architecture, trust boundaries, security controls, and threat model — mounted at <code>/api/security-architecture/*</code>, gated behind session auth for analyst-and-above roles. The underlying data is a structured YAML corpus split cleanly into two categories with very different trust levels: <strong>generated</strong> facts (components, the API inventory, scheduler job list, database table list, BRIEFR's own detected tech-stack terms — all regenerated automatically by <code>scripts/generate_security_corpus.py</code> directly from the codebase) and <strong>curated</strong> judgment (trust boundaries, security controls, abuse-case scenarios, documented security decisions, known risks, and their review history — each curated record requires an explicit <code>review_date</code> and supporting <code>evidence</code>, not just an assertion).</p>
@@ -2739,7 +2758,23 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <span class="chapter-num">Part V-B · Chapter 32</span>
         <h3>Deployment and infrastructure — the real systemd unit and nginx config, read closely</h3>
         <p class="dek">Every hardening flag in these two files is a specific, named decision — not boilerplate copied from a tutorial.</p>
-        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span></div>
+        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span>
+          <span class="chip">deploy/briefr-backup.service</span>
+          <span class="chip">deploy/briefr-backup.timer</span>
+          <span class="chip">deploy/briefr-pg-backup.sh</span>
+          <span class="chip">deploy/briefr-pg-backup.service</span>
+          <span class="chip">deploy/briefr-pg-backup.timer</span>
+          <span class="chip">deploy/briefr-restore.sh</span>
+          <span class="chip">deploy/briefr-update.sh</span>
+          <span class="chip">deploy/check-backend.sh</span>
+          <span class="chip">deploy/lib.sh</span>
+          <span class="chip">deploy/smoke-intel.sh</span>
+          <span class="chip">deploy/nginx-briefr-http.conf</span>
+          <span class="chip">deploy/*.conf</span>
+          <span class="chip">deploy/briefr.target</span>
+          <span class="chip">deploy/external-postgres.env.example</span>
+          <span class="chip">alembic.ini</span>
+          <span class="chip">pytest.ini</span></div>
       </div>
 
       <h4 class="subhead how">The systemd unit — hardening flags that are each a real decision</h4>

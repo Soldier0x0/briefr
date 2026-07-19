@@ -176,3 +176,10 @@ def test_run_writes_regenerable_reports(audit, tmp_path: Path):
     assert "gap" in stats["counts"]
     # curated names must not be auto-created
     assert not (out / "CORRECTED_TOC.md").exists()
+
+
+def test_bare_prefers_shallow_duplicate(audit, tmp_path: Path):
+    (tmp_path / "backend" / "db").mkdir(parents=True)
+    (tmp_path / "backend" / "api_metering.py").write_text("root\n", encoding="utf-8")
+    (tmp_path / "backend" / "db" / "api_metering.py").write_text("deep\n", encoding="utf-8")
+    assert audit.normalize_repo_path("api_metering.py", root=tmp_path) == "backend/api_metering.py"
