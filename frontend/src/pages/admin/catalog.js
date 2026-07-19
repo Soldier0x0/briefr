@@ -87,10 +87,10 @@ export const JOB_CATALOG = {
     refreshButton: 'Refresh CVE list',
   },
   embeddings_backfill: {
-    label: 'CVE description search index',
+    label: 'Semantic search index',
     short: 'Embeddings',
-    operatorName: 'CVE Description Embeddings Backfill',
-    analystDescription: 'Builds the semantic search index for CVE text.',
+    operatorName: 'Embeddings Backfill (CVE / technique / campaign)',
+    analystDescription: 'Builds the hybrid search index for CVEs, MITRE techniques, and campaigns.',
     refreshButton: 'Rebuild search index',
   },
   llm_product_extraction: {

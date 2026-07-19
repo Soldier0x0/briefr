@@ -80,8 +80,10 @@ def embeddings_enabled() -> bool:
 
 
 def embeddings_auto_on_ingest_enabled() -> bool:
+    # Default on: when embeddings are enabled, keep the index warm after ingest
+    # unless the operator explicitly sets EMBEDDINGS_AUTO_ON_INGEST=0.
     return embeddings_enabled() and os.environ.get(
-        "EMBEDDINGS_AUTO_ON_INGEST", "0"
+        "EMBEDDINGS_AUTO_ON_INGEST", "1"
     ).strip().lower() in ("1", "true", "yes")
 
 

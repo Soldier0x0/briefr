@@ -263,6 +263,8 @@ def test_embeddings_auto_on_ingest_requires_both_flags(monkeypatch):
     assert emb.embeddings_auto_on_ingest_enabled() is False
     monkeypatch.setenv("EMBEDDINGS_AUTO_ON_INGEST", "1")
     assert emb.embeddings_auto_on_ingest_enabled() is True
+    monkeypatch.delenv("EMBEDDINGS_AUTO_ON_INGEST", raising=False)
+    assert emb.embeddings_auto_on_ingest_enabled() is True  # default on
 
 
 def test_backfill_skips_gracefully_when_fastembed_missing(tmp_path, monkeypatch):

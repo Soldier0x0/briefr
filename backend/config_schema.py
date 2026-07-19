@@ -162,7 +162,13 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
 
     # ── ML toggles ───────────────────────────────────────────────────────────
     ConfigField("EMBEDDINGS_ENABLED", "ml", "bool", restart_required=True,
-                help_text="Enable local ONNX embeddings for semantic 'related CVEs'."),
+                help_text="Enable local ONNX embeddings for hybrid search and related CVEs."),
+    ConfigField("EMBEDDINGS_AUTO_ON_INGEST", "ml", "bool",
+                help_text="After NVD ingest, embed new/updated CVEs immediately (capped). Default on.",
+                display_label="Embeddings auto on ingest"),
+    ConfigField("EMBEDDINGS_INGEST_MAX_PER_RUN", "ml", "int", min=1, max=500,
+                help_text="Max CVEs embedded in the NVD ingest tail.",
+                display_label="Embeddings ingest max per run"),
     ConfigField("EMBEDDINGS_SYNC_INTERVAL_HOURS", "ml", "int", min=1,
                 help_text="How often the embeddings backfill job runs, when enabled.",
                 display_label="Embeddings sync interval", unit="h"),

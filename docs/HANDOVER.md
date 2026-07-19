@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — RH-1/RH-2: retrieval health + auto-on-ingest default on
+
+**Done**
+- Spec + plan: `docs/planning/specs/retrieval-ops-health-design.md`,
+  `retrieval-ops-health-implementation-plan.md` (approach B; auto default on).
+- `GET /api/admin/retrieval/health` — live `embeddings` counts/pending/extension/
+  flags/last backfill/`degraded` (no model load).
+- AI ops overview counts the **`embeddings`** table (legacy `cve_embeddings` as
+  secondary); Admin Overview panel renders retrieval health.
+- `EMBEDDINGS_AUTO_ON_INGEST` default **`1`**; config schema + Admin knobs for
+  auto-on-ingest + ingest max; enabling embeddings (0→1) couples auto=1 unless
+  explicitly set off. `EMBEDDINGS_PGVECTOR` stays env-only.
+- Storage/explorer allowlist `embeddings`; scheduler catalog copy updated.
+
+**Next:** Browser-verify AI ops panel; prod with `EMBEDDINGS_ENABLED=1` should
+auto-index ingest tails unless operator sets auto off.
+
+---
+
 ## 2026-07-19 — F2-R: license reversed from AGPL-3.0 to BSL-1.1 (pre-flip)
 
 **Done**

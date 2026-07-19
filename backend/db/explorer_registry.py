@@ -183,10 +183,18 @@ _TIER1: tuple[TableSpec, ...] = (
     _spec(
         "cve_embeddings",
         1,
-        "CVE embeddings",
+        "CVE embeddings (legacy)",
         ("cve_id", "model", "dim", "updated_at"),
         filter_columns=("cve_id", "model"),
         order_by="updated_at DESC, cve_id ASC",
+    ),
+    _spec(
+        "embeddings",
+        1,
+        "Embeddings index",
+        ("entity_type", "entity_id", "model", "dims", "content_hash", "updated_at"),
+        filter_columns=("entity_type", "entity_id", "model"),
+        order_by="updated_at DESC, entity_type ASC, entity_id ASC",
     ),
     _spec(
         "otx_cve_pulses",

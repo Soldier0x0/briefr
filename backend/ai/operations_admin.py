@@ -44,11 +44,25 @@ def build_overview_payload(
     usage_7d: dict[str, Any],
     total_operations: int,
     embeddings_vector_count: int,
+    legacy_cve_embeddings: int | None = None,
+    embeddings_counts: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     providers = _provider_health_rows()
     active_circuits = sum(1 for p in providers if p["circuit_open"])
     configured_count = sum(1 for p in providers if p["configured"])
     llm_available = any_llm_provider_configured()
+
+    embeddings_feature: dict[str, Any] = {
+        "label": "Embeddings index (local)",
+        "trigger": "scheduler",
+        "enabled": _env_flag("EMBEDDINGS_ENABLED"),
+        "vector_count": embeddings_vector_count,
+        "auto_on_ingest": _env_flag("EMBEDDINGS_AUTO_ON_INGEST", default="1"),
+    }
+    if embeddings_counts is not None:
+        embeddings_feature["counts"] = embeddings_counts
+    if legacy_cve_embeddings is not None:
+        embeddings_feature["legacy_cve_embeddings"] = legacy_cve_embeddings
 
     return {
         "recording_enabled": recording_enabled(),
@@ -78,12 +92,7 @@ def build_overview_payload(
                 "enabled": _env_flag("DETECTION_CONTEXT_LLM_ENABLED"),
                 "available": llm_available,
             },
-            "embeddings": {
-                "label": "CVE embeddings (local)",
-                "trigger": "scheduler",
-                "enabled": _env_flag("EMBEDDINGS_ENABLED"),
-                "vector_count": embeddings_vector_count,
-            },
+            "embeddings": embeddings_feature,
         },
         "api_keys_path": "/admin?p=apikeys",
     }

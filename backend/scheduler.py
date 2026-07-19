@@ -1,6 +1,7 @@
 from typing import Any
 
 import asyncio
+import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -80,6 +81,7 @@ from ml.embeddings import (
     run_embeddings_backfill,
     run_technique_embeddings_backfill,
 )
+from services.retrieval_health import INGEST_TAIL_SYNC_KEY
 from ml.product_extraction import (
     llm_product_extraction_enabled,
     run_llm_product_extraction,
@@ -421,16 +423,57 @@ async def _run_nvd_incremental_sync() -> None:
                 _job_progress["nvd_incremental_sync"] = (
                     f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
                 )
-                emb_stats = await run_embeddings_backfill(
-                    db,
-                    cve_id_filter={cid.upper() for cid in updated_ids},
-                )
-                if emb_stats.get("embedded"):
-                    logger.info(
-                        "Embeddings ingest tail: embedded %d CVE(s) with %s",
-                        emb_stats.get("embedded", 0),
-                        emb_stats.get("model", ""),
+                try:
+                    emb_stats = await run_embeddings_backfill(
+                        db,
+                        cve_id_filter={cid.upper() for cid in updated_ids},
                     )
+                    if emb_stats.get("embedded"):
+                        logger.info(
+                            "Embeddings ingest tail: embedded %d CVE(s) with %s",
+                            emb_stats.get("embedded", 0),
+                            emb_stats.get("model", ""),
+                        )
+                    await set_sync_state_value(
+                        db,
+                        INGEST_TAIL_SYNC_KEY,
+                        json.dumps(
+                            {
+                                "last_run_utc": datetime.now(timezone.utc).isoformat(
+                                    timespec="seconds"
+                                ),
+                                "embedded": int(emb_stats.get("embedded") or 0),
+                                "had_error": False,
+                                "error_message": "",
+                                "model": emb_stats.get("model") or "",
+                            }
+                        ),
+                    )
+                except Exception as emb_exc:
+                    # Fail-safe: never fail NVD ingest because the index tail broke.
+                    logger.exception(
+                        "Embeddings ingest tail failed (NVD sync continues): %s",
+                        emb_exc,
+                    )
+                    try:
+                        await set_sync_state_value(
+                            db,
+                            INGEST_TAIL_SYNC_KEY,
+                            json.dumps(
+                                {
+                                    "last_run_utc": datetime.now(timezone.utc).isoformat(
+                                        timespec="seconds"
+                                    ),
+                                    "embedded": 0,
+                                    "had_error": True,
+                                    "error_message": str(emb_exc)[:500],
+                                }
+                            ),
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Failed to persist embeddings ingest-tail error state"
+                        )
             await db.commit()
             logger.info(
                 "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
