@@ -97,11 +97,11 @@ PATH_LIKE_RE = re.compile(
 
 # Bare module filenames commonly used in chapter file chips.
 BARE_FILE_RE = re.compile(
-    r"\b([a-zA-Z_][a-zA-Z0-9_]*\.(?:py|js|jsx|ts|tsx|css|mjs|service|conf|sh))\b"
+    r"\b([a-zA-Z_][a-zA-Z0-9_]*\.(?:py|js|jsx|ts|tsx|css|mjs|service|conf|sh|ini|toml))\b"
 )
 
 GLOB_CHIP_RE = re.compile(
-    r"\b((?:[a-zA-Z0-9_\-]+/)+)\*\.(py|js|jsx|ts|tsx|css)\b"
+    r"\b((?:[a-zA-Z0-9_\-]+/)+)\*\.(py|js|jsx|ts|tsx|css|yaml|yml|json|conf|sh|service|timer)\b"
 )
 
 CHAPTER_ID_RE = re.compile(r'id="([a-zA-Z0-9_\-]+)"')
@@ -180,7 +180,7 @@ def normalize_repo_path(raw: str, root: Path = ROOT) -> str | None:
             ("components/", "pages/", "hooks/", "utils/", "context/", "config/", "styles/", "theme/", "scoring/")
         ):
             candidates.append("frontend/src/" + s)
-        if "/" not in s and s.endswith((".py", ".js", ".jsx", ".ts", ".tsx", ".css", ".mjs")):
+        if "/" not in s and s.endswith((".py", ".js", ".jsx", ".ts", ".tsx", ".css", ".mjs", ".ini", ".toml")):
             for prefix in ("backend/", "frontend/src/", "frontend/", "deploy/"):
                 candidates.append(prefix + s)
             hits: list[str] = []
@@ -202,8 +202,13 @@ def normalize_repo_path(raw: str, root: Path = ROOT) -> str | None:
                         continue
                     hits.append(rel)
             if hits:
-                hits.sort(key=lambda p: (-p.count("/"), p))
+                # Prefer unique hit; if ambiguous, prefer shallower paths so
+                # backend/api_metering.py wins over backend/db/api_metering.py
+                # when the chip is a bare filename (common in chapter heads).
+                hits.sort(key=lambda p: (p.count("/"), p))
                 candidates.insert(0, hits[0])
+                for h in hits[1:]:
+                    candidates.append(h)
 
     seen: set[str] = set()
     for c in candidates:
@@ -341,7 +346,7 @@ class GuideParser(HTMLParser):
         for m in GLOB_CHIP_RE.finditer(text):
             prefix = m.group(1).rstrip("/")
             ext = m.group(2)
-            for base in (prefix, f"backend/{prefix}", f"frontend/src/{prefix}"):
+            for base in (prefix, f"backend/{prefix}", f"frontend/src/{prefix}", f"deploy/{prefix}" if not prefix.startswith("deploy/") else prefix):
                 folder = self.root / base
                 if not folder.is_dir():
                     continue

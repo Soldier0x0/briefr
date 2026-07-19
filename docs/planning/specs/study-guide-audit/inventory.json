@@ -2,9 +2,8 @@
   "generated": "2026-07-19",
   "guide": "docs/STUDY_GUIDE.html",
   "counts": {
-    "weak": 284,
-    "covered": 283,
-    "gap": 118,
+    "weak": 244,
+    "covered": 441,
     "orphan_mention": 1,
     "out_of_scope": 1
   },
@@ -57,7 +56,7 @@
     {
       "id": "fe-design",
       "title": "Ch 2 \u00b7 Tokens + Radix (ADR-003)",
-      "mention_count": 2
+      "mention_count": 34
     },
     {
       "id": "fe-libs",
@@ -82,7 +81,7 @@
     {
       "id": "fe-admin-shell",
       "title": "Ch 5C \u00b7 Admin shell",
-      "mention_count": 28
+      "mention_count": 77
     },
     {
       "id": "fe-forge-wallboard",
@@ -92,7 +91,7 @@
     {
       "id": "fe-shared-utils",
       "title": "Ch 5E \u00b7 Hooks, utils & scoring helpers",
-      "mention_count": 7
+      "mention_count": 64
     },
     {
       "id": "be-bootstrap",
@@ -207,7 +206,7 @@
     {
       "id": "api-secarch",
       "title": "Ch 26 \u00b7 Security architecture (self-doc)",
-      "mention_count": 13
+      "mention_count": 27
     },
     {
       "id": "api-webhooks",
@@ -237,7 +236,7 @@
     {
       "id": "devops-deploy",
       "title": "Ch 32 \u00b7 Deployment & infrastructure",
-      "mention_count": 7
+      "mention_count": 25
     },
     {
       "id": "devops-ci",
@@ -804,17 +803,21 @@
     },
     {
       "path": "backend/alembic.ini",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/api_metering.py",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "in-queue"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/api_queue.py",
@@ -1192,7 +1195,6 @@
       "chapters": [
         "api-scripts",
         "be-data",
-        "in-queue",
         "system-design"
       ],
       "evidence": "exact path mention in chapter body/chips",
@@ -2281,10 +2283,12 @@
     },
     {
       "path": "backend/pytest.ini",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/rate_limit.py",
@@ -2685,101 +2689,129 @@
     },
     {
       "path": "backend/security_architecture/corpus/abuse_cases.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/api_inventory.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/components.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/controls.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/db_tables.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/graphs/architecture.json",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/manifest.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/reviews.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/risks.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/scheduler_jobs.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/security_decisions.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/self_stack.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/threat_scenarios.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus/trust_boundaries.yaml",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/security_architecture/corpus_drift.py",
@@ -3121,118 +3153,121 @@
       "path": "frontend/src/components/AboutModal.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/AboutModal.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ApiQueueIndicator.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ApiQueueIndicator.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/AppErrorBoundary.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/AssetProfileManage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/AssetRememberToggle.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/AssetWarning.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/AssetWarning.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/AssetWizard.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/AssetWizard.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/BriefCharts.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3241,7 +3276,8 @@
       "path": "frontend/src/components/BriefCharts.jsx",
       "status": "covered",
       "chapters": [
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3250,8 +3286,10 @@
       "path": "frontend/src/components/CVECard.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3260,7 +3298,8 @@
       "path": "frontend/src/components/CVECard.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3269,8 +3308,10 @@
       "path": "frontend/src/components/CVEFeed.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3279,7 +3320,8 @@
       "path": "frontend/src/components/CVEFeed.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3288,8 +3330,10 @@
       "path": "frontend/src/components/CaseStudies.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3298,7 +3342,8 @@
       "path": "frontend/src/components/CaseStudies.jsx",
       "status": "covered",
       "chapters": [
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3307,8 +3352,10 @@
       "path": "frontend/src/components/CommandPalette.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3317,7 +3364,8 @@
       "path": "frontend/src/components/CommandPalette.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3326,110 +3374,114 @@
       "path": "frontend/src/components/ControlTooltip.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ControlTooltip.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/CveDescriptionClamp.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/CveDescriptionClamp.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/CorrelationSuppressModal.css",
       "status": "weak",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/DetailDrawer/CorrelationSuppressModal.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/DetectTab.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/IntelProvenanceLine.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/IntelTab.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/OverviewTab.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/RelatedTab.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DetailDrawer/helpers.js",
       "status": "weak",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/DetailDrawer/",
       "notes": "File never named; only directory-level association"
@@ -3438,7 +3490,8 @@
       "path": "frontend/src/components/DetailDrawer/index.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3447,8 +3500,10 @@
       "path": "frontend/src/components/DetailDrawer.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3457,68 +3512,70 @@
       "path": "frontend/src/components/DigestModal.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/DigestModal.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/DrawerAtlasSection.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ExplainTip.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ExplainTip.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/FeedVisibleRange.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/FilterBar.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3527,7 +3584,8 @@
       "path": "frontend/src/components/FilterBar.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3536,8 +3594,10 @@
       "path": "frontend/src/components/Forge.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3546,7 +3606,8 @@
       "path": "frontend/src/components/Forge.jsx",
       "status": "covered",
       "chapters": [
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3555,118 +3616,124 @@
       "path": "frontend/src/components/Header.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/Header.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/HeaderClock.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/Hero.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/Hero.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/IOCLookup.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/IOCLookup.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/InvestigationPanel.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/InvestigationPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/MorningBrief.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/MorningBrief.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/NotificationBell.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -3675,7 +3742,8 @@
       "path": "frontend/src/components/NotificationBell.jsx",
       "status": "covered",
       "chapters": [
-        "fe-analyst-shell"
+        "fe-analyst-shell",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3684,311 +3752,320 @@
       "path": "frontend/src/components/PdfExportModal.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/PdfExportModal.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/RequireAdmin.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/RequireAuth.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ScrollToTop.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ScrollToTop.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/SessionIdleWarning.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/SessionIdleWarning.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/SessionLockOverlay.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/SessionLockOverlay.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/SeverityLegend.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/SeverityLegend.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ShortcutsPanel.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ShortcutsPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/Sidebar.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/Sidebar.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-admin-shell",
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/StatsRow.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/StatsRow.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/TimeWindowPicker.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/TimeWindowPicker.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/TimelineHeatmap.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/TimelineHeatmap.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/Toast.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ToolErrorBoundary.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/TutorialOverlay.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/TutorialOverlay.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/UserMenu.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/UserMenu.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/WhatChangedPanel.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/WhatChangedPanel.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/briefVendorChartRecharts.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-shared-utils"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/components/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/forge/BacklogView.jsx",
@@ -4066,8 +4143,10 @@
       "path": "frontend/src/components/timeWindowDateUtils.js",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
@@ -4076,263 +4155,337 @@
       "path": "frontend/src/components/timeWindowDateUtils.test.js",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-forge-wallboard",
+        "fe-shared-utils"
       ],
       "evidence": "sibling/dir coverage under frontend/src/components/",
       "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ui/AlertDialog.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/AsyncState.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/AsyncState.test.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "weak",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "sibling/dir coverage under frontend/src/components/ui/",
+      "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ui/Badge.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Button.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Card.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ChartDataTable.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ChartShell.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Checkbox.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ConfirmModal.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DataGrid.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DataGrid.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DateTimePicker.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DateTimePicker.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DateTimeRangeField.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DateTimeRangeField.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/DropdownMenu.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/EmptyState.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ErrorState.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Modal.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Pill.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ReferenceTooltip.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Select.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Skeleton.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/SkeletonStack.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Slider.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/StatCard.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Switch.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Tabs.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Toast.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Tooltip.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/Tooltip.test.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "weak",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "sibling/dir coverage under frontend/src/components/ui/",
+      "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/components/ui/index.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/components/ui/ui.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/config/assetCatalog.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/config/caseStudySources.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/context/AssetProfileContext.jsx",
@@ -4423,6 +4576,7 @@
       "path": "frontend/src/pages/AdminPage.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4433,6 +4587,7 @@
       "path": "frontend/src/pages/LegalPage.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4441,18 +4596,18 @@
     },
     {
       "path": "frontend/src/pages/LegalPage.jsx",
-      "status": "weak",
+      "status": "covered",
       "chapters": [
-        "fe-analyst-shell",
-        "fe-forge-wallboard"
+        "fe-admin-shell"
       ],
-      "evidence": "sibling/dir coverage under frontend/src/pages/",
-      "notes": "File never named; only directory-level association"
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/LoginPage.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4463,6 +4618,7 @@
       "path": "frontend/src/pages/LoginPage.jsx",
       "status": "covered",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell"
       ],
       "evidence": "exact path mention in chapter body/chips",
@@ -4472,6 +4628,7 @@
       "path": "frontend/src/pages/PrivacyPage.jsx",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4482,6 +4639,7 @@
       "path": "frontend/src/pages/TermsPage.jsx",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4492,6 +4650,7 @@
       "path": "frontend/src/pages/WallboardPage.css",
       "status": "weak",
       "chapters": [
+        "fe-admin-shell",
         "fe-analyst-shell",
         "fe-forge-wallboard"
       ],
@@ -4502,6 +4661,7 @@
       "path": "frontend/src/pages/WallboardPage.jsx",
       "status": "covered",
       "chapters": [
+        "fe-admin-shell",
         "fe-forge-wallboard"
       ],
       "evidence": "exact path mention in chapter body/chips",
@@ -4962,192 +5122,246 @@
     },
     {
       "path": "frontend/src/pages/admin/shared/ActionProgress.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/AdminDataGrid.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/AdminSkeletons.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/AsyncSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/ConfirmModal.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/DangerZone.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/DiffReviewModal.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/ErrorBoundary.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/GuardedPurgePanel.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/HelpTip.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/JobErrorsPanel.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/JobTable.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/NeedsAttentionPanel.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/NotificationCenter.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/OperationTracker.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/OperatorSystemActions.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/OpsCharts.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/RestartBanner.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/RunningJobsPanel.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/StatCard.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/StatusLegend.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/ToggleSwitch.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/adminListResponse.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/backupChartUtils.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/backupChartUtils.test.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/shared/opsChartsRecharts.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/admin/toastCopy.js",
@@ -5171,166 +5385,211 @@
     },
     {
       "path": "frontend/src/pages/security-architecture/ContextRail.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/GlobalSearch.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/SecurityArchitecturePage.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "weak",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "sibling/dir coverage under frontend/src/pages/security-architecture/",
+      "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/pages/security-architecture/SecurityArchitecturePage.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/constants.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "weak",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "sibling/dir coverage under frontend/src/pages/security-architecture/",
+      "notes": "File never named; only directory-level association"
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/AbuseCasesSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/ArchitectureGraphSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/AttackSurfaceSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/DecisionsSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/FrameworkSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/GenericSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/MitreSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/OverviewSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/ReviewHistorySection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/RiskRegisterSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/StaleRecordsSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/ThreatScenariosSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/sections/TrustBoundariesSection.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/pages/security-architecture/shared/ArchDataGrid.jsx",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/scoring/riskScore.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/scoring/riskScore.test.js",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/styles/tokens.css",
       "status": "covered",
       "chapters": [
-        "fe-design"
+        "fe-design",
+        "fe-shared-utils"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
     },
     {
       "path": "frontend/src/theme/light-theme.css",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "frontend/src/utils/activeStateGate.test.js",
@@ -6412,10 +6671,12 @@
     },
     {
       "path": "deploy/briefr-backup.service",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-backup.sh",
@@ -6428,10 +6689,12 @@
     },
     {
       "path": "deploy/briefr-backup.timer",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-doctor.sh",
@@ -6444,31 +6707,39 @@
     },
     {
       "path": "deploy/briefr-pg-backup.service",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-pg-backup.sh",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-pg-backup.timer",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-restore.sh",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/briefr-update.sh",
@@ -6481,17 +6752,21 @@
     },
     {
       "path": "deploy/briefr.target",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/check-backend.sh",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/docker-compose.postgres.yml",
@@ -6504,31 +6779,39 @@
     },
     {
       "path": "deploy/external-postgres.env.example",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/lib.sh",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/logrotate-briefr.conf",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/nginx-briefr-http.conf",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/nginx-briefr.conf",
@@ -6541,24 +6824,30 @@
     },
     {
       "path": "deploy/nginx-snippet-gzip.conf",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/nginx-snippet-security-headers-https.conf",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/nginx-snippet-security-headers.conf",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "deploy/setup.sh",
@@ -6571,10 +6860,12 @@
     },
     {
       "path": "deploy/smoke-intel.sh",
-      "status": "gap",
-      "chapters": [],
-      "evidence": "",
-      "notes": "No study-guide ownership found"
+      "status": "covered",
+      "chapters": [
+        "devops-deploy"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
     },
     {
       "path": "backend/db/dialect.py",

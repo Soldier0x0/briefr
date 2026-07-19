@@ -133,7 +133,23 @@
         <span class="chapter-num">Part V-B · Chapter 32</span>
         <h3>Deployment and infrastructure — the real systemd unit and nginx config, read closely</h3>
         <p class="dek">Every hardening flag in these two files is a specific, named decision — not boilerplate copied from a tutorial.</p>
-        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span></div>
+        <div class="files"><span class="chip">deploy/briefr-backend.service</span><span class="chip">deploy/nginx-briefr.conf</span><span class="chip">deploy/setup.sh</span><span class="chip">deploy/briefr-doctor.sh</span><span class="chip">deploy/briefr-backup.sh</span><span class="chip">deploy/briefr-update.sh</span><span class="chip">deploy/docker-compose.postgres.yml</span>
+          <span class="chip">deploy/briefr-backup.service</span>
+          <span class="chip">deploy/briefr-backup.timer</span>
+          <span class="chip">deploy/briefr-pg-backup.sh</span>
+          <span class="chip">deploy/briefr-pg-backup.service</span>
+          <span class="chip">deploy/briefr-pg-backup.timer</span>
+          <span class="chip">deploy/briefr-restore.sh</span>
+          <span class="chip">deploy/briefr-update.sh</span>
+          <span class="chip">deploy/check-backend.sh</span>
+          <span class="chip">deploy/lib.sh</span>
+          <span class="chip">deploy/smoke-intel.sh</span>
+          <span class="chip">deploy/nginx-briefr-http.conf</span>
+          <span class="chip">deploy/*.conf</span>
+          <span class="chip">deploy/briefr.target</span>
+          <span class="chip">deploy/external-postgres.env.example</span>
+          <span class="chip">alembic.ini</span>
+          <span class="chip">pytest.ini</span></div>
       </div>
 
       <h4 class="subhead how">The systemd unit — hardening flags that are each a real decision</h4>
