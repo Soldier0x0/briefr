@@ -3653,6 +3653,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-auth->table:ioc_watchlist",
+      "source": "routers-auth",
+      "target": "table:ioc_watchlist",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-auth->table:kev_deadlines",
       "source": "routers-auth",
       "target": "table:kev_deadlines",
@@ -3662,6 +3668,18 @@
       "id": "routers-auth->table:sessions",
       "source": "routers-auth",
       "target": "table:sessions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:user_notifications",
+      "source": "routers-auth",
+      "target": "table:user_notifications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:user_preferences",
+      "source": "routers-auth",
+      "target": "table:user_preferences",
       "kind": "references_table"
     },
     {

@@ -163,13 +163,13 @@ app = FastAPI(
     version="1.5.0",
     description=(
         "CVE intelligence API for BRIEFR. "
-        "Licensed under AGPL-3.0-or-later. "
+        "Licensed under the Business Source License 1.1. "
         "Copyright © 2026 Sai Harsha Vardhan."
     ),
     contact={"name": "BRIEFR", "url": "https://projectjupiter.in"},
     license_info={
-        "name": "AGPL-3.0-or-later",
-        "url": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "name": "BUSL-1.1",
+        "url": "https://mariadb.com/bsl11/",
     },
     docs_url=None if settings.is_production else "/api/docs",
     redoc_url=None if settings.is_production else "/api/redoc",

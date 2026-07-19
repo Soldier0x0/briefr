@@ -14,7 +14,7 @@ in an explicit "unmapped" bucket by the OWASP/CAPEC/STRIDE aggregators -- the
 totals never silently drop weaknesses we could not classify.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

@@ -4,7 +4,7 @@ Mirrors the free-function-taking-a-db-connection style used throughout
 database.py. Callers own the connection lifecycle (acquire, commit, close).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations
@@ -73,6 +73,24 @@ async def create_user(
         (normalized, password_hash, role),
     )
     return dict(rows[0])
+
+
+async def delete_user(db: Any, user_id: int) -> bool:
+    """Erase an account and everything tied to it. Deletes each owned table
+    explicitly rather than relying on ON DELETE CASCADE: SQLite only
+    enforces declared foreign keys on databases bootstrapped after a given
+    table gained its REFERENCES clause, so an explicit delete here stays
+    correct regardless of when the underlying SQLite file was created.
+    Returns False if no such user."""
+    existing = await get_user_by_id(db, user_id)
+    if existing is None:
+        return False
+    await db.execute("DELETE FROM user_notifications WHERE user_id = ?", (user_id,))
+    await db.execute("DELETE FROM ioc_watchlist WHERE user_id = ?", (user_id,))
+    await db.execute("DELETE FROM user_preferences WHERE user_id = ?", (user_id,))
+    await db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+    await db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    return True
 
 
 async def update_last_login(db: Any, user_id: int) -> None:

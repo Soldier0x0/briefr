@@ -19,7 +19,7 @@ in scope are both returned so a capped aggregation is never mistaken for a
 complete one (every-number-shows-its-inputs).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

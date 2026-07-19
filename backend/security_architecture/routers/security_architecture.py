@@ -32,7 +32,7 @@ Endpoint<->control linkage (attack surface) is still TM-4 -- deliberately
 absent here rather than faked.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

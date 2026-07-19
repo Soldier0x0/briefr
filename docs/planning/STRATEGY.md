@@ -154,13 +154,18 @@ proposes; pySigma disposes.
 A tool becomes "must-have" through installs and word of mouth, not features.
 Current blockers, in order:
 
-1. **License.** **Decided 2026-07-10 (Track F2):** **AGPL-3.0-or-later**
-   (`LICENSE`, `CONTRIBUTING.md`, SPDX headers). Repo flip to public GitHub
-   remains gated on beta feedback; the license is in force in-tree now.
+1. **License.** **Superseded 2026-07-19 (Track F2-R):** the 2026-07-10
+   AGPL-3.0-or-later decision is reversed in favor of the **Business Source
+   License 1.1** (`LICENSE`, `CONTRIBUTING.md`, SPDX headers) — free for
+   personal/non-commercial use; commercial use requires a one-time license
+   from the Licensor (contact harsha@projectjupiter.in); each published
+   version converts to Apache-2.0 four years after its publication date.
+   Reversed before the public flip, so no external party held rights under
+   the prior AGPL grant.
 2. **Install friction.** `docker compose up` must work, first try, on a
    clean machine, in under 10 minutes, with sensible no-API-key defaults.
-   V2.0's compose work was parked "while the deployment is private" — the
-   open-source goal reverses that rationale. Unpark **only the compose
+   V2.0's compose work was parked "while the deployment is private" — now
+   that the repo is public, that rationale no longer applies. Unpark **only the compose
    part** of V2.0 (not multi-user).
 3. **The demo instance** (briefr.projectjupiter.in) is the funnel — keep it
    seeded, fast, and linked from everything.

@@ -26,7 +26,7 @@ export default function LegalPage({ title, subtitle, children }) {
             {children}
           </div>
           <p className="legal-copyright mono">
-            &copy; 2026 BRIEFR &middot; Licensed under AGPL-3.0-or-later
+            &copy; 2026 BRIEFR &middot; Licensed under the Business Source License 1.1
           </p>
         </div>
       </main>

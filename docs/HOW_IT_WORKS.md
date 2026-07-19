@@ -52,6 +52,7 @@ Inbound token buckets on IOC, refresh, admin, login. Set `RATE_LIMIT_ENABLED=1` 
 
 | Doc | When |
 |-----|------|
+| [`STUDY_GUIDE.html`](STUDY_GUIDE.html) | You want the full story — every subsystem, why it's built that way, real code, self-check questions. Open in a browser. |
 | [`ONBOARDING.md`](ONBOARDING.md) | Contributing code |
 | [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) | AI / dense module map |
 | [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint |

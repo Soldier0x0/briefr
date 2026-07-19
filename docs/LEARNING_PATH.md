@@ -16,6 +16,11 @@ each module builds on the previous one.
 Existing deep references when stuck: `SYSTEM_DESIGN.md`,
 [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md), `docs/HOW_IT_WORKS.md`.
 
+For full textbook-depth coverage of every subsystem (concept primers, real
+code walkthroughs, and self-check questions per chapter) open
+[`STUDY_GUIDE.html`](STUDY_GUIDE.html) in a browser — a single self-contained
+interactive document, not part of the reader-facing doc set.
+
 ---
 
 ## Module 1 — The request path (how a click becomes SQL)

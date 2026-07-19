@@ -1,6 +1,6 @@
 # BRIEFR / Jupiter — Product Roadmap Index
 
-Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
 **Last updated:** 2026-06-10 (light touch 2026-07-12 — see compatibility-promise fix below)  
 **Status:** Planning — historical release-ladder framing. Execution has since moved to

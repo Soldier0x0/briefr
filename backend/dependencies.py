@@ -4,7 +4,7 @@ Session/role gates and the audit-log writer used by the admin/refresh
 routes.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 import asyncio

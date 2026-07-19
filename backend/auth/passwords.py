@@ -3,7 +3,7 @@
 Plain `bcrypt` (not passlib — unmaintained, broken compat with bcrypt>=4.1).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 import secrets

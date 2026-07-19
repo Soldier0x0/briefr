@@ -125,7 +125,7 @@ export default function AboutModal({ onClose }) {
         <hr className="about-divider" />
 
         <p className="about-copyright mono">
-          &copy; 2026 BRIEFR &middot; Licensed under AGPL-3.0-or-later
+          &copy; 2026 BRIEFR &middot; Licensed under the Business Source License 1.1
         </p>
 
         <p className="about-built-by">

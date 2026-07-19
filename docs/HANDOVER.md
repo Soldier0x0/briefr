@@ -12,6 +12,87 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — F2-R: license reversed from AGPL-3.0 to BSL-1.1 (pre-flip)
+
+**Done**
+- Reversed the 2026-07-10 Track F2 decision: project license changed from
+  AGPL-3.0-or-later to **Business Source License 1.1** — free for personal,
+  non-commercial use; a one-time paid commercial license is required for
+  use by/on behalf of a for-profit organization; each published version
+  converts to Apache-2.0 four years after its publication date.
+- `LICENSE` rewritten to the standard BSL 1.1 template (Licensor: Sai Harsha
+  Vardhan; commercial-license contact: harsha@projectjupiter.in).
+- `CONTRIBUTING.md`, `README.md` (badge + both prose mentions), and all 51
+  `SPDX-License-Identifier: AGPL-3.0-or-later` headers on active source
+  trees (backend `.py`) mechanically updated to
+  `SPDX-License-Identifier: BUSL-1.1`.
+- Docs updated: `docs/PRODUCT_STATUS.md`, `docs/planning/STRATEGY.md` §6,
+  `docs/planning/SPRINT_2026-07.md` (F2-R entry added, F2 row kept as
+  historical record), `docs/planning/PROGRAM_PRODUCT_OPEN_CORE.md`,
+  `docs/decisions/ADR-005-component-library-strategy.md`, and the 5 docs
+  sharing the boilerplate copyright/SPDX line (`ONBOARDING.md`,
+  `OPERATIONS.md`, `API_REFERENCE.md`, `SYSTEM_DESIGN.md`,
+  `planning/ROADMAP.md`).
+- **Why now, not later:** this reverses F2 (PR #423) before the actual
+  public-repo flip, while the repo is still private — no external party has
+  yet received code under the AGPL grant, so there is no legacy-grant
+  problem to manage. `frontend/src/pages/{Terms,Privacy}Page.jsx` (live at
+  `/terms` and `/privacy`) already described a BSL 1.1 commercial-paywall
+  model before this change — those pages were correct all along; the
+  `LICENSE`/SPDX/docs were the stale side of the contradiction, not them.
+- Also fixed live user-facing/API surfaces the file-based SPDX sweep missed:
+  `frontend/src/pages/LegalPage.jsx` footer, `AboutModal.jsx`, `App.jsx`
+  footer, `utils/report.js` (x2) + `utils/exportCommon.js`
+  (`FOOTER_COPYRIGHT`), and `backend/main.py`'s FastAPI `license_info`/
+  OpenAPI description — all said AGPL in rendered UI or the served OpenAPI
+  spec despite the LICENSE file already being fixed.
+- **Four more content bugs found in the same audit — fixed, not just
+  flagged:**
+  1. `deploy/nginx-briefr.conf` / `nginx-briefr-http.conf` had no
+     `access_log off;`, so nginx's default `combined` format (which
+     includes `$remote_addr`) contradicted the Privacy Policy's "no IP
+     addresses written to logs" claim. Added `access_log off;` to all three
+     server blocks; updated `docs/OPERATIONS.md`'s log-rotation table to
+     match.
+  2. `PrivacyPage.jsx` §6 claimed "no persistent personal data is stored"
+     immediately after §§2–4 described real persisted data (username,
+     bcrypt hash, stack profile, display prefs). Rewritten to name exactly
+     what's retained and describe the real (non-self-service) erasure path.
+  3. No account-deletion capability existed anywhere (self-service or
+     admin) — an actual erasure request had no operational path short of
+     hand-written SQL. Added `auth.repo.delete_user()` +
+     `backend/scripts/delete_user.py` (CLI-only, mirroring
+     `create_user.py`'s existing "no HTTP user-admin surface" convention).
+     Found and fixed a real, independent bug while testing this: `db/init.py`'s
+     SQLite bootstrap DDL for `ioc_watchlist` was missing
+     `REFERENCES users(id) ON DELETE CASCADE` entirely (present in Alembic
+     migration 011 but not the SQLite path) — schema drift between the two
+     dialects that CLAUDE.md's danger zone 1 warns about. Fixed the DDL and
+     made `delete_user()` delete each owned table explicitly rather than
+     rely on cascade, so it's correct regardless of when a given SQLite file
+     was bootstrapped. Added `tests/test_auth_repo.py`; fixed a knock-on
+     test gap in `tests/test_ioc_watchlist.py::test_retro_match_local_join`
+     (seeded a `user_id` with no matching `users` row — worked only because
+     the FK was previously absent).
+  4. §5's third-party service list omitted the four LLM providers (Groq,
+     Cerebras, OpenRouter, Gemini) that receive CVE findings, IOC values,
+     and threat-actor names during PDF summaries and extraction jobs. Added.
+
+**Where decided:** `docs/planning/STRATEGY.md` §6 (Track F2-R), user
+instruction in-session.
+
+**Verification:** `npm run build` clean; backend `auth`/`ioc_watchlist`/
+`db_init` test files passing after the schema fix (full suite run in
+progress at time of writing — see next entry or CI for final status).
+
+**Next:** consider whether `docs/audit/PHASE_10_documentation.md` /
+`PHASE_11_readiness.md` (historical audit snapshots recommending the
+original AGPL fix) need a forward-pointer note — left untouched here since
+they're point-in-time records, not living docs. Self-service (in-app)
+account deletion is still not implemented — only the CLI path exists.
+
+---
+
 ## 2026-07-18 — E8 campaign entity embeddings
 
 **Done**

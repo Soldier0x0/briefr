@@ -1,6 +1,6 @@
 # BRIEFR — Operations & Deploy Compatibility
 
-Copyright © 2026 Sai Harsha Vardhan. Licensed under the GNU Affero General Public License v3.0 or later (`SPDX-License-Identifier: AGPL-3.0-or-later`); see the repository `LICENSE` for the full text.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
 **Last updated:** 2026-07-11  
 **Status:** Planning — ops contract for releases V1.2–V2.0
@@ -109,7 +109,7 @@ These env vars must remain supported across releases (defaults preserved):
 | **briefr-backend** | systemd journal — see [journald policy](#journald-vacuum-policy) below |
 | **App file log (optional)** | `deploy/logrotate-briefr.conf` → `/etc/logrotate.d/briefr` when using `/var/lib/briefr/logs/*.log` |
 | **Backup run logs** | In-process rotation via `BACKUP_LOG_MAX_BYTES` / `BACKUP_LOG_BACKUP_COUNT` (default 5 MiB × 5 files); optional OS logrotate stanza in the same deploy file |
-| **nginx** | OS logrotate — not managed by BRIEFR UI |
+| **nginx** | `access_log off;` in the shipped `deploy/nginx-briefr*.conf` — no request log (and no client IP) is written at all, matching the Privacy Policy. Error log still uses OS logrotate. |
 | **Webhook delivery log** | DB TTL purge ~90d (V1.4) |
 
 **Container (V2.0):** JSON logs to stdout; optional file on volume; no dependency on `journalctl` inside container.

@@ -1,7 +1,7 @@
 """Search service API tokens (Embeddings E5) — bcrypt at rest, show-once plaintext.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations

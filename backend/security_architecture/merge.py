@@ -10,7 +10,7 @@ term-matching limitation as user stacks; every self-stack row shows its
 matched term (spec §4.5 honesty constraint).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: BUSL-1.1
 """
 
 from __future__ import annotations
