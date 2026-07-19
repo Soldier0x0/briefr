@@ -18,13 +18,18 @@
 
 | Agent | Scope | Status |
 |-------|-------|--------|
-| A1 | Phase 1 + 2 | ⬜ |
-| A2 | Phase 3 + IDEMPOTENCY | ⬜ |
-| A3 | Phase 4 + 9 | ⬜ |
-| A4 | Phase 5 + 6 | ⬜ |
-| A5 | Phase 7 + 8 | ⬜ |
-| A6 | Phase 10 | ⬜ |
-| Synth | Phase 11 + README | ⬜ |
+| A1 | Phase 1 + 2 | ✅ |
+| A2 | Phase 3 + IDEMPOTENCY | ✅ |
+| A3 | Phase 4 + 9 | ✅ |
+| A4 | Phase 5 + 6 | ✅ |
+| A5 | Phase 7 + 8 | ✅ |
+| A6 | Phase 10 | ✅ |
+| Synth | Phase 11 + README | ✅ |
+
+### Refresh complete
+- All prior finding IDs classified.
+- Phase scores rescored; Phase 11 P0 list updated.
+- Docs only — no product code changed in this PR.
 
 ---
 

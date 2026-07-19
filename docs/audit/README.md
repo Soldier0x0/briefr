@@ -25,8 +25,24 @@ and Quick-Win/Architectural classification.
 | 10 | User · Admin · Developer · API · Architecture documentation | [PHASE_10_documentation.md](PHASE_10_documentation.md) |
 | 11 | Enterprise-SaaS · Production · Release readiness | [PHASE_11_readiness.md](PHASE_11_readiness.md) |
 
-**Status: all 11 phases complete.** Program score (self-hosted lens): **7.4/10**. Start with the
-five P0 release-blockers in [PHASE_11_readiness.md](PHASE_11_readiness.md).
+**Status: all 11 phases complete.** Program score (self-hosted lens): **7.4/10**. Current **P0**
+release-blocker: **F4.1** (CI trust) — see [PHASE_11_readiness.md](PHASE_11_readiness.md).
+
+## Phase scores (2026-07-19 refresh)
+
+| Phase | Area | Score |
+|------|------|------:|
+| 1 | Repo Org · Code Quality · Technical Debt | 7.2 |
+| 2 | Backend/Frontend/DB/API/State Architecture | 7.2 |
+| 3 | Correlation/Risk/Detection/AI/Scheduler/Caching Engines | 7.0 |
+| 4 | Functional/E2E/Integration/Regression/Data-Integrity Testing | 6.5 |
+| 5 | Product/UX/UI/Design-System/A11y/Data-Presentation | 8.1 |
+| 6 | Performance/Scalability/Resource | 7.2 |
+| 7 | Security/Auth/RBAC/Secrets/Privacy/Supply-Chain | 8.3 |
+| 8 | Logging/Monitoring/Observability/Backup/DR/Deploy | 7.8 |
+| 9 | Compatibility/Reliability/Chaos/Recovery | 7.1 |
+| 10 | User/Admin/Developer/API/Architecture Docs | 8.2 |
+| **—** | **Weighted program (self-hosted)** | **7.4** |
 
 ## Supplementary focused audits
 

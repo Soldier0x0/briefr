@@ -149,11 +149,6 @@ documented single-owner scheduler operation and does not yet implement general H
   delivery-log retention, and with no successful delivery-log row; `tests/test_webhook_dedupe_stranded.py`
   covers stranded vs delivered vs mid-flight vs ancient claims.
 
-### NEW-A — Placeholder (no new idempotency finding filed)
-
-No new idempotency finding is opened in this refresh. Placeholder reserved for a future issue not
-covered by IDEM-A–F.
-
 ---
 
 ## Immediate action items (ranked)

@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-19 — Engineering audit refresh (docs only)
+
+**Done**
+- Delta-refreshed `docs/audit/` against main @ `ff23c18a` (same finding IDs; Resolved appendices; thermo-nuclear NEW findings where warranted).
+- Rescored phases; Phase 11 P0/P1/P2 updated from open set.
+- Design: `docs/superpowers/specs/2026-07-19-audit-refresh-design.md`
+- Plan: `docs/superpowers/plans/2026-07-19-audit-refresh.md`
+- PR: #695
+
+**Next:** execute P0 fixes from refreshed Phase 11 (separate PRs); do not treat this docs PR as implementation.
+
+---
+
 ## 2026-07-19 — Docs UI: shared palette + a11y (study-guide + learn)
 
 **Done**
