@@ -191,7 +191,11 @@ def normalize_repo_path(raw: str, root: Path = ROOT) -> str | None:
                 for hit in folder.rglob(s):
                     if not hit.is_file():
                         continue
-                    if any(should_skip_dir(part) for part in hit.parts):
+                    try:
+                        rel_parts = hit.relative_to(root).parts
+                    except ValueError:
+                        continue
+                    if any(should_skip_dir(part) for part in rel_parts):
                         continue
                     rel = hit.relative_to(root).as_posix()
                     if base == "backend" and any(rel.startswith(p) for p in BACKEND_SKIP_PREFIXES):
@@ -235,9 +239,13 @@ def iter_inventory_files(root: Path = ROOT) -> list[str]:
         for path in sorted(base.rglob("*")):
             if not path.is_file():
                 continue
-            if any(should_skip_dir(part) for part in path.parts):
+            try:
+                rel_path = path.relative_to(root)
+            except ValueError:
                 continue
-            rel = path.relative_to(root).as_posix()
+            if any(should_skip_dir(part) for part in rel_path.parts):
+                continue
+            rel = rel_path.as_posix()
             if any(rel.startswith(p) for p in BACKEND_SKIP_PREFIXES):
                 continue
             # Skip alembic version noise? Keep versions — migrations are load-bearing.

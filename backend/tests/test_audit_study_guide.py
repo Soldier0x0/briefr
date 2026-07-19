@@ -134,6 +134,22 @@ def test_bare_chip_and_glob_expand(audit, tmp_path: Path):
     assert "backend/db/b.py" in parsed.chapters["be-data"].mentioned_paths
 
 
+def test_iter_inventory_ignores_dotted_parents_outside_repo(audit, tmp_path: Path):
+    """Regression: skip checks must use paths relative to root, not absolute parents.
+
+    Gemini review on #688: if the repo lives under e.g. /.cache/.../workspace,
+    absolute path.parts would falsely skip every file.
+    """
+    # Simulate a dotted ancestor by nesting the fake repo under .cache/
+    nest = tmp_path / ".cache" / "agent" / "repo"
+    (nest / "backend" / "feeds").mkdir(parents=True)
+    (nest / "backend" / "feeds" / "nvd.py").write_text("x", encoding="utf-8")
+    (nest / "frontend" / "src").mkdir(parents=True)
+    (nest / "deploy").mkdir()
+    files = audit.iter_inventory_files(nest)
+    assert "backend/feeds/nvd.py" in files
+
+
 def test_run_writes_regenerable_reports(audit, tmp_path: Path):
     guide = tmp_path / "STUDY_GUIDE.html"
     guide.write_text(
