@@ -38,7 +38,7 @@ docs/                  # THE PRESENT — what is true today
 ├── index.md, SELF_HOST, USE, TROUBLESHOOTING, HOW_IT_WORKS   # readers
 ├── PRODUCT_STATUS.md, HANDOVER.md                            # living ops
 ├── ONBOARDING, OPERATIONS, POSTGRES, LEARNING_PATH           # deep guides
-│   STUDY_GUIDE.html                                          # standalone interactive textbook, not in nav
+├── STUDY_GUIDE.html                                          # standalone interactive textbook, not in nav
 ├── API_REFERENCE, SYSTEM_DESIGN, PRODUCT,                    # deep reference
 │   DATA_SNAPSHOT, BRIEFR_PRODUCT_VOICE, IMAGE_BRIEFS
 ├── AGENT_METHODOLOGY.md                                      # agent working method (linked from AGENTS.md)
