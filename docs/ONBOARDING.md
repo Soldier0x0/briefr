@@ -132,17 +132,21 @@ Full template: [`backend/.env.example`](../backend/.env.example). Copy to `backe
 | `GREYNOISE_API_KEY` | Optional | IP classification (50/week free; opt-in per lookup) |
 | `ABUSECH_AUTH_KEY` | Optional | MalwareBazaar + URLhaus |
 | `OTX_API_KEY` | Optional | OTX pulses + nightly correlation (10k/month) |
-| `GROQ_API_KEY` | Optional | PDF executive summary (primary; Groq model `llama-3.1-8b-instant`) |
-| `ANTHROPIC_API_KEY` | Optional | PDF executive summary (fallback) |
+| `GROQ_API_KEY` | Optional | LLM chain, tried first (default model `openai/gpt-oss-20b`; PDF summaries use the larger `openai/gpt-oss-120b`) |
+| `CEREBRAS_API_KEY` | Optional | LLM chain, second |
+| `OPENROUTER_API_KEY` | Optional | LLM chain, third (`:free` tier models) |
+| `GEMINI_API_KEY` | Optional | LLM chain, last resort |
 | `GITHUB_TOKEN` | Optional | Detection rule search + PoC-in-GitHub sync rate limit (5000/hr vs 60/hr) |
 | `CIRCL_API_KEY` | Optional | vulnerability.circl.lu authenticated rate limits (free signup) |
+
+All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebras → OpenRouter → Gemini) for PDF executive summaries, product extraction, and detection-context artifact extraction — every one of those features has a deterministic non-LLM fallback, so BRIEFR is fully functional with none of them set. No client anywhere in this codebase calls the Anthropic API — an `ANTHROPIC_API_KEY` admin config field is still defined (vestigial from before it was removed from the chain) but nothing reads it to make a request.
 
 ### Database and backups
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DATABASE_URL` | — | **Required.** PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`) |
-| `BRIEFR_REQUIRE_POSTGRES` | `1` | Refuse startup without a Postgres connection |
+| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit for a zero-config local SQLite dev/test fallback |
+| `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production) |
 | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |
 | `BACKUP_RETENTION_COUNT` | `100` | Max archives kept (~25 days at 6h intervals) |

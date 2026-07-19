@@ -35,7 +35,8 @@ Feed Ingestion  →  SQLite DB  →  FastAPI API  →  React UI
 ├──────────────┬──────────────┬──────────────┬──────────────┬────────────────┤
 │ NVD API      │ CISA KEV     │ EPSS CSV     │ MITRE STIX   │ ATLAS YAML     │
 │ Sploitus     │ GreyNoise    │ VirusTotal   │ AbuseIPDB    │ OTX            │
-│ OSV.dev      │ CIRCL        │ MalwareBazaar│ URLhaus      │ Groq/Anthropic │
+│ OSV.dev      │ CIRCL        │ MalwareBazaar│ URLhaus      │ Groq/Cerebras/ │
+│ VulnCheck    │ ThreatFox    │              │              │ OpenRtr/Gemini │
 │ GitHub API   │ RSS x6       │              │              │                │
 └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┴────────┬───────┘
        │              │              │              │                │
@@ -519,8 +520,7 @@ row here with their idempotency key before merge.
 | URLhaus | `feeds/extended.py` | Domain malware URLs | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | ThreatFox | `feeds/threatfox.py`, scheduler | IOC mirror for retro-match | `ABUSECH_AUTH_KEY` | Fair use | Skip sync; prior rows retained |
 | VulnCheck KEV | `feeds/vulncheck_kev.py`, scheduler | Exploited-in-the-wild tier | `VULNCHECK_API_KEY` | API key required | Job no-op; flags unchanged |
-| Groq | `ai/summary.py`, `ml/product_extraction.py` | Executive summary; LLM product extraction | `GROQ_API_KEY` | Console quota | Model: `llama-3.1-8b-instant`; summary falls back to Anthropic/template |
-| Anthropic | `ai/summary.py` | Executive summary | `ANTHROPIC_API_KEY` | Console quota | Falls back to template |
+| Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
 | GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
 | RSS (5 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
 | CISA Vulnrichment | `feeds/vulnrichment.py` | CISA ADP CVSS / CWE / CPE gap-fill | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; skip run |
