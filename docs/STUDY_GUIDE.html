@@ -1189,12 +1189,22 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
           <span class="chip">pages/admin/SessionsPage.jsx</span>
           <span class="chip">pages/admin/DbExplorerPanel.jsx</span>
           <span class="chip">pages/admin/*.jsx</span>
+          <span class="chip">pages/admin/*.js</span>
+          <span class="chip">pages/admin/*.css</span>
           <span class="chip">pages/admin/shared/*.jsx</span>
           <span class="chip">pages/admin/shared/*.js</span>
           <span class="chip">pages/LoginPage.jsx</span>
+          <span class="chip">pages/LoginPage.css</span>
           <span class="chip">pages/WallboardPage.jsx</span>
+          <span class="chip">pages/WallboardPage.css</span>
           <span class="chip">pages/LegalPage.jsx</span>
+          <span class="chip">pages/LegalPage.css</span>
+          <span class="chip">pages/PrivacyPage.jsx</span>
+          <span class="chip">pages/TermsPage.jsx</span>
+          <span class="chip">pages/AdminPage.css</span>
           <span class="chip">pages/security-architecture/*.jsx</span>
+          <span class="chip">pages/security-architecture/*.js</span>
+          <span class="chip">pages/security-architecture/*.css</span>
           <span class="chip">pages/security-architecture/sections/*.jsx</span>
           <span class="chip">pages/security-architecture/shared/*.jsx</span>
           <span class="chip">theme/light-theme.css</span>
@@ -1277,9 +1287,11 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
         <h3>Shared hooks, utils, and scoring helpers</h3>
         <p class="dek">The glue: hooks for async/watchlist/modals, utils for filters/links/presentation, and frontend scoring mirrors — patterns to learn, not a file dump of a hundred modules.</p>
         <div class="files">
+          <span class="chip">hooks/*.js</span>
           <span class="chip">hooks/useAsync.js</span>
           <span class="chip">hooks/useWatchlist.js</span>
           <span class="chip">hooks/useModalLayer.js</span>
+          <span class="chip">utils/*.js</span>
           <span class="chip">utils/cveFilters.js</span>
           <span class="chip">utils/appLinks.js</span>
           <span class="chip">utils/correlationPresentation.js</span>
@@ -1289,7 +1301,13 @@ ReactDOM.createRoot(document.getElementById(<span class="str">'root'</span>)).re
           <span class="chip">theme/</span>
           <span class="chip">config/*.js</span>
           <span class="chip">components/*.jsx</span>
+          <span class="chip">components/*.css</span>
           <span class="chip">components/DetailDrawer/*.jsx</span>
+          <span class="chip">components/DetailDrawer/*.js</span>
+          <span class="chip">components/DetailDrawer/*.css</span>
+          <span class="chip">components/forge/*.jsx</span>
+          <span class="chip">components/forge/*.js</span>
+          <span class="chip">components/timeWindowDateUtils.js</span>
         </div>
       </div>
 
@@ -1792,7 +1810,7 @@ _UPSERT_PG = <span class="str">"""</span>
         <span class="chapter-num">Part III · Chapter 14</span>
         <h3>Feed sources — 29 files, four distinct shapes of the same problem</h3>
         <p class="dek">Every feed answers the same question — "how do I sync only what changed" — differently, and the differences tell you something real about each upstream's own design.</p>
-        <div class="files"><span class="chip">feeds/nvd.py</span><span class="chip">feeds/kev.py</span><span class="chip">feeds/epss.py</span><span class="chip">feeds/cvelistv5.py</span><span class="chip">+25 more</span></div>
+        <div class="files"><span class="chip">feeds/*.py</span><span class="chip">feeds/nvd.py</span><span class="chip">feeds/kev.py</span><span class="chip">feeds/epss.py</span><span class="chip">feeds/cvelistv5.py</span></div>
       </div>
       <div class="prose">
         <p>The <code>feeds/</code> directory has four rough tiers: primary CVE sources (NVD, CISA KEV, FIRST EPSS, cvelistV5, vulnrichment, and <code>cpe_catalog.py</code> — NVD's full CPE 2.3 dictionary, checkpointed across runs since the corpus is large and never touched on the request path), exploit/PoC availability trackers (ExploitDB, Metasploit modules, Nuclei templates, PoC-GitHub), threat-intel mirrors (AlienVault OTX, ThreatFox, OSV, VulnCheck's own KEV mirror), and context feeds (MITRE ATT&amp;CK, ATLAS, news/case studies). Rather than walk all 29 files, this chapter goes deep on four that each teach a genuinely different lesson about watermark design — the pattern from Part 0 that recurs, differently shaped, in every single one of them.</p>
@@ -1976,7 +1994,7 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
         <span class="chapter-num">Part III · Chapter 17</span>
         <h3>Durable background jobs — a second job system, and why one wasn't enough</h3>
         <p class="dek">Procrastinate exists specifically for the one class of job where APScheduler's "just re-run it, it's idempotent" story genuinely isn't good enough.</p>
-        <div class="files"><span class="chip">jobs/app.py</span><span class="chip">jobs/tasks.py</span><span class="chip">jobs/worker.py</span><span class="chip">jobs/context.py</span></div>
+        <div class="files"><span class="chip">jobs/__init__.py</span><span class="chip">jobs/app.py</span><span class="chip">jobs/tasks.py</span><span class="chip">jobs/worker.py</span><span class="chip">jobs/context.py</span></div>
       </div>
       <div class="prose">
         <p>Every job discussed so far — NVD sync, KEV sync, correlation — shares a comfortable property: if the process crashes mid-run, the next scheduled run safely resumes from the last saved watermark, at worst redoing a small, harmless amount of already-completed work. That property holds because each of those jobs is a single, short-ish unit of work bounded by one watermark. It stops holding for a fundamentally different kind of job: the Tier-A stack backfill, a long-running, multi-step process (retroactively pulling every historical CVE matching a newly-declared software stack) that can span many separate ticks over an extended period. A crash halfway through that kind of job doesn't have one clean watermark to resume from in the same way — restarting from scratch would mean redoing potentially hours of already-completed work.</p>
@@ -2008,7 +2026,7 @@ CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
         <span class="chapter-num">Part IV · Chapter 18</span>
         <h3>Risk and Threat scoring — six weighted components, verified against the real code</h3>
         <p class="dek">Why a fixed, explainable formula beats a learned model here, and how the newer split-score system fixes a real flaw in the older blended one.</p>
-        <div class="files"><span class="chip">scoring/risk.py</span><span class="chip">scoring/threat.py</span><span class="chip">scoring/environment.py</span><span class="chip">scoring/priority.py</span><span class="chip">ADR-002</span></div>
+        <div class="files"><span class="chip">scoring/__init__.py</span><span class="chip">scoring/risk.py</span><span class="chip">scoring/threat.py</span><span class="chip">scoring/environment.py</span><span class="chip">scoring/priority.py</span><span class="chip">ADR-002</span></div>
       </div>
 
       <pre class="code"><code><span class="cmt"># v1.1b weights — sum = 1.00</span>
@@ -2211,7 +2229,7 @@ _CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</
         <span class="chapter-num">Part IV · Chapter 21</span>
         <h3>Detection engineering — a generator, deliberately not a live detector</h3>
         <p class="dek">Why the rule-generation path is explicitly "no LLM," and where an LLM is allowed to help instead.</p>
-        <div class="files"><span class="chip">detection/composer.py</span><span class="chip">detection/sigma_generator.py</span><span class="chip">detection/class_router.py</span><span class="chip">detection/backlog.py</span></div>
+        <div class="files"><span class="chip">detection/*.py</span><span class="chip">detection/composer.py</span><span class="chip">detection/sigma_generator.py</span><span class="chip">detection/class_router.py</span><span class="chip">detection/backlog.py</span></div>
       </div>
       <div class="prose">
         <p>Given a CVE (and optionally an ATT&amp;CK technique or CWE it maps to), this subsystem assembles a "detection pack" — community Sigma and Elastic rules fetched live from GitHub, BRIEFR's own template-generated Sigma rules, ready-to-paste SIEM queries in four dialects (Elastic KQL, Splunk SPL, Microsoft Sentinel KQL, IBM QRadar AQL), and YARA rules built from file hashes OTX has observed in the wild. It's worth being precise about what this is <em>not</em>: nothing here executes against live logs or fires an alert. It generates and aggregates starter content for an analyst to adapt — a detection-engineering accelerator, not a detection engine in the SIEM sense.</p>
@@ -2400,14 +2418,14 @@ flowchart LR
         <span class="chapter-num">Part IV · Chapter 24B</span>
         <h3>Inside the LLM failover chain — pacing, quota, audit trail, and the one request-path exception</h3>
         <p class="dek">Eleven more files behind <code>llm_router.py</code>'s four-provider chain: how BRIEFR keeps every free-tier provider from ever seeing more traffic than it publishes, and how every attempt gets a permanent, queryable record.</p>
-        <div class="files"><span class="chip">ai/llm_pacing.py</span><span class="chip">ai/quota.py</span><span class="chip">ai/model_catalog.py</span><span class="chip">ai/operations_recorder.py</span><span class="chip">ai/summary.py</span></div>
+        <div class="files"><span class="chip">ai/__init__.py</span><span class="chip">ai/llm_pacing.py</span><span class="chip">ai/quota.py</span><span class="chip">ai/model_catalog.py</span><span class="chip">ai/operations_recorder.py</span><span class="chip">ai/summary.py</span><span class="chip">ai/llm_payload.py</span><span class="chip">ai/llm_session.py</span><span class="chip">ai/openai_chat.py</span><span class="chip">ai/gemini_client.py</span><span class="chip">ai/groq_config.py</span><span class="chip">ai/operations_admin.py</span><span class="chip">ai/llm_router.py</span></div>
       </div>
 
       <h4 class="subhead concept">Proactive pacing vs. reactive quota tracking — two different mechanisms, easy to conflate</h4>
       <div class="prose">
         <p>Worth separating two things that sound like the same job. <strong><code>llm_pacing.py</code></strong> is <em>proactive</em>: before ever making a call, it computes the minimum safe interval between requests to a given provider from that provider's published RPM (requests/minute) and TPM (tokens/minute) limits, takes whichever bound is more restrictive, and applies a safety-margin "headroom" percentage on top (85% by default — treating a stated 30-RPM plan as if it were really 25.5 RPM, so normal jitter and estimation error can't accidentally exceed the real limit). <strong><code>quota.py</code></strong> is <em>reactive</em>: it's a plain in-process dictionary that simply records whatever rate-limit headers a provider actually sends back after a real call (remaining requests, remaining tokens, reset timestamps), purely as an observability cache for the admin UI — it computes nothing and enforces nothing itself, it's just a cache of ground truth the provider handed BRIEFR after the fact.</p>
         <p>The real, published free-tier numbers behind the pacing math are worth knowing because they explain the failover order: Groq's own limits (30 RPM / 8,000 TPM, held in <code>groq_config.py</code>) are the most generous, which is why it's tried first; Cerebras's free-trial limits (5 RPM / 30,000 TPM) are the tightest of the four on requests-per-minute, explaining why it sits mid-chain rather than first despite otherwise being a fast, capable provider; OpenRouter's free tier (20 RPM / 40,000 TPM) sits third with the only 1-second pacing floor of the four (the others default to 0.5s); Gemini Flash-Lite's free tier (15 RPM / 250,000 TPM) is deliberately last — not because its limits are worst, but per the code's own ordering comment, because it's explicitly reserved as the last resort. Each provider's quota-warning threshold is a flat, hardcoded "5 requests remaining" trigger for the admin UI's low-quota banner — not configurable, a deliberately simple tripwire rather than a tunable alert system.</p>
-        <p>Two small guard files sit in front of every one of these calls. <code>llm_payload.py</code> checks that a prompt actually has substantive content before any HTTP work happens at all — an empty or near-empty message never leaves the process, closing off the cheapest possible way to waste a scarce free-tier quota. <code>llm_session.py</code> scopes a per-batch-job memory of which providers have already returned an empty (not erroring, just content-less) response during the current job, so a Groq that goes quietly unresponsive partway through a 50-CVE batch doesn't get retried on every remaining CVE in that same run — it's skipped locally for the rest of the job while still counting toward the shared circuit breaker globally. The actual wire-format clients are split in two: <code>openai_chat.py</code> is the one shared client for the three providers (Groq, Cerebras, OpenRouter) that all speak the OpenAI-compatible chat-completions format, while <code>gemini_client.py</code> exists separately because Google's <code>generateContent</code> API has a genuinely different request shape (a <code>contents</code>/<code>parts</code> structure and a top-level <code>systemInstruction</code>, rather than a flat <code>messages</code> array) and its own header-based auth convention rather than a bearer token. <code>operations_admin.py</code> is the read-only payload builder for the admin "AI Operations" page — assembling per-provider health, quota, and configuration state into the JSON the frontend renders, with no database queries of its own beyond what's handed to it already aggregated.</p>
+        <p>Two small guard files sit in front of every one of these calls. <code>llm_payload.py</code> checks that a prompt actually has substantive content before any HTTP work happens at all — an empty or near-empty message never leaves the process, closing off the cheapest possible way to waste a scarce free-tier quota. <code>llm_session.py</code> scopes a per-batch-job memory of which providers have already returned an empty (not erroring, just content-less) response during the current job, so a Groq that goes quietly unresponsive partway through a 50-CVE batch doesn't get retried on every remaining CVE in that same run — it's skipped locally for the rest of the job while still counting toward the shared circuit breaker globally. The actual wire-format clients are split in two: <code>openai_chat.py</code> is the one shared client for the three providers (Groq, Cerebras, OpenRouter) that all speak the OpenAI-compatible chat-completions format, while <code>gemini_client.py</code> exists separately because Google's <code>generateContent</code> API has a genuinely different request shape (a <code>contents</code>/<code>parts</code> structure and a top-level <code>systemInstruction</code>, rather than a flat <code>messages</code> array) and its own header-based auth convention rather than a bearer token. <code>groq_config.py</code> holds shared Groq URL/model defaults (<code>GROQ_MODEL</code> / <code>GROQ_MODEL_SUMMARY</code>) and <code>groq_limits()</code> for pacing. <code>operations_admin.py</code> is the read-only payload builder for the admin "AI Operations" page — assembling per-provider health, quota, and configuration state into the JSON the frontend renders, with no database queries of its own beyond what's handed to it already aggregated. Package entry <code>ai/__init__.py</code> re-exports only the on-demand summary helpers from <code>ai/summary.py</code> (<code>generate_executive_summary</code>, <code>generate_investigation_summary</code>) — LLM router internals are imported by path, not via this package facade.</p>
       </div>
 
       <h4 class="subhead concept">One source of truth for which model runs which task, in what order</h4>
@@ -2561,7 +2579,7 @@ flowchart LR
         <span class="chapter-num">Part V · Chapter 27</span>
         <h3>Webhooks and SSRF — a textbook mitigation, applied because the input is genuinely attacker-influenceable</h3>
         <p class="dek">Resolve, validate, then connect to the pinned IP while still presenting the right hostname for TLS — read the real code, because the reasoning in the comments is better than any paraphrase.</p>
-        <div class="files"><span class="chip">webhooks/engine.py</span><span class="chip">webhooks/alerts.py</span><span class="chip">webhooks/ssrf.py</span></div>
+        <div class="files"><span class="chip">webhooks/__init__.py</span><span class="chip">webhooks/engine.py</span><span class="chip">webhooks/alerts.py</span><span class="chip">webhooks/ssrf.py</span></div>
       </div>
       <div class="prose">
         <p>BRIEFR can push notifications to Discord, Telegram, or a generic HTTPS endpoint when specific conditions fire — a KEV entry lands on the operator's stack, a watched CVE's EPSS score jumps, a watchlisted IOC shows up in threat intel, a scheduled backup silently stops running (a "dead man's switch" alert). <code>webhooks/alerts.py</code> holds the actual trigger logic — <code>process_watchlist_kev_alerts</code>, <code>process_kev_stack_alerts</code>, <code>check_backup_deadman</code>, and similar functions — every one of them called exclusively from scheduler jobs, never from the request path, matching the pattern you've now seen enforced throughout this book. <code>webhooks/destinations.py</code> merges destinations configured via environment variables with ones an operator has added through the Admin UI, and <code>engine.py</code>'s <code>dispatch_event</code> fans a single alert out to every configured destination, with an atomic dedupe-claim mechanism (referenced internally as <code>IDEM-001</code>) that prevents the same alert firing twice if two concurrent triggers happen to race each other, retrying by clearing the claim on delivery failure.</p>
@@ -2667,7 +2685,7 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <span class="chapter-num">Part V · Chapter 30</span>
         <h3>Ops and observability — keeping a self-hosted instance alive without its authors watching over it</h3>
         <p class="dek">Backup, a genuinely separate data-migration path, redacted diagnostics, and a kiosk dashboard with its own auth scheme.</p>
-        <div class="files"><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span><span class="chip">read_cache.py</span><span class="chip">storage_metrics.py</span><span class="chip">resource_collector.py</span></div>
+        <div class="files"><span class="chip">backup/__init__.py</span><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span><span class="chip">wallboard/session.py</span><span class="chip">read_cache.py</span><span class="chip">storage_metrics.py</span><span class="chip">resource_collector.py</span></div>
       </div>
       <div class="prose">
         <p><strong>Backup</strong> is dual-backend, matching Chapter 9's split: SQLite uses its own online backup API (<code>sqlite3.Connection.backup()</code>) plus a <code>PRAGMA integrity_check</code> both before and after, with automatic restore-from-backup on startup if the live file is found corrupt (this is the exact recovery path Chapter 6's <code>lifespan()</code> invokes). Postgres instead shells out to <code>pg_dump --format=custom</code> and restores with <code>pg_restore --clean --if-exists</code>. Both backends produce tar bundles with optional X25519 encryption — and the encryption key is required, by an explicit enforced check, to live <em>outside</em> the backup directory itself, for a reason that should be obvious once stated: an encrypted backup whose decryption key sits right next to it in the same backup archive or directory provides no real protection at all if that directory is ever copied, leaked, or compromised as a whole.</p>
@@ -2705,10 +2723,10 @@ FORBIDDEN_OUTBOUND_HEADERS = frozenset({
         <span class="chapter-num">Part V · Chapter 31</span>
         <h3>Scripts and top-level admin guardrails</h3>
         <p class="dek">The last chapter of Part V — smaller pieces, but each with a specific, deliberate reason for existing exactly as it does.</p>
-        <div class="files"><span class="chip">scripts/create_user.py</span><span class="chip">destructive_actions.py</span><span class="chip">task_registry.py</span><span class="chip">tracking.py</span></div>
+        <div class="files"><span class="chip">scripts/create_user.py</span><span class="chip">scripts/delete_user.py</span><span class="chip">destructive_actions.py</span><span class="chip">task_registry.py</span><span class="chip">tracking.py</span></div>
       </div>
       <div class="prose">
-        <p><code>scripts/create_user.py</code> is the <em>only</em> way to provision or reset a login account in BRIEFR — deliberately never exposed over HTTP, referenced explicitly by <code>auth.py</code>'s own comments as a security boundary rather than an accidental limitation: account creation requires shell access to the box the instance runs on, closing off any possibility of a network-reachable account-creation or password-reset endpoint being abused. <code>scripts/backfill_poc.py</code> and <code>scripts/sync_env.py</code> are smaller maintenance utilities — a one-shot backfill of proof-of-concept availability flags for legacy rows, and a tool that regenerates <code>.env</code> from <code>.env.example</code> while carefully preserving existing values and comment structure. All three scripts re-exec into the app's own virtual environment if run under system Python that lacks the right dependencies (<code>aiosqlite</code> specifically) — a small systemd-deployment convenience that avoids a confusing "module not found" error for an operator who ran the script with the wrong interpreter.</p>
+        <p><code>scripts/create_user.py</code> is the <em>only</em> way to provision or reset a login account in BRIEFR — deliberately never exposed over HTTP, referenced explicitly by <code>auth.py</code>'s own comments as a security boundary rather than an accidental limitation: account creation requires shell access to the box the instance runs on, closing off any possibility of a network-reachable account-creation or password-reset endpoint being abused. <code>scripts/delete_user.py</code> is the operational counterpart for data-subject erasure: it removes a built-in app login and tied sessions/preferences/watchlist/notifications, also CLI-only (never an HTTP route). <code>scripts/backfill_poc.py</code> and <code>scripts/sync_env.py</code> are smaller maintenance utilities — a one-shot backfill of proof-of-concept availability flags for legacy rows, and a tool that regenerates <code>.env</code> from <code>.env.example</code> while carefully preserving existing values and comment structure. All three scripts re-exec into the app's own virtual environment if run under system Python that lacks the right dependencies (<code>aiosqlite</code> specifically) — a small systemd-deployment convenience that avoids a confusing "module not found" error for an operator who ran the script with the wrong interpreter.</p>
       </div>
 
       <pre class="code"><code>DESTRUCTIVE_ACTIONS: tuple[DestructiveAction, ...] = (

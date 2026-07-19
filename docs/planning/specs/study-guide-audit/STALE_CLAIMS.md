@@ -1,43 +1,47 @@
 # Study guide — stale claims & orphan paths (RCA)
 
-_Verified against repo HEAD on 2026-07-19. Code / `PRODUCT_STATUS.md` win over guide prose._
+_Verified against repo HEAD on 2026-07-19 (Phase 0 truth-hardening pass). Code / `PRODUCT_STATUS.md` win over guide prose._
 
 ## Mechanical orphan (path named, file missing)
 
 | Mention | Chapters | RCA | Disposition |
 |---------|----------|-----|-------------|
-| `backend/db/dialect.py` | `be-data`, `roadmap-reversed` | **Not a content bug.** Post-B (2026-07) deleted the general SQL translator. Guide prose correctly teaches that it was removed and replaced by paired `_SQLITE`/`_PG` constants + narrow `pg_adapt.py`. The auditor flags any non-existent path. | Keep historical prose. Do **not** add a file chip for the deleted path. Optional: wrap the name in plain `<code>` only (already done). |
+| `backend/db/dialect.py` | `be-data`, `roadmap-reversed` | **Not a content bug.** Post-B (2026-07) deleted the general SQL translator. Guide prose correctly teaches that it was removed and replaced by paired `_SQLITE`/`_PG` constants + narrow `pg_adapt.py`. The auditor flags any non-existent path. | Keep historical prose. Do **not** add a file chip for the deleted path. |
 
-No other `orphan_mention` rows remain after path-normalization fixes (`frameworks/*` → `security_architecture/frameworks/*`, `scripts/*` → `backend/scripts/*`).
+No other `orphan_mention` rows remain.
 
-## Content gaps vs PRODUCT_STATUS (shipped, thin or missing in guide)
+## Phase 0 inventory gates (G1–G3)
 
-These are **not** always zero mentions — they are incomplete relative to what production documents as shipped.
+| Gate | Status (2026-07-19) |
+|------|---------------------|
+| G1 `gap=0` | **Pass** |
+| G2 `weak=0` (FE `*.test.js` + empty `__init__.py` → `out_of_scope`) | **Pass** (`--strict` exit 0) |
+| G3 orphans | Only intentional `dialect.py` |
 
-| Topic | Evidence in product | Guide today | RCA | Recommended chapter action |
-|-------|---------------------|-------------|-----|----------------------------|
-| Retrieval ops health | `GET /api/admin/retrieval/health`, `services/retrieval_health.py`, AI ops panel; `EMBEDDINGS_AUTO_ON_INGEST` default on (E8 era) | Embeddings chapters exist; **ops health / auto-on-ingest operator story thin** | Guide lagged the 2026-07-18 retrieval-ops + auto-on-ingest work | New section under `ie-ml` **or** new `api-retrieval-ops` chapter |
-| Operator settings in DB | `operator_settings.py`, `app_settings`, ADR-006 encryption | Config chapter covers crypto; **module never named** (audit `gap`) | File added after chapter chips were written | Add chip + How subsection in `be-config` / `api-usersettings` |
-| Read cache | `read_cache.py` (gap) | Mentioned conceptually in resource/connectivity chapters | No file chip | Name in `api-ops` or `be-bootstrap` |
-| API metering / queue ops | `api_metering.py`, `api_queue_operations.py` (gaps) | Queue chapter covers `api_queue.py` | Sibling modules never chipped | Extend `in-queue` |
-| Storage / resource metrics | `storage_metrics.py`, `resource_collector.py` (gaps) | Ops chapter partial | Admin Storage/Resources UI shipped; guide under-names collectors | Extend `api-ops` |
-| Frontend surface area | 350+ files under `pages/` / `components/` / `utils/` almost all `gap` | Part I is decision-level (React/tokens/state), not UI map | Intentional textbook focus on *why*, but interview “where is X page?” fails | New Part I-B chapters: analyst shell, admin shell, Forge/wallboard UI |
-| Deploy helpers | doctor, backup timers, update/restore, compose, nginx snippets (gaps) | Ch 32 names primary unit + nginx + setup | Satellite deploy scripts omitted | Extend `devops-deploy` with a deploy-script map |
-| Sec-architecture corpus YAML | 14 corpus files gap | Ch 26 explains feature; corpus treated as data not curriculum | Acceptable as weak/data; still should be named | Chip `security_architecture/corpus/*` in Ch 26 |
-| Security digest chapters (`sec-*`) | Summaries exist | **No self-checks**; short | Recap chapters never got the interview loop | Add 2–3 self-check questions each |
-| `api-secarch` | Long How | Self-check block missing / empty in parser | Incomplete chapter footer | Add self-check |
-| Primer (`primer-mechanics`) | Concept cards | No self-check; How is card-grid not traces | Primer by design | Optional light self-check; or mark non-interview |
+Auditor: `scripts/audit_study_guide.py --strict`
 
-## False assumptions to avoid when rewriting
+## Former PRODUCT_STATUS thin spots — disposition
+
+| Topic | Disposition |
+|-------|-------------|
+| Retrieval ops health | **Closed** — chapter `ie-retrieval-ops` |
+| Operator settings | **Closed** — chips in config/usersettings chapters |
+| Read cache / storage / resource collectors | **Closed** — named in `api-ops` |
+| API metering / queue ops | **Closed** — named in queue chapter |
+| Frontend surface inventory | **Closed** — Part I-B + globs (`utils/*.js`, `components/*.css`, admin pages, …); FE gate tests OOS |
+| Deploy helpers / sec-arch corpus | **Closed** in earlier coverage PRs |
+| Digest / primer self-checks | **Open (non-blocking for G1–G3)** — interview polish, not inventory truth |
+
+## False assumptions to avoid
 
 1. **“dialect.py missing means the guide is wrong”** — the guide is right; the scanner is literal.
-2. **“403 gaps means the backend textbook is empty”** — ~345 gaps are frontend source files the current Part I never attempted to inventory file-by-file.
-3. **“Weak == bad chapter”** — `weak` means sibling-dir association only; many packages are intentionally taught via representative files + glob chips.
+2. **“weak=0 means every sentence is verified”** — it means every in-scope file is named or explicit OOS. Claim prose vs PRODUCT_STATUS still needs re-check on each maintainer **update**.
+3. **“Glob chips cover tests”** — `frontend/src/**/*.test.js` stays `out_of_scope` even if a glob would match them.
 
 ## Verification commands
 
 ```bash
-backend/.venv/bin/python scripts/audit_study_guide.py
-rg 'orphan_mention' docs/planning/specs/study-guide-audit/gaps.md
-test ! -f backend/db/dialect.py   # still deleted
+backend/.venv/bin/python scripts/audit_study_guide.py --strict
+backend/.venv/bin/python scripts/build_study_guide_book.py
+cd backend && .venv/bin/python -m pytest tests/test_audit_study_guide.py tests/test_build_study_guide_book.py -q
 ```

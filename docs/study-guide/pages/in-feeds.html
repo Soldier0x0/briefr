@@ -133,7 +133,7 @@
         <span class="chapter-num">Part III · Chapter 14</span>
         <h3>Feed sources — 29 files, four distinct shapes of the same problem</h3>
         <p class="dek">Every feed answers the same question — "how do I sync only what changed" — differently, and the differences tell you something real about each upstream's own design.</p>
-        <div class="files"><span class="chip">feeds/nvd.py</span><span class="chip">feeds/kev.py</span><span class="chip">feeds/epss.py</span><span class="chip">feeds/cvelistv5.py</span><span class="chip">+25 more</span></div>
+        <div class="files"><span class="chip">feeds/*.py</span><span class="chip">feeds/nvd.py</span><span class="chip">feeds/kev.py</span><span class="chip">feeds/epss.py</span><span class="chip">feeds/cvelistv5.py</span></div>
       </div>
       <div class="prose">
         <p>The <code>feeds/</code> directory has four rough tiers: primary CVE sources (NVD, CISA KEV, FIRST EPSS, cvelistV5, vulnrichment, and <code>cpe_catalog.py</code> — NVD's full CPE 2.3 dictionary, checkpointed across runs since the corpus is large and never touched on the request path), exploit/PoC availability trackers (ExploitDB, Metasploit modules, Nuclei templates, PoC-GitHub), threat-intel mirrors (AlienVault OTX, ThreatFox, OSV, VulnCheck's own KEV mirror), and context feeds (MITRE ATT&amp;CK, ATLAS, news/case studies). Rather than walk all 29 files, this chapter goes deep on four that each teach a genuinely different lesson about watermark design — the pattern from Part 0 that recurs, differently shaped, in every single one of them.</p>

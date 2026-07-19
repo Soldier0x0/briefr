@@ -133,7 +133,7 @@
         <span class="chapter-num">Part IV · Chapter 21</span>
         <h3>Detection engineering — a generator, deliberately not a live detector</h3>
         <p class="dek">Why the rule-generation path is explicitly "no LLM," and where an LLM is allowed to help instead.</p>
-        <div class="files"><span class="chip">detection/composer.py</span><span class="chip">detection/sigma_generator.py</span><span class="chip">detection/class_router.py</span><span class="chip">detection/backlog.py</span></div>
+        <div class="files"><span class="chip">detection/*.py</span><span class="chip">detection/composer.py</span><span class="chip">detection/sigma_generator.py</span><span class="chip">detection/class_router.py</span><span class="chip">detection/backlog.py</span></div>
       </div>
       <div class="prose">
         <p>Given a CVE (and optionally an ATT&amp;CK technique or CWE it maps to), this subsystem assembles a "detection pack" — community Sigma and Elastic rules fetched live from GitHub, BRIEFR's own template-generated Sigma rules, ready-to-paste SIEM queries in four dialects (Elastic KQL, Splunk SPL, Microsoft Sentinel KQL, IBM QRadar AQL), and YARA rules built from file hashes OTX has observed in the wild. It's worth being precise about what this is <em>not</em>: nothing here executes against live logs or fires an alert. It generates and aggregates starter content for an analyst to adapt — a detection-engineering accelerator, not a detection engine in the SIEM sense.</p>

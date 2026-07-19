@@ -230,7 +230,31 @@ def test_empty_package_init_is_out_of_scope(audit, tmp_path: Path):
     assert by["backend/feeds/__init__.py"].status == "out_of_scope"
 
 
-def test_strict_exits_nonzero_on_weak(audit, tmp_path: Path):
+def test_frontend_test_js_stays_oos_even_if_mentioned(audit, tmp_path: Path):
+    (tmp_path / "frontend" / "src" / "utils").mkdir(parents=True)
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.js").write_text("export {}", encoding="utf-8")
+    (tmp_path / "frontend" / "src" / "utils" / "cveFilters.test.js").write_text("test", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "deploy").mkdir()
+    inventory = audit.iter_inventory_files(tmp_path)
+    chapters = {
+        "fe-shared-utils": audit.Chapter(
+            id="fe-shared-utils",
+            title="Utils",
+            mentioned_paths={
+                "frontend/src/utils/cveFilters.js",
+                "frontend/src/utils/cveFilters.test.js",
+            },
+        )
+    }
+    rows = audit.classify_files(
+        inventory,
+        chapters,
+        chapters["fe-shared-utils"].mentioned_paths,
+        root=tmp_path,
+    )
+    by = {r.path: r for r in rows}
+    assert by["frontend/src/utils/cveFilters.test.js"].status == "out_of_scope"
     guide = tmp_path / "STUDY_GUIDE.html"
     guide.write_text(
         """

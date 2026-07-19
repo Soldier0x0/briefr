@@ -468,18 +468,6 @@ def classify_files(
     inventory_set = set(inventory)
 
     for path in inventory:
-        owners = sorted(path_to_chapters.get(path, set()))
-        if owners:
-            rows.append(
-                FileRow(
-                    path=path,
-                    status="covered",
-                    chapters=owners,
-                    evidence="exact path mention in chapter body/chips",
-                )
-            )
-            continue
-
         if is_frontend_gate_test(path):
             rows.append(
                 FileRow(
@@ -488,6 +476,18 @@ def classify_files(
                     chapters=[],
                     evidence="",
                     notes="FE gate/unit test; aggregate into Testing strategy chapter",
+                )
+            )
+            continue
+
+        owners = sorted(path_to_chapters.get(path, set()))
+        if owners:
+            rows.append(
+                FileRow(
+                    path=path,
+                    status="covered",
+                    chapters=owners,
+                    evidence="exact path mention in chapter body/chips",
                 )
             )
             continue

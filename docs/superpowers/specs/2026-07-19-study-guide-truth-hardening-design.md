@@ -1,9 +1,10 @@
 # Study Guide Truth Hardening + Profile Pathways — Design
 
 **Date:** 2026-07-19  
-**Status:** Approved in brainstorming (sections 1–4); awaiting maintainer review of this written spec  
-**Supersedes for sequencing:** `docs/superpowers/plans/2026-07-19-study-guide-prose-depth.md` (prose depth is absorbed into Phase 0; do not run profile/learn-site work until Phase 0 gates are green)  
-**Related:** `docs/superpowers/specs/2026-07-19-study-guide-audit-design.md` (inventory auditor — necessary but not sufficient)
+**Status:** Phase 0 inventory gates (G1–G3, G5) **implemented and green** on this branch; Phase 1 still blocked pending maintainer go-ahead  
+**Supersedes for sequencing:** `docs/superpowers/plans/2026-07-19-study-guide-prose-depth.md` (absorbed / deferred non-blocking polish)  
+**Related:** `docs/superpowers/specs/2026-07-19-study-guide-audit-design.md` (inventory auditor — necessary but not sufficient)  
+**Plan:** `docs/superpowers/plans/2026-07-19-study-guide-truth-hardening.md`
 
 ## 1. Purpose
 
