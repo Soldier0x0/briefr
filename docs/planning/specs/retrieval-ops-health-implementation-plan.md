@@ -1,5 +1,7 @@
 # Retrieval ops health + auto-on-ingest — Implementation Plan
 
+> **Status:** Implemented on `cursor/retrieval-ops-health-design-0ece` (commits through Gemini fix pass). Remaining: maintainer browser-verify + merge.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give Admin honest retrieval health for the live `embeddings` index, and make auto-on-ingest **default on** (with a real off switch) when embeddings are enabled — without breaking keyword fallback.

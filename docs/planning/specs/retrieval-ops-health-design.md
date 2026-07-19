@@ -1,6 +1,6 @@
 # Retrieval ops: health + auto-on-ingest (fail-safe) — design
 
-**Status:** Accepted (maintainer 2026-07-19) — auto-on-ingest **default on**; proceed to implementation plan  
+**Status:** Shipped on `cursor/retrieval-ops-health-design-0ece` (2026-07-19) — RH-1 + RH-2 + Gemini fixes  
 **Parent:** [`embeddings-pgvector-hybrid-search-design.md`](embeddings-pgvector-hybrid-search-design.md),  
 [`retrieval-engine-e7-design.md`](retrieval-engine-e7-design.md)  
 **HANDOVER cue:** “admin retrieval health / operator knobs” after E8  
