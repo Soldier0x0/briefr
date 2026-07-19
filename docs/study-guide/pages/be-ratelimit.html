@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rate limiting — inbound, and the residual risk that's accepted rather than solved — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="be-ratelimit" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="be-ratelimit">
+      <div class="chapter-head">
+        <span class="chapter-num">Part II · Chapter 12</span>
+        <h3>Rate limiting — inbound, and the residual risk that's accepted rather than solved</h3>
+        <p class="dek">Token buckets protecting BRIEFR from abuse, with a client-identification scheme more careful than it might first appear.</p>
+        <div class="files"><span class="chip">rate_limit.py</span><span class="chip">rate_limit_store.py</span></div>
+      </div>
+      <div class="prose">
+        <p>Chapter 16 covers the outbound half of rate limiting — pacing BRIEFR's own calls to NVD, GitHub, and OTX. This chapter covers the inbound half: protecting BRIEFR's own endpoints (login, IOC lookup, refresh, admin routes, the wallboard) from being hammered by a single client, using the token-bucket algorithm introduced in Part 0.</p>
+      </div>
+
+      <h4 class="subhead why">Why buckets are process-local, and the constraint that makes that safe</h4>
+      <div class="prose">
+        <p>The buckets live entirely in the process's own memory — not a shared cache, not a database table, by default. A code comment states directly why that's safe here rather than a latent bug: the deployment runs uvicorn with <code>--workers 1</code>, meaning there is exactly one process handling requests, so "the rate limit" and "this process's in-memory bucket" are the same thing. The comment goes further and flags the exact way this assumption could later break silently: if a future change added more uvicorn workers for throughput, each worker would get its <em>own</em> independent copy of every bucket, and the effective rate limit would be multiplied by the worker count without any code change actually intending that — five workers would mean a "10 requests per minute" limit becomes 50 per minute in practice, invisibly. <code>rate_limit_store.py</code> is the prepared escape hatch for exactly that future: setting <code>BRIEFR_RATE_LIMIT_STORE=db</code> moves bucket state into the <code>sync_state</code> table (SQLite or Postgres, whichever is active), shared across however many workers or replicas are running — off by default specifically to keep the zero-config dev/test path as simple as possible.</p>
+      </div>
+
+      <pre class="code"><code><span class="kw">def</span> client_key(request: Request) -> <span class="kw">str</span>:
+    peer = request.client.host <span class="kw">if</span> request.client <span class="kw">else</span> <span class="str">""</span>
+    <span class="kw">if</span> peer <span class="kw">not in</span> _TRUSTED_PROXY_PEERS:
+        <span class="cmt"># Direct connection (LAN dev, or someone bypassing nginx): the</span>
+        <span class="cmt"># socket address is the only trustworthy identity — forwarded</span>
+        <span class="cmt"># headers here would be attacker-controlled bucket keys.</span>
+        <span class="kw">return</span> peer <span class="kw">or</span> <span class="str">"unknown"</span>
+
+    <span class="cmt"># Set by the Cloudflare edge and overwritten there, so it cannot be</span>
+    <span class="cmt"># forged by clients coming through the tunnel.</span>
+    cf_ip = request.headers.get(<span class="str">"cf-connecting-ip"</span>, <span class="str">""</span>).strip()
+    <span class="kw">if</span> cf_ip:
+        <span class="kw">return</span> cf_ip
+
+    <span class="cmt"># nginx appends $remote_addr as the rightmost X-Forwarded-For hop; the</span>
+    <span class="cmt"># rightmost non-loopback hop is therefore proxy-attested, while the</span>
+    <span class="cmt"># leftmost hops are whatever the client sent.</span>
+    forwarded = request.headers.get(<span class="str">"x-forwarded-for"</span>, <span class="str">""</span>)
+    hops = [hop.strip() <span class="kw">for</span> hop <span class="kw">in</span> forwarded.split(<span class="str">","</span>) <span class="kw">if</span> hop.strip()]
+    <span class="kw">for</span> hop <span class="kw">in</span> reversed(hops):
+        <span class="kw">if</span> hop <span class="kw">not in</span> _TRUSTED_PROXY_PEERS:
+            <span class="kw">return</span> hop</code></pre>
+      <p class="code-caption">rate_limit.py's <code>client_key()</code>, real code — the exact trust boundary is worth reading twice</p>
+
+      <h4 class="subhead why">Why forwarded headers are only trusted conditionally</h4>
+      <div class="prose">
+        <p><code>X-Forwarded-For</code> and similar headers exist so a reverse proxy can tell the backend "the real client IP was X, even though I'm the one actually connecting to you" — necessary because otherwise every request would appear to come from the proxy's own address. The catch is that these are just ordinary HTTP headers, and any client can set them to anything at all when talking directly to the backend. <code>client_key()</code>'s logic resolves this correctly: it only trusts forwarded headers at all when the <em>direct socket peer</em> — the actual TCP connection, which can't be spoofed the way a header can — is a known, trusted reverse proxy (Cloudflare's edge or the local nginx). A request arriving directly, bypassing the trusted proxy entirely, gets keyed by its raw socket address only, exactly because trusting a header from an untrusted direct connection would let an attacker mint an unlimited number of fresh rate-limit buckets simply by sending a different fake <code>X-Forwarded-For</code> value on every request — defeating the entire point of rate limiting.</p>
+        <p>The code comment is honest about a residual gap rather than pretending the mitigation is complete: a host on the same local network as the proxy, connecting to nginx directly rather than through Cloudflare, could still present a forged header that nginx would then legitimately append to. This is accepted explicitly for BRIEFR's current private-beta threat model — a security decision made visible in a comment rather than silently absorbed as an unstated assumption.</p>
+      </div>
+
+      <h4 class="subhead how">Why login is rate-limited by username, not IP</h4>
+      <div class="prose">
+        <p>Every other bucket in this file is keyed by client IP, but <code>login_username_bucket</code> is keyed by the <em>submitted username</em> instead. This targets a specific attack pattern IP-based limiting can't catch: credential stuffing, where an attacker tries the same stolen username against many different passwords, spread across a large pool of source IPs (a botnet, a residential proxy service) specifically to stay under any single IP's rate limit. Keying by username instead catches this directly — no matter how many different IPs an attacker rotates through, they're all hammering the same account, and that account's bucket empties regardless of which address each attempt came from.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>If BRIEFR were scaled to multiple uvicorn workers without setting <code>BRIEFR_RATE_LIMIT_STORE=db</code>, what happens to the effective login rate limit, and why does nobody notice immediately when this happens?</li>
+          <li>Walk through exactly why trusting <code>X-Forwarded-For</code> from a direct, untrusted connection would let an attacker defeat rate limiting entirely — what would they actually do?</li>
+          <li>Why does keying the login bucket by username instead of IP specifically address credential stuffing, when every other endpoint in this file is correctly keyed by IP instead?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="be-auth.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Authentication — sessions, tokens, and passwords</span></a><a class="next" href="be-logging.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Logging and redaction — two systems, and one real gap between them</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

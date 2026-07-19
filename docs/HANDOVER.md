@@ -14,6 +14,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-19 — Study guide multi-file responsive shell
+
+**Done**
+- Generator: `scripts/build_study_guide_book.py` → `docs/study-guide/` (64 pages,
+  shared `book.css`/`book.js`, search index).
+- Mobile: hamburger + drawer TOC ≤880px; progress + search preserved across pages.
+- Monolith `STUDY_GUIDE.html` stays editable source; banner points at the book.
+- Tests: `backend/tests/test_build_study_guide_book.py`.
+
+**Next:** Part-by-Part content fills from audit (`CORRECTED_TOC.md`) — start
+Part I-B (frontend surface) + retrieval ops.
+
+---
+
 ## 2026-07-19 — Study guide completeness audit (automated)
 
 **Done**

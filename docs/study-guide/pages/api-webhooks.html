@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webhooks and SSRF — a textbook mitigation, applied because the input is genuinely attacker-influenceable — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="api-webhooks" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="api-webhooks">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V · Chapter 27</span>
+        <h3>Webhooks and SSRF — a textbook mitigation, applied because the input is genuinely attacker-influenceable</h3>
+        <p class="dek">Resolve, validate, then connect to the pinned IP while still presenting the right hostname for TLS — read the real code, because the reasoning in the comments is better than any paraphrase.</p>
+        <div class="files"><span class="chip">webhooks/engine.py</span><span class="chip">webhooks/alerts.py</span><span class="chip">webhooks/ssrf.py</span></div>
+      </div>
+      <div class="prose">
+        <p>BRIEFR can push notifications to Discord, Telegram, or a generic HTTPS endpoint when specific conditions fire — a KEV entry lands on the operator's stack, a watched CVE's EPSS score jumps, a watchlisted IOC shows up in threat intel, a scheduled backup silently stops running (a "dead man's switch" alert). <code>webhooks/alerts.py</code> holds the actual trigger logic — <code>process_watchlist_kev_alerts</code>, <code>process_kev_stack_alerts</code>, <code>check_backup_deadman</code>, and similar functions — every one of them called exclusively from scheduler jobs, never from the request path, matching the pattern you've now seen enforced throughout this book. <code>webhooks/destinations.py</code> merges destinations configured via environment variables with ones an operator has added through the Admin UI, and <code>engine.py</code>'s <code>dispatch_event</code> fans a single alert out to every configured destination, with an atomic dedupe-claim mechanism (referenced internally as <code>IDEM-001</code>) that prevents the same alert firing twice if two concurrent triggers happen to race each other, retrying by clearing the claim on delivery failure.</p>
+      </div>
+
+      <h4 class="subhead concept">Why this specific feature needed real SSRF hardening</h4>
+      <div class="prose">
+        <p>Recall Part 0's definition of SSRF: a server tricked into making a request on the attacker's behalf, often reaching internal-only services the attacker couldn't otherwise touch directly. Webhook destination URLs are exactly this shape of risk in BRIEFR, because they're operator- or user-supplied input that the server then dutifully fetches — a malicious or compromised operator account (or a webhook URL copied from an untrusted source) could point a "destination" at an internal-only admin panel, a cloud metadata endpoint, or any other service the server can reach but an external attacker normally couldn't.</p>
+      </div>
+
+      <pre class="code"><code>BLOCKED_NETWORKS = (
+    ipaddress.ip_network(<span class="str">"10.0.0.0/8"</span>),      ipaddress.ip_network(<span class="str">"172.16.0.0/12"</span>),
+    ipaddress.ip_network(<span class="str">"192.168.0.0/16"</span>), ipaddress.ip_network(<span class="str">"100.64.0.0/10"</span>),  <span class="cmt"># CGNAT</span>
+    ipaddress.ip_network(<span class="str">"127.0.0.0/8"</span>),   ipaddress.ip_network(<span class="str">"169.254.0.0/16"</span>), <span class="cmt"># link-local</span>
+    ipaddress.ip_network(<span class="str">"0.0.0.0/8"</span>),     ipaddress.ip_network(<span class="str">"::1/128"</span>),
+    ipaddress.ip_network(<span class="str">"fc00::/7"</span>),      <span class="cmt"># unique local (IPv6 private)</span>
+)
+
+FORBIDDEN_OUTBOUND_HEADERS = frozenset({
+    <span class="str">"authorization"</span>, <span class="str">"x-briefr-admin-key"</span>, <span class="str">"x-api-key"</span>,
+    <span class="str">"x-virustotal-api-key"</span>, <span class="str">"x-nvd-api-key"</span>, <span class="str">"x-github-token"</span>, ...
+})</code></pre>
+      <p class="code-caption">webhooks/ssrf.py — the blocklist covers RFC1918 private space, loopback, link-local, CGNAT, and IPv6 equivalents</p>
+
+      <div class="prose">
+        <p>The real request flow, worth tracing exactly because the details are what make this mitigation actually correct rather than superficially plausible: <code>safe_webhook_request()</code> first parses the destination URL and resolves its hostname via DNS, then runs every resolved IP through <code>validate_resolved_ips()</code>, rejecting any address that falls in the blocked-networks list above <em>before</em> a single byte is sent anywhere. Only then does it connect — critically, to the <strong>pinned, already-validated IP address literal</strong>, not to the hostname again. This detail is the one most naive SSRF mitigations get wrong: if you validate the hostname's DNS resolution once and then reconnect using the hostname a second time, an attacker who controls the DNS record (or exploits a very tight timing window between validation and connection) can have it resolve to a safe address for your check and a dangerous internal address for the actual connection — a class of bug called DNS rebinding. Connecting to the exact IP you already validated, rather than re-resolving the hostname, closes that gap by construction.</p>
+        <p>That creates a second problem the code has to solve immediately: if you connect to a bare IP address literal, standard TLS certificate validation checks the certificate against that IP — which fails for essentially every real-world webhook destination, since Discord, Slack, and similar services sit behind CDNs whose certificates are issued for the hostname, not for whichever of their many backend IPs happens to answer a given connection. The code's own comment explains the fix precisely: it sets <code>sni_hostname</code> to the <em>original</em> hostname, so the TLS handshake presents and validates against the correct hostname via SNI (Server Name Indication) while the actual TCP connection still goes to the pre-validated, pinned IP — getting both properties at once, correct certificate validation and SSRF safety, that would otherwise seem to be in tension. The same code carves out two narrow, correct exceptions: it skips setting SNI when the destination URL is itself a bare IP literal (RFC 6066 forbids IP literals in SNI, and there's no hostname to validate against in that case anyway), and it IDNA/punycode-encodes non-ASCII hostnames before use, because Python's <code>ssl</code> module raises a <code>UnicodeEncodeError</code> during the handshake otherwise.</p>
+        <p>One more layer, easy to overlook: <code>sanitize_outbound_headers()</code> strips a hardcoded list of BRIEFR-internal authentication and API-key headers before any outbound webhook request is sent — <code>Authorization</code>, the internal admin-key header, and every configured third-party API key header. This closes a completely different risk than SSRF itself: even a validated, safe destination shouldn't ever receive BRIEFR's own internal credentials as a side effect of some header being carried along accidentally from an internal context.</p>
+      </div>
+
+      <div class="pitfall-box">
+        <p><strong>A naming correction worth making explicitly:</strong> it would be reasonable to assume <code>webhooks/sender.py</code> holds the low-level HTTP transport logic this chapter just walked through — it doesn't. Read directly, it's a thin, six-name facade re-exporting <code>dispatch_event</code>/<code>send_alert</code>/<code>send_test_message</code> from <code>engine.py</code> and two small "is this destination configured" convenience checks. The actual SSRF-hardened transport lives entirely in <code>engine.py</code> and <code>ssrf.py</code> — <code>sender.py</code> exists purely to give other modules a small, stable import surface without needing to reach into <code>engine.py</code> directly.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does the code connect to the resolved IP literal instead of re-resolving the hostname a second time immediately before connecting? Name the specific attack this prevents.</li>
+          <li>Why does connecting to a bare IP address break standard TLS certificate validation, and how does setting <code>sni_hostname</code> to the original hostname fix it without reintroducing the SSRF risk the IP-pinning was meant to prevent?</li>
+          <li>Under what two specific conditions does the code skip setting <code>sni_hostname</code> at all, and why is each one correct rather than an oversight?</li>
+          <li>What risk does stripping outbound authorization/API-key headers close, and how is it different from the SSRF risk the rest of this chapter addresses?</li>
+          <li>What does <code>webhooks/sender.py</code> actually contain, and why might its name mislead you about where the real transport logic lives?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="api-secarch.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">security_architecture/ — the tool documenting its own posture</span></a><a class="next" href="api-usersettings.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">User-facing settings: notifications, onboarding, preferences</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

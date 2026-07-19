@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inside the LLM failover chain — pacing, quota, audit trail, and the one request-path exception — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="ie-ml-providers" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="ie-ml-providers">
+      <div class="chapter-head">
+        <span class="chapter-num">Part IV · Chapter 24B</span>
+        <h3>Inside the LLM failover chain — pacing, quota, audit trail, and the one request-path exception</h3>
+        <p class="dek">Eleven more files behind <code>llm_router.py</code>'s four-provider chain: how BRIEFR keeps every free-tier provider from ever seeing more traffic than it publishes, and how every attempt gets a permanent, queryable record.</p>
+        <div class="files"><span class="chip">ai/llm_pacing.py</span><span class="chip">ai/quota.py</span><span class="chip">ai/model_catalog.py</span><span class="chip">ai/operations_recorder.py</span><span class="chip">ai/summary.py</span></div>
+      </div>
+
+      <h4 class="subhead concept">Proactive pacing vs. reactive quota tracking — two different mechanisms, easy to conflate</h4>
+      <div class="prose">
+        <p>Worth separating two things that sound like the same job. <strong><code>llm_pacing.py</code></strong> is <em>proactive</em>: before ever making a call, it computes the minimum safe interval between requests to a given provider from that provider's published RPM (requests/minute) and TPM (tokens/minute) limits, takes whichever bound is more restrictive, and applies a safety-margin "headroom" percentage on top (85% by default — treating a stated 30-RPM plan as if it were really 25.5 RPM, so normal jitter and estimation error can't accidentally exceed the real limit). <strong><code>quota.py</code></strong> is <em>reactive</em>: it's a plain in-process dictionary that simply records whatever rate-limit headers a provider actually sends back after a real call (remaining requests, remaining tokens, reset timestamps), purely as an observability cache for the admin UI — it computes nothing and enforces nothing itself, it's just a cache of ground truth the provider handed BRIEFR after the fact.</p>
+        <p>The real, published free-tier numbers behind the pacing math are worth knowing because they explain the failover order: Groq's own limits (30 RPM / 8,000 TPM, held in <code>groq_config.py</code>) are the most generous, which is why it's tried first; Cerebras's free-trial limits (5 RPM / 30,000 TPM) are the tightest of the four on requests-per-minute, explaining why it sits mid-chain rather than first despite otherwise being a fast, capable provider; OpenRouter's free tier (20 RPM / 40,000 TPM) sits third with the only 1-second pacing floor of the four (the others default to 0.5s); Gemini Flash-Lite's free tier (15 RPM / 250,000 TPM) is deliberately last — not because its limits are worst, but per the code's own ordering comment, because it's explicitly reserved as the last resort. Each provider's quota-warning threshold is a flat, hardcoded "5 requests remaining" trigger for the admin UI's low-quota banner — not configurable, a deliberately simple tripwire rather than a tunable alert system.</p>
+        <p>Two small guard files sit in front of every one of these calls. <code>llm_payload.py</code> checks that a prompt actually has substantive content before any HTTP work happens at all — an empty or near-empty message never leaves the process, closing off the cheapest possible way to waste a scarce free-tier quota. <code>llm_session.py</code> scopes a per-batch-job memory of which providers have already returned an empty (not erroring, just content-less) response during the current job, so a Groq that goes quietly unresponsive partway through a 50-CVE batch doesn't get retried on every remaining CVE in that same run — it's skipped locally for the rest of the job while still counting toward the shared circuit breaker globally. The actual wire-format clients are split in two: <code>openai_chat.py</code> is the one shared client for the three providers (Groq, Cerebras, OpenRouter) that all speak the OpenAI-compatible chat-completions format, while <code>gemini_client.py</code> exists separately because Google's <code>generateContent</code> API has a genuinely different request shape (a <code>contents</code>/<code>parts</code> structure and a top-level <code>systemInstruction</code>, rather than a flat <code>messages</code> array) and its own header-based auth convention rather than a bearer token. <code>operations_admin.py</code> is the read-only payload builder for the admin "AI Operations" page — assembling per-provider health, quota, and configuration state into the JSON the frontend renders, with no database queries of its own beyond what's handed to it already aggregated.</p>
+      </div>
+
+      <h4 class="subhead concept">One source of truth for which model runs which task, in what order</h4>
+      <div class="prose">
+        <p><code>model_catalog.py</code> is the single place that answers "which provider, which model, in what order, for this specific task" — its own docstring calls it the system's SSOT. There are exactly three LLM-backed tasks in the whole system (product extraction, PDF summaries, detection-context extraction), and the file's insertion order for provider env-var keys <em>is</em> the documented failover order the admin UI displays. One task-specific branch point is worth knowing: PDF summaries use a larger Groq model (120b parameters) as their first hop, while the other two tasks use a smaller one (20b) — a summary is generated rarely, on explicit user request, so the extra cost/latency of a bigger model is worth paying; product and detection extraction run in scheduler batches across potentially hundreds of CVEs, where a smaller, faster model matters more. A small operational scar is preserved directly in a code comment: OpenRouter's free Gemini Flash-Lite model ID was removed from OpenRouter's own catalog at one point, forcing a fallback default model swap — evidence that even a carefully engineered free-tier stack is still exposed to upstream catalog churn outside BRIEFR's control.</p>
+      </div>
+
+      <h4 class="subhead why">Every LLM attempt gets a permanent audit row — success, failure, or empty alike</h4>
+      <div class="prose">
+        <p><code>operations_recorder.py</code> writes one row to the <code>ai_operations</code> table for <em>every</em> completion attempt, not just successes — including a classified error reason (<code>empty</code>, <code>circuit_open</code>, <code>timeout</code>, <code>auth</code>, <code>rate_limit</code>, <code>model_not_found</code>, or <code>unknown</code>, derived by pattern-matching the raw exception text) and, critically, <code>fallback_from_provider</code>/<code>fallback_from_model</code> fields — so a single logical operation that failed over from Groq to Cerebras to Gemini before finally succeeding leaves a reconstructable trail of the entire chain it walked, not just the final outcome. This recorder deliberately swallows its own exceptions (wrapped in a bare try/except with a warning log) — a design point worth connecting back to Chapter 16's outbound-metering discipline: the audit trail must never be capable of breaking the actual LLM call it's recording.</p>
+      </div>
+
+      <h4 class="subhead pitfall">The one LLM call that <em>does</em> run on the request path — and why it's allowed to</h4>
+      <div class="pitfall-box">
+        <p><code>ai/summary.py</code>'s PDF executive-summary generator is explicitly triggered by an analyst clicking "export," not by any scheduler job — making it the one clearly-marked exception to this book's heavy-work-never-on-the-request-path rule. It's allowed precisely because every safeguard elsewhere in this chapter still applies: the function <em>always</em> computes the deterministic template result first — cheap, instant, no I/O — and only attempts the LLM path on top of that if a provider is configured and there's real data to summarize; the LLM call itself uses a 50-second timeout distinctly longer than the ~30-second floor used for scheduler-side calls, since a human is actively waiting rather than a batch job that can simply retry later; and the function's own docstring states it "never raises" — a malformed LLM response, an empty completion, or a total provider failure all fall back to the pre-computed template result rather than surfacing an error to the user exporting their PDF. The template composer itself is worth knowing as more than a placeholder: it's a real four-sentence rule engine (severity, then a conditional exploit/EPSS/actor clause, then a business-risk statement naming affected products, then a recommended action branching on whether a patch exists, the CVE is KEV-listed, or IOCs are present) — genuinely serviceable prose, not just "no data available."</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Explain the difference between what <code>llm_pacing.py</code> computes and what <code>quota.py</code> records — why does BRIEFR need both instead of just one?</li>
+          <li>Why does an 85% headroom percentage matter — what would eventually happen to a provider's real rate limit if BRIEFR paced itself at exactly 100% of the published number?</li>
+          <li>Why does PDF summary generation use a bigger Groq model than product extraction or detection-context extraction, given both ultimately go through the same failover chain?</li>
+          <li>Why must <code>operations_recorder.py</code> swallow its own exceptions rather than let a logging failure propagate?</li>
+          <li>PDF summary generation is the one LLM call allowed on the request path. Name the three specific safeguards that make this an exception rather than a violation of the heavy-work rule.</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="ie-ml.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">ML and LLM enrichment — three genuinely different categories, and zero Anthropic dependency</span></a><a class="next" href="api-part.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Everything above, exposed over HTTP — and kept running</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

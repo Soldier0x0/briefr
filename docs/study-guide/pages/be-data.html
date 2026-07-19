@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The data layer — BRIEFR's most important module — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="be-data" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="be-data">
+      <div class="chapter-head">
+        <span class="chapter-num">Part II · Chapter 9</span>
+        <h3>The data layer — BRIEFR's most important module</h3>
+        <p class="dek">Dual-backend, no ORM, hand-paired SQL. This chapter is longer than the others on purpose — the project's own internal learning path calls this "the most important module," and after reading it you'll see why.</p>
+        <div class="files"><span class="chip">db/connection.py</span><span class="chip">db/pg_adapt.py</span><span class="chip">db/config.py</span><span class="chip">db/init.py</span><span class="chip">db/errors.py</span><span class="chip">db/*.py — 34 files</span></div>
+      </div>
+
+      <h4 class="subhead concept">Why no ORM, revisited concretely</h4>
+      <div class="prose">
+        <p>Part 0 introduced the ORM-vs-raw-SQL tradeoff in the abstract; here's what "no ORM" actually looks like in a real query module. <code>db/app_settings.py</code> defines its queries as paired string constants, one per database dialect, sitting side by side:</p>
+      </div>
+      <pre class="code"><code>_SELECT_VALUE_SQLITE = <span class="str">"SELECT value FROM app_settings WHERE key = ?"</span>
+_SELECT_VALUE_PG     = <span class="str">"SELECT value FROM app_settings WHERE key = $1"</span>
+
+_UPSERT_SQLITE = <span class="str">"""</span>
+<span class="str">INSERT INTO app_settings (key, value, updated_at)</span>
+<span class="str">VALUES (?, ?, ?)</span>
+<span class="str">ON CONFLICT(key) DO UPDATE SET</span>
+<span class="str">    value = excluded.value, ..."""</span>
+
+_UPSERT_PG = <span class="str">"""</span>
+<span class="str">INSERT INTO app_settings (key, value, updated_at)</span>
+<span class="str">VALUES ($1, $2, $3)</span>
+<span class="str">ON CONFLICT(key) DO UPDATE SET</span>
+<span class="str">    value = excluded.value, ..."""</span></code></pre>
+      <p class="code-caption">db/app_settings.py — the exact <code>_SQLITE</code> / <code>_PG</code> pairing CLAUDE.md's danger zone describes</p>
+      <div class="prose">
+        <p>Notice the two dialects aren't subtly different for no reason: SQLite uses positional <code>?</code> placeholders, Postgres uses numbered <code>$1</code>/<code>$2</code> placeholders — a real driver-level difference neither <code>aiosqlite</code> nor <code>asyncpg</code> will paper over for you. Every query module in <code>db/</code> follows this same shape: write the SQLite version, write the Postgres version, and a small dispatch function (<code>_is_postgres_connection(db)</code>) picks the right one at call time. There is no automatic translation between them for new code — this is the exact meaning of the project's own rule that a new query has to be written twice, deliberately, by a human who understands both dialects' behavior for that specific query.</p>
+      </div>
+
+      <h4 class="subhead concept">What <code>pg_adapt.py</code> actually is (and, importantly, isn't)</h4>
+      <div class="prose">
+        <p>It would be easy to assume <code>pg_adapt.py</code> is a general SQLite-to-Postgres translation layer that saves you from writing dialect-specific SQL — that assumption would be wrong, and CLAUDE.md is explicit about it: <code>db/dialect.py</code>, an earlier general-purpose translator, was deleted entirely in a refactor referred to internally as "Post-B" (2026-07). Checking the current repository confirms that file no longer exists. What remains, <code>pg_adapt.py</code>, is scoped much more narrowly: it's internal machinery inside <code>PostgresConnection</code> that exists only to translate legacy SQLite-flavored SQL still being emitted by code <em>outside</em> the <code>db/</code> package — older router and auth-layer queries written with SQLite idioms (<code>?</code> placeholders, <code>datetime('now')</code>) before the Postgres-native convention was established. Its regex-based <code>_postgres_translate_sql()</code> rewrites those specific patterns (<code>datetime()</code>/<code>date()</code>/<code>julianday()</code> calls, <code>INSERT OR REPLACE</code>/<code>INSERT OR IGNORE</code> into <code>ON CONFLICT</code> equivalents, placeholder renumbering) at the connection boundary, as a compatibility bridge for legacy call sites — not as a general-purpose feature new code is meant to rely on. Writing a brand-new query and hoping <code>pg_adapt.py</code> will make your SQLite SQL "just work" on Postgres is precisely the mistake this file's own docstring warns against.</p>
+      </div>
+
+      <h4 class="subhead how">The connection abstraction: one protocol, two real implementations</h4>
+      <div class="prose">
+        <p><code>db/types.py</code> defines a shared <code>DbConnection</code> protocol — an interface both backends implement identically from the caller's point of view, so query-module code doesn't need an <code>if is_postgres()</code> branch scattered through every function; the branch happens once, inside <code>get_connection()</code>. <code>SqliteConnection</code> wraps <code>aiosqlite</code>, opened in WAL (write-ahead logging) mode with a 30-second busy timeout and foreign keys enforced — WAL mode specifically because it lets readers and a single writer proceed concurrently rather than SQLite's default fully-serialized locking, which matters for a dev/test environment where the scheduler and an interactive request might touch the database at nearly the same moment. <code>PostgresConnection</code> wraps a pooled <code>asyncpg</code> connection, opening a transaction lazily on the first <code>execute()</code> call and leaving commit/rollback entirely to the caller — the connection layer doesn't guess when a logical unit of work ends, the code using it says so explicitly.</p>
+      </div>
+
+      <h4 class="subhead concept">Connection pooling, made concrete</h4>
+      <div class="prose">
+        <p>Part 0 defined a connection pool abstractly; here's the concrete shape. <code>init_pool()</code> opens a process-global asyncpg pool sized between 1 and <code>settings.database_pool_size</code> connections. <code>get_connection()</code> acquires one from the pool with a timeout — if every pooled connection is already checked out and the timeout expires, it raises a specific <code>PoolExhaustedError</code>, which <code>main.py</code>'s exception handler turns into an HTTP 503 (Service Unavailable) rather than a generic crash. This is a meaningfully better failure mode than either silently queuing forever (a request that never returns) or a raw unhandled exception (a 500 with no useful signal) — the client gets a clear, actionable "the server is overloaded, retry" response instead of either extreme. SQLite, by contrast, has no pool at all: each call opens a fresh <code>aiosqlite</code> connection, which is fine for the low-concurrency dev/test use case it's meant for, but is a real, deliberate limitation you should be able to name if asked "does SQLite scale here" — it doesn't, and it isn't meant to.</p>
+      </div>
+
+      <h4 class="subhead why">Why the schema itself is still one database, not split (ADR-001)</h4>
+      <div class="prose">
+        <p>ADR-001 documents a genuine tension in BRIEFR's roadmap: the project has an open-core plan to publish a monthly public CVE/correlation snapshot, but a raw <code>pg_dump</code> of the live production database today would leak operator data alongside it — user accounts, session tokens, IOC watchlist entries, webhook destination URLs. The obvious-looking fix is a physical schema split (an <code>intel</code> schema containing only exportable data, an <code>app</code> schema containing everything operator-specific) so a dump of one schema is safe by construction. ADR-001 explicitly considers and defers that split — it would double the migration and test surface immediately, in exchange for a benefit (safe automated exports) the project doesn't need yet, since the public snapshot feature hasn't shipped. Instead, the boundary between "safe to export" and "not safe to export" is enforced today by an allowlist export script (<code>scripts/export_intel_snapshot.py</code>) that only touches tables it's been told are safe, with the physical split explicitly left as a decision to revisit in a later ADR once the open-core feature actually ships. This is worth noticing as a pattern in its own right: sometimes the architecturally "correct" fix is deliberately deferred because the feature that would justify its cost doesn't exist yet, and a narrower, additive mitigation covers the present risk well enough.</p>
+      </div>
+
+      <h4 class="subhead how">Error normalization across two very different drivers</h4>
+      <div class="prose">
+        <p>SQLite and Postgres drivers raise entirely different exception hierarchies for the same logical failure (a locked database, a constraint violation). <code>db/errors.py</code> catches both <code>sqlite3.*</code> and <code>asyncpg.*</code> exceptions at the connection boundary and re-raises them as BRIEFR's own dialect-neutral types — <code>DatabaseError</code>, <code>DatabaseLockedError</code> — so that code outside the <code>db/</code> package (routers, business logic) can catch one exception type regardless of which database is actually running underneath. This is the payoff of the whole dual-backend design done right: the abstraction boundary is drawn at exactly the right place — dialect differences are absorbed inside <code>db/</code>, and everything outside it can pretend there's only one database.</p>
+      </div>
+
+      <div class="pitfall-box">
+        <p><strong>The trap this whole architecture exists to prevent, stated plainly:</strong> the default test suite runs against SQLite. A query can pass every test in that suite and still break in production, because SQLite silently tolerates things Postgres rejects outright (type coercion is far looser; <code>CAST(x AS REAL)</code> on a non-numeric string is forgiving in SQLite and an error in Postgres — you'll meet this exact example again in Chapter 22's morning-brief chapter). Any change to the data layer needs to be run against both backends before you can trust it — the project's own tooling for that is a disposable Postgres container on port 5433, specifically to avoid colliding with a developer's own local Postgres on 5432.</p>
+      </div>
+
+      <h4 class="subhead how">The other 26 query modules, grouped by what they back</h4>
+      <div class="prose">
+        <p><code>db/</code> has 34 files total; six (<code>connection.py</code>, <code>pg_adapt.py</code>, <code>config.py</code>, <code>init.py</code>, <code>errors.py</code>, <code>app_settings.py</code>) carry the architecture lessons above. The remaining 26 are ordinary query modules, each following the same paired-constant pattern — worth knowing what each one actually backs, since "the data layer" isn't one undifferentiated thing.</p>
+        <p><strong>Core CVE/ingest data:</strong> <code>cve.py</code> is the biggest and most central of all of them — it holds <code>upsert_cves</code>, the literal function every feed in Chapter 14 eventually calls, plus the change-history diffing that powers Chapter 22's "EPSS movers" and a provenance-tagging system that protects LLM-derived product data from ever being silently blanked by an empty incoming enrichment batch. It also exports small shared helpers (chunked <code>IN</code>-clause building, batched change-history inserts) that <code>cache.py</code>, <code>metadata.py</code>, and <code>correlation.py</code> all import — making it the de facto utility module for the whole CVE domain, not just CRUD. <code>cache.py</code> holds the IOC/feed/exploit caches Chapters 14 and 23 both lean on; <code>cache_retention.py</code> is its sweep counterpart — the scheduled cleanup that expires stale rows out of every one of those caches (plus change-history, OTX mirror tables, the AI-operations audit trail, and webhook/audit logs) on their own per-table retention windows, including one genuinely subtle correctness fix worth naming: a webhook dedupe-claim row is written <em>before</em> delivery is attempted, so a worker that crashes between the claim and the actual send would otherwise leave a stranded claim that permanently (and wrongly) suppresses that alert forever — the sweep removes only claims old enough to be safely considered abandoned, without touching ones that are still legitimately in flight. <code>enrichment.py</code> is the write-side counterpart to Chapter 14's feed modules — the actual upsert functions that apply vulnrichment/CIRCL/CAPEC and similar secondary-source data onto existing CVE rows, following the same additive, never-downgrade discipline as <code>cve.py</code>'s own enrichment path. <code>sync_state.py</code> is <em>the</em> watermark mechanism this book has referenced in the abstract since Chapter 14 — it holds the actual NVD watermark read/write functions, including a self-healing seed from the CVE table's own max-modified date when a watermark is missing but real data already exists. <code>metadata.py</code> holds the full MITRE/ATLAS technique and case-study tables, including a join between two taxonomies (ATLAS case studies and ATT&amp;CK techniques) that's deliberately done in Python rather than SQL, because the two datasets share no foreign key and only connect through common CVE IDs — doing that join in the database would mean an expensive N+1 pattern across roughly a hundred Forge coverage rows. <code>software_catalog.py</code> backs the stack-autocomplete feature, with a genuinely different aggregation query per backend (Postgres's <code>ARRAY_AGG(DISTINCT ...)</code> vs. SQLite's <code>GROUP_CONCAT</code> — not just placeholder syntax, a different SQL feature entirely). <code>timeutil.py</code> is the one place the SQLite-string-vs-Postgres-TIMESTAMPTZ divergence in timestamp handling is centralized, so every other module can import one shared function instead of re-solving the same problem.</p>
+        <p><strong>Embeddings and search</strong> (Chapter 24's actual storage layer): <code>embeddings_pgvector.py</code> is pure Python with no SQL at all — the shared math and rich-text-construction helpers both writer and reader modules call into, including the content-hash function that makes a model swap automatically invalidate every stored vector. <code>embeddings_store.py</code> is the writer, with a real per-backend branch worth knowing: Postgres casts the vector literal directly in SQL (<code>CAST($5 AS vector)</code>), while SQLite stores the raw float bytes as a BLOB — genuinely different write paths, not a placeholder swap. <code>embeddings_search.py</code> is the reader — and this is where "ANN on Postgres, brute-force on SQLite" from Chapter 24 becomes concrete: it uses pgvector's cosine-distance operator on Postgres, but a plain NumPy dot-product scan over BLOBs on SQLite, genuinely different algorithms selected by backend, plus the Reciprocal Rank Fusion math that merges keyword and vector results with query-shape-adaptive weighting (a short query weights keyword matching higher; a longer, more descriptive query weights vector similarity higher). <code>search_tokens.py</code> backs the separate scoped bearer-token auth from Chapter 11 — tokens are bcrypt-hashed at rest exactly like passwords, looked up by a stored prefix for speed, then verified in full.</p>
+        <p><strong>Correlation support:</strong> <code>correlation.py</code> is the biggest file in this entire pass (over a thousand lines) — it holds the OTX pulse/IOC mirror tables, a tiered CVE-prioritization query deciding which CVEs get scarce OTX API budget first (KEV and watchlist-pinned CVEs always win that budget first), and the hub-degree table Chapter 20's confidence scoring reads from. Worth flagging directly: <code>correlation_campaigns</code> and three sibling tables are readable through the admin DB explorer (below) but are <em>not</em> written by anything in this file — they're written directly by <code>correlation/campaigns.py</code> and <code>correlation/metrics.py</code> in the correlation package itself, which issue their own raw SQL rather than going through a <code>db/</code>-layer module — worth knowing if you ever go looking for where a campaign row actually gets written and find nothing in <code>db/correlation.py</code>. <code>threatfox.py</code> is worth flagging as a genuine, singular exception to this book's paired-constant rule: it has SQLite-shaped SQL with bare <code>?</code> placeholders and no Postgres variant at all, despite living inside a package CLAUDE.md documents as Postgres-native — a real gap, not a stylistic choice, worth confirming before this feed is exercised hard against Postgres in production.</p>
+        <p><strong>Operator and admin features:</strong> <code>explorer.py</code> and <code>explorer_registry.py</code> together are the actual read-only DB explorer mechanism referenced earlier in this book as "deny-by-default, no arbitrary SQL" — worth verifying that claim precisely rather than taking it on faith, since it's exactly the kind of admin feature that could quietly become a SQL-injection surface if built carelessly. The registry hardcodes, per allowed table, an exact column list, a fixed <code>ORDER BY</code>, and which columns are filterable at all — a table not in this static Python dictionary simply can't be queried, full stop, no fallback path exists. The <em>only</em> user-supplied strings that ever reach a query are a filter column name (checked against that table's specific whitelist) and a filter value (always passed as a bound parameter, never string-concatenated) — and the single most sensitive table, <code>cves</code>, additionally requires a filter and validates it against a strict CVE-ID regex, so it can never be browsed unfiltered. This is a genuine allowlist, confirmed by reading the code, not an assertion taken on trust. <code>integrity.py</code> backs the database health-check feature with a real per-backend split: SQLite gets a built-in <code>PRAGMA foreign_key_check</code>, but Postgres has no equivalent, so this module hand-builds a dynamic query introspecting <code>pg_constraint</code> to count actual orphaned foreign-key rows itself — a case where the two backends need genuinely different engineering, not just different SQL syntax for the same idea. <code>resource_metrics.py</code>, <code>ai_operations.py</code>, and <code>api_metering.py</code> (this one distinct from the top-level file of the same name in Chapter 31) back the admin observability surfaces from Chapters 24B and 30. <code>outbound_jobs.py</code> is Postgres-only by explicit design (Procrastinate, Chapter 17, has no SQLite equivalent to read). <code>stack_backfill.py</code> backs the Tier-A backfill feature and includes a genuinely careful concurrency-safe "claim" operation so a crashed worker's in-progress run can be safely reclaimed by a fresh one rather than leaving two workers racing the same backfill.</p>
+        <p><strong>User-facing tables:</strong> <code>watchlist.py</code> (CVE pin/snooze — still genuinely single-user, unlike almost everything else in this book) and <code>ioc_watchlist.py</code> (the separate, per-user IOC watchlist from Chapter 23) are easy to conflate by name but back two different features. <code>webhooks.py</code> holds the full delivery-log, destination-management, and the atomic dedupe-claim mechanism Chapter 27 depends on to prevent double-sending an alert. <code>user_notifications.py</code> backs the in-app notification inbox from Chapter 28, with a badge-count rule worth knowing precisely: only <code>critical</code> and <code>high</code> severity notifications increment the unread badge — a lower-severity notification is still recorded and visible, it just doesn't compete for the analyst's attention the same way.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>A new query needs to run correctly in both the SQLite test suite and Postgres production. Where does the SQL text actually live — one string, or two — and why doesn't <code>pg_adapt.py</code> save you from writing the Postgres version yourself?</li>
+          <li>What specific problem does WAL mode solve for SQLite in this codebase, and why doesn't Postgres need an equivalent setting?</li>
+          <li>Explain <code>PoolExhaustedError</code>'s role in the request lifecycle: what would happen to a request under heavy load if this exception type didn't exist and pool acquisition just blocked indefinitely instead?</li>
+          <li>ADR-001 rejected a physical intel/app schema split "for now." What specific future event would make revisiting that decision necessary?</li>
+          <li>Walk through the DB explorer's allowlist mechanism precisely: name the two places user input is allowed to reach a query at all, and explain why neither one constitutes a SQL-injection risk.</li>
+          <li>Why does <code>db/integrity.py</code> need an entirely different implementation strategy per backend, rather than just two versions of the same query?</li>
+          <li>If you went looking for where a row in <code>correlation_campaigns</code> actually gets written, why would you find nothing in <code>db/correlation.py</code>?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="be-shim.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">The database.py compatibility shim</span></a><a class="next" href="be-alembic.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Alembic migrations — forward-only, Postgres-only</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

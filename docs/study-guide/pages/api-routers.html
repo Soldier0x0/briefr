@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Routers — 23 files, and the provenance that explains their shape — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="api-routers" data-pages-base="" data-assets-base="../assets/">
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="shell">
+  <aside id="book-aside">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off">
+    <p id="search-empty">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">reset</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main>
+    <section class="page active chapter" id="api-routers">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V · Chapter 25</span>
+        <h3>Routers — 23 files, and the provenance that explains their shape</h3>
+        <p class="dek">Why one file still holds four logically separate sub-routers, and what that tells you about respecting a refactor's history.</p>
+        <div class="files"><span class="chip">routers/cves.py</span><span class="chip">routers/admin.py</span><span class="chip">routers/auth.py</span><span class="chip">+20 more</span></div>
+      </div>
+      <div class="prose">
+        <p>The 23 router files group naturally by feature area. <strong>CVE core</strong> (<code>cves.py</code> — itself containing four distinct sub-routers: changes, list, detail, intel — plus <code>atlas.py</code>, <code>correlation.py</code>, and a small shared <code>_validators.py</code> holding the one <code>require_cve_id</code> helper every one of those sub-routers imports rather than re-validating CVE ID shape independently) covers listing, filtering, exporting, and the full per-CVE detail view: sentences, EPSS history, related CVEs, the "drawer" bundle, risk, momentum, detection, correlation — most of it read-heavy, with on-demand enrichment calls fanned out concurrently via <code>asyncio.gather</code> so a detail view stays responsive even while quietly checking several external sources at once. <strong>Admin</strong> (<code>admin.py</code>, 2,667 lines — the single largest file in the entire backend) is the full operator control plane: system health, scheduler introspection and manual triggers (Chapter 15), backup management, a deliberately read-only, allowlisted database explorer (deny-by-default — there is no arbitrary-SQL box anywhere in this UI, on purpose), and the entire runtime configuration surface from Chapter 7. <strong>Auth</strong> (<code>auth.py</code>, <code>me.py</code>, <code>notifications_me.py</code>) covers the whole login lifecycle plus per-user preferences and the notification inbox. <strong>Detection engineering</strong> (<code>forge.py</code>, <code>detection_backlog.py</code>, <code>proof.py</code>, <code>threat_model.py</code>) exposes the MITRE coverage map, hunt-pack generation, rule testing, and scenario narratives from Part IV. The remainder — IOC/search, wallboard/brief/health, refresh/watchlist — round out the surface.</p>
+      </div>
+      <div class="prose">
+        <p>The detail worth understanding, not just noting in passing: <code>cves.py</code> still contains four sub-routers rather than being split cleanly into four files, and the code carries explicit "moved verbatim from <code>main.py</code>" provenance comments explaining why. Before an earlier router-split refactor, these four concerns were interleaved with ATLAS and IOC routes in one large monolithic <code>main.py</code>, and — recall Chapter 6's lesson about frozen route registration order — reordering or restructuring those routes risks the exact same silent-route-shadowing bug that snapshot test exists to catch. The refactor prioritized "move code into logical modules without changing observable behavior" over "achieve the cleanest possible file boundaries" — a reasonable trade when the alternative risk is a subtle, hard-to-detect routing regression in a security-relevant surface.</p>
+      </div>
+
+      <h4 class="subhead how">The ten routers behind "the remainder," named precisely</h4>
+      <div class="prose">
+        <p><code>config.py</code> is small but worth knowing exactly: its one endpoint returns the Risk Score weight constants purely for frontend display, reading from the same single source of truth (<code>scoring/risk.py</code>) Chapter 18 covers — the actual score is always computed server-side, this route can never itself change a score, only describe one. <code>stack_catalog.py</code> is the real implementation behind the "My Stack" autocomplete and Tier-A backfill feature: it prefers Procrastinate (Chapter 17) for the backfill dispatch, catching an "already enqueued" condition gracefully, and falls back to an in-process background task if Procrastinate isn't available — a concrete instance of the dual-dispatch pattern this book has described in the abstract. <code>wallboard.py</code> implements exactly the cookie-exchange design Chapter 30 describes: one endpoint trades the raw <code>WALLBOARD_TOKEN</code> for a signed session cookie, a second endpoint reads the kiosk payload gated on that cookie — the raw token itself is never handed to a browser tab that stays open. <code>brief.py</code> is a single, notably auth-free endpoint (the morning brief has no session requirement) delegating straight to Chapter 22's service module. <code>health.py</code> backs <code>/api/health</code> and the true liveness probe, both read through the 45-second cache from Chapter 31. <code>meta.py</code> is a small grab-bag: build-version info, a timezone-aware clock, IOC usage counters, and the PDF/investigation summary endpoints that call into Chapter 24B's <code>ai/summary.py</code>. <code>ioc.py</code> is the router surface for Chapter 23's IOC lookup and per-user IOC watchlist. <code>search.py</code> is the one-endpoint surface for Chapter 24's hybrid semantic search. <code>refresh.py</code> is entirely admin-gated — every manual "sync now" trigger from Chapter 15 lives here, each one auditing itself before spawning, and the full daily-ingest route returns 409 if a sync is already in flight while, notably, the MITRE-refresh route does not, since it can't collide with the same lock. <code>watchlist.py</code> is the CVE pin/snooze feature — worth flagging directly as one of the few genuinely single-user (not per-account) tables left in the schema, a fact the router's own docstring acknowledges as a known scope gap rather than an oversight.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>How do you add a second admin account to a running BRIEFR instance? Why is that path deliberately not exposed over HTTP at all?</li>
+          <li>Why does <code>cves.py</code> still contain four logically separate sub-routers instead of being split into four files — connect this back to Chapter 6's route-ordering lesson.</li>
+          <li>Why is the admin database explorer read-only and allowlisted rather than a general SQL query box, given that it's already gated behind <code>require_admin</code>?</li>
+          <li>Why does <code>refresh.py</code>'s full-ingest route return 409 when a sync is already running, while its MITRE-refresh route doesn't need that same guard?</li>
+          <li><code>watchlist.py</code>'s CVE pin/snooze feature is still single-user, unlike <code>ioc.py</code>'s IOC watchlist. What would have to change in the schema to make it per-user, and why hasn't that happened yet?</li>
+        </ol>
+      </div>
+    </section>
+    <div class="page-nav" id="page-nav"><a class="prev" href="api-part.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Everything above, exposed over HTTP — and kept running</span></a><a class="next" href="api-secarch.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">security_architecture/ — the tool documenting its own posture</span></a></div>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>
