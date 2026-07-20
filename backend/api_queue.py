@@ -66,24 +66,66 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# Cap provider pause so a misparsed absolute timestamp cannot stall the queue for years.
+_MAX_SOURCE_PAUSE_SECONDS = 3600.0
+# Bare numbers at/above this are treated as Unix epoch seconds (not relative duration).
+_UNIX_SECONDS_FLOOR = 1_000_000_000.0  # ~2001-09-09
+# Bare numbers at/above this are treated as Unix epoch milliseconds.
+_UNIX_MS_FLOOR = 1_000_000_000_000.0
+
+
 def _parse_duration_seconds(value: str) -> float:
+    """Parse Retry-After / X-RateLimit-Reset-* into a relative wait in seconds.
+
+    Accepts:
+    - relative seconds (``12``, ``1.5``)
+    - unit durations (``12ms``, ``7.66s``, ``2m59s``, ``1h``, ``6m0s``)
+    - HTTP-date absolute times
+    - Unix epoch seconds or milliseconds (converted to delta from now)
+
+    Misparsed absolute timestamps must never be treated as multi-year relative waits.
+    """
     text = (value or "").strip()
     if not text:
         return 0.0
-    try:
-        return float(text)
-    except ValueError:
-        pass
-    match = re.match(r"^(?:(?P<mins>\d+)m)?(?:(?P<secs>\d+(?:\.\d+)?)s)?$", text)
-    if match:
+
+    # Prefer unit durations before bare float so "12ms" is not rejected later.
+    match = re.match(
+        r"^(?:(?P<hours>\d+)h)?(?:(?P<mins>\d+)m(?!s))?(?:(?P<secs>\d+(?:\.\d+)?)(?P<sunit>ms|s))?$",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match and any(match.group(g) for g in ("hours", "mins", "secs")):
+        hours = int(match.group("hours") or 0)
         mins = int(match.group("mins") or 0)
-        secs = float(match.group("secs") or 0)
-        return mins * 60.0 + secs
+        secs_raw = match.group("secs")
+        sunit = (match.group("sunit") or "s").lower()
+        secs = float(secs_raw) if secs_raw is not None else 0.0
+        if sunit == "ms":
+            secs = secs / 1000.0
+        return hours * 3600.0 + mins * 60.0 + secs
+
+    try:
+        num = float(text)
+    except ValueError:
+        num = None
+
+    if num is not None and num == num:  # finite (reject NaN)
+        now = time.time()
+        if num >= _UNIX_MS_FLOOR:
+            return max(0.0, (num / 1000.0) - now)
+        if num >= _UNIX_SECONDS_FLOOR:
+            return max(0.0, num - now)
+        if num >= 0.0:
+            return num
+
     try:
         from email.utils import parsedate_to_datetime
 
         dt = parsedate_to_datetime(text)
         if dt:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
             return max(0.0, (dt - datetime.now(timezone.utc)).total_seconds())
     except (TypeError, ValueError, OverflowError, IndexError):
         logger.warning(
@@ -97,6 +139,15 @@ def _parse_duration_seconds(value: str) -> float:
 def schedule_source_pause(source: str, seconds: float, *, reason: str = "rate_limit") -> None:
     if seconds <= 0:
         return
+    if seconds > _MAX_SOURCE_PAUSE_SECONDS:
+        logger.warning(
+            "Clamping source pause for %s from %.1fs to %.1fs (reason=%s)",
+            resolve_pacing_key(source),
+            seconds,
+            _MAX_SOURCE_PAUSE_SECONDS,
+            reason,
+        )
+        seconds = _MAX_SOURCE_PAUSE_SECONDS
     state = _state(source)
     state.pause_until = max(state.pause_until, time.monotonic() + seconds)
     state.wait_reason = reason

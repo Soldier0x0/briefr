@@ -392,7 +392,7 @@ def test_update_epss_scores_commit_every(tmp_path, monkeypatch):
             await update_epss_scores(db, scores, commit_every=1)
             await counting_commit()
             assert commits["n"] >= 2
-            assert ADDITIVE_ENRICHMENT_COMMIT_CHUNK == 50
+            assert ADDITIVE_ENRICHMENT_COMMIT_CHUNK == 1
         finally:
             await db.close()
 

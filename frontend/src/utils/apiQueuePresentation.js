@@ -67,9 +67,11 @@ export function formatWaitDetail(waitReason, state, retryInSeconds, elapsedSecon
 export function formatElapsed(seconds) {
   const n = Number(seconds)
   if (!Number.isFinite(n) || n < 0) return '0s'
-  if (n < 60) return `${n.toFixed(n >= 10 ? 0 : 1)}s`
-  const mins = Math.floor(n / 60)
-  const secs = Math.round(n % 60)
+  // Belt-and-suspenders: never show multi-day "Retry in" from a misparsed epoch.
+  const capped = Math.min(n, 3600)
+  if (capped < 60) return `${capped.toFixed(capped >= 10 ? 0 : 1)}s`
+  const mins = Math.floor(capped / 60)
+  const secs = Math.round(capped % 60)
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
 }
 
