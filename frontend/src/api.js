@@ -722,5 +722,5 @@ export const adminApi = {
     }
     return adminJson(await adminFetch(url, { method: 'DELETE' }))
   },
-  listOutboundJobs: (limit = 50) => adminApi.getJson(outboundJobsPath(limit).slice('/api/admin'.length)),
+  listOutboundJobs: (limit = 50) => adminApi.getJson(outboundJobsPath(limit)),
 }

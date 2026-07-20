@@ -47,7 +47,7 @@ export default function OutboundJobsPanel() {
   useVisibilityAwareInterval(
     () => loadJobs({ suppressLoading: true }),
     POLL_MS,
-    { enabled: Boolean(payload) && !error },
+    { enabled: Boolean(payload) },
   )
 
   const rows = payload?.jobs || []
@@ -88,7 +88,11 @@ export default function OutboundJobsPanel() {
         id: 'scheduled_at',
         label: 'Scheduled',
         defaultVisible: true,
-        render: (row) => <span className="mono">{fmtIso(row.scheduled_at)}</span>,
+        render: (row) => (
+          <span className="mono">
+            {row.scheduled_at != null && row.scheduled_at !== '' ? fmtIso(row.scheduled_at) : '—'}
+          </span>
+        ),
       },
       {
         id: 'queueing_lock',
@@ -131,18 +135,17 @@ export default function OutboundJobsPanel() {
         id: col.id,
         label: col.label,
         defaultVisible: col.defaultVisible,
-        render: (row) => (
-          <span className="mono">
-            {row[col.field] ?? (col.altField ? row[col.altField] : null) ?? '—'}
-          </span>
-        ),
+        render: (row) => {
+          const val = row[col.field] ?? (col.altField ? row[col.altField] : null)
+          return <span className="mono">{val !== '' && val != null ? val : '—'}</span>
+        },
       })
     }
 
     return base
   }, [rows])
 
-  const sectionData = error ? null : (loading && !payload ? null : rows)
+  const sectionData = loading && !payload ? null : rows
 
   return (
     <div className="admin-card">
@@ -175,7 +178,7 @@ export default function OutboundJobsPanel() {
         Recent Procrastinate tasks from <code className="mono">procrastinate_jobs</code> (newest first).
         Enable with <code className="mono">PROCRASTINATE_ENABLED=1</code> and restart the backend.
       </p>
-      {error ? (
+      {error && !payload ? (
         <div className="admin-callout admin-callout-red" role="alert">
           <span>
             {error.message}
@@ -191,21 +194,43 @@ export default function OutboundJobsPanel() {
           </button>
         </div>
       ) : (
-        <AsyncSection
-          data={sectionData}
-          emptyMessage={emptyMessage}
-          onRetry={() => loadJobs()}
-        >
-          {(jobRows) => (
-            <AdminDataGrid
-              gridId="outbound-jobs"
-              columns={columns}
-              rows={jobRows}
-              rowKey={(row) => String(row.id)}
-              emptyMessage={emptyMessage}
-            />
-          )}
-        </AsyncSection>
+        <>
+          {error && payload ? (
+            <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
+              <span>
+                {error.message}
+                {error.requestId ? (
+                  <>
+                    {' '}
+                    <span className="mono">ref: {error.requestId}</span>
+                  </>
+                ) : null}
+              </span>
+              <button
+                type="button"
+                className="admin-btn admin-btn-ghost"
+                onClick={() => loadJobs({ suppressLoading: true })}
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
+          <AsyncSection
+            data={sectionData}
+            emptyMessage={emptyMessage}
+            onRetry={() => loadJobs()}
+          >
+            {(jobRows) => (
+              <AdminDataGrid
+                gridId="outbound-jobs"
+                columns={columns}
+                rows={jobRows}
+                rowKey={(row) => String(row.id)}
+                emptyMessage={emptyMessage}
+              />
+            )}
+          </AsyncSection>
+        </>
       )}
     </div>
   )
