@@ -476,20 +476,20 @@ def calculate_ssvc_outcome(
 - Split: `backend/routers/cves/` for existing sub-routers
 - FE: extract hooks from largest drawers incrementally (one component family per commit)
 
-- [ ] **Step 1: Capture OpenAPI paths dump before.**
+- [x] **Step 1: Capture OpenAPI paths dump before.**
 
 ```bash
 # from running app or TestClient
 python -c "..."  # dump route list to /tmp/routes-before.txt
 ```
 
-- [ ] **Step 2: Mechanical move; `admin/__init__.py` re-exports aggregate router; main.py import unchanged.**
+- [x] **Step 2: Mechanical move; `admin/__init__.py` re-exports aggregate router; main.py import unchanged.**
 
-- [ ] **Step 3: Diff routes after — must be identical.**
+- [x] **Step 3: Diff routes after — must be identical.**
 
-- [ ] **Step 4: FE extracts with visual parity; `npm run build`.**
+- [ ] **Step 4: FE extracts with visual parity; `npm run build`.** *(deferred — F1.5 not in this PR)*
 
-- [ ] **Step 5: Commit/PR per package boundary if needed.**
+- [x] **Step 5: Commit/PR per package boundary if needed.** *(admin package on `cursor/phase1-w7-router-split-91c2`; CVE package deferred)*
 
 ---
 

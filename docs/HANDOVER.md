@@ -12,6 +12,33 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W7 admin router package (F1.2 / Task 14 partial)
+
+**Done** (branch `cursor/phase1-w7-router-split-91c2`)
+- Converted `backend/routers/admin.py` (~2740 LOC) → `backend/routers/admin/`
+  package. `main.py` import unchanged (`from routers import admin as
+  admin_router` → aggregate `router`).
+- Modules (contiguous OpenAPI registration order): `system`, `tokens`,
+  `storage`, `data_ops`, `config`, `webhooks`, `database`, `jobs`, `feeds`,
+  `webhooks_logs`, `ai_ops`, `diagnostics` + `helpers` / `router`.
+  Each file <800 LOC; `_JOB_RUN_MAP` lock ids unchanged in `jobs.py`.
+- Route identity: `/tmp/routes-before.txt` vs `/tmp/routes-after.txt`
+  identical (72 method+path rows); `test_router_split` EXPECTED_ROUTES order
+  preserved.
+- Tests: `pytest -k admin` → 245 passed; router_split + corpus drift green
+  (corpus regenerated for package paths).
+- Monkeypatch-compatible re-exports on package (`BACKUP_DIR`, `_DOTENV_PATH`,
+  `trigger_graceful_restart`, `_job_is_disabled`, `_JOB_RUN_MAP`, …);
+  config/diagnostics/jobs resolve restart/disable via `routers.admin`.
+
+**Deferred (same W7 / Task 14 remaining):**
+- **CVE routers:** `cves.py` → `routers/cves/` package (optional this wave).
+- **FE F1.5:** large component extracts — skip this PR; do incrementally later.
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
+
+**Next:** CVE package split and/or FE F1.5 follow-on.
+
 ## 2026-07-20 — Phase 1 W8 Dual-SQL ratchet (F1.4 / Task 15)
 
 **Done** (branch `cursor/phase1-w8-sql-ratchet-91c2`)
@@ -28,6 +55,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 **GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
 
 **Next:** W7 god-file splits (F1.2/F1.5). Do not start W7 on this branch.
+>>>>>>> origin/main
 
 ---
 
@@ -56,7 +84,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
 
-**Next:** W7 god-file splits (F1.2/F1.5). Do not start W7 on this branch.
+**Next:** W7 started on `cursor/phase1-w7-router-split-91c2` (see newest entry).
 
 ---
 

@@ -1,15 +1,125 @@
 version: 1
 components:
-- id: routers-admin
-  title: routers.admin
-  summary: FastAPI router module with 72 endpoint(s).
+- id: routers-admin-ai_ops
+  title: routers.admin.ai_ops
+  summary: FastAPI router module with 5 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 72
+  endpoint_count: 5
   source_refs:
   - type: file
-    ref: backend/routers/admin.py
+    ref: backend/routers/admin/ai_ops.py
+- id: routers-admin-config
+  title: routers.admin.config
+  summary: FastAPI router module with 4 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 4
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/config.py
+- id: routers-admin-data_ops
+  title: routers.admin.data_ops
+  summary: FastAPI router module with 7 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 7
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/data_ops.py
+- id: routers-admin-database
+  title: routers.admin.database
+  summary: FastAPI router module with 4 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 4
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/database.py
+- id: routers-admin-diagnostics
+  title: routers.admin.diagnostics
+  summary: FastAPI router module with 11 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 11
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/diagnostics.py
+- id: routers-admin-feeds
+  title: routers.admin.feeds
+  summary: FastAPI router module with 3 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 3
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/feeds.py
+- id: routers-admin-jobs
+  title: routers.admin.jobs
+  summary: FastAPI router module with 9 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 9
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/jobs.py
+- id: routers-admin-storage
+  title: routers.admin.storage
+  summary: FastAPI router module with 11 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 11
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/storage.py
+- id: routers-admin-system
+  title: routers.admin.system
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/system.py
+- id: routers-admin-tokens
+  title: routers.admin.tokens
+  summary: FastAPI router module with 8 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 8
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/tokens.py
+- id: routers-admin-webhooks
+  title: routers.admin.webhooks
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/webhooks.py
+- id: routers-admin-webhooks_logs
+  title: routers.admin.webhooks_logs
+  summary: FastAPI router module with 3 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 3
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/webhooks_logs.py
 - id: routers-atlas
   title: routers.atlas
   summary: FastAPI router module with 4 endpoint(s).

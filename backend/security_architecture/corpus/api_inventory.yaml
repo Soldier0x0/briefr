@@ -2,220 +2,220 @@ version: 1
 endpoints:
 - method: GET
   path: /api/admin/ai/operations/activity
-  component_id: routers-admin
+  component_id: routers-admin-ai_ops
 - method: GET
   path: /api/admin/ai/operations/models
-  component_id: routers-admin
+  component_id: routers-admin-ai_ops
 - method: GET
   path: /api/admin/ai/operations/overview
-  component_id: routers-admin
+  component_id: routers-admin-ai_ops
 - method: GET
   path: /api/admin/ai/operations/providers
-  component_id: routers-admin
+  component_id: routers-admin-ai_ops
 - method: GET
   path: /api/admin/api-keys/health
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: POST
   path: /api/admin/api-keys/health/run
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: GET
   path: /api/admin/api-usage/metering
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: GET
   path: /api/admin/audit-log
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/backups
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/backups/run
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/backups/upload
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/backups/verify/{filename}
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: GET
   path: /api/admin/config
-  component_id: routers-admin
+  component_id: routers-admin-config
 - method: POST
   path: /api/admin/config
-  component_id: routers-admin
+  component_id: routers-admin-config
 - method: POST
   path: /api/admin/config/apply-all
-  component_id: routers-admin
+  component_id: routers-admin-config
 - method: GET
   path: /api/admin/config/schema
-  component_id: routers-admin
+  component_id: routers-admin-config
 - method: POST
   path: /api/admin/config/webhook-test
-  component_id: routers-admin
+  component_id: routers-admin-webhooks
 - method: GET
   path: /api/admin/correlation/status
-  component_id: routers-admin
+  component_id: routers-admin-system
 - method: GET
   path: /api/admin/database
-  component_id: routers-admin
+  component_id: routers-admin-database
 - method: POST
   path: /api/admin/database/migrate
-  component_id: routers-admin
+  component_id: routers-admin-database
 - method: GET
   path: /api/admin/database/migrate/status
-  component_id: routers-admin
+  component_id: routers-admin-database
 - method: POST
   path: /api/admin/database/test-connection
-  component_id: routers-admin
+  component_id: routers-admin-database
 - method: GET
   path: /api/admin/db-explorer/tables
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: GET
   path: /api/admin/db-explorer/tables/{table_name}/rows
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: GET
   path: /api/admin/destructive-actions
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/diagnostics/corpus-drift
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: POST
   path: /api/admin/diagnostics/integrity
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: POST
   path: /api/admin/diagnostics/smoke
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/diagnostics/support-pack
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/display/typography-default
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: PUT
   path: /api/admin/display/typography-default
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: POST
   path: /api/admin/feeds/epss/force-resync
-  component_id: routers-admin
+  component_id: routers-admin-feeds
 - method: POST
   path: /api/admin/feeds/{source_id}/reset-circuit
-  component_id: routers-admin
+  component_id: routers-admin-feeds
 - method: GET
   path: /api/admin/hunt-packs
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: DELETE
   path: /api/admin/hunt-packs/{pack_id}
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: POST
   path: /api/admin/incidents/refresh
-  component_id: routers-admin
+  component_id: routers-admin-feeds
 - method: GET
   path: /api/admin/ioc-cache
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: DELETE
   path: /api/admin/ioc-cache/{value:path}
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: GET
   path: /api/admin/jobs/outbound
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: GET
   path: /api/admin/logs
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/notifications
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: GET
   path: /api/admin/onboarding
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: POST
   path: /api/admin/onboarding/dismiss
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/ratelimit
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/resources
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/restart
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/retrieval/health
-  component_id: routers-admin
+  component_id: routers-admin-ai_ops
 - method: GET
   path: /api/admin/scheduler
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: GET
   path: /api/admin/scheduler/history
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: POST
   path: /api/admin/scheduler/pause
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: POST
   path: /api/admin/scheduler/pause-all
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: POST
   path: /api/admin/scheduler/resume
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: POST
   path: /api/admin/scheduler/resume-all
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: POST
   path: /api/admin/scheduler/run
-  component_id: routers-admin
+  component_id: routers-admin-jobs
 - method: GET
   path: /api/admin/search-tokens
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: POST
   path: /api/admin/search-tokens
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: DELETE
   path: /api/admin/search-tokens/{token_id}
-  component_id: routers-admin
+  component_id: routers-admin-tokens
 - method: GET
   path: /api/admin/security
-  component_id: routers-admin
+  component_id: routers-admin-diagnostics
 - method: GET
   path: /api/admin/storage
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: GET
   path: /api/admin/storage/export
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/storage/purge
-  component_id: routers-admin
+  component_id: routers-admin-storage
 - method: GET
   path: /api/admin/system
-  component_id: routers-admin
+  component_id: routers-admin-system
 - method: GET
   path: /api/admin/watchlist
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: POST
   path: /api/admin/watchlist/clear-snoozes
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: DELETE
   path: /api/admin/watchlist/{cve_id}
-  component_id: routers-admin
+  component_id: routers-admin-data_ops
 - method: GET
   path: /api/admin/webhooks/delivery-log
-  component_id: routers-admin
+  component_id: routers-admin-webhooks_logs
 - method: GET
   path: /api/admin/webhooks/destinations
-  component_id: routers-admin
+  component_id: routers-admin-webhooks
 - method: POST
   path: /api/admin/webhooks/destinations
-  component_id: routers-admin
+  component_id: routers-admin-webhooks
 - method: DELETE
   path: /api/admin/webhooks/destinations/{destination_id}
-  component_id: routers-admin
+  component_id: routers-admin-webhooks
 - method: PATCH
   path: /api/admin/webhooks/destinations/{destination_id}
-  component_id: routers-admin
+  component_id: routers-admin-webhooks
 - method: GET
   path: /api/admin/webhooks/health
-  component_id: routers-admin
+  component_id: routers-admin-webhooks_logs
 - method: GET
   path: /api/admin/webhooks/log
-  component_id: routers-admin
+  component_id: routers-admin-webhooks_logs
 - method: GET
   path: /api/ai/summary
   component_id: routers-meta

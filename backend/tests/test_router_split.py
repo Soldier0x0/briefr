@@ -278,7 +278,7 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/detection-backlog"] == "routers.detection_backlog"
     assert by_path["/api/ioc/watchlist"] == "routers.ioc"
     assert by_path["/api/watchlist"] == "routers.watchlist"
-    assert by_path["/api/admin/system"] == "routers.admin"
+    assert by_path["/api/admin/system"] == "routers.admin.system"
     assert by_path["/api/search/semantic"] == "routers.search"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())

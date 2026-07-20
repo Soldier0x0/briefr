@@ -78,7 +78,7 @@ fixing.** Reproduce/verify → trace the failing path → fix the underlying cla
    suite and still break production, so for any `db/`-layer change run the
    suite both ways: default, and with `DATABASE_URL` pointing at Postgres.
 2. **Scheduler locks:** job `id=` strings in `scheduler.py` must stay in sync
-   with the lock mapping used by `routers/admin.py`.
+   with the lock mapping used by `routers/admin/ (jobs.py `_JOB_RUN_MAP`)`.
 3. **Migrations are forward-only** (Alembic). Never edit an applied migration;
    add a new one.
 4. **Secrets in logs:** structured logging redacts extra fields matching
