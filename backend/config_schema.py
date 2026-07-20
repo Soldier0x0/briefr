@@ -185,6 +185,18 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 display_label="LLM product extraction interval", unit="h"),
     ConfigField("LLM_PRODUCT_EXTRACTION_MAX_PER_RUN", "ml", "int", min=1,
                 help_text="Maximum CVEs processed per LLM product-extraction run."),
+    ConfigField("CORRELATION_PRECOMPUTE_ENABLED", "ml", "bool",
+                help_text="Enable nightly correlation snapshots so CVE risk reads prefer cheap precomputed rows.",
+                display_label="Correlation precompute"),
+    ConfigField("DETECTION_CONTEXT_SYNC_ENABLED", "ml", "bool",
+                help_text="Enable deterministic detection-context cache refresh from CVE and exploit metadata.",
+                display_label="Detection context sync"),
+    ConfigField("DETECTION_CONTEXT_LLM_ENABLED", "ml", "bool",
+                help_text="Enable optional LLM extraction of detection artifacts into detection context.",
+                display_label="Detection context LLM"),
+    ConfigField("DETECTION_CONTEXT_NUCLEI_ENABLED", "ml", "bool",
+                help_text="Enable deterministic Nuclei YAML artifact enrichment during exploit sync.",
+                display_label="Detection context Nuclei"),
 
     # ── Backup ───────────────────────────────────────────────────────────────
     ConfigField("BACKUP_ENABLED", "backup", "bool",

@@ -2061,7 +2061,10 @@ Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock
 Audit: `scheduler.run.{job_id}`.
 
 ### GET /api/admin/config/schema
-Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals). Includes `WALLBOARD_TOKEN` under section `security` (kiosk gate — `restart` apply strategy) and `RATE_LIMIT_WALLBOARD_PER_MINUTE` under `app` (kiosk polling limit — `restart` apply strategy).
+Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals). Includes `WALLBOARD_TOKEN` under section `security` (kiosk gate — `restart` apply strategy), `RATE_LIMIT_WALLBOARD_PER_MINUTE` under `app` (kiosk polling limit — `restart` apply strategy), and Admin-visible boolean toggles for `CORRELATION_PRECOMPUTE_ENABLED`, `DETECTION_CONTEXT_SYNC_ENABLED`, `DETECTION_CONTEXT_LLM_ENABLED`, and `DETECTION_CONTEXT_NUCLEI_ENABLED`.
+
+### GET /api/admin/config
+Returns the current Admin config values grouped by section, with secrets masked. The `ml` section includes env-backed runtime booleans for correlation precompute and detection-context sync/LLM/Nuclei toggles so operators can see the same flags exposed by `/config/schema`.
 
 ### POST /api/admin/config
 Body `{key, value}`. Writes one key to `.env` and `os.environ`. For `scheduler_reschedule` keys, reschedules affected APScheduler jobs without a full restart. Response includes `apply_strategy`, `warning_restart_required` (when strategy is `restart`), `rescheduled_jobs`, and `message`. Use `POST /config/apply-all` for keys that require a backend restart (including `WALLBOARD_TOKEN`).
