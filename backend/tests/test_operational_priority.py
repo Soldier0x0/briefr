@@ -166,3 +166,25 @@ def test_sort_key_stable():
     k_high_threat = operational_priority_sort_key("P2", 70.0, "UNKNOWN", "CVE-2024-0001")
     k_low_threat = operational_priority_sort_key("P2", 60.0, "UNKNOWN", "CVE-2024-0001")
     assert k_high_threat < k_low_threat
+
+
+def test_epss_ge_half_escalates_med_possible():
+    """W3: MED × POSSIBLE is P3 in the base table; EPSS ≥ 0.5 escalates one band."""
+    op = derive_operational_priority("MED", "POSSIBLE", epss=0.55)
+    assert op["band"] == "P2"  # was P3 in base table
+    assert "EPSS" in op["rationale"]
+
+
+def test_kev_crit_unknown_unchanged_by_low_epss():
+    """W3: KEV / CRIT × UNKNOWN stays P1; low EPSS must not de-escalate."""
+    op = derive_operational_priority("CRIT", "UNKNOWN", epss=0.01)
+    assert op["band"] == "P1"
+
+
+def test_epss_rising_allows_p3_to_p2():
+    """W3: rising EPSS may escalate P3→P2 when Environment ≥ POSSIBLE."""
+    base = derive_operational_priority("MED", "POSSIBLE", epss=0.2, epss_rising=False)
+    assert base["band"] == "P3"
+    op = derive_operational_priority("MED", "POSSIBLE", epss=0.2, epss_rising=True)
+    assert op["band"] == "P2"
+    assert "rising" in op["rationale"].lower() or "Rising" in op["rationale"]

@@ -359,7 +359,7 @@ def derive_operational_priority(
 ) -> dict[str, Any]:
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```python
 def test_epss_ge_half_escalates_med_possible():
@@ -373,7 +373,7 @@ def test_kev_crit_unknown_unchanged_by_low_epss():
     assert op["band"] == "P1"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd backend && pytest tests/test_operational_priority.py::test_epss_ge_half_escalates_med_possible -q
@@ -381,11 +381,12 @@ cd backend && pytest tests/test_operational_priority.py::test_epss_ge_half_escal
 
 Expected: FAIL
 
-- [ ] **Step 3: Implement additive escalation after base table + before/after corr bump; never escalate past P1; never change Threat.**
+- [x] **Step 3: Implement additive escalation after base table + before/after corr bump; never escalate past P1; never change Threat.**
 
-- [ ] **Step 4: Wire `epss` / rising from `cves.py` `/risk` handler using CVE epss + momentum signals.**
+- [x] **Step 4: Wire `epss` / rising from `cves.py` `/risk` handler using CVE epss + momentum signals.**
 
-- [ ] **Step 5: Docs (API_REFERENCE, ADR-002 addendum), graphify, commit, PR, merge.**
+- [x] **Step 5: Docs (API_REFERENCE, ADR-002 addendum), graphify, commit, PR, merge.**
+  (GRAPHIFY_MISSING on this agent; PR/merge left to maintainer — branch pushed only.)
 
 ---
 

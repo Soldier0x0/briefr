@@ -1,4 +1,4 @@
-"""Operational Priority v1.0 — rule-based P1–P4 bands (ADR-002)."""
+"""Operational Priority v1.1 — rule-based P1–P4 bands (ADR-002 + W3 EPSS)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import Any
 
 from scoring.environment import TIER_RANK
 
-VERSION = "operational-priority-1.0"
+VERSION = "operational-priority-1.1"
 
 PRIORITY_ORDER = ("P1", "P2", "P3", "P4")
 PRIORITY_RANK = {band: idx for idx, band in enumerate(PRIORITY_ORDER)}
@@ -118,22 +118,53 @@ def derive_operational_priority(
     threat_band: str,
     env_tier: str,
     corr_escalation: bool = False,
+    *,
+    epss: float | None = None,
+    epss_rising: bool = False,
 ) -> dict[str, Any]:
-    """Deterministic P1–P4 band from threat × environment, optional correlation bump."""
+    """Deterministic P1–P4 band from threat × environment, optional EPSS/correlation bumps.
+
+    EPSS rules are additive (ADR-002 addendum / W3): they never change Threat and
+    never de-escalate KEV/CRIT dominance. Escalations stack with correlation but
+    never past P1. Missing EPSS is treated as 0.0.
+    """
     base = _base_priority(threat_band, env_tier)
     provisional = env_tier == "UNKNOWN"
     escalated = False
     band = base
+    epss_val = 0.0 if epss is None else float(epss)
+    env_ge_possible = TIER_RANK.get(env_tier, 0) >= TIER_RANK["POSSIBLE"]
+    epss_notes: list[str] = []
+
+    # Absolute EPSS ≥ 0.5: one-band escalate for HIGH/MED when Environment ≥ POSSIBLE
+    if (
+        threat_band in ("HIGH", "MED")
+        and epss_val >= 0.5
+        and env_ge_possible
+        and band != "P1"
+    ):
+        bumped = _escalate_band(band)
+        if bumped != band:
+            band = bumped
+            epss_notes.append("Escalated one band due to EPSS ≥ 0.5.")
+
+    # Rising EPSS: allow P3→P2 when Environment ≥ POSSIBLE (base would be P3)
+    if epss_rising and env_ge_possible and base == "P3" and band == "P3":
+        band = "P2"
+        epss_notes.append("Escalated P3→P2 due to rising EPSS.")
 
     if corr_escalation and band in ("P2", "P3"):
+        prev = band
         band = _escalate_band(band)
-        escalated = band != base
+        escalated = band != prev
 
     rationale = _RATIONALE.get((threat_band, env_tier), f"{threat_band} threat in {env_tier} environment.")
     if provisional:
         rationale = (
             f"{rationale} Environment unknown — priority may change once a profile is loaded."
         )
+    for note in epss_notes:
+        rationale = f"{rationale} {note}"
     if escalated:
         rationale = (
             f"{rationale} Escalated one band due to high-confidence active campaign linkage."

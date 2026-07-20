@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W3 EPSS → OP escalations (Task 10)
+
+**Done** (branch `cursor/phase1-w3-epss-op-91c2`)
+- Extended `derive_operational_priority(..., *, epss=None, epss_rising=False)` — version `operational-priority-1.1`.
+- Additive rules after base table: HIGH/MED + EPSS ≥ 0.5 + env ≥ POSSIBLE → one-band OP escalate; rising EPSS + env ≥ POSSIBLE + base P3 → P2; stacks with corr, never past P1.
+- Threat formula unchanged; CRIT×UNKNOWN / KEV P1 unchanged by low EPSS.
+- `POST /api/cves/{id}/risk` passes `epss_score` + `epss_rising` from momentum signals.
+- Tests: `test_epss_ge_half_escalates_med_possible`, `test_kev_crit_unknown_unchanged_by_low_epss`, `test_epss_rising_allows_p3_to_p2`.
+- Docs: ADR-002 addendum, SYSTEM_DESIGN, API_REFERENCE (`POST /risk`), PRODUCT_STATUS, sprint W3 + plan Task 10 ticked.
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
+
+**Next:** W4 SSVC annotation. Do not parallelize W2–W5. Do not start W4 on this branch.
+
+---
+
 ## 2026-07-20 — Phase 1 W2 scoring hygiene (Tasks 5–9)
 
 **Done** (branch `cursor/phase1-w2-scoring-hygiene-91c2`)

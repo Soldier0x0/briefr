@@ -821,6 +821,19 @@ Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_
 
 ## Risk & Correlation
 
+### POST /api/cves/{cve_id}/risk
+
+**Description:** Canonical ADR-002 scoring for one CVE — Threat Score, Environment
+tier, Operational Priority band, legacy v1.1b under `legacy_risk_v11b`, plus
+momentum. Optional body `profile` / `assets` personalise Environment.
+
+**OP escalations (W3):** EPSS from `cves.epss_score` and rising-EPSS momentum
+signals (`momentum_signals[].type == "epss_rising"`) may bump OP one band per
+ADR-002 addendum (HIGH/MED + EPSS ≥ 0.5 + env ≥ POSSIBLE; or rising EPSS
+P3→P2). Threat formula unchanged; low EPSS never lowers KEV/CRIT P1.
+Correlation-based OP escalation is **not** computed on this path (E1-2) — the
+drawer may apply campaign escalation client-side when correlation data arrives.
+
 ### GET /api/cves/{cve_id}/greynoise-scans
 
 On-demand GreyNoise Community lookups for IPv4 addresses found in the CVE
@@ -853,7 +866,9 @@ When `GREYNOISE_API_KEY` is unset: `{"configured": false, "scans": []}`.
 |---|---|---|---|
 | `sector` | str | `""` | User industry for actor sector matching |
 
-**Response:** Threat, Environment, Operational Priority (ADR-002), legacy v1.1b blend, momentum. Correlation-based OP escalation is **not** computed on this path (E1-2) — the drawer applies campaign escalation client-side when correlation data arrives.
+**Response:** Campaign / infrastructure / actor correlation graph for the CVE.
+Correlation-based OP escalation is applied separately (E1-2 / temporary FE merge
+after `/risk`) — this route does not recompute Threat.
 
 ```json
 {

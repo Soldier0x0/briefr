@@ -1515,10 +1515,18 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
                 await db.rollback()
             except Exception:
                 pass
+        # W3: additive EPSS OP escalations (Threat formula unchanged; KEV dominance intact)
+        mom_signals = momentum.get("momentum_signals") or []
+        epss_rising = any(
+            isinstance(sig, dict) and sig.get("type") == "epss_rising"
+            for sig in mom_signals
+        )
         operational_priority = derive_operational_priority(
             threat.get("band", "LOW"),
             environment.get("tier", "UNKNOWN"),
             corr_escalation=False,
+            epss=cve.get("epss_score"),
+            epss_rising=epss_rising,
         )
     finally:
         await db.close()

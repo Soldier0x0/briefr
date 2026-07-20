@@ -120,6 +120,12 @@ CISA `is_kev` applies a Threat floor of 80; VulnCheck-only exploitation does
 Legacy v1.1b blend remains on the response as `legacy_risk_v11b` until a later
 deprecation PR.
 
+**EPSS → OP (W3):** after the base Threat×Environment table, OP may escalate one
+band when Threat is HIGH/MED, EPSS ≥ 0.5, and Environment ≥ POSSIBLE; rising EPSS
+(momentum `epss_rising`) may escalate base P3→P2 under the same env gate. These
+rules are additive, never change Threat, and never de-escalate KEV/CRIT P1.
+Missing EPSS counts as 0. See ADR-002 addendum.
+
 Optional `profile` / `assets` in the POST body personalise Environment (CPE
 match via `matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`).
 Momentum is computed server-side in the same request via `calculate_momentum()`.
