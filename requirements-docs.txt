@@ -1,0 +1,5 @@
+# Optional dependencies for docs/scripts tooling (not backend runtime).
+# Install alongside backend venv when running inventory generators:
+#   pip install -r requirements-docs.txt
+
+openpyxl==3.1.5

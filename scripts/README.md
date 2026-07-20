@@ -11,7 +11,7 @@ management scripts (create user, backfill, env sync) live in `backend/scripts/`.
 | `capture_readme_screenshots.mjs` | README screenshots via Playwright | `docs/assets/screenshots/` |
 | `capture_theme_screenshots.mjs` | Theme-audit screenshots | `docs/assets/screenshots/theme-audit/` |
 | `generate_system_design_pdf.mjs` | Printable architecture doc from `docs/SYSTEM_DESIGN.md` | `SYSTEM_DESIGN.pdf` (gitignored) |
-| `generate_technical_inventory_xlsx.py` | Inventory spreadsheet | `TECHNICAL_INVENTORY.xlsx` (gitignored) |
+| `generate_technical_inventory_xlsx.py` | Inventory spreadsheet (`pip install openpyxl` or `pip install -r requirements-docs.txt`) | `TECHNICAL_INVENTORY.xlsx` (gitignored) |
 | `generate_architecture_map.py` | Interactive architecture map | `architecture-map.html` (gitignored) |
 | `generate_security_corpus.py` | Regenerate `backend/security_architecture/corpus/` generated YAML (drift-tested in CI) | committed corpus files |
 | `export_intel_snapshot.py` / `import_intel_snapshot.py` / `verify_intel_snapshot.py` | Public intel bundle per `docs/DATA_SNAPSHOT.md` | `briefr-intel-*.pgdump.gz` |

@@ -12,6 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 6 Tasks 9–10: FE dead weight + openpyxl off runtime
+
+**Done** (branch `cursor/w6-hygiene-91c2`):
+- **Task 9:** Deleted five confirmed zero-importer FE files:
+  `ActionProgress.jsx`, `RunningJobsPanel.jsx`, `OperatorSystemActions.jsx`,
+  `adminListResponse.js`, `light-theme.css`. Updated `lint-design-tokens.sh`
+  allowlist (removed deleted light-theme path). ARCH orphan sections left
+  in place — still imported by unrouted `SecurityArchitecturePage.jsx`.
+- **Task 10:** Removed `openpyxl` from `backend/requirements.txt`; pin moved
+  to new `requirements-docs.txt`; `scripts/README.md` documents
+  `pip install -r requirements-docs.txt` for `generate_technical_inventory_xlsx.py`.
+
+**Verify:** `cd frontend && npm run build && npm run test:unit`.
+
+**Next:** W6 remaining tasks on same branch or follow-on hygiene PR.
+
+---
+
 ## 2026-07-20 — Wave 5 Task 8: stack backfill rate-limit durable resume
 
 **Done** (branch `cursor/w5-stack-resume-91c2`):
