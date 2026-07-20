@@ -25,6 +25,7 @@ export default function OutboundJobsPanel() {
   const [error, setError] = useState(null)
   const [pinging, setPinging] = useState(false)
   const [pingMessage, setPingMessage] = useState('')
+  const [pingError, setPingError] = useState(null)
 
   const loadJobs = useCallback(async ({ suppressLoading = false } = {}) => {
     if (!suppressLoading) setLoading(true)
@@ -45,13 +46,13 @@ export default function OutboundJobsPanel() {
   const pingQueue = useCallback(async () => {
     setPinging(true)
     setPingMessage('')
+    setPingError(null)
     try {
       const { data } = await adminApi.pingOutboundQueue()
       setPingMessage(data?.message || 'health_ping queued')
-      setError(null)
       await loadJobs({ suppressLoading: true })
     } catch (err) {
-      setError({
+      setPingError({
         message: err?.message || 'Failed to ping durable outbound queue',
         requestId: err?.requestId || null,
       })
@@ -222,50 +223,62 @@ export default function OutboundJobsPanel() {
             Retry
           </button>
         </div>
-      ) : (
-        <>
-          {pingMessage ? (
-            <p className="admin-page-subtitle" role="status" style={{ marginBottom: '1rem' }}>
-              {pingMessage}
-            </p>
-          ) : null}
-          {error && payload ? (
-            <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
-              <span>
-                {error.message}
-                {error.requestId ? (
-                  <>
-                    {' '}
-                    <span className="mono">ref: {error.requestId}</span>
-                  </>
-                ) : null}
-              </span>
-              <button
-                type="button"
-                className="admin-btn admin-btn-ghost"
-                onClick={() => loadJobs({ suppressLoading: true })}
-              >
-                Retry
-              </button>
-            </div>
-          ) : null}
-          <AsyncSection
-            data={sectionData}
-            emptyMessage={emptyMessage}
-            onRetry={() => loadJobs()}
+      ) : null}
+      {pingMessage ? (
+        <p className="admin-page-subtitle" role="status" style={{ marginBottom: '1rem' }}>
+          {pingMessage}
+        </p>
+      ) : null}
+      {pingError ? (
+        <div className="admin-callout admin-callout-red" role="alert" style={{ marginBottom: '1rem' }}>
+          <span>
+            {pingError.message}
+            {pingError.requestId ? (
+              <>
+                {' '}
+                <span className="mono">ref: {pingError.requestId}</span>
+              </>
+            ) : null}
+          </span>
+        </div>
+      ) : null}
+      {error && payload ? (
+        <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
+          <span>
+            {error.message}
+            {error.requestId ? (
+              <>
+                {' '}
+                <span className="mono">ref: {error.requestId}</span>
+              </>
+            ) : null}
+          </span>
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost"
+            onClick={() => loadJobs({ suppressLoading: true })}
           >
-            {(jobRows) => (
-              <AdminDataGrid
-                gridId="outbound-jobs"
-                columns={columns}
-                rows={jobRows}
-                rowKey={(row) => String(row.id)}
-                emptyMessage={emptyMessage}
-              />
-            )}
-          </AsyncSection>
-        </>
-      )}
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {!(error && !payload) ? (
+        <AsyncSection
+          data={sectionData}
+          emptyMessage={emptyMessage}
+          onRetry={() => loadJobs()}
+        >
+          {(jobRows) => (
+            <AdminDataGrid
+              gridId="outbound-jobs"
+              columns={columns}
+              rows={jobRows}
+              rowKey={(row) => String(row.id)}
+              emptyMessage={emptyMessage}
+            />
+          )}
+        </AsyncSection>
+      ) : null}
     </div>
   )
 }
