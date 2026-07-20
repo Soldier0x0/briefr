@@ -113,6 +113,15 @@ def test_s7_correlation_escalates_p3_to_p2():
     assert op["escalated_by_correlation"] is True
 
 
+def test_corr_escalation_high_unknown_p2_to_p1_fe_parity():
+    """W2: FE applyCorrelationEscalationToRiskScore must match this contract."""
+    base = derive_operational_priority("HIGH", "UNKNOWN", corr_escalation=False)
+    assert base["band"] == "P2"
+    bumped = derive_operational_priority("HIGH", "UNKNOWN", corr_escalation=True)
+    assert bumped["band"] == "P1"
+    assert bumped["escalated_by_correlation"] is True
+    assert bumped["base_band"] == "P2"
+
 def test_correlation_escalation_requires_strong_edge():
     weak = {
         "campaigns": [

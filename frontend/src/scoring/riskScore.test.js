@@ -174,3 +174,26 @@ describe('applyCorrelationEscalationToRiskScore', () => {
     assert.equal(merged.operational_priority.escalated_by_correlation, true)
   })
 })
+
+describe('correlation escalation parity with backend derive_operational_priority', () => {
+  it('HIGH × UNKNOWN: base P2; corr → P1 (backend contract)', () => {
+    const base = deriveOperationalPriority('HIGH', 'UNKNOWN', false)
+    assert.equal(base.band, 'P2')
+    const bumped = deriveOperationalPriority('HIGH', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P1')
+    assert.equal(bumped.escalated_by_correlation, true)
+    assert.equal(bumped.base_band, 'P2')
+  })
+
+  it('MED × UNKNOWN: corr → P2 (backend S7)', () => {
+    const bumped = deriveOperationalPriority('MED', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P2')
+    assert.equal(bumped.escalated_by_correlation, true)
+  })
+
+  it('CRIT × UNKNOWN stays P1 (no escalate past P1)', () => {
+    const bumped = deriveOperationalPriority('CRIT', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P1')
+    assert.equal(bumped.escalated_by_correlation, false)
+  })
+})

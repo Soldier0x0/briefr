@@ -214,7 +214,7 @@ git commit -m "fix: log swallowed exceptions batch 1 (F1.6)"
 - Consumes: `calculate_threat_score`, `derive_operational_priority`
 - Produces: failing tests that encode W2 contracts before code changes
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```python
 def test_vulncheck_only_does_not_apply_kev_floor():
@@ -229,13 +229,13 @@ def test_cisa_kev_applies_floor():
     assert threat["score"] >= 80
 ```
 
-- [ ] **Step 2: Run — confirm CISA case already passes; VulnCheck case must pass (fix threat.py if floor wrongly applied).**
+- [x] **Step 2: Run — confirm CISA case already passes; VulnCheck case must pass (fix threat.py if floor wrongly applied).**
 
 ```bash
 cd backend && pytest tests/test_threat_score.py -q
 ```
 
-- [ ] **Step 3: Commit tests**
+- [x] **Step 3: Commit tests**
 
 ```bash
 git commit -m "test: CISA vs VulnCheck KEV floor contract (W2)"
@@ -253,9 +253,9 @@ git commit -m "test: CISA vs VulnCheck KEV floor contract (W2)"
 - Consumes: `calculate_threat_score`, `classify_environment`, `derive_operational_priority`
 - Produces: `top_risk.items[]` with `threat_score`, `op_band` (and optionally keep `risk_score` as Threat for API compat — prefer rename carefully with PRODUCT_STATUS note)
 
-- [ ] **Step 1: Failing test** — two CVEs where legacy v1.1b order ≠ Threat/OP order; assert new sort key.
+- [x] **Step 1: Failing test** — two CVEs where legacy v1.1b order ≠ Threat/OP order; assert new sort key.
 
-- [ ] **Step 2: Replace `calculate_risk_score` ranking with:**
+- [x] **Step 2: Replace `calculate_risk_score` ranking with:**
 
 ```python
 from scoring.threat import calculate_threat_score
@@ -268,9 +268,9 @@ op = derive_operational_priority(threat["band"], env["tier"], corr_escalation=Fa
 # sort by (PRIORITY_RANK[op["band"]], -threat["score"])
 ```
 
-- [ ] **Step 3: Update API_REFERENCE / PRODUCT_STATUS for wallboard payload fields.**
+- [x] **Step 3: Update API_REFERENCE / PRODUCT_STATUS for wallboard payload fields.**
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "fix(wallboard): rank top risk by OP then Threat (W2)"
@@ -289,19 +289,19 @@ git commit -m "fix(wallboard): rank top risk by OP then Threat (W2)"
 - Consumes: `/risk` response `threat`, `environment`, `operational_priority`
 - Produces: no UI path that recomputes Threat for display
 
-- [ ] **Step 1: Inventory callers**
+- [x] **Step 1: Inventory callers**
 
 ```bash
 rg -n "calculateThreatScore" frontend/src
 ```
 
-- [ ] **Step 2: Change tests** so S1/S4 assertions use frozen JSON fixtures matching backend `calculate_threat_score` output (checked into `frontend/src/scoring/fixtures/` or generated once). Remove dependency on live FE formula for product truth.
+- [x] **Step 2: Change tests** so S1/S4 assertions use frozen JSON fixtures matching backend `calculate_threat_score` output (checked into `frontend/src/scoring/fixtures/` or generated once). Remove dependency on live FE formula for product truth.
 
-- [ ] **Step 3: Deprecate or delete `calculateThreatScore` export; keep `buildRiskHeroSummary`, colors, `applyCorrelationEscalationToRiskScore` until escalation moves server-side.
+- [x] **Step 3: Deprecate or delete `calculateThreatScore` export; keep `buildRiskHeroSummary`, colors, `applyCorrelationEscalationToRiskScore` until escalation moves server-side.
 
-- [ ] **Step 4: `npm run test:unit && npm run build`**
+- [x] **Step 4: `npm run test:unit && npm run build`**
 
-- [ ] **Step 5: Docs + HANDOVER + graphify attempt; commit**
+- [x] **Step 5: Docs + HANDOVER + graphify attempt; commit**
 
 ```bash
 git commit -m "fix(ui): scoring display-only; stop FE Threat recompute (W2/F1.3)"
@@ -315,19 +315,19 @@ git commit -m "fix(ui): scoring display-only; stop FE Threat recompute (W2/F1.3)
 - Prefer: move `correlation_escalation` application into `POST /risk` when correlation snapshot is cheap/available
 - Else: document in SYSTEM_DESIGN that FE merge is temporary; add test that FE `applyCorrelationEscalationToRiskScore` matches `derive_operational_priority(..., corr_escalation=True)`
 
-- [ ] **Step 1: Choose backend path if `CORRELATION_PRECOMPUTE` or cached correlation exists for CVE; else keep FE merge.**
+- [x] **Step 1: Choose backend path if `CORRELATION_PRECOMPUTE` or cached correlation exists for CVE; else keep FE merge.**
 
-- [ ] **Step 2: Add parity test FE vs backend escalation helper.**
+- [x] **Step 2: Add parity test FE vs backend escalation helper.**
 
-- [ ] **Step 3: Commit + docs.**
+- [x] **Step 3: Commit + docs.**
 
 ---
 
 ### Task 9: W2 PR closeout
 
-- [ ] **Step 1: `./scripts/verify-local.sh`**
-- [ ] **Step 2: Push PR; Gemini disposition; merge**
-- [ ] **Step 3: Study-guide/learn regen if Overview scoring chapter mentions FE scoring**
+- [x] **Step 1: `./scripts/verify-local.sh`**
+- [ ] **Step 2: Push PR; Gemini disposition; merge** (parent opens PR / merges — this wave pushes branch only)
+- [x] **Step 3: Study-guide/learn regen if Overview scoring chapter mentions FE scoring** — skipped (operator docs only; no taught chapter source requiring regen)
 
 ```bash
 python3 scripts/build_study_guide_book.py

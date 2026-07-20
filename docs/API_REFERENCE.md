@@ -2114,7 +2114,16 @@ Aggregated intel posture payload for the `/wallboard` kiosk view. Built from exi
     "highlights": [{"cve_id": "CVE-…", "severity": "HIGH", "summary": "…", "reasons": ["epss_mover"], "is_kev": false}]
   },
   "top_risk": {
-    "items": [{"cve_id": "CVE-…", "risk_score": 87.4, "severity": "CRITICAL", "summary": "…", "is_kev": true, "epss_score": 0.91}]
+    "items": [{
+      "cve_id": "CVE-…",
+      "threat_score": 87.4,
+      "op_band": "P1",
+      "risk_score": 87.4,
+      "severity": "CRITICAL",
+      "summary": "…",
+      "is_kev": true,
+      "epss_score": 0.91
+    }]
   },
   "ingest_health": {
     "status": "ok",
@@ -2139,6 +2148,8 @@ Aggregated intel posture payload for the `/wallboard` kiosk view. Built from exi
   }
 }
 ```
+
+**`top_risk` ranking (W2):** items are ordered by Operational Priority band (P1 first), then Threat score descending — **not** by legacy v1.1b blend total. Fields: `threat_score` (ADR-002 Threat 0–100), `op_band` (`P1`–`P4`, wallboard uses UNKNOWN environment / no profile), `risk_score` (**alias of `threat_score`** for backward-compatible kiosk clients — no longer the v1.1b total).
 
 ---
 

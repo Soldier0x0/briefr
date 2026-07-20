@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W2 scoring hygiene (Tasks 5–9)
+
+**Done** (branch `cursor/phase1-w2-scoring-hygiene-91c2`)
+- **CISA vs VulnCheck KEV floor:** guard tests — `is_kev` → Threat ≥80; VulnCheck-only + low EPSS → Threat &lt;80 (no floor). Floor already gated on `is_kev` in `calculate_threat_score`.
+- **Wallboard top risk:** ranks by OP band then Threat (`score_cve_for_top_risk`); payload adds `threat_score` + `op_band`; `risk_score` is Threat alias (not v1.1b). Kiosk tile shows `OP · Threat`.
+- **FE display-only:** removed live `calculateThreatScore` export; DetailDrawer already consumes API `threat` / `environment` / `operational_priority`. S1/S4 tests use `frontend/src/scoring/fixtures/threat_parity.json`.
+- **Correlation escalation:** FE merge kept temporary; SYSTEM_DESIGN note + FE/backend parity tests for HIGH×UNKNOWN / MED×UNKNOWN contracts.
+- Docs: PRODUCT_STATUS, SYSTEM_DESIGN, API_REFERENCE, plan Tasks 5–9 + sprint W2 ticked.
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented. Study-guide/learn regen skipped (no taught scoring chapter source text changed beyond operator docs).
+
+**Next:** W3 EPSS → OP additive escalations. Do not parallelize W2–W5. Do not start W3 on this branch until W2 merges.
+
+---
+
 ## 2026-07-20 — Phase 1 W1 quick wins (F1.6–F1.11)
 
 **Done** (branch `cursor/phase1-w1-quick-wins-91c2`)

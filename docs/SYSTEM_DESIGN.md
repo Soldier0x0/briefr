@@ -105,25 +105,39 @@ Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](diagrams/sy
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
 | `ioc_watchlist`, `threatfox_iocs` | `GET/POST/DELETE /api/ioc/watchlist`; scheduler `threatfox_sync`, `ioc_retro_match` | IOCLookup watchlist panel |
-| `scoring/risk.py` + `POST /api/cves/{id}/risk` | Canonical Risk Score v1.1b | `DetailDrawer.jsx` via `fetchCVERisk()` |
-| `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` formula display (startup prefetch) |
+| `scoring/threat.py` + `environment.py` + `priority.py` + `POST /api/cves/{id}/risk` | ADR-002 Threat / Environment / Operational Priority (backend sole engine) | `DetailDrawer` via `fetchCVERisk()` — display-only |
+| `scoring/risk.py` | Legacy v1.1b blend returned as `legacy_risk_v11b` only | Formula display helpers in `riskScore.js` |
+| `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` weight prefetch (startup) |
 
 ---
 
-### Risk score (v1.1b) — backend canonical
+### Risk score (ADR-002 + legacy v1.1b) — backend canonical
 
-`POST /api/cves/{cve_id}/risk` computes the full explainable score in
-`backend/scoring/risk.py:calculate_risk_score()`. Optional `profile` / `assets`
-in the POST body personalise the asset component (CPE match via
-`matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`). Momentum is
-computed server-side in the same request via `calculate_momentum()`.
+`POST /api/cves/{cve_id}/risk` is the **sole engine** for displayed Threat,
+Environment, and Operational Priority (ADR-002). Threat is asset-independent;
+CISA `is_kev` applies a Threat floor of 80; VulnCheck-only exploitation does
+**not** get that floor. Environment never folds phantom points into Threat.
+Legacy v1.1b blend remains on the response as `legacy_risk_v11b` until a later
+deprecation PR.
+
+Optional `profile` / `assets` in the POST body personalise Environment (CPE
+match via `matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`).
+Momentum is computed server-side in the same request via `calculate_momentum()`.
 
 `GET /api/config/risk` still exposes weight constants for the drawer's formula
 display (`score × weight × 100 = points`). `frontend/src/scoring/riskScore.js`
-prefetches weights at startup and provides UI helpers only (colors, hero
-summary text) — it does **not** compute scores.
+prefetches weights at startup and provides **UI helpers only** (colors, hero
+summary text, correlation OP merge) — it does **not** recompute Threat or
+v1.1b totals for displayed numbers (W2 / F1.3).
 
-| Component | Weight |
+**Correlation escalation (temporary FE merge):** when the drawer loads
+correlation after `/risk`, `applyCorrelationEscalationToRiskScore` may bump
+Operational Priority one band (P3→P2 / P2→P1) using the same rules as
+`derive_operational_priority(..., corr_escalation=True)`. This client merge is
+**temporary** until `/risk` (or the drawer bundle) applies correlation
+server-side; Threat is never modified by correlation.
+
+| Component (legacy v1.1b only) | Weight |
 |---|---|
 | Asset profile match | 0.35 |
 | KEV status | 0.25 |
@@ -134,14 +148,16 @@ summary text) — it does **not** compute scores.
 
 KEV component raw score uses CISA KEV recency tiers when `is_kev`; when not on
 CISA KEV, `is_vulncheck_exploited` (VulnCheck sync) contributes **0.72** — below
-full KEV tiers but above zero.
+full KEV tiers but above zero. That raw feeds Threat additive math; the **80
+floor applies only for CISA KEV**.
 
 **Momentum (card arrows):** `GET /api/cves/{id}/momentum` remains available for
 the momentum tab/signals; cached in `momentumCache.js` for CVECard arrows after
 drawer open.
 
-**Display:** `DetailDrawer.jsx` Overview tab — `RiskScoreBreakdown` fetches
-`POST /api/cves/{id}/risk` when the CVE or asset profile changes.
+**Display:** `DetailDrawer` Overview tab fetches `POST /api/cves/{id}/risk` when
+the CVE or asset profile changes and renders `threat` / `environment` /
+`operational_priority` from that response.
 
 ### A. CVE lifecycle
 
@@ -404,7 +420,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### Rate limiting + structured logging (V1.2 §5.5)
 
 - **Rate limiting:** in-memory token buckets (`rate_limit.py`) on the abuse-prone routes — `POST /api/ioc/lookup` (burns external API quota per cache miss), all `POST /api/refresh*` (kick off heavy ingest), and `GET /api/wallboard` (kiosk poll). Keyed per client IP; capacity = the per-minute rate, continuous refill. Over the limit → `429` with `Retry-After` (whole seconds). Defaults: `RATE_LIMIT_IOC_PER_MINUTE=30`, `RATE_LIMIT_REFRESH_PER_MINUTE=10`, `RATE_LIMIT_WALLBOARD_PER_MINUTE=60`; `RATE_LIMIT_ENABLED=0` disables. The deploy deliberately pins uvicorn to one worker (`deploy/briefr-backend.service`) because the buckets are in-memory and per-worker; more workers would multiply every limit. The refresh bucket is consumed **before** the admin-key check, so unauthenticated bursts cannot bypass it.
-- **Wallboard (V1.4 Theme 4):** `GET /api/wallboard` (`wallboard/service.py`) aggregates six read-only tiles (KEV-on-stack count, 24h brief highlights, top risk CVEs via canonical `calculate_risk_score`, ingest health subset, Forge gap summary, incident headline ticker) into one `feed_cache` payload (~45s TTL). Optional `WALLBOARD_TOKEN` read-only gate (`X-BRIEFR-Wallboard-Token` header only — Sprint A7 dropped `?token=`, which leaked into access logs). Frontend `/wallboard` is chromeless — 3×2 grid, 90s poll, rotating tile focus, scrolling ticker. No admin routes, secrets, or write actions exposed.
+- **Wallboard (V1.4 Theme 4):** `GET /api/wallboard` (`wallboard/service.py`) aggregates read-only tiles (KEV-on-stack count, 24h brief highlights, top risk CVEs ranked by **Operational Priority then Threat** — not legacy v1.1b total — ingest health subset, Forge gap summary, incident headline ticker) into one `feed_cache` payload (~45s TTL). Top-risk items expose `threat_score`, `op_band`, and `risk_score` (alias of Threat for backward compatibility). Optional `WALLBOARD_TOKEN` read-only gate (`X-BRIEFR-Wallboard-Token` header only — Sprint A7 dropped `?token=`, which leaked into access logs). Frontend `/wallboard` is chromeless — 3×2 grid, 90s poll, rotating tile focus, scrolling ticker. No admin routes, secrets, or write actions exposed.
 - **Rate-limit client identity (anti-spoofing):** forwarded headers are honoured only when the socket peer is a loopback proxy (nginx/cloudflared proxy_pass from 127.0.0.1 — `deploy/nginx-briefr*.conf`); direct connections are keyed by socket address, so a spoofed header cannot mint fresh buckets. Behind the tunnel the order is `CF-Connecting-IP` (overwritten at the Cloudflare edge), then the **rightmost non-loopback** `X-Forwarded-For` hop (nginx appends `$remote_addr`; leftmost hops are client-controlled), then `X-Real-IP`. Bucket storage is bounded: idle buckets are pruned, and a flood of distinct keys past a hard cap evicts least-recently-seen buckets (bounded memory beats a remotely triggerable OOM). Residual risk: a LAN host talking to nginx directly can still forge headers — accepted for a typical self-hosted, single-operator deployment; revisit if BRIEFR is ever deployed with untrusted hosts on the same LAN as the reverse proxy.
 - **Structured logging:** `structured_logging.py` emits one JSON object per line on stderr (journald-friendly): `ts`, `level`, `logger`, `message`, `request_id`, plus any `extra={...}` fields. A `request_context` middleware (outermost) assigns each request an ID (honours a well-formed incoming `X-Request-ID`, else generates one), returns it in the `X-Request-ID` response header, and logs a `briefr.access` line per request (`method`, `path`, `status`, `duration_ms`, `client`). uvicorn's startup/error loggers are rerouted through the same JSON handler; uvicorn's own access log is disabled in JSON mode (the `briefr.access` line replaces it — it carries the request ID). Unhandled exceptions are logged by the middleware itself (with `request_id`, `exc_info` and the request metadata) before the contextvar resets, then re-raised. `LOG_FORMAT=plain` restores the previous human-readable format.
 - **Production posture self-check (Sprint A6):** `settings.production_posture_warnings()` reports every unsafe flag in the current config — `RATE_LIMIT_ENABLED=0`, `AUTH_COOKIE_SECURE=0`, `WALLBOARD_TOKEN` unset. `main.py` startup logs one warning per entry when `BRIEFR_ENV=production`; `GET /api/admin/security` returns the same list (`posture_warnings`) plus `environment`, and the admin Security panel renders each as an amber callout.
