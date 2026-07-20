@@ -1,4 +1,4 @@
-import { outboundJobsPath } from './apiOutboundJobs.js'
+import { outboundJobsPath, outboundJobsPingPath } from './apiOutboundJobs.js'
 
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
@@ -723,4 +723,5 @@ export const adminApi = {
     return adminJson(await adminFetch(url, { method: 'DELETE' }))
   },
   listOutboundJobs: (limit = 50) => adminApi.getJson(outboundJobsPath(limit)),
+  pingOutboundQueue: () => adminApi.postJson(outboundJobsPingPath(), {}),
 }

@@ -23,6 +23,8 @@ export default function OutboundJobsPanel() {
   const [payload, setPayload] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [pinging, setPinging] = useState(false)
+  const [pingMessage, setPingMessage] = useState('')
 
   const loadJobs = useCallback(async ({ suppressLoading = false } = {}) => {
     if (!suppressLoading) setLoading(true)
@@ -39,6 +41,24 @@ export default function OutboundJobsPanel() {
       if (!suppressLoading) setLoading(false)
     }
   }, [])
+
+  const pingQueue = useCallback(async () => {
+    setPinging(true)
+    setPingMessage('')
+    try {
+      const { data } = await adminApi.pingOutboundQueue()
+      setPingMessage(data?.message || 'health_ping queued')
+      setError(null)
+      await loadJobs({ suppressLoading: true })
+    } catch (err) {
+      setError({
+        message: err?.message || 'Failed to ping durable outbound queue',
+        requestId: err?.requestId || null,
+      })
+    } finally {
+      setPinging(false)
+    }
+  }, [loadJobs])
 
   useEffect(() => {
     loadJobs()
@@ -165,6 +185,15 @@ export default function OutboundJobsPanel() {
             type="button"
             className="admin-btn admin-btn-ghost"
             style={{ fontSize: '0.75rem' }}
+            disabled={loading || pinging || payload?.enabled === false}
+            onClick={pingQueue}
+          >
+            {pinging ? 'Pinging...' : 'Ping queue'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost"
+            style={{ fontSize: '0.75rem' }}
             disabled={loading}
             onClick={() => loadJobs()}
             aria-label="Refresh durable outbound jobs"
@@ -195,6 +224,11 @@ export default function OutboundJobsPanel() {
         </div>
       ) : (
         <>
+          {pingMessage ? (
+            <p className="admin-page-subtitle" role="status" style={{ marginBottom: '1rem' }}>
+              {pingMessage}
+            </p>
+          ) : null}
           {error && payload ? (
             <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
               <span>

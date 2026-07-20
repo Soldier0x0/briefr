@@ -2047,6 +2047,12 @@ When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty
 
 **UI consumer:** Admin → Data refresh schedule (`SchedulerPage`) renders `OutboundJobsPanel`, which calls this endpoint on mount (limit 50), refreshes manually, and polls every ~15s while the page is visible.
 
+### POST /api/admin/jobs/outbound/ping
+
+Admin-only canary for the durable queue. Defers the no-op `jobs:health_ping` task with a singleton `queueing_lock` so operators can verify queue writes from Admin without running a real sync job. `AlreadyEnqueued` is treated as success. Returns `503` when `PROCRASTINATE_ENABLED=0` or the durable app is unavailable.
+
+Response: `{ok, task, queueing_lock, already_enqueued, message}`. Audit: `jobs.outbound.ping`.
+
 ### GET /api/admin/api-usage/metering
 Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
 
