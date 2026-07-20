@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminApi, getAdminRequestId } from '../../api.js'
 import CatchupCard from './CatchupCard.jsx'
+import OutboundJobsPanel from './OutboundJobsPanel.jsx'
 import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import HelpTip from './shared/HelpTip.jsx'
@@ -157,6 +158,8 @@ export default function SchedulerPage({ toast, system }) {
       <p className="admin-page-subtitle">Controls when each ingest job runs. Pausing a job stops it from running automatically until resumed — safe to pause individual jobs while debugging a feed issue.</p>
 
       <CatchupCard toast={toast} />
+
+      <OutboundJobsPanel />
 
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

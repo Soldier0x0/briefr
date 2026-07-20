@@ -2045,6 +2045,8 @@ List recent **Procrastinate** durable jobs (Q1). Admin auth required.
 
 When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty. No args/payloads are returned (allowlisted fields only).
 
+**UI consumer:** Admin → Data refresh schedule (`SchedulerPage`) renders `OutboundJobsPanel`, which calls this endpoint on mount (limit 50), refreshes manually, and polls every ~15s while the page is visible.
+
 ### GET /api/admin/api-usage/metering
 Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
 
