@@ -1,4 +1,4 @@
-"""Database URL resolution and backend detection."""
+"""Owns DATABASE_URL resolution and backend detection only."""
 
 from __future__ import annotations
 

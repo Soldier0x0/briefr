@@ -1,4 +1,6 @@
-"""Hydrate operator settings from DB at startup (env wins over DB over .env).
+"""Owns DB seed/hydrate of writable operator keys (env wins); does not define keys.
+
+Hydrate operator settings from DB at startup (env wins over DB over .env).
 
 Secret-typed keys in `app_settings` are encrypted at rest when
 `BRIEFR_SETTINGS_KEY` is set (ADR-006). Process env still wins.

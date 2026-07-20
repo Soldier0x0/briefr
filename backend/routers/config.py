@@ -1,4 +1,4 @@
-"""Config endpoints — single-source v1.1b risk weights for frontend consumption.
+"""Owns GET /api/config/risk (scoring weight display); not admin writable keys.
 
 GET /api/config/risk  →  weights dict keyed by component, version string.
 
