@@ -80,7 +80,7 @@ deploy (backup + same volume); see `docs/POSTGRES.md`.
 - Frontend dependency audit: from `frontend/`, `npm run audit:ci` after `npm ci`.
 - There is **no ESLint/ruff/flake8** lint config yet (Phase 1 W6). UI is also validated via
   Playwright (`scripts/` / `backend/tests/test_playwright_smoke.py`, gated behind `PLAYWRIGHT_SMOKE=1`).
-- **Dark mode only** — light theme CSS exists under `frontend/src/theme/light-theme.css` but is not imported.
+- **Dark mode only** — light theme was removed (W6 hygiene); do not reintroduce a light theme without ADR.
 - **Tab state** — main nav tabs use `hidden` panels instead of unmounting so FEED scroll/filters survive tab switches.
 - **Snooze removed from UI** — pin/watchlist remains; app clears legacy snooze rows on startup.
 

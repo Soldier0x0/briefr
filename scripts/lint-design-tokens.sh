@@ -16,7 +16,6 @@ pass() { printf '\033[32m✓ %s\033[0m\n' "$*"; }
 # CSS files pending migration (tracked in ui-modernization-plan Phase 2).
 ALLOW_GLOB=(
   'frontend/src/styles/tokens.css'
-  'frontend/src/theme/light-theme.css'
   'frontend/src/components/CVECard.css'
   'frontend/src/pages/AdminPage.css'
   'frontend/src/components/NotificationBell.css'
