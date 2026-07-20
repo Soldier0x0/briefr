@@ -60,7 +60,7 @@
   - `reset_catchup_for_tests() -> None`
   - Constants: `DEFAULT_DURATION_HOURS = 6`, `MAX_DURATION_HOURS = 24`, `WIND_DOWN_SECONDS = 300`, `CATCHUP_LLM_HEADROOM_PCT = 95`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # backend/tests/test_catchup_mode.py
@@ -151,12 +151,12 @@ def test_in_wind_down():
     assert st["should_start_new_work"] is False
 ```
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [x] **Step 2: Run tests — expect FAIL**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_catchup_mode.py -q`
 Expected: FAIL (module missing)
 
-- [ ] **Step 3: Implement `backend/catchup_mode.py`**
+- [x] **Step 3: Implement `backend/catchup_mode.py`**
 
 Minimal implementation notes:
 - Module-level lock (`threading.Lock`) around mutations.
@@ -167,12 +167,12 @@ Minimal implementation notes:
 - `reset_catchup_for_tests` / `_force_ends_at_for_tests` for tests only.
 - Persistence to `sync_state` can be stubbed no-op in Task 1; wire in Task 3 if cleaner — prefer Task 1 pure memory, Task 3 adds optional persist hooks called from start/stop.
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [x] **Step 4: Run tests — expect PASS**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_catchup_mode.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/catchup_mode.py backend/tests/test_catchup_mode.py
@@ -193,7 +193,7 @@ git commit -m "feat(catchup): state machine and effective throughput helpers"
 - Consumes: `effective_*` from Task 1
 - Produces: existing public getters return catch-up-aware values when active
 
-- [ ] **Step 1: Failing test — embeddings max doubles when catch-up on**
+- [x] **Step 1: Failing test — embeddings max doubles when catch-up on**
 
 ```python
 def test_embeddings_getter_respects_catchup(monkeypatch):
@@ -207,9 +207,9 @@ def test_embeddings_getter_respects_catchup(monkeypatch):
     assert emb.get_embeddings_max_per_run() == 4000
 ```
 
-- [ ] **Step 2: Run — expect FAIL** (getter ignores catch-up)
+- [x] **Step 2: Run — expect FAIL** (getter ignores catch-up)
 
-- [ ] **Step 3: Implement wiring**
+- [x] **Step 3: Implement wiring**
 
 In `get_embeddings_max_per_run`:
 
@@ -231,12 +231,12 @@ headroom = effective_llm_headroom_pct(headroom)
 
 Do **not** change `get_source_pacing` non-LLM intervals.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_catchup_mode.py tests/test_correlation_precompute.py -q --tb=line`
 Expected: PASS (adjust any brittle hard-coded max assertions if they assume env literally)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/ml/embeddings.py backend/correlation/config.py backend/ai/llm_pacing.py backend/tests/test_catchup_mode.py
@@ -260,7 +260,7 @@ git commit -m "feat(catchup): apply caps and LLM headroom when active"
   - `POST /api/admin/catchup/stop`
 - Consumes: `catchup_mode.*`, `dependencies.audit`, `api_queue.get_api_queue_status`
 
-- [ ] **Step 1: Failing API tests**
+- [x] **Step 1: Failing API tests**
 
 ```python
 # backend/tests/test_admin_catchup.py — follow existing admin TestClient auth patterns
@@ -289,9 +289,9 @@ def test_catchup_requires_admin(anon_client):
 
 Use the repo’s real fixture names (`client` + login helper) — match `tests/test_admin_*.py` patterns exactly when implementing.
 
-- [ ] **Step 2: Run — expect FAIL** (404)
+- [x] **Step 2: Run — expect FAIL** (404)
 
-- [ ] **Step 3: Implement router**
+- [x] **Step 3: Implement router**
 
 ```python
 # backend/routers/admin/catchup.py (sketch)
@@ -323,9 +323,9 @@ Map `CatchupConflictError` → HTTP 409; `CatchupValidationError` → 400.
 
 Call `clear_catchup_after_restart()` once from app lifespan in `main.py` (after DB ready) so a crashed “active” session becomes `cleared_reason=restart` in last-session blob only.
 
-- [ ] **Step 4: Run API tests — PASS**
+- [x] **Step 4: Run API tests — PASS**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/routers/admin/catchup.py backend/routers/admin/__init__.py backend/catchup_mode.py backend/main.py backend/tests/test_admin_catchup.py
@@ -344,7 +344,7 @@ git commit -m "feat(catchup): admin start/stop/status API"
 - Consumes: `is_catchup_active`, `get_catchup_status()["should_start_new_work"]`
 - Produces: job id `catchup_tick` (IntervalTrigger minutes=5)
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```python
 def test_catchup_tick_skips_when_inactive(monkeypatch):
@@ -364,7 +364,7 @@ def test_catchup_tick_skips_when_inactive(monkeypatch):
 
 Implementers: align monkeypatch targets with whatever thin wrappers `run_catchup_tick` calls (existing `run_embeddings_backfill` job function / correlation precompute entry). Prefer calling the same functions Admin “Retry now” uses from `_JOB_RUN_MAP` for `embeddings_backfill` only when enabled.
 
-- [ ] **Step 2: Implement `async def run_catchup_tick()`**
+- [x] **Step 2: Implement `async def run_catchup_tick()`**
 
 Logic:
 1. If not `should_start_new_work`: return True (no-op).
@@ -375,7 +375,7 @@ Logic:
 
 Add to admin job catalog (`frontend/src/pages/admin/catalog.js`) with operator name **Catch-up tick**.
 
-- [ ] **Step 3: Tests PASS + commit**
+- [x] **Step 3: Tests PASS + commit**
 
 ```bash
 git add backend/scheduler.py backend/tests/test_catchup_tick.py frontend/src/pages/admin/catalog.js
@@ -397,7 +397,7 @@ git commit -m "feat(catchup): five-minute backlog tick while active"
 - Consumes: `GET/POST /api/admin/catchup*`
 - Produces: operator-only card above job table
 
-- [ ] **Step 1: Failing unit tests for copy**
+- [x] **Step 1: Failing unit tests for copy**
 
 ```javascript
 // frontend/src/pages/admin/catchupCopy.test.js
@@ -418,7 +418,7 @@ describe('catchupCopy', () => {
 })
 ```
 
-- [ ] **Step 2: Implement copy module + CatchupCard**
+- [x] **Step 2: Implement copy module + CatchupCard**
 
 UI requirements:
 - Tokens only (`--space-*`, `--text-*`, `--status-*`, etc.)
@@ -428,11 +428,11 @@ UI requirements:
 - Show wind-down note when `in_wind_down`
 - Render only when admin operator mode (SchedulerPage already operator-gated via AdminPage — do not add to `ANALYST_NAV`)
 
-- [ ] **Step 3: Mount in SchedulerPage**
+- [x] **Step 3: Mount in SchedulerPage**
 
 Place card under page subtitle, above job table.
 
-- [ ] **Step 4: Run FE tests + build**
+- [x] **Step 4: Run FE tests + build**
 
 ```bash
 cd frontend && node --test src/pages/admin/catchupCopy.test.js
@@ -441,7 +441,7 @@ cd frontend && npm run build
 
 Expected: PASS / build OK
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/admin/catchupCopy.js frontend/src/pages/admin/catchupCopy.test.js frontend/src/pages/admin/CatchupCard.jsx frontend/src/pages/admin/SchedulerPage.jsx
@@ -458,7 +458,7 @@ git commit -m "feat(catchup): admin Scheduler Catch-up card"
 - Modify: `docs/HANDOVER.md` (newest entry)
 - Optional: tick a line in `docs/planning/SPRINT_2026-07.md` if a checkbox is added
 
-- [ ] **Step 1: Docs updates** (runtime truth + API + handover RCA-free feature note)
+- [x] **Step 1: Docs updates** (runtime truth + API + handover RCA-free feature note)
 
 - [ ] **Step 2: Local verify**
 

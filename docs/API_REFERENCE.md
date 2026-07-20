@@ -1952,6 +1952,15 @@ sum deviates by more than 1 × 10⁻⁶.
 
 All admin endpoints require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles (Sprint A0). All are rate-limited by the refresh bucket.
 
+### GET /api/admin/catchup
+Returns Catch-up mode status for Admin → Scheduler. Key fields: `active`, `started_at`, `ends_at`, `duration_hours`, `started_by`, `cleared_reason`, `in_wind_down`, `should_start_new_work`, and `api_queue` (`total_queued`, `total_active`, `has_pending`).
+
+### POST /api/admin/catchup/start
+Starts a time-boxed Catch-up window. Body accepts either `{ "duration_hours": 6 }` (default 6h, max 24h) or `{ "ends_at": "2026-07-20T23:00:00Z" }`; supplying both is rejected. Response is the status object without `api_queue`. Errors: `400` invalid window; `409` Catch-up already active.
+
+### POST /api/admin/catchup/stop
+Ends the active Catch-up window early. Body may be `{}`. Response is the status object with `active: false` and `cleared_reason: "ended_early"`.
+
 ### GET /api/admin/retrieval/health
 Ops honesty for the live hybrid/embeddings index (Admin → AI operations). Returns flags (`embeddings_enabled`, `auto_on_ingest`, `pgvector_writes`), `model`, `extension_vector` (`present` \| `absent` \| `n/a` on SQLite), `counts` by `entity_type` from the **`embeddings`** table **for the active model**, `pending` (cheap SQL: missing/`migrated:` only — excludes hash-drift), `last_backfill` from `scheduler.last_run.embeddings_backfill`, `last_ingest_tail` from `embeddings.ingest_tail.last` (auto-on-ingest success/error), and optional `degraded.reason` (`disabled` \| `no_vector_extension` \| `cold_index`). No model inference on this path.
 

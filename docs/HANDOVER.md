@@ -12,6 +12,32 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Catch-up mode v1 implemented (tasks 1–6)
+
+**Done** (branch `cursor/catchup-mode-91c2`; PR to be opened by parent agent):
+- Admin-only, time-boxed Catch-up mode shipped end-to-end: in-memory state
+  machine with restart/expiry persistence, admin API, Scheduler UI card,
+  5-minute `catchup_tick`, embeddings/correlation cap helpers, and LLM
+  headroom helper.
+- Provider pacing remains enforced through `api_queue`, Retry-After handling,
+  and existing rate-limit floors. GPU acceleration remains parked/out of scope.
+- Runtime/API docs updated in `PRODUCT_STATUS.md` and `API_REFERENCE.md`.
+
+**Verify:** targeted Catch-up backend tests, frontend copy test, and frontend
+build pass. Optional `./scripts/verify-local.sh` did not complete green in this
+environment; the first captured backend-suite failure is unrelated:
+`tests/test_display_typography.py::test_instance_typography_default_round_trip`
+500s because `routers/admin/tokens.py` references undefined `get_db`.
+
+**Try it:** sign in as admin, open Admin → Scheduler, use the Catch-up mode
+card to start a 2h/6h/8h or custom end-time window, then watch the Scheduler
+job table for `catchup_tick`. Use **End early** to stop it before `ends_at`.
+
+**GRAPHIFY_MISSING:** `graphify` CLI is not on PATH in this cloud environment,
+so `graphify update .` could not be run for this docs-only closeout.
+
+---
+
 ## 2026-07-20 — Catch-up mode v1 (design + plan only)
 
 **Decisions locked:** Admin-only; default **6h**; scope **B** (internal + paced
