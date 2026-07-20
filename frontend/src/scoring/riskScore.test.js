@@ -1,8 +1,10 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import {
-  calculateThreatScore,
   classifyEnvironment,
   correlationEscalation,
   deriveOperationalPriority,
@@ -13,38 +15,38 @@ import {
   ASSET_EXPOSURE_TIERS,
 } from '../scoring/riskScore.js'
 
-describe('calculateThreatScore parity (ADR-002 S1/S4)', () => {
-  const recentKev = new Date()
-  recentKev.setDate(recentKev.getDate() - 3)
-  const kevDate = recentKev.toISOString().slice(0, 10)
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const THREAT_FIXTURES = JSON.parse(
+  readFileSync(join(__dirname, 'fixtures/threat_parity.json'), 'utf8'),
+)
 
-  it('S1: KEV floor with low EPSS → CRIT ≥80', () => {
-    const threat = calculateThreatScore({
-      is_kev: true,
-      kev_date_added: kevDate,
-      cvss_score: 9.8,
-      epss_score: 0.02,
-      has_poc: true,
-      public_exploits: [{ type: 'poc' }],
-    }, 0.8)
-    assert.ok(threat.score >= KEV_FLOOR)
-    assert.equal(threat.band, 'CRIT')
-    const op = deriveOperationalPriority(threat.band, 'UNKNOWN')
-    assert.equal(op.band, 'P1')
+describe('Threat display SSOT is backend fixtures (ADR-002 S1/S4)', () => {
+  it('does not export a live calculateThreatScore engine', async () => {
+    const mod = await import('../scoring/riskScore.js')
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(mod, 'calculateThreatScore'),
+      false,
+      'FE must not recompute Threat for display — use POST /risk',
+    )
+  })
+
+  it('S1: frozen backend Threat fixture — KEV floor CRIT ≥80 → P1 provisional', () => {
+    const fx = THREAT_FIXTURES.s1_cisa_kev_floor
+    assert.ok(fx.threat.score >= KEV_FLOOR)
+    assert.equal(fx.threat.band, 'CRIT')
+    assert.equal(fx.threat.kev_floor_applied, true)
+    const op = deriveOperationalPriority(fx.threat.band, 'UNKNOWN')
+    assert.equal(op.band, fx.expected_op_unknown)
     assert.equal(op.provisional, true)
   })
 
-  it('S4: high CVSS alone → LOW threat, P4 provisional', () => {
-    const threat = calculateThreatScore({
-      is_kev: false,
-      cvss_score: 9.8,
-      epss_score: 0.05,
-      has_poc: false,
-      public_exploits: [],
-    }, 0.1)
-    assert.equal(threat.band, 'LOW')
-    const op = deriveOperationalPriority(threat.band, 'UNKNOWN')
-    assert.equal(op.band, 'P4')
+  it('S4: frozen backend Threat fixture — CVSS alone → LOW, P4 provisional', () => {
+    const fx = THREAT_FIXTURES.s4_cvss_only_low
+    assert.equal(fx.threat.band, 'LOW')
+    assert.ok(fx.threat.score < 40)
+    assert.equal(fx.threat.kev_floor_applied, false)
+    const op = deriveOperationalPriority(fx.threat.band, 'UNKNOWN')
+    assert.equal(op.band, fx.expected_op_unknown)
   })
 })
 
@@ -170,5 +172,28 @@ describe('applyCorrelationEscalationToRiskScore', () => {
     const merged = applyCorrelationEscalationToRiskScore(riskScore, correlation)
     assert.equal(merged.operational_priority.band, 'P1')
     assert.equal(merged.operational_priority.escalated_by_correlation, true)
+  })
+})
+
+describe('correlation escalation parity with backend derive_operational_priority', () => {
+  it('HIGH × UNKNOWN: base P2; corr → P1 (backend contract)', () => {
+    const base = deriveOperationalPriority('HIGH', 'UNKNOWN', false)
+    assert.equal(base.band, 'P2')
+    const bumped = deriveOperationalPriority('HIGH', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P1')
+    assert.equal(bumped.escalated_by_correlation, true)
+    assert.equal(bumped.base_band, 'P2')
+  })
+
+  it('MED × UNKNOWN: corr → P2 (backend S7)', () => {
+    const bumped = deriveOperationalPriority('MED', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P2')
+    assert.equal(bumped.escalated_by_correlation, true)
+  })
+
+  it('CRIT × UNKNOWN stays P1 (no escalate past P1)', () => {
+    const bumped = deriveOperationalPriority('CRIT', 'UNKNOWN', true)
+    assert.equal(bumped.band, 'P1')
+    assert.equal(bumped.escalated_by_correlation, false)
   })
 })

@@ -1,0 +1,97 @@
+{
+  "s1_cisa_kev_floor": {
+    "cve": {
+      "is_kev": true,
+      "kev_date_added": null,
+      "cvss_score": 9.8,
+      "epss_score": 0.02,
+      "has_poc": true,
+      "public_exploits": [
+        {
+          "type": "poc"
+        }
+      ]
+    },
+    "momentum_score": 0.8,
+    "threat": {
+      "version": "threat-1.0",
+      "score": 80.0,
+      "band": "CRIT",
+      "components": {
+        "kev": {
+          "raw": 0.84,
+          "weight": 0.3846153846153846,
+          "points": 32.3
+        },
+        "epss": {
+          "raw": 0.02,
+          "weight": 0.23076923076923075,
+          "points": 0.5
+        },
+        "exploit": {
+          "raw": 0.55,
+          "weight": 0.15384615384615385,
+          "points": 8.5
+        },
+        "cvss": {
+          "raw": 0.9800000000000001,
+          "weight": 0.15384615384615385,
+          "points": 15.1
+        },
+        "momentum": {
+          "raw": 0.8,
+          "weight": 0.07692307692307693,
+          "points": 6.2
+        }
+      },
+      "kev_floor_applied": true,
+      "additive_score": 62.5
+    },
+    "expected_op_unknown": "P1"
+  },
+  "s4_cvss_only_low": {
+    "cve": {
+      "is_kev": false,
+      "cvss_score": 9.8,
+      "epss_score": 0.05,
+      "has_poc": false,
+      "public_exploits": []
+    },
+    "momentum_score": 0.1,
+    "threat": {
+      "version": "threat-1.0",
+      "score": 17.0,
+      "band": "LOW",
+      "components": {
+        "kev": {
+          "raw": 0.0,
+          "weight": 0.3846153846153846,
+          "points": 0.0
+        },
+        "epss": {
+          "raw": 0.05,
+          "weight": 0.23076923076923075,
+          "points": 1.2
+        },
+        "exploit": {
+          "raw": 0.0,
+          "weight": 0.15384615384615385,
+          "points": 0.0
+        },
+        "cvss": {
+          "raw": 0.9800000000000001,
+          "weight": 0.15384615384615385,
+          "points": 15.1
+        },
+        "momentum": {
+          "raw": 0.1,
+          "weight": 0.07692307692307693,
+          "points": 0.8
+        }
+      },
+      "kev_floor_applied": false,
+      "additive_score": 17.0
+    },
+    "expected_op_unknown": "P4"
+  }
+}

@@ -1,8 +1,12 @@
 /**
- * BRIEFR Risk Score UI helpers.
+ * BRIEFR Risk Score UI helpers (display-only).
  *
- * Canonical scoring runs on the backend: POST /api/cves/{cve_id}/risk
- * Weights for formula display come from GET /api/config/risk (cached at startup).
+ * Canonical Threat / Environment / Operational Priority run on the backend:
+ * POST /api/cves/{cve_id}/risk. DetailDrawer displays those API fields only.
+ * Do not recompute Threat or legacy v1.1b totals for UI numbers (W2 / F1.3).
+ *
+ * Weights for legacy formula display come from GET /api/config/risk (cached at startup).
+ * Correlation OP escalation may still be merged client-side until moved server-side.
  */
 
 import { fetchRiskWeights } from '../api.js'
@@ -307,95 +311,14 @@ export const OP_BAND_LABELS = {
   P4: 'P4 — INFORMATIONAL',
 }
 
-function num(value, fallback = 0) {
-  if (value == null || value === '') return fallback
-  const n = Number(value)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function daysSince(value) {
-  if (!value) return null
-  const text = String(value).trim().slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null
-  const d = new Date(`${text}T00:00:00Z`)
-  const now = new Date()
-  const nowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-  return Math.floor((nowUtc - d) / 86400000)
-}
-
-function kevScoreRaw(cve) {
-  if (!boolish(cve?.is_kev)) return 0
-  const addedDays = daysSince(cve?.kev_date_added)
-  if (addedDays == null) return 0.84
-  if (addedDays <= 7) return 1.0
-  if (addedDays <= 30) return 0.94
-  if (addedDays <= 90) return 0.88
-  return 0.84
-}
-
-function exploitScoreRaw(cve) {
-  const exploits = (cve?.public_exploits || []).filter(Boolean)
-  const types = exploits.map(e => String(e?.type || '').toLowerCase())
-  const urlBlob = [
-    ...(cve?.source_urls || []),
-    ...exploits.map(e => `${e?.title || ''} ${e?.source || ''} ${e?.url || ''}`),
-  ].join(' ').toLowerCase()
-  if (types.includes('metasploit') || urlBlob.includes('metasploit')) return 1.0
-  if (
-    types.some(t => t === 'weaponised' || t === 'weaponized')
-    || ['weaponized', 'weaponised', 'in-the-wild'].some(h => urlBlob.includes(h))
-  ) return 0.88
-  if (types.includes('poc')) return 0.55
-  if (cve?.has_poc || exploits.length) return 0.35
-  return 0.0
-}
-
-export function threatBand(score) {
-  if (score >= 80) return 'CRIT'
-  if (score >= 60) return 'HIGH'
-  if (score >= 40) return 'MED'
-  return 'LOW'
-}
-
-export function calculateThreatScore(cve, momentumScore = 0) {
-  if (!cve) return null
-  const rawScores = {
-    kev: kevScoreRaw(cve),
-    epss: num(cve.epss_score, 0),
-    exploit: exploitScoreRaw(cve),
-    cvss: num(cve.cvss_score, 0) / 10,
-    momentum: Math.min(1, Math.max(0, num(momentumScore, 0))),
-  }
-  let additive = Object.entries(rawScores).reduce(
-    (sum, [k, raw]) => sum + raw * THREAT_WEIGHTS[k],
-    0,
-  ) * 100
-  additive = Math.round(additive * 10) / 10
-  let kevFloorApplied = false
-  let score = additive
-  if (boolish(cve.is_kev)) {
-    score = Math.max(additive, KEV_FLOOR)
-    kevFloorApplied = score > additive
-  }
-  score = Math.round(score * 10) / 10
-  const components = {}
-  for (const [key, raw] of Object.entries(rawScores)) {
-    const w = THREAT_WEIGHTS[key]
-    components[key] = {
-      raw,
-      weight: w,
-      points: Math.round(raw * w * 100 * 10) / 10,
-    }
-  }
-  return {
-    version: 'threat-1.0',
-    score,
-    band: threatBand(score),
-    components,
-    kev_floor_applied: kevFloorApplied,
-    additive_score: additive,
-  }
-}
+/**
+ * Threat Score is computed only on the backend (`scoring/threat.py` via
+ * `POST /api/cves/{id}/risk`). Do not reintroduce a live FE Threat calculator
+ * for displayed numbers (W2 / F1.3). Display Threat from the API response.
+ *
+ * `THREAT_WEIGHTS` / `KEV_FLOOR` remain as display/documentation constants;
+ * they are not used to recompute scores in the UI.
+ */
 
 /**
  * Map asset-match signals to Environment tiers (mirrors backend/scoring/environment.py).

@@ -93,9 +93,9 @@ def test_login_rate_limited_per_ip(client, monkeypatch):
     monkeypatch.setattr(_settings, "rate_limit_login_per_minute", 2)
 
     import rate_limit as _rl
-    _rl.login_bucket.rate_per_minute = 2
-    _rl.login_bucket.capacity = 2.0
-    _rl.login_bucket.refill_per_second = 2 / 60.0
+    monkeypatch.setattr(_rl.login_bucket, "rate_per_minute", 2)
+    monkeypatch.setattr(_rl.login_bucket, "capacity", 2.0)
+    monkeypatch.setattr(_rl.login_bucket, "refill_per_second", 2 / 60.0)
     _rl.login_bucket._buckets.clear()
 
     for _ in range(2):

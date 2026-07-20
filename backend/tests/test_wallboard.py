@@ -156,6 +156,10 @@ def test_wallboard_returns_v2_payload(wallboard_client):
     assert body["kev_on_stack"]["count"] == 1
     assert body["kev_on_stack"]["stack_configured"] is True
     assert body["top_risk"]["items"]
+    top = body["top_risk"]["items"][0]
+    assert "threat_score" in top
+    assert "op_band" in top
+    assert top["risk_score"] == top["threat_score"]
     assert body["ingest_health"]["status"] == "ok"
     assert "gap_count" in body["coverage_gaps"]
     assert "status" in body["ingest_strip"]
@@ -208,9 +212,10 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", True)
     monkeypatch.setattr(_settings, "rate_limit_wallboard_per_minute", 2)
-    _rl.wallboard_bucket.rate_per_minute = 2
-    _rl.wallboard_bucket.capacity = 2.0
-    _rl.wallboard_bucket.refill_per_second = 2 / 60.0
+    # Monkeypatch bucket fields so get_bucket_stats / later tests see defaults restored
+    monkeypatch.setattr(_rl.wallboard_bucket, "rate_per_minute", 2)
+    monkeypatch.setattr(_rl.wallboard_bucket, "capacity", 2.0)
+    monkeypatch.setattr(_rl.wallboard_bucket, "refill_per_second", 2 / 60.0)
     _rl.wallboard_bucket._buckets.clear()
 
     from main import app
@@ -258,3 +263,67 @@ def test_epss_movers_from_brief_empty_section():
     tile = _epss_movers_from_brief({"sections": {"epss_movers": {"count": 0, "items": []}}})
     assert tile["count"] == 0
     assert tile["items"] == []
+
+
+def test_top_risk_rank_prefers_op_then_threat_over_legacy_blend():
+    """W2: CISA KEV (P1) ranks above VulnCheck-high legacy v1.1b total (P2)."""
+    from datetime import date, timedelta
+
+    from scoring.environment import classify_environment
+    from scoring.priority import derive_operational_priority, operational_priority_sort_key
+    from scoring.risk import calculate_risk_score
+    from scoring.threat import calculate_threat_score
+    from wallboard.service import score_cve_for_top_risk
+
+    kev_date = (date.today() - timedelta(days=3)).isoformat()
+    cisa = {
+        "cve_id": "CVE-2024-CISA",
+        "is_kev": True,
+        "kev_date_added": kev_date,
+        "epss_score": 0.01,
+        "cvss_score": 5.0,
+        "severity": "MEDIUM",
+        "summary": "CISA KEV low additive",
+        "has_poc": False,
+        "public_exploits": [],
+    }
+    vulncheck = {
+        "cve_id": "CVE-2024-VCHECK",
+        "is_kev": False,
+        "is_vulncheck_exploited": True,
+        "epss_score": 0.9,
+        "cvss_score": 9.8,
+        "severity": "CRITICAL",
+        "summary": "VulnCheck high legacy blend",
+        "has_poc": True,
+        "public_exploits": [{"type": "poc"}],
+    }
+
+    legacy_order = sorted(
+        [cisa, vulncheck],
+        key=lambda c: calculate_risk_score(c, momentum_score=0.0).get("total") or 0,
+        reverse=True,
+    )
+    assert legacy_order[0]["cve_id"] == "CVE-2024-VCHECK"
+
+    scored = [
+        score_cve_for_top_risk(cisa, momentum_score=0.0),
+        score_cve_for_top_risk(vulncheck, momentum_score=0.0),
+    ]
+    scored = [s for s in scored if s]
+    scored.sort(key=lambda item: item["_sort_key"])
+    assert scored[0]["cve_id"] == "CVE-2024-CISA"
+    assert scored[0]["op_band"] == "P1"
+    assert scored[0]["threat_score"] >= 80
+    assert scored[1]["cve_id"] == "CVE-2024-VCHECK"
+    assert scored[1]["op_band"] == "P2"
+    # Backward-compat field mirrors Threat, not legacy blend
+    assert scored[0]["risk_score"] == scored[0]["threat_score"]
+
+    # Sanity: OP/Threat path matches ADR helpers
+    t = calculate_threat_score(cisa, momentum_score=0.0)
+    env = classify_environment(cisa, None)
+    op = derive_operational_priority(t["band"], env["tier"])
+    assert scored[0]["_sort_key"] == operational_priority_sort_key(
+        op["band"], t["score"], env["tier"], cisa["cve_id"]
+    )

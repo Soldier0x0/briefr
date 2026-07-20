@@ -91,3 +91,29 @@ def test_threat_bands():
     assert threat_band(59) == "MED"
     assert threat_band(40) == "MED"
     assert threat_band(39) == "LOW"
+
+
+def test_cisa_kev_applies_floor():
+    """W2: CISA KEV floor is 80 — applied only when is_kev is true."""
+    cve = {
+        "is_kev": True,
+        "kev_date_added": _recent_kev_date(),
+        "epss_score": 0.01,
+        "cvss_score": 5.0,
+    }
+    threat = calculate_threat_score(cve, momentum_score=0.0)
+    assert threat["score"] >= KEV_FLOOR
+    assert threat["kev_floor_applied"] is True
+
+
+def test_vulncheck_only_does_not_apply_kev_floor():
+    """W2: VulnCheck-only exploitation must not receive the CISA KEV floor."""
+    cve = {
+        "is_kev": False,
+        "is_vulncheck_exploited": True,
+        "epss_score": 0.01,
+        "cvss_score": 5.0,
+    }
+    threat = calculate_threat_score(cve, momentum_score=0.0)
+    assert threat["score"] < KEV_FLOOR
+    assert threat["kev_floor_applied"] is False
