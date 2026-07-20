@@ -27,7 +27,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 import aiosqlite
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response, UploadFile, File
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 
 from database import (
     DB_PATH,
@@ -47,7 +47,6 @@ from feeds.file_identity import EPSS_FILE_IDENTITY_KEY, clear_file_identity
 from config_schema import (
     APPLY_RESTART,
     APPLY_SCHEDULER_RESCHEDULE,
-    INTEGER_KEYS,
     RESTART_REQUIRED_KEYS,
     SCHEDULER_RESCHEDULE_KEYS,
     WRITABLE_CONFIG_KEYS,
@@ -436,12 +435,7 @@ async def get_system(request: Request):
         try:
             bdir = pathlib.Path(backup_dir)
             if bdir.is_dir():
-                archives = sorted(
-                    [f for f in bdir.iterdir() if f.suffix in (".gz",) and "tar" in f.stem],
-                    key=lambda f: f.stat().st_mtime,
-                    reverse=True,
-                )
-                # Also include .age files
+                # Include .tar.gz and age-encrypted archives.
                 archives_all = sorted(
                     [f for f in bdir.iterdir() if f.name.endswith(".tar.gz") or f.name.endswith(".tar.gz.age")],
                     key=lambda f: f.stat().st_mtime,

@@ -7,12 +7,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from typing import Any
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
-from ai.llm_payload import has_substantive_source_text
 from templates.intelligence import kev_sentence, severity_sentence
 
 logger = logging.getLogger(__name__)

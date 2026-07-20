@@ -1,0 +1,44 @@
+[project]
+name = "briefr-backend"
+version = "1.5.0"
+requires-python = ">=3.11"
+description = "BRIEFR FastAPI backend (CVE intelligence platform)"
+
+# F1.1 / Phase 1 W6 — lint gate.
+# Intended long-term select: E, F, I, B, UP (+ BLE001 later).
+# Initial verify-local gate uses --select F,E9 (pyflakes + syntax) so we
+# do not land a repo-wide ruff format / full-rule cleanup in this PR.
+# Follow-on: full `ruff format` + enable broader select + prettier --check.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+extend-exclude = [
+  ".venv",
+  "venv",
+  "__pycache__",
+  ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# BLE001 deferred until broad-catch triage (F1.6 / follow-on).
+# Full E/I/B/UP enforcement deferred — verify-local gates F,E9 only for now.
+ignore = [
+  "E501",  # line length — defer to format PR
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Intentional star-reexport + explicit re-export facade used by legacy importers.
+"database.py" = ["F401", "F403", "F405"]
+# Alembic env and migrations often use star / dynamic patterns.
+"alembic/**" = ["F401", "F403", "F405", "E402", "F541"]
+# Tests: unused fixtures/imports and assert patterns are common.
+"tests/**" = ["F401", "F841", "B", "S"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

@@ -454,13 +454,18 @@ def calculate_ssvc_outcome(
 - **PR A:** format-only (`ruff format`, prettier) — no behavior
 - **PR B:** enable `--check` gates
 
-- [ ] **Step 1: Add tool configs with agreed selects; ignore tests secrets rules as in audit sketch.**
+- [x] **Step 1: Add tool configs with agreed selects; ignore tests secrets rules as in audit sketch.**
+  Config select `E,F,I,B,UP`; initial gate uses `--select F,E9`. ESLint scoped to
+  `src/scoring/**` + `src/pages/admin/**`.
 
 - [ ] **Step 2: Format-only PR; verify `git diff -w` behavior unchanged for logic.**
+  **Deferred** — full-repo `ruff format` / prettier would be a noise bomb; follow-on PR.
 
-- [ ] **Step 3: Gate PR: `ruff check`, `ruff format --check`, `npm run lint`, `npm run format:check` in verify-local.**
+- [x] **Step 3: Gate PR: `ruff check` (F,E9), `npm run lint` (scoped) in verify-local.**
+  `ruff format --check` + `npm run format:check` **deferred** with Step 2.
 
 - [ ] **Step 4: Merge both; pyright non-blocking optional.**
+  (Push-only this wave; no PR/merge in-agent. pyright still optional.)
 
 ---
 

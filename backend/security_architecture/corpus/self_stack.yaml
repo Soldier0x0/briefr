@@ -48,6 +48,38 @@ terms:
   origin: generated
   term: cryptography
   source: backend/requirements.txt
+- id: self-stack-eslint
+  title: eslint
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: eslint
+  source: frontend/package.json
+- id: self-stack-eslint-config-prettier
+  title: eslint-config-prettier
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: eslint-config-prettier
+  source: frontend/package.json
+- id: self-stack-eslint-plugin-react
+  title: eslint-plugin-react
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: eslint-plugin-react
+  source: frontend/package.json
+- id: self-stack-eslint-plugin-react-hooks
+  title: eslint-plugin-react-hooks
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: eslint-plugin-react-hooks
+  source: frontend/package.json
 - id: self-stack-fastapi
   title: fastapi
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -160,6 +192,14 @@ terms:
   origin: generated
   term: postgresql
   source: declared runtime component
+- id: self-stack-prettier
+  title: prettier
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: prettier
+  source: frontend/package.json
 - id: self-stack-procrastinate
   title: procrastinate
   summary: BRIEFR dependency term derived from backend/requirements.txt.

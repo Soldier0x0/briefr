@@ -19,7 +19,8 @@ from ai.llm_session import (
     mark_provider_empty_response,
     provider_circuit_open,
 )
-from ai.model_catalog import ProviderStep, gemini_model, task_chain
+from ai.model_catalog import ProviderStep, task_chain
+from ai.model_catalog import gemini_model as gemini_model  # re-export for tests
 from ai.openai_chat import openai_chat_completion
 from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
 from api_queue_operations import LLM_TASK_OPERATIONS

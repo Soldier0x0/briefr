@@ -200,7 +200,6 @@ async def fetch_table_rows(
     if f_col == "cve_id" and f_val:
         _validate_cve_filter(f_val)
 
-    where_sql = ""
     params: list[Any] = []
     pg = _is_postgres_connection(db)
     if f_col and f_val:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from webhooks.destinations import configured_channels, webhooks_enabled
-from webhooks.engine import dispatch_event, send_alert as _send_alert
+from webhooks.engine import send_alert as _send_alert
 from webhooks.engine import send_test_message as _send_test_message
 
 __all__ = [

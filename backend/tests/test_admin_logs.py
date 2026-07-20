@@ -109,7 +109,7 @@ def test_logs_endpoint_filters_by_time_range(admin_client):
 
     # A window that contains the entry
     inside = admin_client.get(
-        f"/api/admin/logs?limit=10&search=Time+range+probe&since=2000-01-01T00:00:00&until=2100-01-01T00:00:00"
+        "/api/admin/logs?limit=10&search=Time+range+probe&since=2000-01-01T00:00:00&until=2100-01-01T00:00:00"
     )
     assert inside.status_code == 200
     assert inside.json()["logs"]

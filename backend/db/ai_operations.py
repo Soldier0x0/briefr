@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from db.timeutil import utcnow_str
 from db.types import DbConnection
 
 _INSERT_SQLITE = """

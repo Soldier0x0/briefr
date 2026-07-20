@@ -10,7 +10,7 @@ import os
 import time
 from typing import Any
 
-from database import get_db, get_nvd_sync_watermark
+from database import get_nvd_sync_watermark
 from db.integrity import run_integrity_check
 from db.sync_state import get_stack_terms
 from preferences.repo import get_effective_stack_terms

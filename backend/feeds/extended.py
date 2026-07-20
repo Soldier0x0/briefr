@@ -14,7 +14,6 @@ import json
 import logging
 import os
 import re
-from typing import Any
 from urllib.parse import quote, urljoin
 
 import httpx

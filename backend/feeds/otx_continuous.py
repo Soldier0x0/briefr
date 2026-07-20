@@ -45,7 +45,7 @@ async def run_otx_continuous_sync(api_key: str) -> dict:
         get_db,
         store_otx_cve_pulses,
     )
-    from feeds.otx import fetch_cve_pulses, fetch_pulse_iocs
+    from feeds.otx import fetch_cve_pulses
 
     if not api_key:
         return {"api_calls": 0, "stop_reason": "no_api_key"}

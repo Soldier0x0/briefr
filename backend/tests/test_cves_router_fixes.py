@@ -204,7 +204,7 @@ def test_correlation_endpoint_serializes_priority_and_suppress_round_trip(tmp_pa
         assert body["priority"]["components"][0]["signal"] == "campaign"
 
         sup = client.post(
-            f"/api/cves/CVE-2024-7001/correlation/suppress",
+            "/api/cves/CVE-2024-7001/correlation/suppress",
             json={
                 "scope": "campaign_id",
                 "key": {"campaign_id": campaign_id},

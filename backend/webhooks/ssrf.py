@@ -179,7 +179,6 @@ async def safe_webhook_request(
     outbound_headers["Host"] = host
 
     client = _get_webhook_client()
-    last_exc: Exception | None = None
 
     # Connecting to the pinned IP literal means httpx's default TLS
     # verification would check the cert against that IP string — which

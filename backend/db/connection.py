@@ -9,7 +9,7 @@ from typing import Any
 
 import aiosqlite
 
-from db.config import is_postgres, postgres_dsn, resolve_database_url
+from db.config import is_postgres, postgres_dsn
 from db.pg_adapt import adapt_params, prepare_query
 from db.errors import reraise_db_exception
 from settings import settings
