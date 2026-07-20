@@ -9,20 +9,22 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import HTTPException, Query, Request
 
+from database import get_db
+from db.search_tokens import create_search_token, list_search_tokens, revoke_search_token
 from dependencies import audit
-from settings import settings
+from monitoring.api_key_health import build_api_key_health_payload, run_api_key_health_checks
+from monitoring.notifications import build_operator_notifications
+from preferences.display_validate import sanitize_typography_px
+from preferences.repo import get_instance_typography_default, set_instance_typography_default
 
 from .router import router
+
 
 @router.get("/api-keys/health")
 async def get_api_keys_health():
     """Configured provider key suffixes and last health ping results."""
-    from monitoring.api_key_health import build_api_key_health_payload
-
     db = await get_db()
     try:
         return await build_api_key_health_payload(db)
@@ -33,8 +35,6 @@ async def get_api_keys_health():
 @router.post("/api-keys/health/run")
 async def run_api_keys_health(request: Request):
     """Trigger an immediate API key health ping sweep."""
-    from monitoring.api_key_health import build_api_key_health_payload, run_api_key_health_checks
-
     db = await get_db()
     try:
         stats = await run_api_key_health_checks(db)
@@ -48,8 +48,6 @@ async def run_api_keys_health(request: Request):
 @router.get("/search-tokens")
 async def list_search_api_tokens():
     """List search service tokens (hashed; never returns plaintext)."""
-    from db.search_tokens import list_search_tokens
-
     db = await get_db()
     try:
         tokens = await list_search_tokens(db)
@@ -61,8 +59,6 @@ async def list_search_api_tokens():
 @router.post("/search-tokens")
 async def create_search_api_token(request: Request):
     """Create a search token — plaintext returned once in the response."""
-    from db.search_tokens import create_search_token
-
     body = {}
     try:
         body = await request.json()
@@ -88,8 +84,6 @@ async def create_search_api_token(request: Request):
 @router.delete("/search-tokens/{token_id}")
 async def revoke_search_api_token(token_id: int, request: Request):
     """Revoke a search token (soft revoke)."""
-    from db.search_tokens import revoke_search_token
-
     if token_id < 1:
         raise HTTPException(status_code=400, detail="Invalid token id")
     db = await get_db()
@@ -109,8 +103,6 @@ async def get_operator_notifications(
     limit: int = Query(default=40, ge=1, le=100),
 ):
     """Durable operator notification feed (audit log + monitor alerts)."""
-    from monitoring.notifications import build_operator_notifications
-
     db = await get_db()
     try:
         return await build_operator_notifications(db, limit=limit)
@@ -120,8 +112,6 @@ async def get_operator_notifications(
 
 @router.get("/display/typography-default")
 async def read_instance_typography_default():
-    from preferences.repo import get_instance_typography_default
-
     db = await get_db()
     try:
         typography = await get_instance_typography_default(db)
@@ -132,9 +122,6 @@ async def read_instance_typography_default():
 
 @router.put("/display/typography-default")
 async def write_instance_typography_default(body: dict, request: Request):
-    from preferences.display_validate import sanitize_typography_px
-    from preferences.repo import set_instance_typography_default
-
     typography_px = body.get("typography_px")
     if not isinstance(typography_px, dict):
         raise HTTPException(status_code=422, detail="typography_px object is required")
