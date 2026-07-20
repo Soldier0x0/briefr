@@ -30,6 +30,18 @@ step "Design token lint (required — E0-1 gates)"
 "$REPO_ROOT/scripts/lint-design-tokens.sh"
 pass "design-token lint"
 
+step "Backend ruff check F,E9 (required — F1.1 / Phase 1 W6)"
+(
+  cd backend
+  if ! python3 -m ruff --version >/dev/null 2>&1; then
+    python3 -m pip install -q --disable-pip-version-check "ruff==0.14.14"
+  fi
+  # Initial gate: pyflakes + syntax (F,E9). Full E/I/B/UP + ruff format --check
+  # deferred to a follow-on formatting PR (see HANDOVER W6).
+  python3 -m ruff check --select F,E9 .
+)
+pass "ruff check --select F,E9"
+
 step "Frontend production build (required — matches playwright-smoke job build step)"
 (
   cd frontend
@@ -39,6 +51,16 @@ step "Frontend production build (required — matches playwright-smoke job build
   npm run build
 )
 pass "npm run build"
+
+step "Frontend eslint (required — F1.1 / Phase 1 W6; scoped scoring+admin)"
+(
+  cd frontend
+  if [[ ! -d node_modules ]]; then
+    npm ci --ignore-scripts
+  fi
+  npm run lint
+)
+pass "npm run lint"
 
 step "Frontend unit tests (required — F1.11)"
 (

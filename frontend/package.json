@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview --port 3000",
     "audit:ci": "npm audit --audit-level=high",
-    "test:unit": "node --test 'src/**/*.test.js'"
+    "test:unit": "node --test 'src/**/*.test.js'",
+    "lint": "eslint src/scoring src/pages/admin",
+    "format": "prettier --write \"src/scoring/**/*.{js,jsx,css}\" \"src/pages/admin/**/*.{js,jsx,css}\"",
+    "format:check": "prettier --check \"src/scoring/**/*.{js,jsx,css}\" \"src/pages/admin/**/*.{js,jsx,css}\""
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",
@@ -34,7 +37,12 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.61.1",
+    "prettier": "^3.9.5",
     "vite": "^8.1.4"
   },
   "overrides": {

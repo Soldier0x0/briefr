@@ -12,6 +12,35 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W6 lint gate (F1.1 / Task 13)
+
+**Done** (branch `cursor/phase1-w6-lint-91c2`)
+- **Backend:** `backend/pyproject.toml` — ruff line-length 100, py312, select
+  `E,F,I,B,UP` (config for future). Per-file ignores for `database.py`
+  re-export facade, alembic, tests.
+- **Frontend:** flat `eslint.config.js` + Prettier; scripts `lint` /
+  `format` / `format:check`. ESLint **required scope** =
+  `src/scoring/**` + `src/pages/admin/**` (lenient: `no-undef` +
+  `rules-of-hooks` error; unused/`exhaustive-deps` warn).
+- **`scripts/verify-local.sh` gates (required):**
+  - `ruff check --select F,E9` (pyflakes + syntax)
+  - `npm run lint` (scoped above)
+- **Autofix commit:** clear unused imports / F541 / four manual F841|F811
+  fixes so F,E9 is green. Did **not** strip `database.py` re-exports
+  (F401 ignored there).
+
+**Deferred (follow-on formatting PR — do not mix with behavior):**
+- Repo-wide `ruff format` / `ruff format --check`
+- Broader ruff select enforcement (full E/I/B/UP, BLE001)
+- Full-tree eslint + `prettier --check` / format-only pass
+- pyright (optional non-blocking)
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
+
+**Next:** W7 god-file splits (F1.2/F1.5). Do not start W7 on this branch.
+
+---
+
 ## 2026-07-20 — Phase 1 W5 exposure / criticality flags (Task 12)
 
 **Done** (branch `cursor/phase1-w5-exposure-91c2`)
