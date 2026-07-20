@@ -499,11 +499,11 @@ python -c "..."  # dump route list to /tmp/routes-before.txt
 - Create: `backend/tests/test_sql_dialect_pairs.py`
 - Doc: CI dialect matrix note in PRODUCT_STATUS or POSTGRES.md
 
-- [ ] **Step 1: Failing test that every `_PG` constant in `backend/db/` has sibling `_SQLITE` or `# pg-only` marker.**
+- [x] **Step 1: Failing test that every `_PG` constant in `backend/db/` has sibling `_SQLITE` or `# pg-only` marker.**
 
-- [ ] **Step 2: Implement scanner; commit baseline count as upper bound comment.**
+- [x] **Step 2: Implement scanner; commit baseline count as upper bound comment.**
 
-- [ ] **Step 3: PR; merge. Testcontainers default = out of Phase 1 closeout.**
+- [x] **Step 3: Land on branch (PR optional). Testcontainers default = out of Phase 1 closeout.**
 
 ---
 
