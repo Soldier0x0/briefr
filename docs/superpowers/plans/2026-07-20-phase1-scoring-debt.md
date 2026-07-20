@@ -86,9 +86,9 @@ git commit -m "docs: Phase 1 program kickoff (HANDOVER + sprint + plan ticks)"
 - Consumes: existing `frontend/package.json` script `"test:unit": "node --test 'src/**/*.test.js'"`
 - Produces: verify-local fails if any FE unit test fails
 
-- [ ] **Step 1: Write failing gate check** — add a step to `verify-local.sh` after `npm run build` that runs unit tests. Confirm current suite passes before relying on it.
+- [x] **Step 1: Write failing gate check** — add a step to `verify-local.sh` after `npm run build` that runs unit tests. Confirm current suite passes before relying on it.
 
-- [ ] **Step 2: Implement verify-local step**
+- [x] **Step 2: Implement verify-local step**
 
 ```bash
 step "Frontend unit tests (required — F1.11)"
@@ -102,7 +102,7 @@ step "Frontend unit tests (required — F1.11)"
 pass "npm run test:unit"
 ```
 
-- [ ] **Step 3: Run gate**
+- [x] **Step 3: Run gate**
 
 ```bash
 ./scripts/verify-local.sh
@@ -110,7 +110,7 @@ pass "npm run test:unit"
 
 Expected: FE unit tests step runs and passes (or fix any pre-existing failures in the same PR only if caused by the gate).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/verify-local.sh
@@ -131,13 +131,13 @@ git commit -m "ci: gate frontend unit tests in verify-local (F1.11)"
 - Consumes: existing narrative helper functions in `copy.py`
 - Produces: module `correlation.narrative` with same public functions
 
-- [ ] **Step 1: Find all imports**
+- [x] **Step 1: Find all imports**
 
 ```bash
 rg -n "correlation\.copy|from correlation import copy|correlation/copy" backend
 ```
 
-- [ ] **Step 2: Add failing import test** in an existing correlation test file or new `tests/test_correlation_narrative_module.py`:
+- [x] **Step 2: Add failing import test** in an existing correlation test file or new `tests/test_correlation_narrative_module.py`:
 
 ```python
 def test_narrative_module_importable():
@@ -147,9 +147,9 @@ def test_narrative_module_importable():
 
 Run: `cd backend && pytest tests/test_correlation_narrative_module.py -q` → FAIL until rename.
 
-- [ ] **Step 3: Rename + update imports; leave thin re-export only if needed for one release — prefer hard cut with green tests.**
+- [x] **Step 3: Rename + update imports; leave thin re-export only if needed for one release — prefer hard cut with green tests.**
 
-- [ ] **Step 4: Run correlation-related tests + commit**
+- [x] **Step 4: Run correlation-related tests + commit**
 
 ```bash
 cd backend && pytest tests/ -q -k correlation
@@ -166,15 +166,15 @@ git commit -m "refactor: rename correlation.copy to narrative (F1.10)"
 - Modify: `backend/settings.py`, `config_schema.py`, `operator_settings.py`, `db/config.py`, `routers/config.py` — one-line ownership docstring each
 - Modify: `docs/index.md` — authoritative vs snapshot labels
 
-- [ ] **Step 1: Document ownership table in HANDOVER or index for the five config modules (no key overlap claim without `rg` evidence).**
+- [x] **Step 1: Document ownership table in HANDOVER or index for the five config modules (no key overlap claim without `rg` evidence).**
 
-- [ ] **Step 2: Apply docstring headers stating single responsibility.**
+- [x] **Step 2: Apply docstring headers stating single responsibility.**
 
-- [ ] **Step 3: Make `AGENTS.md` point to `CLAUDE.md` for the rulebook; keep cloud-specific instructions in AGENTS if that is the Cursor entrypoint — avoid duplicating danger zones.**
+- [x] **Step 3: Make `AGENTS.md` point to `CLAUDE.md` for the rulebook; keep cloud-specific instructions in AGENTS if that is the Cursor entrypoint — avoid duplicating danger zones.**
 
-- [ ] **Step 4: Label docs in `docs/index.md`.**
+- [x] **Step 4: Label docs in `docs/index.md`.**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "docs: AGENTS pointer, config ownership headers, index labels (F1.7–F1.9)"
@@ -188,15 +188,15 @@ git commit -m "docs: AGENTS pointer, config ownership headers, index labels (F1.
 - Modify: highest-risk `except Exception: pass/continue` sites in non-test backend (start with scoring/feeds/scheduler paths found by grep)
 - Test: ensure no behavior change beyond logging
 
-- [ ] **Step 1: Inventory**
+- [x] **Step 1: Inventory**
 
 ```bash
 rg -n "except Exception" backend --glob '!tests/**' -A1 | rg -n "pass|continue" 
 ```
 
-- [ ] **Step 2: For each site in batch 1: narrow type where safe; add `logger.warning(..., exc_info=True)` with context; never log secrets.
+- [x] **Step 2: For each site in batch 1: narrow type where safe; add `logger.warning(..., exc_info=True)` with context; never log secrets.
 
-- [ ] **Step 3: Run nearby tests; commit**
+- [x] **Step 3: Run nearby tests; commit**
 
 ```bash
 git commit -m "fix: log swallowed exceptions batch 1 (F1.6)"
