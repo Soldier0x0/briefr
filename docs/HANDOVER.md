@@ -12,6 +12,33 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 program closeout (debt + scoring)
+
+**Done (multi-PR same phase — merged to main)**
+- **W0–W1:** Spec/plan + quick wins (F1.6–F1.11): verify-local FE unit tests,
+  `correlation.narrative`, AGENTS→CLAUDE pointer, config headers, docs index,
+  swallowed-exception batch 1.
+- **W2–W5 scoring:** Backend-only Threat display; wallboard OP→Threat; CISA
+  KEV floor only; EPSS OP escalations (`operational-priority-1.1`→`1.2`);
+  SSVC annotation on `/risk`; exposure/criticality profile flags (OP/SSVC only).
+- **W6:** Ruff F,E9 + scoped eslint gates in `verify-local.sh` (full format deferred).
+- **W7:** `routers/admin/` package split (OpenAPI identity preserved).
+- **W8:** Dual `_PG`/`_SQLITE` pair ratchet (`ALLOWED_MAX=133`).
+
+**Deferred (follow-on, not blocking program close):**
+- `routers/cves/` package split; FE F1.5 large component extracts
+- Repo-wide `ruff format` / full E,I,B,UP eslint tree
+- Graphify CLI install + `graphify update .` (still GRAPHIFY_MISSING in cloud)
+- Testcontainers / Postgres-default CI
+
+**Spec/plan:** `docs/superpowers/specs/2026-07-20-phase1-scoring-debt-design.md`,
+`docs/superpowers/plans/2026-07-20-phase1-scoring-debt.md`.
+
+**Next:** Install/refresh graphify when tooling available; optional CVE split /
+FE extracts; full format PR when ready.
+
+---
+
 ## 2026-07-20 — Phase 1 W7 admin router package (F1.2 / Task 14 partial)
 
 **Done** (branch `cursor/phase1-w7-router-split-91c2`)
