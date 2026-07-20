@@ -241,7 +241,7 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](diagrams/flow_ioc_lo
 
 See **Risk score (v1.1b) — backend canonical** above. Implementation:
 `backend/scoring/risk.py`, `backend/scoring/asset_match.py`,
-`POST /api/cves/{cve_id}/risk` in `routers/cves.py`.
+`POST /api/cves/{cve_id}/risk` in `routers/cves/intel.py`.
 
 ### E. Incidents & News feed (snapshot-served)
 
