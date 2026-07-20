@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 2 Task 5: manual LLM extraction durable enqueue
+
+**Done** (branch `cursor/w2-llm-durable-91c2`):
+- Admin `POST /api/admin/scheduler/run` now handles `llm_product_extraction`
+  specially when Procrastinate is enabled: it defers `jobs:llm_product_extraction`
+  directly with `trigger="manual"`, singleton `queueing_lock`, and elevated
+  priority.
+- `AlreadyEnqueued` is treated as an idempotent success; disabled or unavailable
+  durable queue falls back to the existing scheduler background path.
+
+**Verify:** targeted Task 5 pytest command in `.superpowers/sdd/task-5-report.md`.
+
+---
+
 ## 2026-07-20 — Wave 2 Task 4: durable LLM product extraction
 
 **Done** (branch `cursor/w2-llm-durable-91c2`):

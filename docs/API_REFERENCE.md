@@ -2051,7 +2051,7 @@ When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty
 Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
 
 ### POST /api/admin/scheduler/run
-Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown.
+Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown. For `job_id="llm_product_extraction"`, `PROCRASTINATE_ENABLED=1` defers `jobs:llm_product_extraction` with `trigger="manual"` and elevated priority; disabled/unavailable durable queue falls back to the existing scheduler path.
 Audit: `scheduler.run.{job_id}`.
 
 ### GET /api/admin/config/schema
