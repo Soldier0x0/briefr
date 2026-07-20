@@ -14,8 +14,10 @@ import {
   environmentTierColor,
   getEnvironmentDisplay,
   getOperationalPriorityDisplay,
+  getSsvcAnnotationDisplay,
   operationalBandColor,
   riskScoreDisplayColor,
+  ssvcOutcomeColor,
   THREAT_COMPONENT_LABELS,
   THREAT_COMPONENT_TOOLTIPS,
   OP_BAND_TOOLTIPS,
@@ -492,6 +494,35 @@ function EnvironmentTierChip({ riskScore }) {
   )
 }
 
+/** SSVC annotation chip beside OP — display-only; does not replace P-band. */
+function ssvcChipTooltip(ssvc) {
+  const factors = ssvc?.factors || {}
+  const bits = [
+    `SSVC annotation ${ssvc.outcome} (not a replacement for Operational Priority).`,
+    factors.exploitation ? `Exploitation: ${factors.exploitation}` : null,
+    factors.technical_impact ? `Technical impact: ${factors.technical_impact}` : null,
+    factors.mission_prevalence ? `Mission: ${factors.mission_prevalence}` : null,
+    ssvc.path ? `Path: ${ssvc.path}` : null,
+  ].filter(Boolean)
+  return bits.join(' ')
+}
+
+function SsvcAnnotationChip({ ssvc }) {
+  const display = getSsvcAnnotationDisplay({ ssvc })
+  if (!display) return null
+  return (
+    <ControlTooltip text={ssvcChipTooltip(ssvc)} trigger="hover-focus">
+      <span
+        className="drawer-op-ssvc-chip mono"
+        style={{ color: ssvcOutcomeColor(display.outcome) }}
+        aria-label={`SSVC annotation ${display.outcome}`}
+      >
+        SSVC {display.outcome}
+      </span>
+    </ControlTooltip>
+  )
+}
+
 function OperationalPriorityBreakdown({ riskScore, momentumData }) {
   const threat = riskScore?.threat
   const env = getEnvironmentDisplay(riskScore)
@@ -624,20 +655,23 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
         </h3>
       </ControlTooltip>
       <div className="drawer-risk-hero drawer-op-hero">
-        <div
-          className="drawer-op-band mono"
-          style={{ color: operationalBandColor(op.band) }}
-          aria-label={`Operational priority ${op.band}${op.provisional ? ', provisional' : ''}`}
-        >
-          {op.band}
-          {op.provisional && (
-            <ControlTooltip
-              text="No My Stack profile loaded — priority is provisional and may change once environment relevance is known"
-              trigger="hover"
-            >
-              <span className="drawer-op-provisional">*</span>
-            </ControlTooltip>
-          )}
+        <div className="drawer-op-band-row">
+          <div
+            className="drawer-op-band mono"
+            style={{ color: operationalBandColor(op.band) }}
+            aria-label={`Operational priority ${op.band}${op.provisional ? ', provisional' : ''}`}
+          >
+            {op.band}
+            {op.provisional && (
+              <ControlTooltip
+                text="No My Stack profile loaded — priority is provisional and may change once environment relevance is known"
+                trigger="hover"
+              >
+                <span className="drawer-op-provisional">*</span>
+              </ControlTooltip>
+            )}
+          </div>
+          <SsvcAnnotationChip ssvc={riskScore.ssvc} />
         </div>
         <div className="drawer-op-metrics">
           <div

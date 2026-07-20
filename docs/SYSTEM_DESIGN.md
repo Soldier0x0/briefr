@@ -105,7 +105,7 @@ Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](diagrams/sy
 | `hunt_packs` (+ `mitre_techniques`, `cve_technique_map`) | `GET /api/forge/coverage`, `GET /api/hunt-packs/{technique_id}`, `POST /api/hunt-packs/generate` | Forge tab (coverage map + hunt pack panel) |
 | `watchlist` | `GET/POST/DELETE /api/watchlist`, `DELETE /api/watchlist/snoozes`; join on `GET /api/cves` for sort/filter | CVECard + DetailDrawer pin; WATCHLIST feed filter |
 | `ioc_watchlist`, `threatfox_iocs` | `GET/POST/DELETE /api/ioc/watchlist`; scheduler `threatfox_sync`, `ioc_retro_match` | IOCLookup watchlist panel |
-| `scoring/threat.py` + `environment.py` + `priority.py` + `POST /api/cves/{id}/risk` | ADR-002 Threat / Environment / Operational Priority (backend sole engine) | `DetailDrawer` via `fetchCVERisk()` — display-only |
+| `scoring/threat.py` + `environment.py` + `priority.py` + `ssvc.py` + `POST /api/cves/{id}/risk` | ADR-002 Threat / Environment / Operational Priority + W4 SSVC annotation (backend sole engine) | `DetailDrawer` via `fetchCVERisk()` — display-only |
 | `scoring/risk.py` | Legacy v1.1b blend returned as `legacy_risk_v11b` only | Formula display helpers in `riskScore.js` |
 | `scoring/risk.py` constants | `GET /api/config/risk` — v1.1b weights, no DB | `riskScore.js` weight prefetch (startup) |
 
@@ -126,6 +126,16 @@ band when Threat is HIGH/MED, EPSS ≥ 0.5, and Environment ≥ POSSIBLE; rising
 rules are additive, never change Threat, and never de-escalate KEV/CRIT P1.
 Missing EPSS counts as 0. See ADR-002 addendum.
 
+**SSVC annotation (W4):** `POST /risk` also returns `ssvc`
+(`scoring/ssvc.py`, version `ssvc-annotation-1.0`) with
+`outcome` ∈ {Act, Attend, Track*, Track}, `factors`, and explainability `path`.
+Mapped from Threat/KEV/exploit (exploitation), CVSS (technical impact), and
+Environment tier (+ optional profile `internet_facing` / `criticality` when
+present). SSVC does **not** change Threat or replace Operational Priority.
+Documentation crosswalk (OP primary): **P1↔Act, P2↔Attend, P3↔Track*, P4↔Track**.
+Overview shows a small SSVC chip beside the OP band when `riskScore.ssvc` is present.
+Vulnrichment CISA SSVC in the drawer remains a separate ingested section.
+
 Optional `profile` / `assets` in the POST body personalise Environment (CPE
 match via `matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`).
 Momentum is computed server-side in the same request via `calculate_momentum()`.
@@ -133,7 +143,7 @@ Momentum is computed server-side in the same request via `calculate_momentum()`.
 `GET /api/config/risk` still exposes weight constants for the drawer's formula
 display (`score × weight × 100 = points`). `frontend/src/scoring/riskScore.js`
 prefetches weights at startup and provides **UI helpers only** (colors, hero
-summary text, correlation OP merge) — it does **not** recompute Threat or
+summary text, correlation OP merge, SSVC display) — it does **not** recompute Threat or
 v1.1b totals for displayed numbers (W2 / F1.3).
 
 **Correlation escalation (temporary FE merge):** when the drawer loads
@@ -163,7 +173,7 @@ drawer open.
 
 **Display:** `DetailDrawer` Overview tab fetches `POST /api/cves/{id}/risk` when
 the CVE or asset profile changes and renders `threat` / `environment` /
-`operational_priority` from that response.
+`operational_priority` / `ssvc` from that response.
 
 ### A. CVE lifecycle
 

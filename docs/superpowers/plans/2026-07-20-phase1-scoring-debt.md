@@ -412,15 +412,16 @@ def calculate_ssvc_outcome(
     """Return {version, outcome, factors, path} — Act|Attend|Track*|Track."""
 ```
 
-- [ ] **Step 1: Failing tests for mapping** — CISA KEV + CONFIRMED → Act; LOW + NO_MATCH → Track; document factor extraction from Threat components (Active/PoC/None).
+- [x] **Step 1: Failing tests for mapping** — CISA KEV + CONFIRMED → Act; LOW + NO_MATCH → Track; document factor extraction from Threat components (Active/PoC/None).
 
-- [ ] **Step 2: Implement deterministic tree; **do not** mutate Threat or replace OP.
+- [x] **Step 2: Implement deterministic tree; **do not** mutate Threat or replace OP.
 
-- [ ] **Step 3: Add `ssvc` key to `/risk` JSON.**
+- [x] **Step 3: Add `ssvc` key to `/risk` JSON.**
 
-- [ ] **Step 4: UI chip beside OP; tooltip with path/factors.**
+- [x] **Step 4: UI chip beside OP; tooltip with path/factors.**
 
-- [ ] **Step 5: Docs crosswalk P↔SSVC; study-guide regen; graphify; PR; merge.**
+- [x] **Step 5: Docs crosswalk P↔SSVC; study-guide regen; graphify; PR; merge.**
+  (Docs + ADR-002 addendum done this PR. GRAPHIFY_MISSING — CLI not on PATH / no `graphify-out/`. Study-guide regen skipped — no taught chapter source text change beyond operator docs. Push branch only per wave instructions; no PR/merge in this agent turn.)
 
 ---
 

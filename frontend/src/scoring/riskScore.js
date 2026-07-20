@@ -538,6 +538,29 @@ export function getOperationalPriorityDisplay(riskScore) {
   }
 }
 
+/** Display helper for W4 SSVC annotation on POST /risk — never recomputes outcome. */
+const SSVC_OUTCOMES = new Set(['Act', 'Attend', 'Track*', 'Track'])
+
+export function getSsvcAnnotationDisplay(riskScore) {
+  const ssvc = riskScore?.ssvc
+  if (!ssvc || typeof ssvc !== 'object') return null
+  const outcome = ssvc.outcome
+  if (!outcome || !SSVC_OUTCOMES.has(outcome)) return null
+  return {
+    outcome,
+    path: ssvc.path || '',
+    factors: ssvc.factors || {},
+    version: ssvc.version || '',
+  }
+}
+
+export function ssvcOutcomeColor(outcome) {
+  if (outcome === 'Act') return 'var(--severity-critical)'
+  if (outcome === 'Attend') return 'var(--severity-high)'
+  if (outcome === 'Track*') return 'var(--severity-medium)'
+  return 'var(--text-muted)'
+}
+
 export function buildOperationalHeroSummary(cve, riskScore) {
   if (!cve || !riskScore?.threat) return ''
   const parts = []

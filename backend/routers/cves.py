@@ -86,6 +86,7 @@ from intel.provenance import (
 )
 from scoring.priority import derive_operational_priority
 from scoring.risk import calculate_momentum, calculate_risk_score
+from scoring.ssvc import calculate_ssvc_outcome
 from scoring.threat import calculate_threat_score
 from templates.intelligence import (
     epss_sentence_or_fallback,
@@ -1528,6 +1529,25 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
             epss=cve.get("epss_score"),
             epss_rising=epss_rising,
         )
+        # W4: SSVC annotation parallel to OP — does not mutate Threat or OP.
+        # Optional W5 profile flags when already present; else None.
+        internet_facing = None
+        criticality = None
+        if isinstance(profile, dict):
+            if "internet_facing" in profile:
+                internet_facing = profile.get("internet_facing")
+                if internet_facing is not None:
+                    internet_facing = bool(internet_facing)
+            crit_raw = profile.get("criticality")
+            if isinstance(crit_raw, str) and crit_raw.strip():
+                criticality = crit_raw.strip()
+        ssvc = calculate_ssvc_outcome(
+            threat=threat,
+            environment=environment,
+            cve=cve,
+            internet_facing=internet_facing,
+            criticality=criticality,
+        )
     finally:
         await db.close()
 
@@ -1536,6 +1556,7 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
         "threat": threat,
         "environment": environment,
         "operational_priority": operational_priority,
+        "ssvc": ssvc,
         "legacy_risk_v11b": legacy_risk,
         "momentum": momentum,
         "hasProfile": legacy_risk.get("hasProfile", False),
