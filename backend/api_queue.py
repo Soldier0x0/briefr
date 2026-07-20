@@ -85,8 +85,12 @@ def _parse_duration_seconds(value: str) -> float:
         dt = parsedate_to_datetime(text)
         if dt:
             return max(0.0, (dt - datetime.now(timezone.utc)).total_seconds())
-    except Exception:
-        pass
+    except (TypeError, ValueError, OverflowError, IndexError):
+        logger.warning(
+            "Failed to parse Retry-After date value (len=%d)",
+            len(text),
+            exc_info=True,
+        )
     return 0.0
 
 
@@ -174,7 +178,11 @@ def apply_rate_limit_headers(
 
         record_quota_snapshot(source, headers)
     except Exception:
-        pass
+        logger.warning(
+            "Quota snapshot record failed for source=%s",
+            source,
+            exc_info=True,
+        )
 
 
 async def await_api_slot(

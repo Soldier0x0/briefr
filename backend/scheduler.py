@@ -186,6 +186,11 @@ async def _write_job_last_run(
                             # Migrate old single-dict format to array
                             history = [parsed]
                     except Exception:
+                        logger.warning(
+                            "Corrupt scheduler last-run history for job_id=%s; resetting",
+                            job_id,
+                            exc_info=True,
+                        )
                         history = []
                 history.insert(0, new_entry)
                 history = history[:5]

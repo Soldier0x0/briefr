@@ -273,7 +273,11 @@ async def _process(run_id: int) -> dict:
             )
             await db.commit()
         except Exception:
-            pass
+            logger.warning(
+                "Failed to persist failed status for stack backfill run_id=%s",
+                run_id,
+                exc_info=True,
+            )
         return {"ok": False, "error": str(exc)[:200]}
     finally:
         await db.close()
