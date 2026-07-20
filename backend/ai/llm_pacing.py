@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from catchup_mode import effective_llm_headroom_pct
+
 
 @dataclass(frozen=True)
 class ProviderLimits:
@@ -63,6 +65,7 @@ def limits_from_env(
     tpm = _env_int(f"{prefix}_TPM_LIMIT", default_tpm)
     est_tokens = _env_int(f"{prefix}_ESTIMATED_TOKENS_PER_REQUEST", default_est_tokens)
     headroom = _env_int(f"{prefix}_HEADROOM_PCT", default_headroom_pct)
+    headroom = effective_llm_headroom_pct(headroom)
     override_raw = os.environ.get(f"{prefix}_MIN_REQUEST_INTERVAL_SECONDS", "").strip()
     override = None
     if override_raw:

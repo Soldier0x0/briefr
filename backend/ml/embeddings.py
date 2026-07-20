@@ -23,6 +23,8 @@ import asyncio
 import logging
 import os
 
+from catchup_mode import effective_embeddings_max_per_run
+
 def _default_hf_home_for_cache(cache_dir: str) -> None:
     # huggingface_hub freezes HF_HOME-derived constants at import time; fastembed
     # imports it underneath, so default HF_HOME before importing fastembed.
@@ -99,7 +101,8 @@ def get_embeddings_model_name() -> str:
 
 
 def get_embeddings_max_per_run() -> int:
-    return int(os.environ.get("EMBEDDINGS_MAX_PER_RUN", "2000"))
+    base = int(os.environ.get("EMBEDDINGS_MAX_PER_RUN", "2000"))
+    return effective_embeddings_max_per_run(base)
 
 
 def get_embeddings_cache_dir() -> str:

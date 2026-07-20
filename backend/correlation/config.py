@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 
+from catchup_mode import effective_correlation_precompute_max_per_run
+
 ENGINE_VERSION = "2.0"
 CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase2"
 
@@ -77,6 +79,7 @@ def get_correlation_precompute_enabled() -> bool:
 def get_correlation_precompute_max_per_run() -> int:
     raw = os.environ.get("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "500").strip()
     try:
-        return max(1, int(raw))
+        base = max(1, int(raw))
     except ValueError:
-        return 500
+        base = 500
+    return effective_correlation_precompute_max_per_run(base)

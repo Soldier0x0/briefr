@@ -16,6 +16,7 @@ from metrics.request_counter import increment_request_count
 
 load_dotenv()
 
+from catchup_mode import clear_catchup_after_restart
 from settings import production_posture_warnings, settings
 from structured_logging import configure_logging, request_id_var
 
@@ -107,6 +108,7 @@ async def lifespan(app: FastAPI):
     from operator_settings import bootstrap_operator_settings
 
     await bootstrap_operator_settings()
+    await clear_catchup_after_restart()
     logger.info("main.py lifespan: database ready")
     if settings.is_production:
         for posture in production_posture_warnings():

@@ -33,6 +33,7 @@ from . import config as config  # noqa: F401
 from . import webhooks as webhooks  # noqa: F401
 from . import database as database  # noqa: F401
 from . import jobs as jobs  # noqa: F401
+from . import catchup as catchup  # noqa: F401
 from . import feeds as feeds  # noqa: F401
 from . import webhooks_logs as webhooks_logs  # noqa: F401
 from . import ai_ops as ai_ops  # noqa: F401
