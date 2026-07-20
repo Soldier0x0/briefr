@@ -113,6 +113,26 @@ def test_allowed_origins_requires_restart():
     assert resolved_apply_strategy(field) == APPLY_RESTART
 
 
+def test_env_only_operator_flags_are_admin_visible():
+    for key in (
+        "CORRELATION_PRECOMPUTE_ENABLED",
+        "DETECTION_CONTEXT_SYNC_ENABLED",
+        "DETECTION_CONTEXT_NUCLEI_ENABLED",
+    ):
+        field = get_field(key)
+        assert field is not None
+        assert field.type == "bool"
+        assert resolved_apply_strategy(field) == APPLY_IMMEDIATE
+
+
+def test_detection_context_llm_flag_requires_restart():
+    field = get_field("DETECTION_CONTEXT_LLM_ENABLED")
+    assert field is not None
+    assert field.type == "bool"
+    assert field.restart_required is True
+    assert resolved_apply_strategy(field) == APPLY_RESTART
+
+
 def test_scheduler_reschedule_keys_subset_of_writable():
     assert SCHEDULER_RESCHEDULE_KEYS.issubset(WRITABLE_CONFIG_KEYS)
 
@@ -136,6 +156,22 @@ def test_config_schema_endpoint(admin_client):
     assert "WALLBOARD_TOKEN" in keys
     assert "DISCORD_WEBHOOK_URL" in keys
     assert len(data) == len(WRITABLE_CONFIG_KEYS)
+
+
+def test_config_get_includes_env_only_operator_flags(admin_client, monkeypatch):
+    monkeypatch.setenv("CORRELATION_PRECOMPUTE_ENABLED", "1")
+    monkeypatch.setenv("DETECTION_CONTEXT_SYNC_ENABLED", "1")
+    monkeypatch.setenv("DETECTION_CONTEXT_LLM_ENABLED", "0")
+    monkeypatch.setenv("DETECTION_CONTEXT_NUCLEI_ENABLED", "1")
+
+    resp = admin_client.get("/api/admin/config")
+
+    assert resp.status_code == 200
+    ml = resp.json()["ml"]
+    assert ml["CORRELATION_PRECOMPUTE_ENABLED"] == "1"
+    assert ml["DETECTION_CONTEXT_SYNC_ENABLED"] == "1"
+    assert ml["DETECTION_CONTEXT_LLM_ENABLED"] == "0"
+    assert ml["DETECTION_CONTEXT_NUCLEI_ENABLED"] == "1"
 
 
 def test_set_config_rejects_out_of_range_int(admin_client, tmp_path, monkeypatch):

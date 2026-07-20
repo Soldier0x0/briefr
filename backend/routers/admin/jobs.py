@@ -19,7 +19,7 @@ from database import get_db, set_sync_state_value
 from dependencies import audit
 from destructive_actions import require_confirm
 from jobs.app import is_procrastinate_enabled, open_app
-from jobs.tasks import llm_product_extraction_tick
+from jobs.tasks import health_ping, llm_product_extraction_tick
 from task_registry import spawn_background_task
 
 import routers.admin as _admin_pkg
@@ -69,6 +69,39 @@ async def list_outbound_jobs(request: Request, limit: int = 50):
         "enabled": True,
         "jobs": jobs,
         "count": len(jobs),
+    }
+
+
+@router.post("/jobs/outbound/ping")
+async def ping_outbound_queue(request: Request):
+    """Defer the no-op health_ping task so admins can verify queue writes."""
+    if not is_procrastinate_enabled():
+        raise HTTPException(503, "Durable outbound queue is disabled")
+
+    app = await open_app()
+    if app is None:
+        raise HTTPException(503, "Durable outbound queue is unavailable")
+
+    already_enqueued = False
+    try:
+        await health_ping.configure(queueing_lock="health_ping").defer_async(
+            note="admin-canary"
+        )
+    except AlreadyEnqueued:
+        already_enqueued = True
+        logger.info("health_ping canary already queued - skipping duplicate")
+
+    await audit(request, "jobs.outbound.ping", "jobs:health_ping")
+    return {
+        "ok": True,
+        "task": "jobs:health_ping",
+        "queueing_lock": "health_ping",
+        "already_enqueued": already_enqueued,
+        "message": (
+            "health_ping already queued"
+            if already_enqueued
+            else "health_ping queued"
+        ),
     }
 
 

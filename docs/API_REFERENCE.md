@@ -2047,6 +2047,12 @@ When `PROCRASTINATE_ENABLED=0` (default), `enabled` is false and `jobs` is empty
 
 **UI consumer:** Admin → Data refresh schedule (`SchedulerPage`) renders `OutboundJobsPanel`, which calls this endpoint on mount (limit 50), refreshes manually, and polls every ~15s while the page is visible.
 
+### POST /api/admin/jobs/outbound/ping
+
+Admin-only canary for the durable queue. Defers the no-op `jobs:health_ping` task with a singleton `queueing_lock` so operators can verify queue writes from Admin without running a real sync job. `AlreadyEnqueued` is treated as success. Returns `503` when `PROCRASTINATE_ENABLED=0` or the durable app is unavailable.
+
+Response: `{ok, task, queueing_lock, already_enqueued, message}`. Audit: `jobs.outbound.ping`.
+
 ### GET /api/admin/api-usage/metering
 Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
 
@@ -2055,7 +2061,10 @@ Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock
 Audit: `scheduler.run.{job_id}`.
 
 ### GET /api/admin/config/schema
-Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals). Includes `WALLBOARD_TOKEN` under section `security` (kiosk gate — `restart` apply strategy) and `RATE_LIMIT_WALLBOARD_PER_MINUTE` under `app` (kiosk polling limit — `restart` apply strategy).
+Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals). Includes `WALLBOARD_TOKEN` under section `security` (kiosk gate — `restart` apply strategy), `RATE_LIMIT_WALLBOARD_PER_MINUTE` under `app` (kiosk polling limit — `restart` apply strategy), and Admin-visible boolean toggles for `CORRELATION_PRECOMPUTE_ENABLED`, `DETECTION_CONTEXT_SYNC_ENABLED`, `DETECTION_CONTEXT_LLM_ENABLED`, and `DETECTION_CONTEXT_NUCLEI_ENABLED`.
+
+### GET /api/admin/config
+Returns the current Admin config values grouped by section, with secrets masked. The `ml` section includes env-backed runtime booleans for correlation precompute and detection-context sync/LLM/Nuclei toggles so operators can see the same flags exposed by `/config/schema`.
 
 ### POST /api/admin/config
 Body `{key, value}`. Writes one key to `.env` and `os.environ`. For `scheduler_reschedule` keys, reschedules affected APScheduler jobs without a full restart. Response includes `apply_strategy`, `warning_restart_required` (when strategy is `restart`), `rescheduled_jobs`, and `message`. Use `POST /config/apply-all` for keys that require a backend restart (including `WALLBOARD_TOKEN`).
