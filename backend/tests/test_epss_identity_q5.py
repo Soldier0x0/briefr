@@ -102,11 +102,11 @@ def test_identity_skip_in_sync(tmp_path, monkeypatch):
 
         updates = {"n": 0}
 
-        async def _count_update(db, scores):
+        async def _count_update(db, scores, commit_every=None):
             updates["n"] += 1
             from db.enrichment import update_epss_scores as _real
 
-            return await _real(db, scores)
+            return await _real(db, scores, commit_every=commit_every)
 
         monkeypatch.setattr("scheduler.update_epss_scores", _count_update)
         await _run_epss_sync()
