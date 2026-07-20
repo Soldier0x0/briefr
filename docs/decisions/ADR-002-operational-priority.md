@@ -358,6 +358,28 @@ table (version `operational-priority-1.1`):
 Wired from `POST /api/cves/{id}/risk` via CVE `epss_score` and momentum signals
 with `type == "epss_rising"`.
 
+## Addendum — W4 SSVC annotation (2026-07-20)
+
+**Status:** ACCEPTED additive annotation. Threat formula and OP P-band remain
+authoritative; SSVC does **not** replace Operational Priority.
+
+`POST /api/cves/{id}/risk` returns a parallel `ssvc` object from
+`scoring/ssvc.py` (`calculate_ssvc_outcome`, version `ssvc-annotation-1.0`):
+
+| Field | Meaning |
+|-------|---------|
+| `outcome` | Exactly one of `Act`, `Attend`, `Track*`, `Track` |
+| `factors` | exploitation (none/poc/active), technical_impact (partial/total), mission_prevalence (low/medium/high), plus env tier / optional W5 flags |
+| `path` | Short explainability string for the decision branch taken |
+
+**Documentation crosswalk (OP primary):** P1↔Act, P2↔Attend, P3↔Track*, P4↔Track.
+Outcomes need not always match the live OP band (different trees); the crosswalk
+is for operator literacy, not a runtime coupling.
+
+**Documented Act rule:** CISA KEV (Active exploitation) + high mission prevalence
+(CONFIRMED/LIKELY Environment, or W5 `criticality=MISSION_CRITICAL`) → `Act`.
+LOW Threat + NO_MATCH → `Track`.
+
 ## Implementation boundary for M1
 
 M1 is **STANDARD CODING AGENT SUFFICIENT** and makes **zero** scoring-architecture

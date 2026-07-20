@@ -12,6 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W4 SSVC annotation (Task 11)
+
+**Done** (branch `cursor/phase1-w4-ssvc-91c2`)
+- Created `backend/scoring/ssvc.py` — `calculate_ssvc_outcome(...)` version `ssvc-annotation-1.0`.
+- Deterministic annotation from Threat/KEV/exploit (exploitation none|poc|active), CVSS (technical impact), Environment tier (+ optional `internet_facing` / `criticality` when present).
+- Documented choice: CISA KEV + CONFIRMED (high mission) → **Act**; LOW + NO_MATCH → **Track**.
+- `POST /api/cves/{id}/risk` returns parallel `ssvc` after Threat/Env/OP — Threat and OP formulas unchanged.
+- Overview OP hero: SSVC chip beside P-band (`getSsvcAnnotationDisplay` / `ssvcOutcomeColor`); tooltip with path/factors.
+- Tests: `backend/tests/test_ssvc.py`; FE unit coverage for display helpers.
+- Docs: API_REFERENCE response shape, SYSTEM_DESIGN, PRODUCT_STATUS, ADR-002 W4 addendum, sprint W4 + plan Task 11 ticked.
+- **P↔SSVC crosswalk (docs only, OP primary):** P1↔Act, P2↔Attend, P3↔Track*, P4↔Track.
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented. Study-guide/learn regen skipped (operator docs only).
+
+**Next:** W5 profile exposure/criticality flags (OP/SSVC only). Do not parallelize W2–W5. Do not start W5 on this branch.
+
+---
+
 ## 2026-07-20 — Phase 1 W3 EPSS → OP escalations (Task 10)
 
 **Done** (branch `cursor/phase1-w3-epss-op-91c2`)

@@ -834,6 +834,44 @@ P3→P2). Threat formula unchanged; low EPSS never lowers KEV/CRIT P1.
 Correlation-based OP escalation is **not** computed on this path (E1-2) — the
 drawer may apply campaign escalation client-side when correlation data arrives.
 
+**SSVC annotation (W4):** response includes parallel `ssvc` object from
+`scoring/ssvc.py` (`version` `ssvc-annotation-1.0`). Outcomes are exactly
+`Act` | `Attend` | `Track*` | `Track`. Computed after Threat / Environment / OP;
+does **not** change Threat math or replace the OP P-band. Optional profile
+fields `internet_facing` / `criticality` are passed through when present
+(otherwise `null` in `factors` — W5 will flesh modifiers).
+
+**Response shape (ADR-002 + W4):**
+
+```json
+{
+  "cve_id": "CVE-2024-0001",
+  "threat": { "version": "threat-1.0", "score": 84.0, "band": "CRIT", "components": {} },
+  "environment": { "version": "environment-1.0", "tier": "CONFIRMED", "evidence_label": "…" },
+  "operational_priority": { "version": "operational-priority-1.1", "band": "P1", "rationale": "…" },
+  "ssvc": {
+    "version": "ssvc-annotation-1.0",
+    "outcome": "Act",
+    "factors": {
+      "exploitation": "active",
+      "technical_impact": "total",
+      "mission_prevalence": "high",
+      "environment_tier": "CONFIRMED",
+      "threat_band": "CRIT",
+      "internet_facing": null,
+      "criticality": null
+    },
+    "path": "active+high→Act"
+  },
+  "legacy_risk_v11b": {},
+  "momentum": {},
+  "hasProfile": true,
+  "momentumScore": 0.0
+}
+```
+
+**P↔SSVC documentation crosswalk (OP remains primary):** P1↔Act, P2↔Attend,
+P3↔Track*, P4↔Track.
 ### GET /api/cves/{cve_id}/greynoise-scans
 
 On-demand GreyNoise Community lookups for IPv4 addresses found in the CVE

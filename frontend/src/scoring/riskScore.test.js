@@ -11,6 +11,8 @@ import {
   applyCorrelationEscalationToRiskScore,
   inferAssetMatchSemantics,
   getAssetExposureStatus,
+  getSsvcAnnotationDisplay,
+  ssvcOutcomeColor,
   KEV_FLOOR,
   ASSET_EXPOSURE_TIERS,
 } from '../scoring/riskScore.js'
@@ -195,5 +197,29 @@ describe('correlation escalation parity with backend derive_operational_priority
     const bumped = deriveOperationalPriority('CRIT', 'UNKNOWN', true)
     assert.equal(bumped.band, 'P1')
     assert.equal(bumped.escalated_by_correlation, false)
+  })
+})
+
+describe('SSVC annotation display (W4 — no FE recompute)', () => {
+  it('reads outcome from riskScore.ssvc only', () => {
+    const display = getSsvcAnnotationDisplay({
+      ssvc: {
+        version: 'ssvc-annotation-1.0',
+        outcome: 'Act',
+        path: 'active+high→Act',
+        factors: { exploitation: 'active' },
+      },
+    })
+    assert.equal(display.outcome, 'Act')
+    assert.equal(display.path, 'active+high→Act')
+    assert.equal(getSsvcAnnotationDisplay({}), null)
+    assert.equal(getSsvcAnnotationDisplay({ ssvc: { outcome: 'Nope' } }), null)
+  })
+
+  it('maps outcome colors via semantic tokens', () => {
+    assert.equal(ssvcOutcomeColor('Act'), 'var(--severity-critical)')
+    assert.equal(ssvcOutcomeColor('Attend'), 'var(--severity-high)')
+    assert.equal(ssvcOutcomeColor('Track*'), 'var(--severity-medium)')
+    assert.equal(ssvcOutcomeColor('Track'), 'var(--text-muted)')
   })
 })

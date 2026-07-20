@@ -1945,12 +1945,28 @@ a.drawer-related-news-title:focus-visible {
   gap: 10px;
 }
 
+.drawer-op-band-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+
 .drawer-op-band {
   font-family: var(--font-display);
   font-size: 40px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: -0.02em;
+}
+
+.drawer-op-ssvc-chip {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  text-transform: uppercase;
 }
 
 .drawer-op-provisional {
