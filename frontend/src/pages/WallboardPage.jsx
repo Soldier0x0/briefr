@@ -146,7 +146,11 @@ function PageOne({ payload, activeTile }) {
         <TileShell label="Top risk" active={activeTile === 3}>
           {payload?.top_risk?.items?.[0] ? (
             <>
-              <p className="wallboard-tile-metric mono">{fmtRisk(payload.top_risk.items[0].risk_score)}</p>
+              <p className="wallboard-tile-metric mono">
+                {payload.top_risk.items[0].op_band
+                  ? `${payload.top_risk.items[0].op_band} · ${fmtRisk(payload.top_risk.items[0].threat_score ?? payload.top_risk.items[0].risk_score)}`
+                  : fmtRisk(payload.top_risk.items[0].threat_score ?? payload.top_risk.items[0].risk_score)}
+              </p>
               <CveLink cveId={payload.top_risk.items[0].cve_id} />
               <p className="wallboard-tile-sub">{payload.top_risk.items[0].summary}</p>
             </>

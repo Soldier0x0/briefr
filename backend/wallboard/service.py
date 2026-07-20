@@ -21,7 +21,10 @@ from resilient_client import get_feed_health
 from routers.cves import _row_to_cve_dict, _stack_match_clause
 from routers.forge import _coverage_status
 from scheduler import get_ingest_status, refresh_in_progress
-from scoring.risk import calculate_momentum, calculate_risk_score
+from scoring.environment import classify_environment
+from scoring.priority import derive_operational_priority, operational_priority_sort_key
+from scoring.risk import calculate_momentum
+from scoring.threat import calculate_threat_score
 
 WALLBOARD_CACHE_KEY = "wallboard:snapshot"
 # Short TTL — kiosk polls every 60–120s; keeps repeated polls under 2s.
@@ -168,6 +171,38 @@ async def _changes_24h_tile(db: Any, stack: str) -> dict[str, Any]:
     return _changes_24h_from_brief(brief)
 
 
+def score_cve_for_top_risk(cve: dict[str, Any], momentum_score: float = 0.0) -> dict[str, Any] | None:
+    """Rank key for wallboard top-risk: OP band, then Threat (ADR-002 / W2).
+
+    ``risk_score`` mirrors ``threat_score`` for backward-compatible kiosk clients
+    (it is no longer the legacy v1.1b blend total).
+    """
+    if not cve or not cve.get("cve_id"):
+        return None
+    threat = calculate_threat_score(cve, momentum_score=momentum_score)
+    if not threat or threat.get("score") is None:
+        return None
+    env = classify_environment(cve, profile=None)
+    op = derive_operational_priority(
+        threat["band"], env["tier"], corr_escalation=False
+    )
+    threat_score = float(threat["score"])
+    op_band = op["band"]
+    return {
+        "cve_id": cve["cve_id"],
+        "threat_score": threat_score,
+        "op_band": op_band,
+        "risk_score": threat_score,
+        "severity": cve.get("severity"),
+        "summary": (cve.get("summary") or cve.get("description") or "")[:160],
+        "is_kev": bool(cve.get("is_kev")),
+        "epss_score": cve.get("epss_score"),
+        "_sort_key": operational_priority_sort_key(
+            op_band, threat_score, env["tier"], cve["cve_id"]
+        ),
+    }
+
+
 async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
     stack_clause, stack_params, stack_terms = _stack_match_clause(stack)
     where_extra = ""
@@ -182,14 +217,15 @@ async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
                c.modified, c.affected_products, c.affected_products_source,
                c.mitre_technique, c.summary, c.is_kev, c.epss_score, c.has_poc,
                c.patch_available, c.has_ai_context, c.source_urls, c.cwe_ids,
-               c.updated_at,
+               c.is_vulncheck_exploited, c.updated_at,
                k.date_added AS kev_date_added,
                k.due_date AS kev_due_date
         FROM cves c
         LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
         WHERE (c.is_kev = 1
            OR c.epss_score >= 0.05
-           OR c.cvss_score >= 7.0){where_extra}
+           OR c.cvss_score >= 7.0
+           OR c.is_vulncheck_exploited = 1){where_extra}
         ORDER BY
           CASE WHEN c.is_kev = 1 THEN 0 ELSE 1 END,
           CASE WHEN c.epss_score IS NOT NULL THEN c.epss_score ELSE -1 END DESC,
@@ -202,25 +238,22 @@ async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
     scored: list[dict[str, Any]] = []
     for raw in rows:
         cve = _row_to_cve_dict(raw)
+        if "is_vulncheck_exploited" in cve:
+            cve["is_vulncheck_exploited"] = bool(cve.get("is_vulncheck_exploited"))
         momentum = await calculate_momentum(cve["cve_id"], db)
-        risk = calculate_risk_score(
-            cve,
-            momentum_score=momentum.get("momentum_score", 0.0),
+        item = score_cve_for_top_risk(
+            cve, momentum_score=momentum.get("momentum_score", 0.0)
         )
-        total = risk.get("total")
-        if total is None:
+        if item is None:
             continue
-        scored.append({
-            "cve_id": cve["cve_id"],
-            "risk_score": total,
-            "severity": cve.get("severity"),
-            "summary": (cve.get("summary") or cve.get("description") or "")[:160],
-            "is_kev": bool(cve.get("is_kev")),
-            "epss_score": cve.get("epss_score"),
-        })
+        scored.append(item)
 
-    scored.sort(key=lambda item: item["risk_score"], reverse=True)
-    return {"items": scored[:_TOP_RISK_RETURN], "stack_filtered": bool(stack_clause), "stack_terms": stack_terms}
+    scored.sort(key=lambda item: item["_sort_key"])
+    items = []
+    for item in scored[:_TOP_RISK_RETURN]:
+        public = {k: v for k, v in item.items() if k != "_sort_key"}
+        items.append(public)
+    return {"items": items, "stack_filtered": bool(stack_clause), "stack_terms": stack_terms}
 
 
 async def _ingest_health_tile(db: Any) -> dict[str, Any]:
