@@ -1,4 +1,4 @@
-"""Single source of truth for writable admin config keys.
+"""Owns WRITABLE_CONFIG_KEYS schema for admin operator settings (single source).
 
 Replaces the three separately-maintained sets that used to live in
 routers/admin.py (WRITABLE_CONFIG_KEYS, INTEGER_KEYS, RESTART_REQUIRED_KEYS)

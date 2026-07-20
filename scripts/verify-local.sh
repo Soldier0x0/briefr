@@ -40,6 +40,16 @@ step "Frontend production build (required — matches playwright-smoke job build
 )
 pass "npm run build"
 
+step "Frontend unit tests (required — F1.11)"
+(
+  cd frontend
+  if [[ ! -d node_modules ]]; then
+    npm ci --ignore-scripts
+  fi
+  npm run test:unit
+)
+pass "npm run test:unit"
+
 step "Python dependency audit (required — matches CI job: dependency-audit)"
 python3 -m pip install -q --disable-pip-version-check pip-audit 2>/dev/null || true
 pip-audit -r backend/requirements.txt

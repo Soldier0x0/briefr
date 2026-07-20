@@ -465,7 +465,7 @@
       "label": "routers.admin",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 71,
+      "endpoint_count": 72,
       "source_refs": [
         {
           "type": "file",

@@ -47,7 +47,12 @@ async def get_file_identity(db: DbConnection, key: str) -> dict[str, Any] | None
         return None
     try:
         data = json.loads(raw)
-    except Exception:
+    except (json.JSONDecodeError, TypeError):
+        logger.warning(
+            "Corrupt file identity JSON for key=%s; treating as missing",
+            key,
+            exc_info=True,
+        )
         return None
     if not isinstance(data, dict):
         return None

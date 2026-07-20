@@ -1,80 +1,33 @@
 # AGENTS.md
 
+**Rulebook:** [`CLAUDE.md`](CLAUDE.md) is the single source for project rules, danger
+zones, error-handling, UI conventions, PR workflow, and working style. Do **not**
+duplicate those here — edit `CLAUDE.md` when rules change.
+
 ## Start here (all agents)
 
 Read in this order before making changes:
-1. [`CLAUDE.md`](CLAUDE.md) — project rules, danger zones, error-handling and UI conventions
-2. [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) — what is true in production (wins over stale docs)
-3. [`docs/HANDOVER.md`](docs/HANDOVER.md) — recent session context: what changed, why, decisions made
-4. [`docs/planning/SPRINT_2026-07.md`](docs/planning/SPRINT_2026-07.md) — current work queue with acceptance criteria
-5. **UI work:** [`docs/design/design-system.md`](docs/design/design-system.md) §23 (repo-wide UX standards —
-   applies to analyst + admin + all surfaces; enforced by `.cursor/rules/design-system.mdc`)
-6. [`docs/AGENT_METHODOLOGY.md`](docs/AGENT_METHODOLOGY.md) — **the working method** behind these
-   rules: how to orient, plan, design, debug (RCA), implement, verify, self-review, and review.
-   Read once per fresh session; apply on every task.
 
-## Execution contract (autonomous loop — mandatory)
+1. [`CLAUDE.md`](CLAUDE.md) — rulebook
+2. [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) — what is true in production
+3. [`docs/HANDOVER.md`](docs/HANDOVER.md) — recent session context
+4. [`docs/planning/SPRINT_2026-07.md`](docs/planning/SPRINT_2026-07.md) — work queue
+5. **UI work:** [`docs/design/design-system.md`](docs/design/design-system.md) §23
+6. [`docs/AGENT_METHODOLOGY.md`](docs/AGENT_METHODOLOGY.md) — working method
 
-When HANDOVER or SPRINT names a next task, **execute it immediately**. Do not stop at
-wave/track boundaries for approval. Do not end a turn with “say the word” or optional
-next steps when the next item is already defined.
+## Execution contract (Cursor agents)
 
-### Automated inline review disposition (mandatory)
+When HANDOVER or SPRINT names a next task, **execute it immediately** — do not stop
+at wave boundaries for approval. Merge gate: `./scripts/verify-local.sh` (green is
+sufficient when GitHub Actions quota is exhausted). RCA-first, danger zones, and
+review disposition: follow `CLAUDE.md`.
 
-Before merging or recommending merge of a PR:
-
-1. Inspect all available inline review threads on the PR.
-2. Inspect Gemini and other automated reviewer inline comments.
-3. Validate every substantive finding against the PR HEAD (not mergeable status alone).
-4. Fix or technically disposition every substantive finding (fix, false positive, obsolete, duplicate).
-5. Do not assume mergeable means review complete.
-6. Do not assume an outdated thread means fixed — trace the code on HEAD.
-7. If an asynchronous reviewer is configured and review is still pending, do not auto-merge immediately.
-
-Use `./scripts/verify-local.sh` as the local merge gate when GitHub Actions quota is unavailable.
-
-**Per-PR loop (repeat until backlog empty):**
-
-1. Read HANDOVER (newest) + SPRINT unchecked items + relevant ADR/spec.
-2. Branch `cursor/<task>-64e9` off fresh `origin/main`.
-3. Implement (minimum diff; `CLAUDE.md` danger zones; match existing style).
-4. **`./scripts/verify-local.sh`** — green required (GitHub Actions quota may be
-   exhausted; local green is the merge gate). Use `--full` when Postgres/tools exist.
-5. Push → open PR → **wait ~1–2 min** → read `gemini-code-assist[bot]` (and other)
-   review comments → fix on same branch → push → re-verify locally.
-6. **Merge** when local CI is green and actionable review is addressed.
-7. Update HANDOVER + tick SPRINT + runtime docs (`PRODUCT_STATUS`, `API_REFERENCE`, etc.).
-
-**Scope (unless the maintainer narrows it):** all sprint checkboxes, then activated
-parked work (Track I Phase 3, correlation 4–5, monitor/alerts, L Wave 4, operator
-settings in DB, V1.5 tail). **Excluded:** STIX 2.1 export, V2.0 platform release.
-
-**Stop and ask only when:** missing secret/credential, destructive non-additive deploy
-outside spec, or a spec contradiction that cannot be resolved from repo docs.
+**Stop and ask only when:** missing secret/credential, destructive non-additive
+deploy outside spec, or a spec contradiction that cannot be resolved from repo docs.
 
 **Shared surfaces:** never parallelize M1, C-Evolve-3, H2, H4 (all touch DetailDrawer).
 
-**Session resume:** if context limits interrupt the loop, pull main, read HANDOVER,
-continue the next unchecked item — do not restart from scratch or ask for permission.
-
-### Error investigation — RCA-first (mandatory)
-
-When the user reports an error (screenshot, log line, failed job, UI bug) **or you
-detect one during work**, do not patch symptoms blindly.
-
-1. **Reproduce or verify** — confirm the failure on current code with logs, tests, or
-   a minimal repro path.
-2. **Root cause analysis** — trace the failing path end-to-end (scheduler lock, DB
-   query shape, API timeout, UI state, etc.) and state the *why*, not only the *what*.
-3. **Fix the class of failure** — prefer structural fixes (chunked queries, correct
-   failover order, indexed lookups, missing loading states) over one-off retries or
-   wider timeouts unless the timeout itself is wrong.
-4. **Regression guard** — add or extend a test, gate, or doc note when the bug could
-   recur (e.g. full-table scan under load, deprecated model id, layout regression).
-5. **Record briefly** — append `docs/HANDOVER.md` when the RCA changes runtime
-   behavior or operator expectations.
-
-Symptom-only fixes without RCA are not done.
+**Session resume:** pull main, read HANDOVER, continue the next unchecked item.
 
 ## Cursor Cloud specific instructions
 
@@ -117,18 +70,16 @@ deploy (backup + same volume); see `docs/POSTGRES.md`.
 
 ### Tests / build / lint
 
-- **Local pre-merge gate (use when GitHub Actions is unavailable):** from repo root,
-  `./scripts/verify-local.sh` — mirrors CI jobs `test`, `dependency-audit`, and the
-  frontend build step. Pass `--full` to also run Postgres pytest, gitleaks, and Playwright
-  smoke when those tools/DB are available. **Green local verify is sufficient to merge**;
-  do not block on GitHub Actions when the org has hit its monthly free-tier limit.
-- Backend tests: from `backend/`, `pytest tests/ -q` (matches CI in
-  `.github/workflows/backend-tests.yml`). Run from `backend/` — tests prepend the parent to `sys.path`.
+- **Local pre-merge gate:** from repo root, `./scripts/verify-local.sh` — mirrors CI jobs
+  `test`, `dependency-audit`, frontend build, and **frontend unit tests** (`npm run test:unit`).
+  Pass `--full` for Postgres pytest, gitleaks, and Playwright smoke when available.
+  **Green local verify is sufficient to merge** when GitHub Actions quota is exhausted.
+- Backend tests: from `backend/`, `pytest tests/ -q`.
 - Frontend build: from `frontend/`, `npm run build`.
-- Frontend dependency audit (matches CI): from `frontend/`, `npm run audit:ci` after `npm ci`.
-- There is **no lint config** (no ESLint/ruff/flake8) and **no frontend unit test suite**; UI is
- validated manually or via the Playwright scripts in `scripts/` / `backend/tests/test_playwright_smoke.py`
- (gated behind `PLAYWRIGHT_SMOKE=1`).
+- Frontend unit tests: from `frontend/`, `npm run test:unit`.
+- Frontend dependency audit: from `frontend/`, `npm run audit:ci` after `npm ci`.
+- There is **no ESLint/ruff/flake8** lint config yet (Phase 1 W6). UI is also validated via
+  Playwright (`scripts/` / `backend/tests/test_playwright_smoke.py`, gated behind `PLAYWRIGHT_SMOKE=1`).
 - **Dark mode only** — light theme CSS exists under `frontend/src/theme/light-theme.css` but is not imported.
 - **Tab state** — main nav tabs use `hidden` panels instead of unmounting so FEED scroll/filters survive tab switches.
 - **Snooze removed from UI** — pin/watchlist remains; app clears legacy snooze rows on startup.

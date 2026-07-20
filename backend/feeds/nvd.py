@@ -467,6 +467,11 @@ async def fetch_cves_keyword_page(
             return [], 0, "http_5xx"
         return [], 0, "error"
     except Exception:
+        logger.warning(
+            "NVD keyword search unexpected failure (kw_len=%d)",
+            len(kw),
+            exc_info=True,
+        )
         return [], 0, "error"
 
     total = int(page.get("totalResults") or 0)

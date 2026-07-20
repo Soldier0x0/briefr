@@ -1,4 +1,4 @@
-"""Analyst-facing correlation copy (Correlation v2 Phase 2)."""
+"""Analyst-facing correlation narrative helpers (Correlation v2 Phase 2)."""
 
 from __future__ import annotations
 

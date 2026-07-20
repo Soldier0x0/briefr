@@ -12,6 +12,30 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W1 quick wins (F1.6–F1.11)
+
+**Done** (branch `cursor/phase1-w1-quick-wins-91c2`)
+- **F1.11:** `scripts/verify-local.sh` runs `npm run test:unit` after frontend build.
+- **F1.10:** `backend/correlation/copy.py` → `narrative.py` (hard cut); importers + `tests/test_correlation_narrative_module.py`.
+- **F1.8:** `AGENTS.md` thin pointer to `CLAUDE.md` rulebook; Cursor Cloud section kept.
+- **F1.9 / F1.7:** ownership one-liners on five config modules; `docs/index.md` authority map + config ownership table.
+- **F1.6 batch 1:** log (and narrow where safe) silent swallows in `scoring/risk.py` momentum dates, `feeds/nvd.py` keyword search, `feeds/file_identity.py`, `scheduler.py` last-run history, `api_queue.py` Retry-After/quota, `stack_backfill_worker.py` fail-status persist. Behavior unchanged beyond logging; no secrets logged.
+
+**Config ownership (F1.9)**
+| Module | Owns |
+|--------|------|
+| `settings.py` | Process/env Settings |
+| `config_schema.py` | `WRITABLE_CONFIG_KEYS` schema |
+| `operator_settings.py` | DB seed/hydrate (env wins) |
+| `db/config.py` | DATABASE_URL / backend detection |
+| `routers/config.py` | `GET /api/config/risk` display weights |
+
+**GRAPHIFY_MISSING:** CLI still not on PATH; no invented `graphify-out/` refresh.
+
+**Next:** W2 scoring hygiene (FE display-only, wallboard OP→Threat, CISA KEV floor). Do not parallelize W2–W5. Remaining F1.6 sites for a later batch.
+
+---
+
 ## 2026-07-20 — Phase 1 scoring + debt program kickoff (W0)
 
 **Done**

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, timezone
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 # v1.1b weights — sum = 1.00
 WEIGHT_ASSET   = 0.35
@@ -566,8 +569,13 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
                     "contribution": 0.30,
                 })
                 total += 0.30
-        except Exception:
-            pass
+        except (ValueError, TypeError):
+            logger.warning(
+                "Momentum OTX pulse date parse failed for %s (value=%r)",
+                cve_upper,
+                observed_str,
+                exc_info=True,
+            )
 
     # ── Signal 3: Recent KEV addition + rapid exploitation ─
     row_list = await db.execute_fetchall(
@@ -598,8 +606,13 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
                         "contribution": 0.40,
                     })
                     total += 0.40
-            except Exception:
-                pass
+            except (ValueError, TypeError):
+                logger.warning(
+                    "Momentum KEV date parse failed for %s (value=%r)",
+                    cve_upper,
+                    kev_str,
+                    exc_info=True,
+                )
 
         if is_kev and pub_str:
             try:
@@ -614,8 +627,13 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
                         "contribution": 0.30,
                     })
                     total += 0.30
-            except Exception:
-                pass
+            except (ValueError, TypeError):
+                logger.warning(
+                    "Momentum published date parse failed for %s (value=%r)",
+                    cve_upper,
+                    pub_str,
+                    exc_info=True,
+                )
 
     return {
         "cve_id": cve_upper,

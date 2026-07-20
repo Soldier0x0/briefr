@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from correlation.copy import sanitize_pulse_text
+from correlation.narrative import sanitize_pulse_text
 from routers.cves import _stack_match_clause
 
 _LIFECYCLE_RANK = {

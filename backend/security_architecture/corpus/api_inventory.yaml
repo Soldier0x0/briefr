@@ -139,6 +139,9 @@ endpoints:
   path: /api/admin/restart
   component_id: routers-admin
 - method: GET
+  path: /api/admin/retrieval/health
+  component_id: routers-admin
+- method: GET
   path: /api/admin/scheduler
   component_id: routers-admin
 - method: GET

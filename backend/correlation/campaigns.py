@@ -14,6 +14,7 @@ from correlation.lifecycle import (
     fetch_member_lifecycle_inputs,
 )
 from correlation.hub_suppress import filter_campaign_members
+from correlation.narrative import campaign_summary, sanitize_pulse_text
 from correlation.pulse_families import (
     campaign_id_for_family,
     legacy_campaign_id_for_pulse,
@@ -277,7 +278,6 @@ async def get_campaigns_for_cve(
         load_mitre_alias_index,
     )
     from correlation.confidence import campaign_confidence
-    from correlation.copy import campaign_summary, sanitize_pulse_text
     from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between, batch_ioc_edges_for_peers
     from correlation.local import kev_exploit_boosters
     from correlation.suppressions import load_suppressions, resolve_suppressed_campaign_ids

@@ -1,4 +1,6 @@
-"""Application settings (V1.2 §5.2 phase 1).
+"""Owns process/env Settings (Pydantic BaseSettings); not admin writable keys.
+
+Application settings (V1.2 §5.2 phase 1).
 
 Pydantic BaseSettings for env config. Phase 1 migrates only the variables
 main.py read at module import time; per-request `os.environ.get` reads
