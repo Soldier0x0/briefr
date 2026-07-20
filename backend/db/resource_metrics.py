@@ -76,6 +76,7 @@ DELETE FROM resource_metrics
 WHERE ts < $1
 """
 
+# pg-only: reads pg_stat_database / pg_database_size
 _PG_STAT_SNAPSHOT_PG = """
 SELECT xact_commit,
        xact_rollback,

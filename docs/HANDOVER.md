@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W8 Dual-SQL ratchet (F1.4 / Task 15)
+
+**Done** (branch `cursor/phase1-w8-sql-ratchet-91c2`)
+- **`backend/tests/test_sql_dialect_pairs.py`:** every module-level `*_PG`
+  in `backend/db/` must have a same-file `*_SQLITE` sibling or `# pg-only`
+  marker (same line or ≤3 comment lines above). Pair-count ratchet
+  `ALLOWED_MAX = 133` (fail if count grows without deliberate bump).
+- **Markers:** `# pg-only` on ANN queries (`embeddings_search`),
+  `outbound_jobs._LIST_PG`, `resource_metrics._PG_STAT_SNAPSHOT_PG`.
+- **Docs:** `docs/POSTGRES.md` dual-dialect note (default pytest = SQLite;
+  CI `test-postgres`; ratchet exists). Sprint W8 + plan Task 15 ticked.
+- **Out of scope:** Testcontainers / Postgres-default CI (deferred).
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
+
+**Next:** W7 god-file splits (F1.2/F1.5). Do not start W7 on this branch.
+
+---
+
 ## 2026-07-20 — Phase 1 W6 lint gate (F1.1 / Task 13)
 
 **Done** (branch `cursor/phase1-w6-lint-91c2`)
