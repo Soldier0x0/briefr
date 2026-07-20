@@ -43,7 +43,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.61.1",
     "prettier": "^3.9.5",
-    "vite": "^8.1.4"
+    "vite": "^8.1.5"
   },
   "overrides": {
     "dompurify": "^3.4.11",
