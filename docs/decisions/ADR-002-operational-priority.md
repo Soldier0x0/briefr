@@ -340,6 +340,24 @@ tests, and deletes orphaned code.
 - Keeping/refactoring the Investigation Score in place — carries its double-count and placeholder re-import.
 - Making CVSS a floor — rewards theoretical severity as active threat.
 
+## Addendum — W3 EPSS → OP escalations (2026-07-20)
+
+**Status:** ACCEPTED additive amendment. Threat formula and base OP table
+unchanged; KEV / CRIT dominance intact (low EPSS never de-escalates P1).
+
+`derive_operational_priority` may apply one-band OP escalations after the base
+table (version `operational-priority-1.1`):
+
+1. **Absolute EPSS:** Threat band in `{HIGH, MED}`, EPSS ≥ 0.5, Environment tier
+   rank ≥ POSSIBLE → escalate OP one band (never past P1). Rationale mentions EPSS.
+2. **Rising EPSS:** `epss_rising` and Environment ≥ POSSIBLE and base band is P3 →
+   allow P3→P2. Rationale mentions rising EPSS.
+3. Missing EPSS is treated as 0.0. Correlation escalation still stacks afterward,
+   still capped at P1. Threat scores are never modified by these rules.
+
+Wired from `POST /api/cves/{id}/risk` via CVE `epss_score` and momentum signals
+with `type == "epss_rising"`.
+
 ## Implementation boundary for M1
 
 M1 is **STANDARD CODING AGENT SUFFICIENT** and makes **zero** scoring-architecture
