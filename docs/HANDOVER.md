@@ -31,7 +31,15 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 **Fix:**
 - `ADDITIVE_ENRICHMENT_COMMIT_CHUNK` → **1** (commit after each processed row).
 - Parse unit durations before bare float; Unix ms/s → delta-from-now; clamp
-  `schedule_source_pause` to 1h; FE `formatElapsed` display cap 1h for retries.
+  `schedule_source_pause` to 1h; FE `formatElapsed` display cap 1h.
+- Also wired `resilient_client._retry_after_seconds` through the same parser
+  (was a duplicate float-first path; already capped at 120s so UI-safe but
+  could still force max backoff on misparsed headers).
+
+**Scope note:** Chunk constant is shared by KEV/EPSS/VulnCheck/cvelist/
+vulnrichment/stack-backfill. Pause clamp covers all `schedule_source_pause`
+callers. Does **not** eliminate every possible single-statement lock wait if
+another long txn holds `cves` (reduces our contribution only).
 
 **Next:** Deploy → Retry cvelistV5; confirm Background Sync timers look sane.
 
