@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from procrastinate.exceptions import AlreadyEnqueued
 
 from catchup_mode import get_catchup_status
 from correlation.config import get_correlation_precompute_enabled
@@ -89,6 +90,8 @@ from ml.product_extraction import (
     llm_product_extraction_enabled,
     run_llm_product_extraction,
 )
+from jobs.app import is_procrastinate_enabled, open_app
+from jobs.tasks import llm_product_extraction_tick
 from detection.context_sync import (
     detection_context_sync_enabled,
     run_detection_context_sync,
@@ -1702,6 +1705,49 @@ async def run_llm_extraction_sync() -> bool:
     """
     if not llm_product_extraction_enabled():
         return False
+    if is_procrastinate_enabled():
+        _start = datetime.now(timezone.utc)
+        _had_error = False
+        _error_msg = ""
+        try:
+            app = await open_app()
+            if app is not None:
+                await llm_product_extraction_tick.configure(
+                    queueing_lock="llm_product_extraction"
+                ).defer_async(trigger="scheduler")
+                logger.info("LLM product extraction deferred to Procrastinate")
+                await _write_job_last_run(
+                    "llm_product_extraction",
+                    _start,
+                    had_error=False,
+                    error_message="",
+                )
+                return True
+        except AlreadyEnqueued:
+            logger.info("LLM product extraction already queued — treating tick as success")
+            await _write_job_last_run(
+                "llm_product_extraction",
+                _start,
+                had_error=False,
+                error_message="",
+            )
+            return True
+        except Exception as exc:
+            logger.error("LLM product extraction defer failed: %s", exc)
+            _had_error = True
+            _error_msg = (
+                f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
+            )[:500]
+            await _write_job_last_run(
+                "llm_product_extraction",
+                _start,
+                had_error=_had_error,
+                error_message=_error_msg,
+            )
+            return True
+        logger.warning(
+            "PROCRASTINATE_ENABLED=1 but no durable app is available — running inline"
+        )
     if get_lock("llm_product_extraction").locked():
         logger.info("LLM product extraction already in progress — skipping")
         return False

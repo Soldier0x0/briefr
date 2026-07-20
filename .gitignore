@@ -34,3 +34,4 @@ architecture-map.html
 
 # Graphify — generated knowledge graph, regenerate on demand (never committed)
 graphify-out/
+.superpowers/

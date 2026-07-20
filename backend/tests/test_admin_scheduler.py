@@ -236,6 +236,54 @@ def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     assert data["job_id"] == "nvd_incremental_sync"
 
 
+def test_run_llm_product_extraction_defers_manual_durable_job(admin_client, monkeypatch):
+    import routers.admin as admin_router
+    import routers.admin.jobs as admin_jobs
+    import scheduler_locks
+    import task_registry
+
+    configured = []
+    deferred = []
+    background_spawns = []
+
+    class FakeDeferrer:
+        async def defer_async(self, **kwargs):
+            deferred.append(kwargs)
+            return 123
+
+    class FakeTask:
+        def configure(self, **kwargs):
+            configured.append(kwargs)
+            return FakeDeferrer()
+
+    async def fake_open_app():
+        return object()
+
+    def fake_spawn_background_task(coro):
+        background_spawns.append(coro)
+        coro.close()
+
+    monkeypatch.setenv("LLM_PRODUCT_EXTRACTION_ENABLED", "1")
+    monkeypatch.setattr(admin_router, "_job_is_disabled", lambda job_id: False)
+    monkeypatch.setattr(admin_jobs, "is_procrastinate_enabled", lambda: True, raising=False)
+    monkeypatch.setattr(admin_jobs, "open_app", fake_open_app, raising=False)
+    monkeypatch.setattr(admin_jobs, "llm_product_extraction_tick", FakeTask(), raising=False)
+    monkeypatch.setattr(admin_jobs, "spawn_background_task", fake_spawn_background_task, raising=False)
+    monkeypatch.setattr(task_registry, "spawn_background_task", fake_spawn_background_task)
+    monkeypatch.setattr(scheduler_locks.get_lock("llm_product_extraction"), "locked", lambda: False)
+
+    resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "llm_product_extraction"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ok"] is True
+    assert data["job_id"] == "llm_product_extraction"
+    assert "deferred" in data["message"]
+    assert configured == [{"queueing_lock": "llm_product_extraction", "priority": 10}]
+    assert deferred == [{"trigger": "manual"}]
+    assert background_spawns == []
+
+
 def test_last_five_run_history_written_and_trimmed(monkeypatch, tmp_path):
     """_write_job_last_run should store max 5 entries, newest first."""
     import json

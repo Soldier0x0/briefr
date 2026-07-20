@@ -24,7 +24,15 @@ BACKEND = Path(__file__).resolve().parents[1]
 
 # The durable tasks the registry documents. Adding a Procrastinate task without
 # updating this set (and the SYSTEM_DESIGN registry table) fails the first test.
-DOCUMENTED_PROCRASTINATE_TASKS = {"health_ping", "stack_backfill"}
+DOCUMENTED_PROCRASTINATE_TASKS = {
+    "health_ping",
+    "llm_product_extraction",
+    "stack_backfill",
+}
+
+# APScheduler ticks that remain only as cron/interval enqueuers for a durable
+# task of the same short name. Durable execution is still owned by jobs:<task>.
+DOCUMENTED_DURABLE_ENQUEUE_TICKS = {"llm_product_extraction"}
 
 
 def _defined_procrastinate_tasks() -> set[str]:
@@ -65,8 +73,9 @@ def test_scheduler_and_procrastinate_namespaces_are_disjoint():
     scheduler_ids = set(_LOCKS.keys())
     tasks = _defined_procrastinate_tasks()
 
-    # No APScheduler job id may collide with a durable task name (bare or namespaced).
-    assert scheduler_ids.isdisjoint(tasks)
+    # Bare-name overlap is allowed only for APScheduler ticks that enqueue the
+    # durable task and do not execute the work inline when Procrastinate is on.
+    assert scheduler_ids & tasks <= DOCUMENTED_DURABLE_ENQUEUE_TICKS
     assert scheduler_ids.isdisjoint({f"jobs:{t}" for t in tasks})
 
     # APScheduler ids never use the durable-queue namespace prefix.

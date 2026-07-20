@@ -9,13 +9,18 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import HTTPException, Request
+from procrastinate.exceptions import AlreadyEnqueued
 
 from database import get_db, set_sync_state_value
 from dependencies import audit
 from destructive_actions import require_confirm
+from jobs.app import is_procrastinate_enabled, open_app
+from jobs.tasks import llm_product_extraction_tick
+from task_registry import spawn_background_task
 
 import routers.admin as _admin_pkg
 
@@ -25,6 +30,8 @@ from .helpers import (
     _job_lock_held,
 )
 from .router import router
+
+logger = logging.getLogger(__name__)
 
 # ── Durable outbound jobs (Procrastinate / Q1) ─────────────────────────────
 
@@ -259,6 +266,35 @@ _JOB_RUN_MAP: dict[str, str] = {
     "cpe_catalog_sync": "run_cpe_catalog_sync",
 }
 
+_LLM_MANUAL_DURABLE_PRIORITY = 10
+
+
+async def _defer_manual_llm_product_extraction() -> bool:
+    """Return True when admin Run/Retry enqueued the durable LLM job."""
+    if not is_procrastinate_enabled():
+        return False
+
+    try:
+        app = await open_app()
+        if app is None:
+            return False
+        try:
+            await llm_product_extraction_tick.configure(
+                queueing_lock="llm_product_extraction",
+                priority=_LLM_MANUAL_DURABLE_PRIORITY,
+            ).defer_async(trigger="manual")
+        except AlreadyEnqueued:
+            logger.info(
+                "Manual LLM product extraction already queued — skipping duplicate"
+            )
+        return True
+    except Exception as exc:
+        logger.warning(
+            "Manual LLM product extraction defer failed — falling back to scheduler path: %s",
+            exc,
+        )
+        return False
+
 
 @router.post("/scheduler/run")
 async def run_scheduler_job(request: Request, body: dict):
@@ -284,7 +320,13 @@ async def run_scheduler_job(request: Request, body: dict):
     if fn is None:
         raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
 
-    from task_registry import spawn_background_task
+    if job_id == "llm_product_extraction" and await _defer_manual_llm_product_extraction():
+        await audit(request, f"scheduler.run.{job_id}", job_id)
+        return {
+            "ok": True,
+            "job_id": job_id,
+            "message": f"Job '{job_id}' deferred to durable queue",
+        }
 
     spawn_background_task(fn())
     await audit(request, f"scheduler.run.{job_id}", job_id)
