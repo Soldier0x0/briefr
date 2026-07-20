@@ -12,6 +12,34 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 scoring + debt program kickoff (W0)
+
+**Done**
+- Program kickoff for Phase 1 audit debt (F1.1–F1.11) + scoring hygiene/upgrades.
+- Spec: [`docs/superpowers/specs/2026-07-20-phase1-scoring-debt-design.md`](superpowers/specs/2026-07-20-phase1-scoring-debt-design.md)
+- Plan: [`docs/superpowers/plans/2026-07-20-phase1-scoring-debt.md`](superpowers/plans/2026-07-20-phase1-scoring-debt.md)
+- Sprint checkbox block added (W0–W8); W0 checked on this landing.
+- **GRAPHIFY_MISSING:** `graphify` CLI not on PATH; `graphify-out/` absent. Do not treat graph as fresh — install/refresh before scoring waves that need dependency orientation.
+
+**Waves (W0–W8)**
+| Wave | Theme |
+|------|--------|
+| W0 | Kickoff (this entry) |
+| W1 | Quick wins (F1.6–F1.11) |
+| W2 | Scoring hygiene (FE display-only, wallboard OP→Threat, CISA KEV floor) |
+| W3 | EPSS → OP escalations |
+| W4 | SSVC annotation |
+| W5 | Exposure / criticality profile flags |
+| W6 | Lint gate (F1.1) |
+| W7 | God-file / FE size splits (F1.2 / F1.5) |
+| W8 | Dual-SQL ratchet (F1.4) |
+
+**Why:** Single program, multiple PRs; backend sole scoring engine; ADR-002 axes preserved.
+
+**Next:** W1 (F1.11 FE unit tests in verify-local, then F1.10 rename, docs/config/swallow triage). Do not parallelize W2–W5.
+
+---
+
 ## 2026-07-20 — Ops wording + bulk DB command_timeout class fix
 
 **Done**

@@ -57,19 +57,21 @@
 - Consumes: approved design spec
 - Produces: HANDOVER entry pointing at spec + this plan
 
-- [ ] **Step 1: Append HANDOVER entry** (newest first) summarizing Phase 1 program waves W0–W8 and link to spec/plan paths.
+- [x] **Step 1: Append HANDOVER entry** (newest first) summarizing Phase 1 program waves W0–W8 and link to spec/plan paths. Also added Phase 1 W0–W8 checkbox block to `docs/planning/SPRINT_2026-07.md`.
 
-- [ ] **Step 2: Attempt graphify baseline**
+- [x] **Step 2: Attempt graphify baseline**
 
 ```bash
 command -v graphify && graphify update . || echo "GRAPHIFY_MISSING: install before scoring waves; do not treat graphify-out as fresh"
 ```
 
-- [ ] **Step 3: Commit on design branch or W0 branch**
+Result: **GRAPHIFY_MISSING** (`graphify` not on PATH; no `graphify-out/` refresh invented).
+
+- [x] **Step 3: Commit on design branch or W0 branch**
 
 ```bash
 git add docs/HANDOVER.md docs/planning/SPRINT_2026-07.md docs/superpowers/plans/2026-07-20-phase1-scoring-debt.md
-git commit -m "docs: Phase 1 program kickoff (HANDOVER + plan)"
+git commit -m "docs: Phase 1 program kickoff (HANDOVER + sprint + plan ticks)"
 ```
 
 ---
