@@ -17,6 +17,37 @@ def test_parse_duration_seconds():
     assert aq._parse_duration_seconds("1.5") == 1.5
     assert abs(aq._parse_duration_seconds("7.66s") - 7.66) < 0.01
     assert abs(aq._parse_duration_seconds("2m59.56s") - 179.56) < 0.01
+    assert abs(aq._parse_duration_seconds("12ms") - 0.012) < 1e-6
+    assert abs(aq._parse_duration_seconds("6m0s") - 360.0) < 0.01
+    assert abs(aq._parse_duration_seconds("1h") - 3600.0) < 0.01
+    assert aq._parse_duration_seconds("-5") == 0.0
+
+
+def test_parse_duration_unix_ms_timestamp_not_relative_years():
+    """OpenRouter-style reset headers may be absolute ms — never treat as relative secs."""
+    import time
+
+    future_ms = (time.time() + 45.0) * 1000.0
+    result = aq._parse_duration_seconds(str(int(future_ms)))
+    assert 30 < result < 60
+
+
+def test_parse_duration_unix_seconds_timestamp():
+    import time
+
+    future = time.time() + 90.0
+    result = aq._parse_duration_seconds(str(int(future)))
+    assert 60 < result < 120
+
+
+def test_schedule_source_pause_clamps_absurd_duration():
+    aq.reset_api_queue()
+    aq.schedule_source_pause("openrouter", 1_782_728_841_352.0, reason="token_quota")
+    status = aq.get_api_queue_status()
+    src = status["sources"]["openrouter"]
+    assert src["paused_for_seconds"] <= aq._MAX_SOURCE_PAUSE_SECONDS + 0.5
+    assert src["paused_for_seconds"] > 0
+    aq.reset_api_queue()
 
 
 def test_parse_duration_http_date():

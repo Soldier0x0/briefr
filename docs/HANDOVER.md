@@ -12,6 +12,39 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — RCA: cvelistV5 DB timeout + absurd Background Sync retries
+
+**Observed (Build 5678d6f):**
+1. Scheduler `cvelistv5_incremental_sync` → `DatabaseError: Database command timeout`
+   on `apply_additive_cve_enrichments` UPDATE (~4.6 min job, asyncpg `TimeoutError`).
+2. Background Sync OpenRouter rows showed `Retry in 29712147355m 52s` (CIRCL `45s` OK).
+
+**RCA:**
+1. **Timeout:** Additive enrichment held many uncommitted `cves` UPDATEs when
+   `commit_every` was 50. Concurrent readers/writers wait on those locks; a single
+   UPDATE can exceed asyncpg `command_timeout` (~60s). Same class as VulnCheck/KEV
+   commit-chunk fix (#696).
+2. **Retry UI:** `_parse_duration_seconds` treated bare floats as relative seconds
+   first. OpenRouter reset headers are Unix **ms** (~1.78e12); that became a
+   multi-year pause, and the FE rendered minutes without a cap.
+
+**Fix:**
+- `ADDITIVE_ENRICHMENT_COMMIT_CHUNK` → **1** (commit after each processed row).
+- Parse unit durations before bare float; Unix ms/s → delta-from-now; clamp
+  `schedule_source_pause` to 1h; FE `formatElapsed` display cap 1h.
+- Also wired `resilient_client._retry_after_seconds` through the same parser
+  (was a duplicate float-first path; already capped at 120s so UI-safe but
+  could still force max backoff on misparsed headers).
+
+**Scope note:** Chunk constant is shared by KEV/EPSS/VulnCheck/cvelist/
+vulnrichment/stack-backfill. Pause clamp covers all `schedule_source_pause`
+callers. Does **not** eliminate every possible single-statement lock wait if
+another long txn holds `cves` (reduces our contribution only).
+
+**Next:** Deploy → Retry cvelistV5; confirm Background Sync timers look sane.
+
+---
+
 ## 2026-07-20 — Phase 1 program closeout (debt + scoring)
 
 **Done (multi-PR same phase — merged to main)**

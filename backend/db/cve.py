@@ -513,9 +513,12 @@ async def get_cves_needing_intel_enrichment(
     return [row["cve_id"] for row in rows]
 
 
-_ADDITIVE_ENRICHMENT_COMMIT_CHUNK = 50
+_ADDITIVE_ENRICHMENT_COMMIT_CHUNK = 1
 
 # Scheduler jobs pass commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK for large deltas.
+# Default is 1 so each UPDATE/insert flush releases row locks promptly — holding many
+# uncommitted UPDATEs on ``cves`` caused asyncpg command_timeout under concurrent jobs
+# (cvelistV5 / vulnrichment on production with ~24k CVE rows).
 ADDITIVE_ENRICHMENT_COMMIT_CHUNK = _ADDITIVE_ENRICHMENT_COMMIT_CHUNK
 
 
@@ -529,8 +532,9 @@ async def apply_additive_cve_enrichments(
 
     When *commit_every* is set (scheduler jobs), new rows are batched via
     ``upsert_cves`` and the connection is committed every N processed rows so
-    large cvelistV5/vulnrichment deltas do not hold one transaction open for
-  300+ statements (Postgres ``command_timeout`` default 60s).
+    large cvelistV5/vulnrichment deltas do not hold row locks across many
+    statements (Postgres ``command_timeout`` default 60s; concurrent readers/
+    writers otherwise wait out the whole batch).
     """
     from feeds.cve_record_v5 import merge_additive_cve_fields
 
