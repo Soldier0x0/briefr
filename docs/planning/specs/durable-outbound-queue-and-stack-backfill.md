@@ -2,9 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Follow [`execution-playbook.md`](execution-playbook.md) for dual-DB tests and stop-and-replan triggers.
 
-**Status:** Active — maintainer activated 2026-07-17 (open questions → spec defaults).  
+**Status:** Shipped/historical — see `docs/PRODUCT_STATUS.md` for current runtime truth.  
 **Created:** 2026-07-16  
 **Goal:** Persist outbound API work across restarts, count every outbound call with attribution, then let operators declare a versioned stack and opt in to Tier-A historical CVE fetch without breaking existing ingest.
+
+> **Shipped reality (2026-07-20):** Procrastinate foundation, outbound API
+> metering, CPE catalog, Tier-A stack backfill, EPSS identity skip, durable
+> LLM extraction, stack auto-resume, and Wave 7 ops polish have shipped. The
+> checklist below is retained as implementation history; use
+> `docs/PRODUCT_STATUS.md` as the living source of truth.
 
 **Architecture:** PostgreSQL-backed jobs via **Procrastinate**; universal metering at `resilient_request`; CPE-seeded product catalog + stack UX; checkpointed **Tier A** backfill (NVD catalog + KEV + EPSS bulk) with deep enrichment left on existing schedulers.
 

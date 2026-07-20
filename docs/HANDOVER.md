@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 7 Tasks 11–13: durable queue ops polish + docs drift
+
+**Done** (branch `cursor/w7-ops-polish-91c2`):
+- **Task 11:** Admin → Data refresh schedule now has **Ping queue**, backed by
+  `POST /api/admin/jobs/outbound/ping`, which defers singleton
+  `jobs:health_ping`; `AlreadyEnqueued` is an idempotent success.
+- **Task 12:** Admin config schema and `GET /api/admin/config` expose
+  `CORRELATION_PRECOMPUTE_ENABLED`, `DETECTION_CONTEXT_SYNC_ENABLED`,
+  `DETECTION_CONTEXT_LLM_ENABLED`, and `DETECTION_CONTEXT_NUCLEI_ENABLED` as
+  immediate-apply booleans.
+- **Task 13:** Durable outbound spec is marked shipped/historical; sprint
+  parked notes now remove encrypted `app_settings` SSOT and record Detection
+  composer as shipped.
+
+**Verify:** targeted backend config/canary pytest, outbound jobs node test,
+and frontend build are the Wave 7 local gate for these touched paths.
+
+---
+
 ## 2026-07-20 — Wave 6 Tasks 9–10: FE dead weight + openpyxl off runtime
 
 **Done** (branch `cursor/w6-hygiene-91c2`):
