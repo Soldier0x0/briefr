@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import contextmanager
+from importlib import resources
 from pathlib import Path
+import sqlite3
 import sys
 
+import pytest
 from procrastinate.exceptions import AlreadyEnqueued
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -97,6 +100,41 @@ def test_llm_extraction_task_redefers_retryable_failure(monkeypatch):
         }
     ]
     assert deferred == [{"trigger": "unit", "attempts": 2}]
+
+
+def test_doing_job_does_not_block_same_queueing_lock_defer():
+    schema = resources.files("procrastinate.sql").joinpath("schema.sql").read_text()
+    assert (
+        "CREATE UNIQUE INDEX procrastinate_jobs_queueing_lock_idx_v1 "
+        "ON procrastinate_jobs (queueing_lock) WHERE status = 'todo';"
+    ) in schema
+
+    connection = sqlite3.connect(":memory:")
+    try:
+        connection.execute(
+            "CREATE TABLE procrastinate_jobs (queueing_lock text, status text NOT NULL)"
+        )
+        connection.execute(
+            "CREATE UNIQUE INDEX procrastinate_jobs_queueing_lock_idx_v1 "
+            "ON procrastinate_jobs (queueing_lock) WHERE status = 'todo'"
+        )
+
+        connection.execute(
+            "INSERT INTO procrastinate_jobs (queueing_lock, status) VALUES (?, ?)",
+            ("llm_product_extraction", "doing"),
+        )
+        connection.execute(
+            "INSERT INTO procrastinate_jobs (queueing_lock, status) VALUES (?, ?)",
+            ("llm_product_extraction", "todo"),
+        )
+
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO procrastinate_jobs (queueing_lock, status) VALUES (?, ?)",
+                ("llm_product_extraction", "todo"),
+            )
+    finally:
+        connection.close()
 
 
 def test_scheduler_defers_llm_extraction_when_procrastinate_enabled(monkeypatch):

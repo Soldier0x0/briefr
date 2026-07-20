@@ -52,6 +52,8 @@ async def llm_product_extraction_tick(*, trigger: str = "scheduler", attempts: i
             if delay is None:
                 raise
             try:
+                # Procrastinate's queueing_lock unique index applies only to `todo`
+                # jobs, so the current `doing` job does not block self-defer.
                 await llm_product_extraction_tick.configure(
                     queueing_lock="llm_product_extraction",
                     schedule_in={"seconds": delay},

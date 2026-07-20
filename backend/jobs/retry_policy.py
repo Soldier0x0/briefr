@@ -8,18 +8,23 @@ RETRY_DELAYS_SECONDS = (180, 240, 300)
 def _is_timeout_like(exc: BaseException) -> bool:
     if isinstance(exc, TimeoutError):
         return True
-    return "command timeout" in str(exc).lower()
+    message = str(exc).lower()
+    return "timeout" in message or "timed out" in message
 
 
 def is_retryable_job_error(exc: BaseException) -> bool:
-    """Return True when *exc* (or its cause chain) is a transient timeout."""
-    current: BaseException | None = exc
+    """Return True when *exc* (or its chained exceptions) is a transient timeout."""
+    pending: list[BaseException | None] = [exc]
     seen: set[int] = set()
-    while current is not None and id(current) not in seen:
+    while pending:
+        current = pending.pop()
+        if current is None or id(current) in seen:
+            continue
         seen.add(id(current))
         if _is_timeout_like(current):
             return True
-        current = current.__cause__
+        pending.append(current.__cause__)
+        pending.append(current.__context__)
     return False
 
 
