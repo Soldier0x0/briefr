@@ -1478,18 +1478,34 @@ async def run_catchup_tick() -> bool:
     _error_msg = ""
     _records = 0
     async with lock:
+        async def _kick(label: str, coro):
+            nonlocal _had_error, _error_msg
+            try:
+                return await coro()
+            except Exception as exc:
+                _had_error = True
+                msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)
+                if not _error_msg:
+                    _error_msg = f"{label}: {msg}"[:500]
+                logger.error("Catch-up tick kick failed (%s): %s", label, exc, exc_info=True)
+                return None
+
         try:
             status = get_catchup_status()
             if not status.get("should_start_new_work"):
                 logger.debug("Catch-up tick skipped: inactive or in wind-down")
                 return True
 
-            await run_embeddings_sync()
+            await _kick("embeddings_backfill", run_embeddings_sync)
 
             if get_correlation_precompute_enabled():
-                stats = await run_correlation_precompute_tick()
-                _records = int(stats.get("precompute_snapshots") or 0)
-                logger.info("Catch-up tick precomputed %d correlation snapshot(s)", _records)
+                stats = await _kick("correlation_precompute", run_correlation_precompute_tick)
+                if stats:
+                    _records = int(stats.get("precompute_snapshots") or 0)
+                    logger.info("Catch-up tick precomputed %d correlation snapshot(s)", _records)
+
+            await _kick("llm_product_extraction", run_llm_extraction_sync)
+            await _kick("cpe_catalog_sync", run_cpe_catalog_sync)
         except Exception as exc:
             _had_error = True
             _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]

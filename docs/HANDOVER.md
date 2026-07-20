@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 3 Task 6: catch-up tick drains LLM + CPE
+
+**Done** (branch `cursor/w3-catchup-drain-91c2`):
+- `run_catchup_tick` now sequentially kicks embeddings, correlation precompute,
+  LLM product extraction, and CPE catalog sync while catch-up mode is actively
+  starting work.
+- Each kick has its own exception boundary, so one failed drain target marks the
+  tick errored but does not prevent later eligible kicks from running.
+- The tick uses the existing scheduler job entrypoints, preserving each job's
+  enabled gates, locks, durable LLM enqueue path, and outbound `api_queue`
+  pacing.
+
+**Verify:** `cd backend && pytest tests/test_catchup_tick.py -q`.
+
+---
+
 ## 2026-07-20 — Wave 2 Task 5: manual LLM extraction durable enqueue
 
 **Done** (branch `cursor/w2-llm-durable-91c2`):

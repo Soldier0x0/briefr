@@ -11,6 +11,10 @@ import catchup_mode as cm
 import scheduler
 
 
+async def _noop_kick():
+    return True
+
+
 def setup_function():
     cm.reset_catchup_for_tests()
 
@@ -47,6 +51,8 @@ def test_catchup_tick_active_invokes_embeddings(monkeypatch):
         return True
 
     monkeypatch.setattr("scheduler.run_embeddings_sync", embeddings)
+    monkeypatch.setattr("scheduler.run_llm_extraction_sync", _noop_kick)
+    monkeypatch.setattr("scheduler.run_cpe_catalog_sync", _noop_kick)
     monkeypatch.setattr("scheduler.get_correlation_precompute_enabled", lambda: False)
 
     assert asyncio.run(scheduler.run_catchup_tick()) is True
@@ -63,6 +69,8 @@ def test_catchup_tick_skips_in_wind_down(monkeypatch):
         return True
 
     monkeypatch.setattr("scheduler.run_embeddings_sync", embeddings)
+    monkeypatch.setattr("scheduler.run_llm_extraction_sync", _noop_kick)
+    monkeypatch.setattr("scheduler.run_cpe_catalog_sync", _noop_kick)
     monkeypatch.setattr("scheduler.get_correlation_precompute_enabled", lambda: False)
 
     assert asyncio.run(scheduler.run_catchup_tick()) is True
@@ -82,7 +90,69 @@ def test_catchup_tick_runs_precompute_slice_when_enabled(monkeypatch):
 
     monkeypatch.setattr("scheduler.run_embeddings_sync", embeddings)
     monkeypatch.setattr("scheduler.run_correlation_precompute_tick", precompute)
+    monkeypatch.setattr("scheduler.run_llm_extraction_sync", _noop_kick)
+    monkeypatch.setattr("scheduler.run_cpe_catalog_sync", _noop_kick)
     monkeypatch.setattr("scheduler.get_correlation_precompute_enabled", lambda: True)
 
     assert asyncio.run(scheduler.run_catchup_tick()) is True
     assert called["precompute"] == 1
+
+
+def test_catchup_tick_active_invokes_backlog_kicks_in_order(monkeypatch):
+    cm.start_catchup(duration_hours=1)
+    calls = []
+
+    async def embeddings():
+        calls.append("embeddings")
+        return True
+
+    async def precompute():
+        calls.append("precompute")
+        return {"precompute_snapshots": 2}
+
+    async def llm():
+        calls.append("llm")
+        return True
+
+    async def cpe():
+        calls.append("cpe")
+        return True
+
+    monkeypatch.setattr("scheduler.run_embeddings_sync", embeddings)
+    monkeypatch.setattr("scheduler.run_correlation_precompute_tick", precompute)
+    monkeypatch.setattr("scheduler.run_llm_extraction_sync", llm)
+    monkeypatch.setattr("scheduler.run_cpe_catalog_sync", cpe)
+    monkeypatch.setattr("scheduler.get_correlation_precompute_enabled", lambda: True)
+
+    assert asyncio.run(scheduler.run_catchup_tick()) is True
+    assert calls == ["embeddings", "precompute", "llm", "cpe"]
+
+
+def test_catchup_tick_continues_after_kick_failure(monkeypatch):
+    cm.start_catchup(duration_hours=1)
+    calls = []
+
+    async def embeddings():
+        calls.append("embeddings")
+        raise RuntimeError("embedding boom")
+
+    async def precompute():
+        calls.append("precompute")
+        return {"precompute_snapshots": 1}
+
+    async def llm():
+        calls.append("llm")
+        return True
+
+    async def cpe():
+        calls.append("cpe")
+        return True
+
+    monkeypatch.setattr("scheduler.run_embeddings_sync", embeddings)
+    monkeypatch.setattr("scheduler.run_correlation_precompute_tick", precompute)
+    monkeypatch.setattr("scheduler.run_llm_extraction_sync", llm)
+    monkeypatch.setattr("scheduler.run_cpe_catalog_sync", cpe)
+    monkeypatch.setattr("scheduler.get_correlation_precompute_enabled", lambda: True)
+
+    assert asyncio.run(scheduler.run_catchup_tick()) is False
+    assert calls == ["embeddings", "precompute", "llm", "cpe"]
