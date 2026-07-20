@@ -48,15 +48,15 @@
 - Consumes: `database.get_db` (same as other admin modules)
 - Produces: `/api/admin/api-keys/health` and related token routes no longer NameError
 
-- [ ] **Step 1: Write failing test** that hits `GET /api/admin/api-keys/health` (or typography default path that uses tokens module) with admin_client and asserts **not** 500 / no `get_db is not defined` in body.
+- [x] **Step 1: Write failing test** that hits `GET /api/admin/api-keys/health` (or typography default path that uses tokens module) with admin_client and asserts **not** 500 / no `get_db is not defined` in body.
 
-- [ ] **Step 2: Run test — expect FAIL** (NameError/500).
+- [x] **Step 2: Run test — expect FAIL** (NameError/500).
 
-- [ ] **Step 3: Add top-level `from database import get_db`** (or package-equivalent used elsewhere in `routers/admin/`). Remove any accidental inline import. Ensure all handlers in the file that call `get_db` work.
+- [x] **Step 3: Add top-level `from database import get_db`** (or package-equivalent used elsewhere in `routers/admin/`). Remove any accidental inline import. Ensure all handlers in the file that call `get_db` work.
 
-- [ ] **Step 4: Run test — PASS.** Also run `pytest tests/test_display_typography.py -q` if that was the original failing file.
+- [x] **Step 4: Run test — PASS.** Also run `pytest tests/test_display_typography.py -q` if that was the original failing file.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/routers/admin/tokens.py backend/tests/
@@ -76,20 +76,20 @@ git commit -m "fix(admin): import get_db in tokens router (W7 regression)"
 - Produces: `cves_router.changes_router`, `.list_router`, `.detail_router`, `.intel_router` (same objects main includes)
 - Consumes: existing handlers; mechanical move preferred
 
-- [ ] **Step 1: Dump routes before** to `/tmp/cves-routes-before.txt` via TestClient/`app.routes` (method, path, order for all routes or CVE-related subset — full list preferred for identity).
+- [x] **Step 1: Dump routes before** to `/tmp/cves-routes-before.txt` via TestClient/`app.routes` (method, path, order for all routes or CVE-related subset — full list preferred for identity).
 
-- [ ] **Step 2: Failing/guard test already exists** — run `pytest tests/test_router_split.py -q` on current tree (should PASS). After split, same test must still PASS. Optionally add a thin test that `import routers.cves` exposes the four routers.
+- [x] **Step 2: Failing/guard test already exists** — run `pytest tests/test_router_split.py -q` on current tree (should PASS). After split, same test must still PASS. Optionally add a thin test that `import routers.cves` exposes the four routers.
 
-- [ ] **Step 3: Implement package split**
+- [x] **Step 3: Implement package split**
   - Shared helpers/models in `cves/helpers.py` or `cves/_common.py`
   - `changes.py`, `list.py`, `detail.py`, `intel.py` (or equivalent names matching the four routers)
   - `__init__.py` assigns/re-exports `changes_router`, `list_router`, `detail_router`, `intel_router`
   - Each file ideally &lt;800 LOC
   - Preserve registration order in `main.py`
 
-- [ ] **Step 4: Dump routes after; diff must be empty vs before. `pytest tests/test_router_split.py tests/test_cve*.py -q` (narrow to relevant) PASS.**
+- [x] **Step 4: Dump routes after; diff must be empty vs before. `pytest tests/test_router_split.py tests/test_cve*.py -q` (narrow to relevant) PASS.**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/routers/cves backend/routers/cves.py backend/main.py backend/tests/
@@ -109,13 +109,13 @@ git commit -m "refactor(phase1): split cves router into package (F1.2)"
 - Behavior/visual parity: same props API to parent; no route/API contract changes
 - Prefer extract **data hook** + one presentational cluster first
 
-- [ ] **Step 1: Baseline LOC** — record `wc -l IOCLookup.jsx`. Write failing test that asserts `IOCLookup.jsx` line count `< 600` (or `< 900` if 600 needs a second wave — **prefer &lt;600** per audit acceptance; if unreachable in one PR without risk, target &lt;900 and document follow-on in HANDOVER).
+- [x] **Step 1: Baseline LOC** — record `wc -l IOCLookup.jsx`. Write failing test that asserts `IOCLookup.jsx` line count `< 600` (or `< 900` if 600 needs a second wave — **prefer &lt;600** per audit acceptance; if unreachable in one PR without risk, target &lt;900 and document follow-on in HANDOVER).
 
-- [ ] **Step 2: Extract hook/components; move logic without behavior change.** No hardcoded colors. Keep imports at top.
+- [x] **Step 2: Extract hook/components; move logic without behavior change.** No hardcoded colors. Keep imports at top.
 
-- [ ] **Step 3: `node --test` for new unit tests + `npm run build` PASS. LOC assertion green.
+- [x] **Step 3: `node --test` for new unit tests + `npm run build` PASS. LOC assertion green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components/IOCLookup.jsx frontend/src/components/ioc/
@@ -130,17 +130,19 @@ git commit -m "refactor(phase1): extract IOCLookup hooks/components (F1.5 wave 1
 - Modify: `docs/HANDOVER.md`, `docs/PRODUCT_STATUS.md` (brief), tick leftovers in `docs/planning/SPRINT_2026-07.md` / phase1 plan deferred notes if present
 - Run: graphify install/update if feasible
 
-- [ ] **Step 1: Attempt**
+- [x] **Step 1: Attempt**
 
 ```bash
 command -v graphify && graphify update . || (pip install graphifyy 2>/dev/null; command -v graphify && graphify update . || echo GRAPHIFY_MISSING)
 ```
 
-Do **not** invent `graphify-out/` content.
+Result: **succeeded** after installing `graphifyy`; existing `graphify-out/`
+rebuilt with `10591` nodes, `20315` edges, `631` communities. Do **not**
+invent `graphify-out/` content.
 
-- [ ] **Step 2: HANDOVER entry** — leftovers done (tokens fix, cves package, IOCLookup extract); list still-parked (full format, Testcontainers, remaining FE &gt;600 files).
+- [x] **Step 2: HANDOVER entry** — leftovers done (tokens fix, cves package, IOCLookup extract); list still-parked (full format, Testcontainers, remaining FE &gt;600 files).
 
-- [ ] **Step 3: Commit docs; push branch; parent opens PR.**
+- [x] **Step 3: Commit docs; push branch; parent opens PR.**
 
 ```bash
 git add docs/
