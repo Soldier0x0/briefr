@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from threading import Lock
+from typing import Any
+
+from database import get_db, get_sync_state_value, set_sync_state_value
 
 DEFAULT_DURATION_HOURS = 6
 MAX_DURATION_HOURS = 24
 WIND_DOWN_SECONDS = 300
 CATCHUP_LLM_HEADROOM_PCT = 95
+CATCHUP_MODE_LAST_KEY = "catchup_mode_last"
 
 _EMBEDDINGS_MAX_CAP = 5000
 _CORRELATION_PRECOMPUTE_MAX_CAP = 2000
@@ -78,6 +83,48 @@ def stop_catchup(*, reason: str = "ended_early") -> dict:
         return _status_locked()
 
 
+async def persist_catchup_status(status: dict | None = None) -> dict:
+    payload = get_catchup_status() if status is None else status
+    db = await get_db()
+    try:
+        await set_sync_state_value(db, CATCHUP_MODE_LAST_KEY, json.dumps(payload))
+        await db.commit()
+    finally:
+        await db.close()
+    return payload
+
+
+async def clear_catchup_after_restart() -> dict:
+    with _lock:
+        global _state
+        _state = CatchupState()
+
+    db = await get_db()
+    try:
+        raw = await get_sync_state_value(db, CATCHUP_MODE_LAST_KEY)
+        if not raw:
+            return get_catchup_status()
+
+        try:
+            previous = json.loads(raw)
+        except (TypeError, json.JSONDecodeError):
+            return get_catchup_status()
+
+        if not _last_blob_looked_active(previous):
+            return get_catchup_status()
+
+        cleared = dict(previous)
+        cleared["active"] = False
+        cleared["cleared_reason"] = "restart"
+        cleared["in_wind_down"] = False
+        cleared["should_start_new_work"] = False
+        await set_sync_state_value(db, CATCHUP_MODE_LAST_KEY, json.dumps(cleared))
+        await db.commit()
+        return cleared
+    finally:
+        await db.close()
+
+
 def effective_embeddings_max_per_run(base: int) -> int:
     if not is_catchup_active():
         return base
@@ -129,6 +176,22 @@ def _resolve_window(
     return duration, end_time
 
 
+def _last_blob_looked_active(previous: Any) -> bool:
+    if not isinstance(previous, dict) or previous.get("active") is not True:
+        return False
+
+    ends_at = previous.get("ends_at")
+    if not isinstance(ends_at, str) or not ends_at:
+        return False
+
+    try:
+        end_time = _parse_iso_datetime(ends_at)
+    except ValueError:
+        return False
+
+    return end_time > _utc_now()
+
+
 def _expire_if_needed() -> None:
     if _state.active and _state.ends_at is not None and _state.ends_at <= _utc_now():
         _state.active = False
@@ -165,6 +228,10 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _parse_iso_datetime(value: str) -> datetime:
+    return _as_utc(datetime.fromisoformat(value.replace("Z", "+00:00")))
 
 
 def _utc_now() -> datetime:
