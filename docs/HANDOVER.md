@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 1 Task 2: OutboundJobsPanel (admin UI)
+
+**Done** (branch `cursor/w1-outbound-jobs-91c2`):
+- **OutboundJobsPanel** on Admin → Data refresh schedule: lists Procrastinate rows via
+  `adminApi.listOutboundJobs(50)` with loading/empty/error/data, refresh + ~15s poll,
+  HelpTip vs header `ApiQueueIndicator`.
+- Copy/tests: `outboundJobsCopy.js` + `outboundJobsCopy.test.js`.
+- Docs: `API_REFERENCE.md`, `PRODUCT_STATUS.md`.
+
+**Next:** Wave 1 follow-ons per durable-outbound spec (worker tasks, enqueue paths).
+
+---
+
 ## 2026-07-20 — Phase 1 leftovers closeout (Task 4)
 
 **Done** (branch `cursor/phase1-leftovers-91c2`; parent opens PR):
