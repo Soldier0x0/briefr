@@ -257,7 +257,7 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
                    tutorialOpen,
                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                    onDigestRequest, watchlist, onWatchlistChange, onSelectCVE,
-                   feedHealth }) {
+                   onOpenForgeCampaigns, feedHealth }) {
 
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
@@ -291,6 +291,7 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
           onSelectCVE={onSelectCVE}
           onGenerateDigest={handleGenerateDigest}
           onDigestRequest={onDigestRequest}
+          onOpenForgeCampaigns={onOpenForgeCampaigns}
           searchFocusTrigger={searchFocusTrigger}
           timezone={timezone}
           overlayOpen={!!selectedCVE || digestOpen || aboutOpen || tutorialOpen}
@@ -624,6 +625,17 @@ export default function App() {
     },
   }), [openCveById, setSearchParams, selectAppTab])
 
+  const openForgeCampaigns = useCallback(() => {
+    setActiveTab('forge')
+    setSearchParams((prev) => {
+      const next = buildAppTabSearchParams(prev, 'forge')
+      next.set('view', 'campaigns')
+      next.delete('technique')
+      next.delete('pack')
+      return next
+    })
+  }, [setSearchParams])
+
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
     const ql = q.toLowerCase()
@@ -833,6 +845,7 @@ export default function App() {
               feedHealth={feedHealth}
               onDigestRequest={registerDigestHandler}
               openCveById={openCveById}
+              onOpenForgeCampaigns={openForgeCampaigns}
               showAiAlerts={showAiAlerts}
               onAiAlertsClick={handleAiAlertsClick}
               onStatTileClick={handleStatTileClick}
@@ -891,6 +904,7 @@ function AppLayout({
   feedHealth,
   onDigestRequest,
   openCveById,
+  onOpenForgeCampaigns,
   showAiAlerts,
   onAiAlertsClick,
   onStatTileClick,
@@ -1002,6 +1016,7 @@ function AppLayout({
                 refreshSchedule={refreshSchedule}
                 onDigestRequest={onDigestRequest}
                 onSelectCVE={onSelectCVE}
+                onOpenForgeCampaigns={onOpenForgeCampaigns}
                 watchlist={watchlist}
                 onWatchlistChange={onWatchlistChange}
                 feedHealth={feedHealth}

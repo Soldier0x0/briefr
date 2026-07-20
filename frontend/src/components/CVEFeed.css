@@ -266,9 +266,10 @@
 
 .feed-semantic-row {
   display: flex;
-  gap: 12px;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
   width: 100%;
-  padding: 14px 20px;
+  padding: var(--space-3, 14px) var(--space-5, 20px);
   border: none;
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border-active);
@@ -291,7 +292,7 @@
 
 .feed-semantic-row-id {
   flex-shrink: 0;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   color: var(--text-muted);
   min-width: 72px;
@@ -300,22 +301,22 @@
 .feed-semantic-row-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1, 4px);
   min-width: 0;
 }
 
 .feed-semantic-row-title {
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   color: var(--text-primary, var(--text));
 }
 
 .feed-semantic-row-meta {
-  font-size: 0.6875rem;
+  font-size: var(--font-size-micro);
   color: var(--text-muted);
 }
 
 .feed-semantic-row-desc {
-  font-size: 0.8125rem;
+  font-size: var(--font-size-secondary);
   color: var(--text-secondary, var(--text2));
   line-height: 1.4;
   display: -webkit-box;

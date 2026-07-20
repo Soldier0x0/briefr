@@ -66,13 +66,13 @@ function SemanticTechniqueRow({ technique, onSelectTechnique }) {
   )
 }
 
-function SemanticCampaignRow({ campaign }) {
+function SemanticCampaignRow({ campaign, onOpenForgeCampaigns }) {
   const label = campaign.label || campaign.campaign_id
-  const href = `/?tab=forge&view=campaigns`
   return (
-    <a
+    <button
+      type="button"
       className="feed-semantic-row feed-semantic-row-campaign"
-      href={href}
+      onClick={onOpenForgeCampaigns}
       aria-label={`Open campaign ${label} in Forge`}
     >
       <span className="feed-semantic-row-id mono">CAMPAIGN</span>
@@ -85,7 +85,7 @@ function SemanticCampaignRow({ campaign }) {
           {campaign.adversary ? ` · ${campaign.adversary}` : ''}
         </span>
       </span>
-    </a>
+    </button>
   )
 }
 
@@ -95,6 +95,7 @@ export default function CVEFeed({
   onSelectCVE,
   onGenerateDigest,
   onDigestRequest,
+  onOpenForgeCampaigns,
   searchFocusTrigger,
   timezone,
   overlayOpen = false,
@@ -593,6 +594,7 @@ export default function CVEFeed({
               <SemanticCampaignRow
                 key={campaign.campaign_id}
                 campaign={campaign}
+                onOpenForgeCampaigns={onOpenForgeCampaigns}
               />
             ))}
           </section>
