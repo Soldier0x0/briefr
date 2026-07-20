@@ -12,6 +12,23 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 4 Task 7: FEED surfaces technique/campaign semantic hits
+
+**Done** (branch `cursor/w4-semantic-hits-91c2`):
+- **RCA:** `filterHybridHits` mapped every `/api/search/semantic` hit through
+  `semanticHitToCveCard`, which returned `null` for `entity_type=technique` /
+  `campaign` — typed hits were silently dropped even though the API returns them.
+- **Fix:** `partitionHybridHits` + `processHybridSearchResults` split CVE vs
+  technique vs campaign rows; CVE filters still apply only to CVE hits.
+- **UI:** FEED hybrid search renders sectioned **TECHNIQUES** / **CAMPAIGNS** /
+  **CVES** lists; technique rows apply the ATT&CK filter; campaign rows link to
+  Forge campaigns.
+
+**Verify:** `cd frontend && npm run test:unit -- src/utils/hybridFeedSearch.test.js`
+and `npm run build`.
+
+---
+
 ## 2026-07-20 — Wave 3 Task 6: catch-up tick drains LLM + CPE
 
 **Done** (branch `cursor/w3-catchup-drain-91c2`):

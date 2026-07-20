@@ -4,8 +4,8 @@ import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import {
-  filterHybridHits,
   hybridSearchStatusLabel,
+  processHybridSearchResults,
   shouldUseHybridSearch,
 } from '../utils/hybridFeedSearch.js'
 import { scrollBehavior } from '../utils/motion.js'
@@ -44,6 +44,51 @@ function sortByExposure(cves, getMatchScore) {
   })
 }
 
+function SemanticTechniqueRow({ technique, onSelectTechnique }) {
+  return (
+    <button
+      type="button"
+      className="feed-semantic-row feed-semantic-row-technique"
+      onClick={() => onSelectTechnique(technique.technique_id)}
+      aria-label={`Filter CVEs by ${technique.technique_id}: ${technique.name}`}
+    >
+      <span className="feed-semantic-row-id mono">{technique.technique_id}</span>
+      <span className="feed-semantic-row-body">
+        <span className="feed-semantic-row-title">{technique.name}</span>
+        {technique.tactic && (
+          <span className="feed-semantic-row-meta mono">{technique.tactic}</span>
+        )}
+        {technique.description && (
+          <span className="feed-semantic-row-desc">{technique.description}</span>
+        )}
+      </span>
+    </button>
+  )
+}
+
+function SemanticCampaignRow({ campaign }) {
+  const label = campaign.label || campaign.campaign_id
+  const href = `/?tab=forge&view=campaigns`
+  return (
+    <a
+      className="feed-semantic-row feed-semantic-row-campaign"
+      href={href}
+      aria-label={`Open campaign ${label} in Forge`}
+    >
+      <span className="feed-semantic-row-id mono">CAMPAIGN</span>
+      <span className="feed-semantic-row-body">
+        <span className="feed-semantic-row-title">{label}</span>
+        <span className="feed-semantic-row-meta mono">
+          {campaign.member_count > 0
+            ? `${campaign.member_count} linked CVE${campaign.member_count === 1 ? '' : 's'}`
+            : 'Campaign cluster'}
+          {campaign.adversary ? ` · ${campaign.adversary}` : ''}
+        </span>
+      </span>
+    </a>
+  )
+}
+
 export default function CVEFeed({
   filters,
   onFiltersChange,
@@ -67,6 +112,8 @@ export default function CVEFeed({
   assetAwareRef.current = assetAware
   getMatchScoreRef.current = getMatchScore
   const [cves, setCves] = useState([])
+  const [techniques, setTechniques] = useState([])
+  const [campaigns, setCampaigns] = useState([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -180,22 +227,28 @@ export default function CVEFeed({
           kev_only: Boolean(filtersNow.kev_only),
         })
         if (controller.signal.aborted) return
-        let pageRows = filterHybridHits(body?.data || [], filtersNow)
+        const processed = processHybridSearchResults(body?.data || [], filtersNow)
+        let pageRows = processed.cves
         // Semantic stack is a filter (not I16 stack-relevance sort); keep exposure order.
         if (assetAwareRef.current) {
           pageRows = sortByExposure(pageRows, getMatchScoreRef.current)
         }
         setSearchStatus(hybridSearchStatusLabel(body?.meta))
-        setTotal(pageRows.length)
+        const typedCount = processed.techniques.length + processed.campaigns.length
+        setTotal(pageRows.length + typedCount)
         setHasMore(false)
         hasMoreRef.current = false
         setCves(pageRows)
+        setTechniques(processed.techniques)
+        setCampaigns(processed.campaigns)
         pageRef.current = 1
         setPage(1)
         return
       }
 
       setSearchStatus('')
+      setTechniques([])
+      setCampaigns([])
       const apiParams = toApiCveParams(filtersNow)
       const data = await fetchCVEs({
         ...apiParams,
@@ -223,6 +276,8 @@ export default function CVEFeed({
         notifyApiError(err)
         if (!append) {
           setCves([])
+          setTechniques([])
+          setCampaigns([])
           setTotal(0)
           setSearchStatus('')
         }
@@ -425,11 +480,17 @@ export default function CVEFeed({
 
   const selectedIds = Object.keys(selectedMap)
   const selectedCount = selectedIds.length
+  const resultCount = cves.length + techniques.length + campaigns.length
+  const hasTypedHits = techniques.length > 0 || campaigns.length > 0
 
-  const showSkeleton = loading && cves.length === 0
-  const showEmpty = !loading && !error && cves.length === 0
+  const showSkeleton = loading && resultCount === 0
+  const showEmpty = !loading && !error && resultCount === 0
   const showError = !!error
-  const isRefreshing = loading && cves.length > 0
+  const isRefreshing = loading && resultCount > 0
+
+  function handleTechniqueSelect(techniqueId) {
+    onFiltersChange({ technique: techniqueId, search: '' })
+  }
 
   return (
     <div className="cve-feed" role="region" aria-label="CVE feed" ref={feedRootRef}>
@@ -512,6 +573,35 @@ export default function CVEFeed({
         className={`cve-list${isRefreshing ? ' feed-refreshing' : ''}`}
         aria-busy={isRefreshing || undefined}
       >
+        {techniques.length > 0 && (
+          <section className="feed-semantic-section" aria-label="Matching ATT&CK techniques">
+            <h3 className="feed-semantic-section-label mono">TECHNIQUES</h3>
+            {techniques.map((technique) => (
+              <SemanticTechniqueRow
+                key={technique.technique_id}
+                technique={technique}
+                onSelectTechnique={handleTechniqueSelect}
+              />
+            ))}
+          </section>
+        )}
+
+        {campaigns.length > 0 && (
+          <section className="feed-semantic-section" aria-label="Matching threat campaigns">
+            <h3 className="feed-semantic-section-label mono">CAMPAIGNS</h3>
+            {campaigns.map((campaign) => (
+              <SemanticCampaignRow
+                key={campaign.campaign_id}
+                campaign={campaign}
+              />
+            ))}
+          </section>
+        )}
+
+        {hasTypedHits && cves.length > 0 && (
+          <h3 className="feed-semantic-section-label mono feed-semantic-section-label-inline">CVES</h3>
+        )}
+
         {cves.map((cve, idx) => (
           <CVECard
             key={cve.cve_id}
@@ -546,9 +636,9 @@ export default function CVEFeed({
         </div>
       )}
 
-      {!hasMore && cves.length > 0 && (
+      {!hasMore && resultCount > 0 && (
         <div className="feed-end" aria-label="End of results">
-          <span>// {cves.length} of {total} shown</span>
+          <span>// {resultCount} of {total} shown</span>
         </div>
       )}
 

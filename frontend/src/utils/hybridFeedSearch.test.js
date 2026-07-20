@@ -3,7 +3,11 @@ import assert from 'node:assert/strict'
 import {
   filterHybridHits,
   hybridSearchStatusLabel,
+  partitionHybridHits,
+  processHybridSearchResults,
+  semanticHitToCampaignCard,
   semanticHitToCveCard,
+  semanticHitToTechniqueCard,
   shouldUseHybridSearch,
 } from './hybridFeedSearch.js'
 
@@ -60,5 +64,55 @@ describe('hybridFeedSearch', () => {
       /Keyword/,
     )
     assert.equal(hybridSearchStatusLabel({ method: 'hybrid' }), 'Hybrid search')
+  })
+
+  it('partitions technique and campaign hits instead of dropping them', () => {
+    const hits = [
+      { entity_type: 'cve', cve_id: 'CVE-1', description: 'a', severity: 'HIGH' },
+      {
+        entity_type: 'technique',
+        entity_id: 'T1059',
+        name: 'Command and Scripting Interpreter',
+        tactic: 'Execution',
+      },
+      {
+        entity_type: 'campaign',
+        entity_id: 'camp-1',
+        label: 'Ransom op',
+        member_count: 4,
+      },
+    ]
+    const parts = partitionHybridHits(hits)
+    assert.equal(parts.cves.length, 1)
+    assert.equal(parts.techniques.length, 1)
+    assert.equal(parts.campaigns.length, 1)
+
+    const processed = processHybridSearchResults(hits, {})
+    assert.equal(processed.cves.length, 1)
+    assert.equal(processed.cves[0].cve_id, 'CVE-1')
+    assert.equal(processed.techniques.length, 1)
+    assert.equal(processed.techniques[0].technique_id, 'T1059')
+    assert.equal(processed.campaigns.length, 1)
+    assert.equal(processed.campaigns[0].campaign_id, 'camp-1')
+  })
+
+  it('still maps CVE hits via semanticHitToCveCard and applies CVE filters', () => {
+    const hits = [
+      { entity_type: 'cve', cve_id: 'CVE-1', severity: 'CRITICAL', is_kev: true },
+      { entity_type: 'cve', cve_id: 'CVE-2', severity: 'LOW', is_kev: false },
+      { entity_type: 'technique', entity_id: 'T1190', name: 'Exploit Public-Facing Application' },
+    ]
+    const processed = processHybridSearchResults(hits, { severity: 'CRITICAL', kev_only: true })
+    assert.equal(processed.cves.length, 1)
+    assert.equal(processed.cves[0].cve_id, 'CVE-1')
+    assert.equal(processed.techniques.length, 1)
+    assert.equal(
+      semanticHitToTechniqueCard({ entity_id: 'T1059', name: 'PowerShell' }).technique_id,
+      'T1059',
+    )
+    assert.equal(
+      semanticHitToCampaignCard({ entity_id: 'camp-9', label: 'Cluster' }).campaign_id,
+      'camp-9',
+    )
   })
 })

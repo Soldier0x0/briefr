@@ -21,6 +21,8 @@ export function shouldUseHybridSearch(filters) {
 /** Map semantic-search hit → CVE card row shape. */
 export function semanticHitToCveCard(hit) {
   if (!hit) return null
+  const entityType = String(hit.entity_type || 'cve').toLowerCase()
+  if (entityType !== 'cve') return null
   const cveId = hit.cve_id || hit.entity_id
   if (!cveId) return null
   return {
@@ -38,7 +40,72 @@ export function semanticHitToCveCard(hit) {
   }
 }
 
-/** Apply severity / KEV quick filters client-side on hybrid hits. */
+/** Map semantic-search hit → technique row shape. */
+export function semanticHitToTechniqueCard(hit) {
+  if (!hit) return null
+  const techniqueId = hit.technique_id || hit.entity_id
+  if (!techniqueId) return null
+  return {
+    entity_type: 'technique',
+    technique_id: techniqueId,
+    name: hit.name || techniqueId,
+    description: hit.description || '',
+    tactic: hit.tactic || '',
+    url: hit.url || '',
+    similarity: hit.similarity,
+    match_reasons: hit.match_reasons || [],
+    score: hit.score,
+  }
+}
+
+/** Map semantic-search hit → campaign row shape. */
+export function semanticHitToCampaignCard(hit) {
+  if (!hit) return null
+  const campaignId = hit.campaign_id || hit.entity_id
+  if (!campaignId) return null
+  return {
+    entity_type: 'campaign',
+    campaign_id: campaignId,
+    label: hit.label || campaignId,
+    adversary: hit.adversary || '',
+    lifecycle: hit.lifecycle || '',
+    member_count: hit.member_count ?? 0,
+    confidence: hit.confidence || '',
+    similarity: hit.similarity,
+    match_reasons: hit.match_reasons || [],
+    score: hit.score,
+  }
+}
+
+/** Split hybrid API hits by entity type (CVE / technique / campaign). */
+export function partitionHybridHits(hits) {
+  const cves = []
+  const techniques = []
+  const campaigns = []
+  for (const hit of hits || []) {
+    const entityType = String(hit?.entity_type || 'cve').toLowerCase()
+    if (entityType === 'technique') {
+      techniques.push(hit)
+    } else if (entityType === 'campaign') {
+      campaigns.push(hit)
+    } else {
+      cves.push(hit)
+    }
+  }
+  return { cves, techniques, campaigns }
+}
+
+/** Partition hybrid hits and map each section to feed row shapes. */
+export function processHybridSearchResults(hits, filters) {
+  const { cves, techniques, campaigns } = partitionHybridHits(hits)
+  return {
+    cves: filterHybridHits(cves, filters),
+    techniques: techniques.map(semanticHitToTechniqueCard).filter(Boolean),
+    campaigns: campaigns.map(semanticHitToCampaignCard).filter(Boolean),
+  }
+}
+
+/** Apply severity / KEV quick filters client-side on hybrid CVE hits. */
 export function filterHybridHits(hits, filters) {
   let rows = hits.map(semanticHitToCveCard).filter(Boolean)
   if (filters?.severity) {
