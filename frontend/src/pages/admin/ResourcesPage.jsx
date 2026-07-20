@@ -158,10 +158,10 @@ export default function ResourcesPage() {
     {
       id: 'ram',
       fields: ['briefr_rss_bytes', 'pg_rss_bytes'],
-      labels: ['BRIEFR RSS', 'Postgres RSS'],
+      labels: ['BRIEFR process', 'Postgres process'],
       field: 'briefr_rss_bytes',
-      label: 'Memory (RSS)',
-      tip: 'Resident set size for the BRIEFR and Postgres process trees. SYS memory % is shown separately below.',
+      label: 'Process memory',
+      tip: 'Resident memory for the BRIEFR and Postgres process trees. System memory % is shown separately below.',
     },
     {
       id: 'iops',

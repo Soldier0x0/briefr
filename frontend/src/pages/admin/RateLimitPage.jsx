@@ -94,7 +94,7 @@ export default function RateLimitPage({ toast }) {
                   <th>Total hits</th>
                   <th>
                     Active keys
-                    <HelpTip text="Distinct client identities currently holding a token-bucket slot for this limit (usually client IPs)." />
+                    <HelpTip text="Distinct client identities currently holding a rate-limit slot for this limit (usually client IPs)." />
                   </th>
                   <th>
                     Top consumers

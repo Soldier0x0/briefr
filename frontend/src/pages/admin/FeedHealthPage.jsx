@@ -97,7 +97,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
         label: `Resetting ${sourceLabel(sourceId)}`,
         kind: 'circuit',
         meta: { sourceId },
-        successMessage: isAnalyst ? 'Trying again' : `Circuit reset for ${sourceLabel(sourceId)}`,
+        successMessage: isAnalyst ? 'Trying again' : `Resumed retries for ${sourceLabel(sourceId)}`,
         execute: async () => {
           const { requestId } = await adminApi.postJson(
             `/feeds/${encodeURIComponent(sourceId)}/reset-circuit`,
@@ -202,8 +202,8 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
           {openCircuits.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
               <div className="admin-card-title" style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Circuit tripped (${openCircuits.length})`}
-                {!isAnalyst && <HelpTip text="A circuit trips after repeated fetch failures to stop hammering an unresponsive upstream source. BRIEFR retries automatically after a cooldown, or you can force-reset below. LLM rows (groq/gemini/cerebras/…) reflect real chat traffic — ConnectError / name-resolution usually means host DNS or egress cannot reach that provider. Empty LLM response content means HTTP succeeded but the model returned a blank body." />}
+                {isAnalyst ? `Sources temporarily paused (${openCircuits.length})` : `Sources paused (${openCircuits.length})`}
+                {!isAnalyst && <HelpTip text="After repeated fetch failures BRIEFR pauses calls to that source so it does not keep hammering an unresponsive upstream. Retries resume automatically after a cooldown, or you can force-resume below. LLM rows (groq/gemini/cerebras/…) reflect real chat traffic — ConnectError / name-resolution usually means host DNS or egress cannot reach that provider. Empty LLM response content means HTTP succeeded but the model returned a blank body." />}
               </div>
               <div className="feed-card-grid">
                 {sortByFailures(openCircuits).map(([key, s]) => (

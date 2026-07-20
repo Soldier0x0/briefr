@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timezone
 
 from database import get_db
+from db.cve import ADDITIVE_ENRICHMENT_COMMIT_CHUNK
 from db.enrichment import mark_cves_as_kev, update_epss_scores, upsert_kev_batch
 from db.stack_backfill import (
     claim_run_running,
@@ -229,14 +230,18 @@ async def _process(run_id: int) -> dict:
             try:
                 scores = await fetch_epss_bulk(set(unique_ids))
                 if scores:
-                    await update_epss_scores(db, scores)
+                    await update_epss_scores(
+                        db, scores, commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+                    )
             except Exception as exc:
                 logger.warning("EPSS apply after backfill failed: %s", exc)
             try:
                 kev_entries = await fetch_kev()
                 await upsert_kev_batch(db, kev_entries)
                 kev_ids = [e["cveID"] for e in kev_entries if e.get("cveID")]
-                await mark_cves_as_kev(db, kev_ids)
+                await mark_cves_as_kev(
+                    db, kev_ids, commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+                )
             except Exception as exc:
                 logger.warning("KEV apply after backfill failed: %s", exc)
             await db.commit()

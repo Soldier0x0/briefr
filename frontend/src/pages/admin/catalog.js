@@ -255,12 +255,12 @@ export const TERM_GLOSSARY = {
   },
   open_circuits: {
     analyst: 'Sources with issues',
-    operator: 'Open circuits',
-    explanation: 'Upstream API failed repeatedly; BRIEFR paused calls temporarily.',
+    operator: 'Sources paused',
+    explanation: 'Upstream API failed repeatedly; BRIEFR paused calls temporarily and will retry.',
   },
   active_locks: {
     analyst: 'Syncs in progress',
-    operator: 'Active locks',
+    operator: 'Jobs running',
     explanation: 'A background refresh is running right now.',
   },
   circuit_reset: {
@@ -292,7 +292,7 @@ export const AUDIT_ACTION_LABELS = {
   'watchlist.clear_snoozes': 'Cleared snoozes',
   'storage.purge.ioc_cache': 'Cleared IOC cache',
   'system.restart': 'Restarted the backend',
-  'system.restart.drain': 'Drained and restarted the backend',
+  'system.restart.drain': 'Finished jobs, then restarted the backend',
 }
 
 export function auditActionLabel(action) {

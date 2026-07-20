@@ -536,7 +536,9 @@ async def _run_kev_sync() -> None:
             _job_progress["kev_metadata_sync"] = (
                 f"Marked {len(kev_ids)} KEV catalog entries in database…"
             )
-            newly_kev = await mark_cves_as_kev(db, kev_ids)
+            newly_kev = await mark_cves_as_kev(
+                db, kev_ids, commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+            )
             await db.commit()
             _job_progress["kev_metadata_sync"] = (
                 f"Enriching KEV summaries from CISA descriptions "
@@ -715,8 +717,12 @@ async def _run_epss_sync() -> None:
                 f"Snapshotting current EPSS scores for delta tracking, then writing "
                 f"{len(scores)} updated scores…"
             )
-            snapshotted = await snapshot_epss_scores(db)
-            await update_epss_scores(db, scores)
+            snapshotted = await snapshot_epss_scores(
+                db, commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+            )
+            await update_epss_scores(
+                db, scores, commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK
+            )
             if digest:
                 await set_file_identity(
                     db,
@@ -937,7 +943,11 @@ async def run_vulncheck_kev_sync() -> bool:
                 _job_progress["vulncheck_kev_sync"] = (
                     f"Updating VulnCheck exploited flags for {len(cve_ids)} catalog CVEs…"
                 )
-                updated = await sync_vulncheck_exploited_flags(db, cve_ids)
+                updated = await sync_vulncheck_exploited_flags(
+                    db,
+                    cve_ids,
+                    commit_every=ADDITIVE_ENRICHMENT_COMMIT_CHUNK,
+                )
                 await db.commit()
             finally:
                 await db.close()

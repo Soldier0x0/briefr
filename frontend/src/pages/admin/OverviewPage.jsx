@@ -4,7 +4,7 @@ import StatCard from './shared/StatCard.jsx'
 import JobTable from './shared/JobTable.jsx'
 import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs } from './intelStatus.js'
-import { jobLabel } from './catalog.js'
+import { jobLabel, statusLabel, termLabel } from './catalog.js'
 import { pauseResumeAction } from './jobActions.js'
 import {
   schedulerJobManualRun,
@@ -437,17 +437,17 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
 
       <div className="admin-two-col">
         <div className="admin-card" style={{ flex: 1 }}>
-          <div className="admin-card-title">Active locks</div>
+          <div className="admin-card-title">{termLabel('active_locks', 'operator')}</div>
           {(!active_locks || active_locks.length === 0) ? (
             <div className="admin-empty admin-empty--compact">No jobs running</div>
           ) : (
             <table className="admin-table">
-              <thead><tr><th>JOB ID</th><th>LOCK</th></tr></thead>
+              <thead><tr><th>JOB ID</th><th>STATUS</th></tr></thead>
               <tbody>
                 {active_locks.map(l => (
                   <tr key={l.job_id}>
                     <td className="mono" style={{ fontSize: '0.75rem' }}>{l.job_id}</td>
-                    <td><span className="badge badge-info">LOCKED</span></td>
+                    <td><span className="badge badge-info">{statusLabel('LOCKED', 'operator')}</span></td>
                   </tr>
                 ))}
               </tbody>
