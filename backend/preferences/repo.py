@@ -9,7 +9,6 @@ from db.timeutil import utcnow_str
 
 from preferences.display_validate import (
     DEFAULT_DISPLAY_PREFS,
-    DEFAULT_TYPOGRAPHY_PX,
     INSTANCE_TYPOGRAPHY_SETTING_KEY,
     encode_display_prefs,
     merge_display_prefs,

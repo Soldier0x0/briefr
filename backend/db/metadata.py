@@ -267,12 +267,6 @@ def _is_postgres_connection(db: DbConnection) -> bool:
     return type(db).__name__ == "PostgresConnection"
 
 
-def _in_placeholders(count: int, *, pg: bool, start: int = 1) -> str:
-    if pg:
-        return ", ".join(f"${i}" for i in range(start, start + count))
-    return ", ".join("?" for _ in range(count))
-
-
 def _cutoff_date_days_ago(days: int) -> str:
     return (datetime.now(timezone.utc).date() - timedelta(days=days)).isoformat()
 

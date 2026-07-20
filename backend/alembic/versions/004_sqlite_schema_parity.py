@@ -17,7 +17,7 @@ _TS = "TO_CHAR((NOW() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS')"
 
 def upgrade() -> None:
     op.execute(
-        f"""
+        """
         ALTER TABLE otx_cve_pulses
         ADD COLUMN IF NOT EXISTS targeted_countries TEXT DEFAULT '[]'
         """
@@ -71,7 +71,7 @@ def upgrade() -> None:
     )
 
     op.execute(
-        f"""
+        """
         CREATE TABLE IF NOT EXISTS correlation_campaign_members (
             campaign_id TEXT NOT NULL,
             cve_id TEXT NOT NULL,

@@ -9,8 +9,6 @@ from database import (
     clear_webhook_destination_dedupe,
     get_db,
     record_webhook_delivery,
-    record_webhook_destination_sent,
-    was_webhook_destination_sent,
     claim_webhook_destination_sent,
     clear_webhook_destination_dedupe_for_dest,
 )
@@ -26,7 +24,6 @@ from webhooks.destinations import (
     normalize_event_type,
 )
 from webhooks.ssrf import (
-    SSRFError,
     safe_webhook_request,
     webhook_json_payload,
 )

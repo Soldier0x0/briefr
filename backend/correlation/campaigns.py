@@ -278,7 +278,7 @@ async def get_campaigns_for_cve(
         load_mitre_alias_index,
     )
     from correlation.confidence import campaign_confidence
-    from correlation.ioc_graph import find_shared_infrastructure_v2, ioc_edges_between, batch_ioc_edges_for_peers
+    from correlation.ioc_graph import find_shared_infrastructure_v2, batch_ioc_edges_for_peers
     from correlation.local import kev_exploit_boosters
     from correlation.suppressions import load_suppressions, resolve_suppressed_campaign_ids
 

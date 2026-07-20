@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
 from typing import Any
 
 from correlation.config import get_hub_cve_pulse_cap
