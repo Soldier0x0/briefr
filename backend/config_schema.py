@@ -191,7 +191,7 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("DETECTION_CONTEXT_SYNC_ENABLED", "ml", "bool",
                 help_text="Enable deterministic detection-context cache refresh from CVE and exploit metadata.",
                 display_label="Detection context sync"),
-    ConfigField("DETECTION_CONTEXT_LLM_ENABLED", "ml", "bool",
+    ConfigField("DETECTION_CONTEXT_LLM_ENABLED", "ml", "bool", restart_required=True,
                 help_text="Enable optional LLM extraction of detection artifacts into detection context.",
                 display_label="Detection context LLM"),
     ConfigField("DETECTION_CONTEXT_NUCLEI_ENABLED", "ml", "bool",
