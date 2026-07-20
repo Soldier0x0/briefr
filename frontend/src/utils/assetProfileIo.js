@@ -2,6 +2,19 @@
 
 const EXPORT_VERSION = 1
 
+const SCORING_CRITICALITY = new Set(['MISSION_CRITICAL', 'IMPORTANT', 'SUPPORTING'])
+
+function normalizeScoringCriticality(value) {
+  if (value == null || value === '') return null
+  const v = String(value).trim().toUpperCase()
+  return SCORING_CRITICALITY.has(v) ? v : null
+}
+
+function normalizeOptionalBool(value) {
+  if (value === undefined || value === null) return null
+  return !!value
+}
+
 export function buildEmptyProfile() {
   return {
     version: EXPORT_VERSION,
@@ -12,6 +25,11 @@ export function buildEmptyProfile() {
       industry: 'Technology',
       criticality: 'Medium',
     },
+    // W5 OP/SSVC exposure flags (absent / null = today's scoring behaviour)
+    internet_facing: null,
+    criticality: null,
+    privileged_service: null,
+    ot_safety: null,
     aiSystems: [],
   }
 }
@@ -74,6 +92,16 @@ export async function parseProfileFile(file) {
       industry: data.environment?.industry || 'Technology',
       criticality: data.environment?.criticality || 'Medium',
     },
+    internet_facing: Object.prototype.hasOwnProperty.call(data, 'internet_facing')
+      ? normalizeOptionalBool(data.internet_facing)
+      : null,
+    criticality: normalizeScoringCriticality(data.criticality),
+    privileged_service: Object.prototype.hasOwnProperty.call(data, 'privileged_service')
+      ? normalizeOptionalBool(data.privileged_service)
+      : null,
+    ot_safety: Object.prototype.hasOwnProperty.call(data, 'ot_safety')
+      ? normalizeOptionalBool(data.ot_safety)
+      : null,
     aiSystems: Array.isArray(data.aiSystems) ? data.aiSystems : [],
   }
 }

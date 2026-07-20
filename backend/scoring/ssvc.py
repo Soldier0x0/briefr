@@ -171,11 +171,15 @@ def calculate_ssvc_outcome(
     cve: dict,
     internet_facing: bool | None = None,
     criticality: str | None = None,
+    privileged_service: bool | None = None,
+    ot_safety: bool | None = None,
 ) -> dict:
     """Return SSVC annotation ``{version, outcome, factors, path}``.
 
     Outcomes are exactly ``Act`` | ``Attend`` | ``Track*`` | ``Track``.
     Does not mutate Threat or Operational Priority.
+    Optional W5 flags (``internet_facing``, ``criticality``, …) affect
+    mission prevalence / factors only when present.
     """
     threat = threat or {}
     environment = environment or {}
@@ -202,6 +206,8 @@ def calculate_ssvc_outcome(
         "threat_band": threat.get("band"),
         "internet_facing": internet_facing,
         "criticality": criticality,
+        "privileged_service": privileged_service,
+        "ot_safety": ot_safety,
     }
 
     return {

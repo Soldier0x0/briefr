@@ -380,6 +380,26 @@ is for operator literacy, not a runtime coupling.
 (CONFIRMED/LIKELY Environment, or W5 `criticality=MISSION_CRITICAL`) → `Act`.
 LOW Threat + NO_MATCH → `Track`.
 
+## Addendum — W5 exposure / criticality flags (2026-07-20)
+
+**Status:** ACCEPTED additive profile fields. Affect **OP and/or SSVC only**;
+Threat math is unchanged. Absent flags = pre-W5 behaviour.
+
+**Profile JSON** (My Stack / `POST /risk` body `profile` — no DB migration):
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `internet_facing` | bool \| omitted | OP: KEV/CRIT path + True + env ≠ NO_MATCH → prefer P1 when band would be P2. SSVC: may bump `mission_prevalence`. |
+| `criticality` | `MISSION_CRITICAL` \| `IMPORTANT` \| `SUPPORTING` \| omitted | SSVC mission prevalence; invalid strings ignored. |
+| `privileged_service` | bool \| omitted | Surfaced in SSVC `factors` when set. |
+| `ot_safety` | bool \| omitted | Surfaced in SSVC `factors` when set. |
+
+**OP version:** `operational-priority-1.2`. Encoded test cell: CRIT × POSSIBLE
+base P2 → P1 when `internet_facing=True` (and not NO_MATCH).
+
+Qualitative wizard fields `environment.internetFacing` /
+`environment.criticality` remain separate labels and do not drive these rules.
+
 ## Implementation boundary for M1
 
 M1 is **STANDARD CODING AGENT SUFFICIENT** and makes **zero** scoring-architecture

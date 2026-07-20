@@ -104,3 +104,11 @@ export const INDUSTRY_SECTORS = [
 export const CRITICALITY_LEVELS = ['Low', 'Medium', 'High', 'Critical']
 
 export const INTERNET_FACING_OPTIONS = ['All', 'Some', 'None']
+
+/** W5 scoring criticality (OP/SSVC) — distinct from environment.criticality labels. */
+export const SCORING_CRITICALITY_OPTIONS = [
+  { value: '', label: 'Not set (default)' },
+  { value: 'MISSION_CRITICAL', label: 'Mission critical' },
+  { value: 'IMPORTANT', label: 'Important' },
+  { value: 'SUPPORTING', label: 'Supporting' },
+]

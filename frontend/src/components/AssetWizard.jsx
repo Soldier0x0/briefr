@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Select } from './ui/index.js'
+import { Checkbox, Select, Switch } from './ui/index.js'
 import {
   AI_PRODUCTS,
   APP_CATEGORIES,
@@ -8,6 +8,7 @@ import {
   INDUSTRY_SECTORS,
   INTERNET_FACING_OPTIONS,
   OS_SUGGESTIONS,
+  SCORING_CRITICALITY_OPTIONS,
 } from '../config/assetCatalog.js'
 import { suggestStackCatalog } from '../api.js'
 import { buildEmptyProfile, downloadProfileJson, parseProfileFile } from '../utils/assetProfileIo.js'
@@ -144,6 +145,10 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
       ...prev,
       environment: { ...prev.environment, [field]: value },
     }))
+  }
+
+  function updateScoringFlag(field, value) {
+    setProfile(prev => ({ ...prev, [field]: value }))
   }
 
   function toggleAi(product) {
@@ -283,7 +288,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
         {step === 2 && (
           <div className="asset-wizard-body asset-env">
             <label className="asset-label mono">
-              Internet-facing
+              Internet-facing (qualitative)
               <Select
                 className="asset-select mono"
                 value={profile.environment?.internetFacing || 'Some'}
@@ -301,7 +306,7 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
               />
             </label>
             <label className="asset-label mono">
-              Criticality
+              Criticality (qualitative)
               <Select
                 className="asset-select mono"
                 value={profile.environment?.criticality || 'Medium'}
@@ -309,6 +314,37 @@ export default function AssetWizard({ initialProfile, onComplete, onCancel }) {
                 options={CRITICALITY_LEVELS.map(c => ({ value: c, label: c }))}
               />
             </label>
+
+            <p className="asset-optional mono">
+              // Scoring exposure (OP / SSVC only — optional; unset = default priority)
+            </p>
+            <div className="asset-scoring-flags">
+              <Switch
+                className="asset-scoring-switch"
+                checked={profile.internet_facing === true}
+                onCheckedChange={(on) => updateScoringFlag('internet_facing', on ? true : null)}
+                label="Internet-facing asset (scoring)"
+              />
+              <label className="asset-label mono">
+                Asset criticality (scoring)
+                <Select
+                  className="asset-select mono"
+                  value={profile.criticality || ''}
+                  onChange={(v) => updateScoringFlag('criticality', v || null)}
+                  options={SCORING_CRITICALITY_OPTIONS}
+                />
+              </label>
+              <Checkbox
+                checked={profile.privileged_service === true}
+                onCheckedChange={(on) => updateScoringFlag('privileged_service', on === true ? true : null)}
+                label="Privileged service"
+              />
+              <Checkbox
+                checked={profile.ot_safety === true}
+                onCheckedChange={(on) => updateScoringFlag('ot_safety', on === true ? true : null)}
+                label="OT / safety-critical"
+              />
+            </div>
           </div>
         )}
 

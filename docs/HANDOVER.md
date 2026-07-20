@@ -12,6 +12,29 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 W5 exposure / criticality flags (Task 12)
+
+**Done** (branch `cursor/phase1-w5-exposure-91c2`)
+- Profile JSON fields (no migration): `internet_facing`, `criticality`
+  (`MISSION_CRITICAL`|`IMPORTANT`|`SUPPORTING`), optional `privileged_service` /
+  `ot_safety`. Extracted via `extract_profile_exposure_flags` on `/risk`.
+- OP `operational-priority-1.2`: KEV/CRIT + `internet_facing=True` + env ≠
+  `NO_MATCH` → prefer P1 when band would be P2. Absent flags = prior bands.
+  Threat unchanged.
+- SSVC already accepted flags; `/risk` now threads all four into factors.
+- Asset wizard Environment step: Radix Switch/Select/Checkbox for scoring
+  flags (distinct from qualitative `environment.*` labels).
+- Tests: `backend/tests/test_exposure_flags.py`.
+- Docs: SYSTEM_DESIGN, API_REFERENCE, PRODUCT_STATUS, ADR-002 W5 addendum,
+  sprint W5 + plan Task 12 ticked.
+
+**GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
+Study-guide/learn regen skipped (operator docs only).
+
+**Next:** W6 lint gate. Do not start W6 on this branch.
+
+---
+
 ## 2026-07-20 — Phase 1 W4 SSVC annotation (Task 11)
 
 **Done** (branch `cursor/phase1-w4-ssvc-91c2`)

@@ -136,6 +136,19 @@ Documentation crosswalk (OP primary): **P1↔Act, P2↔Attend, P3↔Track*, P4�
 Overview shows a small SSVC chip beside the OP band when `riskScore.ssvc` is present.
 Vulnrichment CISA SSVC in the drawer remains a separate ingested section.
 
+**Exposure / criticality flags (W5):** optional My Stack profile fields
+`internet_facing` (bool), `criticality`
+(`MISSION_CRITICAL`|`IMPORTANT`|`SUPPORTING`), and optional
+`privileged_service` / `ot_safety` (bool) affect **OP and/or SSVC only** —
+never Threat. Absent flags preserve pre-W5 bands. OP rule (version
+`operational-priority-1.2`): CISA KEV path (Threat CRIT or `is_kev`) +
+`internet_facing=True` + Environment ≠ `NO_MATCH` → prefer P1 when the
+working band would otherwise be P2 (e.g. CRIT×POSSIBLE/WEAK). SSVC
+`mission_prevalence` already consumes `internet_facing` / `criticality`
+when set. Asset wizard Environment step exposes these as optional scoring
+controls (distinct from qualitative `environment.internetFacing` /
+`environment.criticality` labels).
+
 Optional `profile` / `assets` in the POST body personalise Environment (CPE
 match via `matching/cpe.py`, fuzzy graduation via `scoring/asset_match.py`).
 Momentum is computed server-side in the same request via `calculate_momentum()`.
