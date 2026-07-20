@@ -27,6 +27,10 @@ describe('apiQueuePresentation', () => {
     )
   })
 
+  it('formatWaitDetail rounds near minute boundaries without 60s remainder', () => {
+    assert.equal(formatWaitDetail(null, 'rate_limited', 119.6, null), 'Retry in 2m')
+  })
+
   it('highestQueueState prioritizes rate limited over active', () => {
     const state = highestQueueState(
       [

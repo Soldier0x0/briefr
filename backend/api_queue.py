@@ -116,8 +116,8 @@ def _parse_duration_seconds(value: str) -> float:
             return max(0.0, (num / 1000.0) - now)
         if num >= _UNIX_SECONDS_FLOOR:
             return max(0.0, num - now)
-        if num >= 0.0:
-            return num
+        # Relative seconds (including negative / clock-skew junk → 0).
+        return max(0.0, num)
 
     try:
         from email.utils import parsedate_to_datetime

@@ -70,8 +70,10 @@ export function formatElapsed(seconds) {
   // Belt-and-suspenders: never show multi-day "Retry in" from a misparsed epoch.
   const capped = Math.min(n, 3600)
   if (capped < 60) return `${capped.toFixed(capped >= 10 ? 0 : 1)}s`
-  const mins = Math.floor(capped / 60)
-  const secs = Math.round(capped % 60)
+  // Round total first so e.g. 119.6s → "2m", never "1m 60s".
+  const totalSecs = Math.round(capped)
+  const mins = Math.floor(totalSecs / 60)
+  const secs = totalSecs % 60
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
 }
 

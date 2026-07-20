@@ -20,6 +20,7 @@ def test_parse_duration_seconds():
     assert abs(aq._parse_duration_seconds("12ms") - 0.012) < 1e-6
     assert abs(aq._parse_duration_seconds("6m0s") - 360.0) < 0.01
     assert abs(aq._parse_duration_seconds("1h") - 3600.0) < 0.01
+    assert aq._parse_duration_seconds("-5") == 0.0
 
 
 def test_parse_duration_unix_ms_timestamp_not_relative_years():
