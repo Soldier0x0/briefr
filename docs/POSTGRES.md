@@ -61,6 +61,12 @@ If you previously started `briefr-pg-test` on plain `postgres:16-alpine`, recrea
 
 `./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.
 
+### Dual-dialect tests (SQLite default + Postgres CI)
+
+- **Default pytest** (`cd backend && pytest tests/ -q`) uses the **SQLite** zero-config fallback. Production SQL is Postgres-native; parallel `_SQLITE` / `_PG` constants in `backend/db/` keep that suite green.
+- **CI** also runs a **`test-postgres`** job (and local `--full` / `postgres-dev.sh`) against real Postgres — that is the production-dialect signal.
+- **Ratchet:** `backend/tests/test_sql_dialect_pairs.py` requires every module-level `_PG` constant to have a same-file `_SQLITE` sibling or an explicit `# pg-only` marker, and caps the pair count at `ALLOWED_MAX` (may only stay equal or decrease without intentional bump). Testcontainers / Postgres-as-default CI remain a later follow-on (not this ratchet).
+
 ```bash
 # backend/.env (either stack — pick one URL)
 DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr   # compose

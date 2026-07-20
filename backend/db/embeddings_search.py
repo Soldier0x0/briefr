@@ -28,6 +28,7 @@ SearchMode = Literal["hybrid", "keyword", "semantic"]
 _CVE_ID_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 _RRF_K = 60
 
+# pg-only: pgvector ANN (<=>) — no SQLite equivalent
 _ANN_RELATED_PG = """
 SELECT e2.entity_id AS cve_id,
        (1.0 - (e2.embedding <=> e1.embedding))::float8 AS similarity
@@ -43,6 +44,7 @@ ORDER BY e2.embedding <=> e1.embedding
 LIMIT $4
 """
 
+# pg-only: pgvector ANN by query vector — no SQLite equivalent
 _ANN_BY_VECTOR_PG = """
 SELECT entity_type, entity_id,
        (1.0 - (embedding <=> CAST($1 AS vector)))::float8 AS similarity

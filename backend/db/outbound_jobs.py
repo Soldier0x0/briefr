@@ -10,6 +10,7 @@ from db.types import DbConnection
 
 logger = logging.getLogger(__name__)
 
+# pg-only: procrastinate_jobs exists only on Postgres
 _LIST_PG = """
 SELECT id, queue_name, task_name, status::text AS status, scheduled_at,
        attempts, priority, lock, queueing_lock
