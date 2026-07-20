@@ -9,9 +9,16 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import catchup_mode as cm
+from ai.llm_pacing import limits_from_env
+from correlation.config import get_correlation_precompute_max_per_run
+from ml import embeddings as emb
 
 
 def setup_function():
+    cm.reset_catchup_for_tests()
+
+
+def teardown_function():
     cm.reset_catchup_for_tests()
 
 
@@ -87,6 +94,40 @@ def test_effective_caps_and_headroom():
     assert cm.effective_llm_headroom_pct(85) == 95
     assert cm.effective_llm_headroom_pct(99) == 99
     assert cm.effective_llm_headroom_pct(100) == 100
+
+
+def test_embeddings_getter_respects_catchup(monkeypatch):
+    monkeypatch.setenv("EMBEDDINGS_MAX_PER_RUN", "2000")
+    assert emb.get_embeddings_max_per_run() == 2000
+
+    cm.start_catchup(duration_hours=1)
+
+    assert emb.get_embeddings_max_per_run() == 4000
+
+
+def test_correlation_precompute_getter_respects_catchup(monkeypatch):
+    monkeypatch.setenv("CORRELATION_PRECOMPUTE_MAX_PER_RUN", "500")
+    assert get_correlation_precompute_max_per_run() == 500
+
+    cm.start_catchup(duration_hours=1)
+
+    assert get_correlation_precompute_max_per_run() == 1000
+
+
+def test_llm_limits_from_env_respects_catchup_headroom(monkeypatch):
+    monkeypatch.setenv("CATCHUPTEST_RPM_LIMIT", "60")
+    monkeypatch.setenv("CATCHUPTEST_TPM_LIMIT", "1000000")
+    monkeypatch.setenv("CATCHUPTEST_ESTIMATED_TOKENS_PER_REQUEST", "1")
+    monkeypatch.setenv("CATCHUPTEST_HEADROOM_PCT", "85")
+
+    polite = limits_from_env("CATCHUPTEST", default_rpm=60, default_tpm=1000000)
+    assert polite.headroom_pct == 85
+
+    cm.start_catchup(duration_hours=1)
+    active = limits_from_env("CATCHUPTEST", default_rpm=60, default_tpm=1000000)
+
+    assert active.headroom_pct == 95
+    assert active.min_interval_seconds < polite.min_interval_seconds
 
 
 def test_reject_over_max_duration():
