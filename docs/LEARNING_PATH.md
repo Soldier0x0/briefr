@@ -27,7 +27,7 @@ monolith source [`STUDY_GUIDE.html`](STUDY_GUIDE.html). Completeness audit
 
 ## Module 1 — The request path (how a click becomes SQL)
 
-**Files:** `backend/main.py` → `backend/routers/cves.py` →
+**Files:** `backend/main.py` → `backend/routers/cves/` →
 `backend/dependencies.py` → `backend/database.py` (skim; it's 3,197 lines —
 read only the functions your trace hits).
 

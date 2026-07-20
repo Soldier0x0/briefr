@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-20 (Phase 1 W5 exposure / criticality flags)  
+**Last updated:** 2026-07-20 (Phase 1 leftovers closeout / graphify refresh)
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -111,7 +111,7 @@ Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/ar
 |-------|--------|
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
 | Living API / architecture docs | Current — synced through **#514** (O-3 wallboard config) |
-| Graphify knowledge graph | **Doc paths patched 2026-07-11** — `graphify-out/graph.json` + `GRAPH_REPORT.md` updated for `docs/planning/specs/`, `docs/archive/superseded/`, `docs/archive/snapshots/`. Full semantic rebuild: `graphify update .` when CLI available (`5504` nodes, `11760` edges baseline). Hook auto-rebuilds on code commits; doc moves need manual update. |
+| Graphify knowledge graph | **Refreshed 2026-07-20** — `graphify` installed via `graphifyy`; `graphify update .` rebuilt the existing `graphify-out/graph.json` + `GRAPH_REPORT.md` (`10591` nodes, `20315` edges, `631` communities). Doc paths remain patched for `docs/planning/specs/`, `docs/archive/superseded/`, `docs/archive/snapshots/`. Hook auto-rebuilds on code commits; doc moves need manual update. |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |

@@ -12,6 +12,29 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Phase 1 leftovers closeout (Task 4)
+
+**Done** (branch `cursor/phase1-leftovers-91c2`; parent opens PR):
+- **Task 1:** fixed `routers/admin/tokens.py` missing `get_db` regression.
+- **Task 2:** split `backend/routers/cves.py` into the `routers/cves/` package.
+- **Task 3:** extracted IOCLookup hook/components; `IOCLookup.jsx` reduced from
+  ~1408 LOC to ~580 LOC.
+- **Task 4:** `graphify` was installed via `graphifyy` and `graphify update .`
+  rebuilt the existing graph (`10591` nodes, `20315` edges, `631` communities).
+
+**Still parked (honest leftovers):**
+- Repo-wide `ruff format` / full formatting sweep.
+- Testcontainers / Postgres-default CI.
+- Remaining frontend >600 LOC files/components (`App.jsx`, `DetailDrawer/*`,
+  and other audit-listed surfaces).
+
+**Docs:** leftovers plan and sprint notes updated; graphify status refreshed in
+`PRODUCT_STATUS.md`. No runtime/API behavior changed in this docs closeout.
+
+**Next:** parent agent opens the PR; do not create one from this subagent.
+
+---
+
 ## 2026-07-20 — Catch-up mode v1 implemented (tasks 1–6)
 
 **Done** (branch `cursor/catchup-mode-91c2`; PR to be opened by parent agent):
@@ -156,7 +179,6 @@ FE extracts; full format PR when ready.
 **GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented.
 
 **Next:** W7 god-file splits (F1.2/F1.5). Do not start W7 on this branch.
->>>>>>> origin/main
 
 ---
 

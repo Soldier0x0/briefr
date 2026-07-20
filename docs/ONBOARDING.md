@@ -267,8 +267,8 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 
 | If you are working on… | Start here |
 |----------------------|------------|
-| CVE list / filters | `backend/routers/cves.py` (`_build_cve_filters`), `frontend/src/components/CVEFeed.jsx` |
-| CVE detail drawer | `frontend/src/components/DetailDrawer.jsx`, `GET /api/cves/{id}` in `routers/cves.py` |
+| CVE list / filters | `backend/routers/cves/` (`_build_cve_filters`), `frontend/src/components/CVEFeed.jsx` |
+| CVE detail drawer | `frontend/src/components/DetailDrawer/`, `GET /api/cves/{id}` in `routers/cves/` |
 | IOC lookup | `backend/enrichment/ioc.py`, `frontend/src/components/IOCLookup.jsx` |
 | Incidents & News tab | `backend/feeds/case_study_feed.py`, `incident_news.py`, `CaseStudies.jsx` |
 | Risk score | `backend/scoring/risk.py`, `backend/scoring/asset_match.py`, `POST /api/cves/{id}/risk`; UI in `frontend/src/scoring/riskScore.js` |
