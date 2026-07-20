@@ -10,7 +10,7 @@ from correlation.confidence import (
 )
 from correlation.config import get_hub_cve_pulse_cap
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
-from correlation.copy import infrastructure_summary
+from correlation.narrative import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
 from correlation.threatfox_corroboration import (
     batch_threatfox_hits,

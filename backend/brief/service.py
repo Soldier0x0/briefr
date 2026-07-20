@@ -6,7 +6,7 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from correlation.copy import sanitize_pulse_text
+from correlation.narrative import sanitize_pulse_text
 from routers.cves import CVE_SELECT, _row_to_cve_dict, _stack_match_clause
 
 _ISO_DATE_LIKE = "____-__-__"
