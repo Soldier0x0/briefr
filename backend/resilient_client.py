@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import re
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -18,6 +17,7 @@ from typing import Any
 import httpx
 
 from api_queue import (
+    _parse_duration_seconds,
     apply_rate_limit_headers,
     await_api_slot,
     get_api_queue_status,
@@ -140,21 +140,18 @@ def is_circuit_open(source: str) -> bool:
 
 
 def _retry_after_seconds(response: httpx.Response, attempt: int) -> float:
+    """Parse Retry-After for transport retries; always capped at 120s.
+
+    Uses the same duration parser as the API queue so Unix-ms / unit-duration
+    headers cannot be treated as multi-year relative waits (then clamped to 120).
+    """
     for header in ("Retry-After", "retry-after"):
         retry_after = (response.headers.get(header) or "").strip()
         if not retry_after:
             continue
-        try:
-            return min(float(retry_after), 120.0)
-        except ValueError:
-            pass
-        match = re.match(
-            r"^(?:(?P<mins>\d+)m)?(?:(?P<secs>\d+(?:\.\d+)?)s)?$", retry_after
-        )
-        if match:
-            mins = int(match.group("mins") or 0)
-            secs = float(match.group("secs") or 0)
-            return min(mins * 60.0 + secs, 120.0)
+        parsed = _parse_duration_seconds(retry_after)
+        if parsed > 0:
+            return min(parsed, 120.0)
     return RETRY_BACKOFF_SECONDS * (2**attempt)
 
 

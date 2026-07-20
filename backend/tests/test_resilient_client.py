@@ -232,6 +232,20 @@ def test_rate_limit_waits_and_retries(monkeypatch):
     assert "ConnectError" in health["last_error"]
 
 
+def test_retry_after_parses_unix_ms_not_as_relative_years():
+    """Same class as api_queue: OpenRouter-style absolute ms must not become years."""
+    future_ms = int((time.time() + 45.0) * 1000.0)
+    response = httpx.Response(429, headers={"retry-after": str(future_ms)})
+    wait = resilient_client._retry_after_seconds(response, attempt=0)
+    assert 30 < wait <= 120.0
+
+
+def test_retry_after_caps_unit_durations():
+    response = httpx.Response(429, headers={"retry-after": "5m"})
+    wait = resilient_client._retry_after_seconds(response, attempt=0)
+    assert wait == 120.0  # 5m parsed, then transport-retry cap
+
+
 def test_record_circuit_false_does_not_open_feed_health(monkeypatch):
     """Probes must not poison the shared circuit used by real traffic."""
     calls = {"n": 0}
