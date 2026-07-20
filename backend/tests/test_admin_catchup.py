@@ -150,6 +150,54 @@ def test_clear_after_restart_marks_future_active_blob(admin_client):
     assert persisted["cleared_reason"] == "restart"
 
 
+def test_clear_after_restart_marks_expired_active_blob(admin_client):
+    """Active blob whose ends_at is already past must not stay stuck active in DB."""
+    past = datetime.now(timezone.utc) - timedelta(hours=1)
+    payload = {
+        "active": True,
+        "started_at": (past - timedelta(hours=6)).isoformat().replace("+00:00", "Z"),
+        "ends_at": past.isoformat().replace("+00:00", "Z"),
+        "duration_hours": 6,
+        "started_by": "pytest-admin",
+        "cleared_reason": None,
+        "in_wind_down": False,
+        "should_start_new_work": True,
+    }
+    admin_client.portal.call(_write_last_blob, payload)
+
+    cleared = admin_client.portal.call(cm.clear_catchup_after_restart)
+
+    assert cleared["active"] is False
+    assert cleared["cleared_reason"] == "expired"
+    persisted = admin_client.portal.call(_read_last_blob)
+    assert persisted["active"] is False
+    assert persisted["cleared_reason"] == "expired"
+
+
+def test_get_catchup_persists_expire_once(admin_client, monkeypatch):
+    calls = {"n": 0}
+    real = cm.persist_catchup_status
+
+    async def counting_persist(status=None):
+        calls["n"] += 1
+        return await real(status)
+
+    monkeypatch.setattr(cm, "persist_catchup_status", counting_persist)
+
+    cm.start_catchup(duration_hours=1, started_by="pytest")
+    cm._force_ends_at_for_tests(datetime.now(timezone.utc) - timedelta(seconds=1))
+
+    first = admin_client.get("/api/admin/catchup")
+    assert first.status_code == 200
+    assert first.json()["cleared_reason"] == "expired"
+    assert "db_persisted" not in first.json()
+    assert calls["n"] == 1
+
+    second = admin_client.get("/api/admin/catchup")
+    assert second.status_code == 200
+    assert calls["n"] == 1  # no redundant write on poll
+
+
 @pytest.mark.no_auth
 def test_catchup_requires_admin(anon_client):
     assert anon_client.get("/api/admin/catchup").status_code in (401, 403)

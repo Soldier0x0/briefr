@@ -24,8 +24,10 @@ from .router import router
 @router.get("/catchup")
 async def get_catchup(request: Request):
     status = cm.get_catchup_status()
-    if status.get("cleared_reason") == "expired":
-        await cm.persist_catchup_status(status)
+    if not status.get("db_persisted", True):
+        status = await cm.persist_catchup_status(status)
+    else:
+        status = {k: v for k, v in status.items() if k != "db_persisted"}
     return {**status, "api_queue": _api_queue_summary()}
 
 
@@ -42,7 +44,7 @@ async def start_catchup(request: Request, body: dict[str, Any]):
     except cm.CatchupValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    await cm.persist_catchup_status(status)
+    status = await cm.persist_catchup_status(status)
     await audit(request, "catchup.start", _audit_target(status))
     return status
 
@@ -50,7 +52,7 @@ async def start_catchup(request: Request, body: dict[str, Any]):
 @router.post("/catchup/stop")
 async def stop_catchup(request: Request, body: dict[str, Any] | None = None):
     status = cm.stop_catchup(reason="ended_early")
-    await cm.persist_catchup_status(status)
+    status = await cm.persist_catchup_status(status)
     await audit(request, "catchup.stop", status.get("cleared_reason") or "")
     return status
 

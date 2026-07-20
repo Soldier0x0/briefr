@@ -34,10 +34,19 @@ class CatchupState:
     duration_hours: float | None = None
     started_by: str | None = None
     cleared_reason: str | None = None
+    # In-memory only: False means sync_state still needs a write for this transition.
+    db_persisted: bool = True
 
 
 _lock = Lock()
 _state = CatchupState()
+
+
+def _public_status(status: dict) -> dict:
+    """Drop in-memory-only fields before API / sync_state persistence."""
+    out = dict(status)
+    out.pop("db_persisted", None)
+    return out
 
 
 def is_catchup_active() -> bool:
@@ -71,6 +80,7 @@ def start_catchup(
         _state.duration_hours = duration
         _state.started_by = started_by
         _state.cleared_reason = None
+        _state.db_persisted = False
         return _status_locked()
 
 
@@ -80,15 +90,18 @@ def stop_catchup(*, reason: str = "ended_early") -> dict:
         if _state.active:
             _state.active = False
             _state.cleared_reason = reason
+            _state.db_persisted = False
         return _status_locked()
 
 
 async def persist_catchup_status(status: dict | None = None) -> dict:
-    payload = get_catchup_status() if status is None else status
+    payload = _public_status(get_catchup_status() if status is None else status)
     db = await get_db()
     try:
         await set_sync_state_value(db, CATCHUP_MODE_LAST_KEY, json.dumps(payload))
         await db.commit()
+        with _lock:
+            _state.db_persisted = True
     finally:
         await db.close()
     return payload
@@ -103,21 +116,26 @@ async def clear_catchup_after_restart() -> dict:
     try:
         raw = await get_sync_state_value(db, CATCHUP_MODE_LAST_KEY)
         if not raw:
-            return get_catchup_status()
+            return _public_status(get_catchup_status())
 
         try:
             previous = json.loads(raw)
         except (TypeError, json.JSONDecodeError):
-            return get_catchup_status()
+            return _public_status(get_catchup_status())
 
-        if not _last_blob_looked_active(previous):
-            return get_catchup_status()
+        if not isinstance(previous, dict) or previous.get("active") is not True:
+            return _public_status(get_catchup_status())
 
+        # Was marked active in DB: clear it. Future ends_at → interrupted by restart;
+        # already-past ends_at → expired while offline.
         cleared = dict(previous)
         cleared["active"] = False
-        cleared["cleared_reason"] = "restart"
+        cleared["cleared_reason"] = (
+            "restart" if _last_blob_looked_active(previous) else "expired"
+        )
         cleared["in_wind_down"] = False
         cleared["should_start_new_work"] = False
+        cleared.pop("db_persisted", None)
         await set_sync_state_value(db, CATCHUP_MODE_LAST_KEY, json.dumps(cleared))
         await db.commit()
         return cleared
@@ -196,6 +214,7 @@ def _expire_if_needed() -> None:
     if _state.active and _state.ends_at is not None and _state.ends_at <= _utc_now():
         _state.active = False
         _state.cleared_reason = "expired"
+        _state.db_persisted = False
 
 
 def _status_locked() -> dict:
@@ -209,6 +228,7 @@ def _status_locked() -> dict:
         "cleared_reason": _state.cleared_reason,
         "in_wind_down": in_wind_down,
         "should_start_new_work": _state.active and not in_wind_down,
+        "db_persisted": _state.db_persisted,
     }
 
 

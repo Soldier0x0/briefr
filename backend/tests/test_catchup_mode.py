@@ -30,16 +30,25 @@ def _parse_z(value: str) -> datetime:
 def test_default_inactive():
     assert cm.is_catchup_active() is False
     st = cm.get_catchup_status()
-    assert st == {
-        "active": False,
-        "started_at": None,
-        "ends_at": None,
-        "duration_hours": None,
-        "started_by": None,
-        "cleared_reason": None,
-        "in_wind_down": False,
-        "should_start_new_work": False,
-    }
+    assert st["active"] is False
+    assert st["started_at"] is None
+    assert st["ends_at"] is None
+    assert st["duration_hours"] is None
+    assert st["started_by"] is None
+    assert st["cleared_reason"] is None
+    assert st["in_wind_down"] is False
+    assert st["should_start_new_work"] is False
+    assert st["db_persisted"] is True
+
+
+def test_expire_marks_db_not_persisted():
+    cm.start_catchup(duration_hours=1)
+    assert cm.get_catchup_status()["db_persisted"] is False
+    cm._force_ends_at_for_tests(datetime.now(timezone.utc) - timedelta(seconds=1))
+    st = cm.get_catchup_status()
+    assert st["active"] is False
+    assert st["cleared_reason"] == "expired"
+    assert st["db_persisted"] is False
 
 
 def test_start_default_six_hours():
