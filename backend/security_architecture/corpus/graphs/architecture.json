@@ -461,15 +461,158 @@
       ]
     },
     {
-      "id": "routers-admin",
-      "label": "routers.admin",
+      "id": "routers-admin-ai_ops",
+      "label": "routers.admin.ai_ops",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 72,
+      "endpoint_count": 5,
       "source_refs": [
         {
           "type": "file",
-          "ref": "backend/routers/admin.py"
+          "ref": "backend/routers/admin/ai_ops.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-config",
+      "label": "routers.admin.config",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 4,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/config.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-data_ops",
+      "label": "routers.admin.data_ops",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 7,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/data_ops.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-database",
+      "label": "routers.admin.database",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 4,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/database.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-diagnostics",
+      "label": "routers.admin.diagnostics",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 11,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/diagnostics.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-feeds",
+      "label": "routers.admin.feeds",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/feeds.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-jobs",
+      "label": "routers.admin.jobs",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 9,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/jobs.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-storage",
+      "label": "routers.admin.storage",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 11,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/storage.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-system",
+      "label": "routers.admin.system",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 2,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/system.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-tokens",
+      "label": "routers.admin.tokens",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 8,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/tokens.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-webhooks",
+      "label": "routers.admin.webhooks",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/webhooks.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-admin-webhooks_logs",
+      "label": "routers.admin.webhooks_logs",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/webhooks_logs.py"
         }
       ]
     },
@@ -3407,140 +3550,596 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:api_call_events",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:api_call_events",
+      "source": "routers-admin-config",
       "target": "table:api_call_events",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:atlas_case_studies",
-      "source": "routers-admin",
-      "target": "table:atlas_case_studies",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:atlas_techniques",
-      "source": "routers-admin",
-      "target": "table:atlas_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:audit_log",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:audit_log",
+      "source": "routers-admin-config",
       "target": "table:audit_log",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:cve_atlas_map",
-      "source": "routers-admin",
-      "target": "table:cve_atlas_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:cve_change_history",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:cve_change_history",
+      "source": "routers-admin-config",
       "target": "table:cve_change_history",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:cve_embeddings",
-      "source": "routers-admin",
-      "target": "table:cve_embeddings",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:cve_exploits",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:cve_exploits",
+      "source": "routers-admin-config",
       "target": "table:cve_exploits",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:cve_technique_map",
-      "source": "routers-admin",
-      "target": "table:cve_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:cves",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:cves",
+      "source": "routers-admin-config",
       "target": "table:cves",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:epss_history",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:epss_history",
+      "source": "routers-admin-config",
       "target": "table:epss_history",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:feed_cache",
-      "source": "routers-admin",
-      "target": "table:feed_cache",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:group_technique_map",
-      "source": "routers-admin",
-      "target": "table:group_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:hunt_packs",
-      "source": "routers-admin",
-      "target": "table:hunt_packs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:ioc_cache",
-      "source": "routers-admin",
-      "target": "table:ioc_cache",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:kev_deadlines",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:kev_deadlines",
+      "source": "routers-admin-config",
       "target": "table:kev_deadlines",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:mitre_groups",
-      "source": "routers-admin",
-      "target": "table:mitre_groups",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:mitre_techniques",
-      "source": "routers-admin",
-      "target": "table:mitre_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin->table:software_catalog",
-      "source": "routers-admin",
+      "id": "routers-admin-config->table:software_catalog",
+      "source": "routers-admin-config",
       "target": "table:software_catalog",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:sync_state",
-      "source": "routers-admin",
-      "target": "table:sync_state",
+      "id": "routers-admin-data_ops->table:audit_log",
+      "source": "routers-admin-data_ops",
+      "target": "table:audit_log",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:watchlist",
-      "source": "routers-admin",
+      "id": "routers-admin-data_ops->table:cve_change_history",
+      "source": "routers-admin-data_ops",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:cve_exploits",
+      "source": "routers-admin-data_ops",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:cves",
+      "source": "routers-admin-data_ops",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:epss_history",
+      "source": "routers-admin-data_ops",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:feed_cache",
+      "source": "routers-admin-data_ops",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:hunt_packs",
+      "source": "routers-admin-data_ops",
+      "target": "table:hunt_packs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:ioc_cache",
+      "source": "routers-admin-data_ops",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:kev_deadlines",
+      "source": "routers-admin-data_ops",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-data_ops->table:watchlist",
+      "source": "routers-admin-data_ops",
       "target": "table:watchlist",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:webhook_alert_log",
-      "source": "routers-admin",
+      "id": "routers-admin-database->table:audit_log",
+      "source": "routers-admin-database",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:cve_change_history",
+      "source": "routers-admin-database",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:cve_exploits",
+      "source": "routers-admin-database",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:cves",
+      "source": "routers-admin-database",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:epss_history",
+      "source": "routers-admin-database",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:kev_deadlines",
+      "source": "routers-admin-database",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:audit_log",
+      "source": "routers-admin-diagnostics",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:cve_change_history",
+      "source": "routers-admin-diagnostics",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:cve_exploits",
+      "source": "routers-admin-diagnostics",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:cves",
+      "source": "routers-admin-diagnostics",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:epss_history",
+      "source": "routers-admin-diagnostics",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:feed_cache",
+      "source": "routers-admin-diagnostics",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:ioc_cache",
+      "source": "routers-admin-diagnostics",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:kev_deadlines",
+      "source": "routers-admin-diagnostics",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-diagnostics->table:sync_state",
+      "source": "routers-admin-diagnostics",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:audit_log",
+      "source": "routers-admin-feeds",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:cve_change_history",
+      "source": "routers-admin-feeds",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:cve_exploits",
+      "source": "routers-admin-feeds",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:cves",
+      "source": "routers-admin-feeds",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:epss_history",
+      "source": "routers-admin-feeds",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:kev_deadlines",
+      "source": "routers-admin-feeds",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:sync_state",
+      "source": "routers-admin-feeds",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:atlas_case_studies",
+      "source": "routers-admin-jobs",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:atlas_techniques",
+      "source": "routers-admin-jobs",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:audit_log",
+      "source": "routers-admin-jobs",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:cve_atlas_map",
+      "source": "routers-admin-jobs",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:cve_change_history",
+      "source": "routers-admin-jobs",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:cve_exploits",
+      "source": "routers-admin-jobs",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:cve_technique_map",
+      "source": "routers-admin-jobs",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:cves",
+      "source": "routers-admin-jobs",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:epss_history",
+      "source": "routers-admin-jobs",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:feed_cache",
+      "source": "routers-admin-jobs",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:group_technique_map",
+      "source": "routers-admin-jobs",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:ioc_cache",
+      "source": "routers-admin-jobs",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:kev_deadlines",
+      "source": "routers-admin-jobs",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:mitre_groups",
+      "source": "routers-admin-jobs",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:mitre_techniques",
+      "source": "routers-admin-jobs",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:sync_state",
+      "source": "routers-admin-jobs",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:audit_log",
+      "source": "routers-admin-storage",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:cve_change_history",
+      "source": "routers-admin-storage",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:cve_embeddings",
+      "source": "routers-admin-storage",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:cve_exploits",
+      "source": "routers-admin-storage",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:cves",
+      "source": "routers-admin-storage",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:epss_history",
+      "source": "routers-admin-storage",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:feed_cache",
+      "source": "routers-admin-storage",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:ioc_cache",
+      "source": "routers-admin-storage",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:kev_deadlines",
+      "source": "routers-admin-storage",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:sync_state",
+      "source": "routers-admin-storage",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:atlas_case_studies",
+      "source": "routers-admin-system",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:atlas_techniques",
+      "source": "routers-admin-system",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:audit_log",
+      "source": "routers-admin-system",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cve_atlas_map",
+      "source": "routers-admin-system",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cve_change_history",
+      "source": "routers-admin-system",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cve_embeddings",
+      "source": "routers-admin-system",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cve_exploits",
+      "source": "routers-admin-system",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cve_technique_map",
+      "source": "routers-admin-system",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:cves",
+      "source": "routers-admin-system",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:feed_cache",
+      "source": "routers-admin-system",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:group_technique_map",
+      "source": "routers-admin-system",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:ioc_cache",
+      "source": "routers-admin-system",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:mitre_groups",
+      "source": "routers-admin-system",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:mitre_techniques",
+      "source": "routers-admin-system",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-system->table:sync_state",
+      "source": "routers-admin-system",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:audit_log",
+      "source": "routers-admin-tokens",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:cve_change_history",
+      "source": "routers-admin-tokens",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:cve_exploits",
+      "source": "routers-admin-tokens",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:cves",
+      "source": "routers-admin-tokens",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:epss_history",
+      "source": "routers-admin-tokens",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:kev_deadlines",
+      "source": "routers-admin-tokens",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:audit_log",
+      "source": "routers-admin-webhooks",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:cve_change_history",
+      "source": "routers-admin-webhooks",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:cve_exploits",
+      "source": "routers-admin-webhooks",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:cves",
+      "source": "routers-admin-webhooks",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:epss_history",
+      "source": "routers-admin-webhooks",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:feed_cache",
+      "source": "routers-admin-webhooks",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:ioc_cache",
+      "source": "routers-admin-webhooks",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:kev_deadlines",
+      "source": "routers-admin-webhooks",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks_logs->table:cve_exploits",
+      "source": "routers-admin-webhooks_logs",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks_logs->table:cves",
+      "source": "routers-admin-webhooks_logs",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks_logs->table:webhook_alert_log",
+      "source": "routers-admin-webhooks_logs",
       "target": "table:webhook_alert_log",
       "kind": "references_table"
     },
     {
-      "id": "routers-admin->table:webhook_delivery_log",
-      "source": "routers-admin",
+      "id": "routers-admin-webhooks_logs->table:webhook_delivery_log",
+      "source": "routers-admin-webhooks_logs",
       "target": "table:webhook_delivery_log",
       "kind": "references_table"
     },
