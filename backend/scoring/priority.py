@@ -1,4 +1,4 @@
-"""Operational Priority v1.1 — rule-based P1–P4 bands (ADR-002 + W3 EPSS)."""
+"""Operational Priority v1.2 — rule-based P1–P4 bands (ADR-002 + W3 EPSS + W5 exposure)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,10 @@ from typing import Any
 
 from scoring.environment import TIER_RANK
 
-VERSION = "operational-priority-1.1"
+VERSION = "operational-priority-1.2"
+
+# W5 profile criticality values (OP/SSVC only; never Threat)
+CRITICALITY_VALUES = frozenset({"MISSION_CRITICAL", "IMPORTANT", "SUPPORTING"})
 
 PRIORITY_ORDER = ("P1", "P2", "P3", "P4")
 PRIORITY_RANK = {band: idx for idx, band in enumerate(PRIORITY_ORDER)}
@@ -121,12 +124,22 @@ def derive_operational_priority(
     *,
     epss: float | None = None,
     epss_rising: bool = False,
+    internet_facing: bool | None = None,
+    criticality: str | None = None,
+    is_kev: bool | None = None,
 ) -> dict[str, Any]:
-    """Deterministic P1–P4 band from threat × environment, optional EPSS/correlation bumps.
+    """Deterministic P1–P4 band from threat × environment, optional EPSS/exposure/correlation bumps.
 
     EPSS rules are additive (ADR-002 addendum / W3): they never change Threat and
     never de-escalate KEV/CRIT dominance. Escalations stack with correlation but
     never past P1. Missing EPSS is treated as 0.0.
+
+    W5 exposure (ADR-002 addendum): optional profile flags affect OP only.
+    Absent flags preserve pre-W5 bands. Rule — CISA KEV path (``threat_band``
+    CRIT or ``is_kev``) + ``internet_facing=True`` + env tier not NO_MATCH →
+    prefer P1 when the working band would otherwise be P2 (e.g. CRIT×POSSIBLE/
+    WEAK). ``criticality`` is accepted for explainability / future OP use; SSVC
+    consumes it today. Never mutates Threat.
     """
     base = _base_priority(threat_band, env_tier)
     provisional = env_tier == "UNKNOWN"
@@ -135,6 +148,7 @@ def derive_operational_priority(
     epss_val = 0.0 if epss is None else float(epss)
     env_ge_possible = TIER_RANK.get(env_tier, 0) >= TIER_RANK["POSSIBLE"]
     epss_notes: list[str] = []
+    exposure_notes: list[str] = []
 
     # Absolute EPSS ≥ 0.5: one-band escalate for HIGH/MED when Environment ≥ POSSIBLE
     if (
@@ -153,6 +167,20 @@ def derive_operational_priority(
         band = "P2"
         epss_notes.append("Escalated P3→P2 due to rising EPSS.")
 
+    # W5: KEV/CRIT + internet-facing + env not NO_MATCH → prefer P1 over P2
+    kev_path = threat_band == "CRIT" or is_kev is True
+    if (
+        kev_path
+        and internet_facing is True
+        and env_tier != "NO_MATCH"
+        and band == "P2"
+    ):
+        band = "P1"
+        exposure_notes.append(
+            "Escalated P2→P1: CISA KEV / CRIT threat with internet-facing asset "
+            "(Environment not NO_MATCH)."
+        )
+
     if corr_escalation and band in ("P2", "P3"):
         prev = band
         band = _escalate_band(band)
@@ -164,6 +192,8 @@ def derive_operational_priority(
             f"{rationale} Environment unknown — priority may change once a profile is loaded."
         )
     for note in epss_notes:
+        rationale = f"{rationale} {note}"
+    for note in exposure_notes:
         rationale = f"{rationale} {note}"
     if escalated:
         rationale = (
@@ -178,6 +208,40 @@ def derive_operational_priority(
         "rationale": rationale,
         "base_band": base,
     }
+
+
+def extract_profile_exposure_flags(profile: dict | None) -> dict[str, Any]:
+    """Pull optional W5 exposure fields from a My Stack / risk profile dict.
+
+    Absent keys → None (today's OP/SSVC behaviour). Invalid criticality → None.
+    Optional ``privileged_service`` / ``ot_safety`` are bools when present.
+    """
+    out: dict[str, Any] = {
+        "internet_facing": None,
+        "criticality": None,
+        "privileged_service": None,
+        "ot_safety": None,
+    }
+    if not isinstance(profile, dict):
+        return out
+
+    if "internet_facing" in profile:
+        raw = profile.get("internet_facing")
+        if raw is not None:
+            out["internet_facing"] = bool(raw)
+
+    crit_raw = profile.get("criticality")
+    if isinstance(crit_raw, str):
+        crit = crit_raw.strip().upper()
+        if crit in CRITICALITY_VALUES:
+            out["criticality"] = crit
+
+    for key in ("privileged_service", "ot_safety"):
+        if key in profile and profile.get(key) is not None:
+            out[key] = bool(profile.get(key))
+
+    return out
+
 
 
 def operational_priority_sort_key(

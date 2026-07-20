@@ -834,21 +834,27 @@ P3→P2). Threat formula unchanged; low EPSS never lowers KEV/CRIT P1.
 Correlation-based OP escalation is **not** computed on this path (E1-2) — the
 drawer may apply campaign escalation client-side when correlation data arrives.
 
+**Exposure flags (W5):** optional `profile` fields `internet_facing` (bool),
+`criticality` (`MISSION_CRITICAL`|`IMPORTANT`|`SUPPORTING`), plus optional
+`privileged_service` / `ot_safety` (bool). These modify **OP and/or SSVC
+only** — never Threat. Absent → pre-W5 behaviour. OP (`operational-priority-1.2`):
+KEV/CRIT + `internet_facing` + env ≠ `NO_MATCH` prefers P1 when band would be P2.
+
 **SSVC annotation (W4):** response includes parallel `ssvc` object from
 `scoring/ssvc.py` (`version` `ssvc-annotation-1.0`). Outcomes are exactly
 `Act` | `Attend` | `Track*` | `Track`. Computed after Threat / Environment / OP;
-does **not** change Threat math or replace the OP P-band. Optional profile
-fields `internet_facing` / `criticality` are passed through when present
-(otherwise `null` in `factors` — W5 will flesh modifiers).
+does **not** change Threat math or replace the OP P-band. W5 profile
+`internet_facing` / `criticality` (and optional privileged/OT flags) are
+passed into SSVC factors / mission prevalence when present.
 
-**Response shape (ADR-002 + W4):**
+**Response shape (ADR-002 + W4 + W5):**
 
 ```json
 {
   "cve_id": "CVE-2024-0001",
   "threat": { "version": "threat-1.0", "score": 84.0, "band": "CRIT", "components": {} },
   "environment": { "version": "environment-1.0", "tier": "CONFIRMED", "evidence_label": "…" },
-  "operational_priority": { "version": "operational-priority-1.1", "band": "P1", "rationale": "…" },
+  "operational_priority": { "version": "operational-priority-1.2", "band": "P1", "rationale": "…" },
   "ssvc": {
     "version": "ssvc-annotation-1.0",
     "outcome": "Act",
@@ -858,8 +864,10 @@ fields `internet_facing` / `criticality` are passed through when present
       "mission_prevalence": "high",
       "environment_tier": "CONFIRMED",
       "threat_band": "CRIT",
-      "internet_facing": null,
-      "criticality": null
+      "internet_facing": true,
+      "criticality": "MISSION_CRITICAL",
+      "privileged_service": null,
+      "ot_safety": null
     },
     "path": "active+high→Act"
   },

@@ -84,7 +84,7 @@ from intel.provenance import (
     derive_exploit_provenance,
     otx_configured_from_env,
 )
-from scoring.priority import derive_operational_priority
+from scoring.priority import derive_operational_priority, extract_profile_exposure_flags
 from scoring.risk import calculate_momentum, calculate_risk_score
 from scoring.ssvc import calculate_ssvc_outcome
 from scoring.threat import calculate_threat_score
@@ -116,7 +116,14 @@ class AssetMatchRequest(BaseModel):
 
 
 class RiskScoreRequest(BaseModel):
-    """Optional asset profile for personalised Risk Score v1.1b."""
+    """Optional asset profile for personalised Risk Score / ADR-002 OP.
+
+    ``profile`` may include W5 exposure fields (OP/SSVC only, never Threat):
+    ``internet_facing`` (bool), ``criticality``
+    (``MISSION_CRITICAL``|``IMPORTANT``|``SUPPORTING``), and optional
+    ``privileged_service`` / ``ot_safety`` (bool). Absent flags preserve
+    pre-W5 behaviour.
+    """
 
     profile: dict | None = None
     assets: list[AssetMatchItem] = Field(default_factory=list, max_length=500)
@@ -1522,31 +1529,27 @@ async def cve_risk_score(cve_id: str, body: RiskScoreRequest | None = None):
             isinstance(sig, dict) and sig.get("type") == "epss_rising"
             for sig in mom_signals
         )
+        # W5: optional profile exposure flags → OP modifiers + SSVC factors only.
+        flags = extract_profile_exposure_flags(profile)
         operational_priority = derive_operational_priority(
             threat.get("band", "LOW"),
             environment.get("tier", "UNKNOWN"),
             corr_escalation=False,
             epss=cve.get("epss_score"),
             epss_rising=epss_rising,
+            internet_facing=flags["internet_facing"],
+            criticality=flags["criticality"],
+            is_kev=bool(cve.get("is_kev")),
         )
         # W4: SSVC annotation parallel to OP — does not mutate Threat or OP.
-        # Optional W5 profile flags when already present; else None.
-        internet_facing = None
-        criticality = None
-        if isinstance(profile, dict):
-            if "internet_facing" in profile:
-                internet_facing = profile.get("internet_facing")
-                if internet_facing is not None:
-                    internet_facing = bool(internet_facing)
-            crit_raw = profile.get("criticality")
-            if isinstance(crit_raw, str) and crit_raw.strip():
-                criticality = crit_raw.strip()
         ssvc = calculate_ssvc_outcome(
             threat=threat,
             environment=environment,
             cve=cve,
-            internet_facing=internet_facing,
-            criticality=criticality,
+            internet_facing=flags["internet_facing"],
+            criticality=flags["criticality"],
+            privileged_service=flags["privileged_service"],
+            ot_safety=flags["ot_safety"],
         )
     finally:
         await db.close()

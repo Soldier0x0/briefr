@@ -435,13 +435,14 @@ def calculate_ssvc_outcome(
 **Interfaces:**
 - Profile may include: `internet_facing: bool`, `criticality: "MISSION_CRITICAL"|"IMPORTANT"|"SUPPORTING"|null`, optional `privileged_service`, `ot_safety`
 
-- [ ] **Step 1: Failing OP tests** — CISA KEV + internet_facing + env not NO_MATCH prefers P1 when applicable per design table cells written into the test.
+- [x] **Step 1: Failing OP tests** — CISA KEV + internet_facing + env not NO_MATCH prefers P1 when applicable per design table cells written into the test.
 
-- [ ] **Step 2: Thread flags from risk request body profile into OP/SSVC.**
+- [x] **Step 2: Thread flags from risk request body profile into OP/SSVC.**
 
-- [ ] **Step 3: Asset wizard UI: optional toggles (design-system tokens; Radix Switch/Checkbox).**
+- [x] **Step 3: Asset wizard UI: optional toggles (design-system tokens; Radix Switch/Checkbox).**
 
-- [ ] **Step 4: Docs + graphify + PR + merge.**
+- [x] **Step 4: Docs + graphify + PR + merge.**
+  (Docs + ADR-002 W5 addendum + sprint tick this PR. GRAPHIFY_MISSING — CLI not on PATH / no `graphify-out/`. Push branch only per wave instructions; no PR/merge and no W6 in this agent turn.)
 
 ---
 
