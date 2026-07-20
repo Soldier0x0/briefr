@@ -90,7 +90,7 @@ def test_risk_endpoint_does_not_call_correlation(client, monkeypatch):
     async def _forbidden_correlation(*_args, **_kwargs):
         raise AssertionError("get_correlation_for_cve should not run on /risk")
 
-    monkeypatch.setattr("routers.cves.get_correlation_for_cve", _forbidden_correlation)
+    monkeypatch.setattr("routers.cves.intel.get_correlation_for_cve", _forbidden_correlation)
     res = client.post("/api/cves/CVE-2024-RISK/risk", json={})
     assert res.status_code == 200
     body = res.json()

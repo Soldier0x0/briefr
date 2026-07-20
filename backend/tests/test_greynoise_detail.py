@@ -18,7 +18,7 @@ def client():
 def test_cve_detail_does_not_auto_fetch_greynoise(client, monkeypatch):
     monkeypatch.setenv("GREYNOISE_API_KEY", "test-gn-key")
     with patch(
-        "routers.cves.greynoise_scans_for_cve",
+        "routers.cves.intel.greynoise_scans_for_cve",
         new_callable=AsyncMock,
     ) as mock_gn:
         resp = client.get("/api/cves/CVE-2024-0001")

@@ -145,6 +145,9 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/scheduler/resume-all"),
     ("GET", "/api/admin/scheduler/history"),
     ("POST", "/api/admin/scheduler/run"),
+    ("GET", "/api/admin/catchup"),
+    ("POST", "/api/admin/catchup/start"),
+    ("POST", "/api/admin/catchup/stop"),
     ("POST", "/api/admin/feeds/{source_id}/reset-circuit"),
     ("POST", "/api/admin/feeds/epss/force-resync"),
     ("POST", "/api/admin/incidents/refresh"),
@@ -260,12 +263,12 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/ioc/lookup"] == "routers.ioc"
     assert by_path["/api/otx/pulses/{pulse_id}/iocs"] == "routers.ioc"
     # Phase 3: cves + meta groups
-    assert by_path["/api/changes"] == "routers.cves"
-    assert by_path["/api/cves"] == "routers.cves"
-    assert by_path["/api/cves/export"] == "routers.cves"
-    assert by_path["/api/cves/{cve_id}"] == "routers.cves"
-    assert by_path["/api/cves/{cve_id}/detection"] == "routers.cves"
-    assert by_path["/api/kev/deadlines"] == "routers.cves"
+    assert by_path["/api/changes"] == "routers.cves.changes"
+    assert by_path["/api/cves"] == "routers.cves.list"
+    assert by_path["/api/cves/export"] == "routers.cves.list"
+    assert by_path["/api/cves/{cve_id}"] == "routers.cves.detail"
+    assert by_path["/api/cves/{cve_id}/detection"] == "routers.cves.intel"
+    assert by_path["/api/kev/deadlines"] == "routers.cves.intel"
     assert by_path["/api/version"] == "routers.meta"
     assert by_path["/api/time"] == "routers.meta"
     assert by_path["/api/usage/ioc"] == "routers.meta"

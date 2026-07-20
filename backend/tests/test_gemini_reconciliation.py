@@ -84,9 +84,9 @@ def test_detail_enrich_otx_rolls_back_on_failure():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.load_otx_pulses_for_cve",
+                "routers.cves.detail.load_otx_pulses_for_cve",
                 AsyncMock(side_effect=RuntimeError("otx db fail")),
             ):
                 result = await _detail_enrich_otx("CVE-2024-0001", "otx-key")
@@ -104,9 +104,9 @@ def test_detail_enrich_otx_rollback_failure_still_returns_empty():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.load_otx_pulses_for_cve",
+                "routers.cves.detail.load_otx_pulses_for_cve",
                 AsyncMock(side_effect=RuntimeError("otx db fail")),
             ):
                 result = await _detail_enrich_otx("CVE-2024-0001", "otx-key")
@@ -123,9 +123,9 @@ def test_detail_enrich_circl_rolls_back_on_failure():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.enrich_cve_circl",
+                "routers.cves.detail.enrich_cve_circl",
                 AsyncMock(side_effect=RuntimeError("circl db fail")),
             ):
                 result = await _detail_enrich_circl({"cve_id": "CVE-2024-0001"})
@@ -143,9 +143,9 @@ def test_detail_enrich_circl_rollback_failure_still_returns_empty():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.enrich_cve_circl",
+                "routers.cves.detail.enrich_cve_circl",
                 AsyncMock(side_effect=RuntimeError("circl db fail")),
             ):
                 result = await _detail_enrich_circl({"cve_id": "CVE-2024-0001"})
@@ -162,9 +162,9 @@ def test_detail_enrich_circl_non_dict_result_returns_empty_patch():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.enrich_cve_circl",
+                "routers.cves.detail.enrich_cve_circl",
                 AsyncMock(return_value=None),
             ):
                 result = await _detail_enrich_circl({"cve_id": "CVE-2024-0001"})
@@ -181,13 +181,13 @@ def test_detail_enrich_exploits_rolls_back_on_failure():
     db.commit = AsyncMock()
 
     async def _run():
-        with patch("routers.cves.get_db", AsyncMock(return_value=db)):
+        with patch("routers.cves.detail.get_db", AsyncMock(return_value=db)):
             with patch(
-                "routers.cves.load_public_exploits_for_cve",
+                "routers.cves.detail.load_public_exploits_for_cve",
                 AsyncMock(side_effect=RuntimeError("sploitus fail")),
             ):
                 with patch(
-                    "routers.cves.derive_exploit_provenance",
+                    "routers.cves.detail.derive_exploit_provenance",
                     AsyncMock(return_value={"status": "pending", "source": "x", "as_of": None}),
                 ):
                     result = await _detail_enrich_exploits(
