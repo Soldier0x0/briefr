@@ -22,6 +22,7 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "vulnrichment_snapshot_sync": asyncio.Lock(),
     "cvelistv5_incremental_sync": asyncio.Lock(),
     "embeddings_backfill": asyncio.Lock(),
+    "catchup_tick": asyncio.Lock(),
     "llm_product_extraction": asyncio.Lock(),
     "detection_context_sync": asyncio.Lock(),
     "detection_context_llm": asyncio.Lock(),

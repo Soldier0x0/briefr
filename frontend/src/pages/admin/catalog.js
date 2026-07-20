@@ -93,6 +93,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Builds the hybrid search index for CVEs, MITRE techniques, and campaigns.',
     refreshButton: 'Rebuild search index',
   },
+  catchup_tick: {
+    label: 'Catch-up tick',
+    short: 'Catch-up',
+    operatorName: 'Catch-up tick',
+    analystDescription: 'Kicks eligible backlog jobs while Catch-up mode is active.',
+    refreshButton: 'Run catch-up tick',
+  },
   llm_product_extraction: {
     label: 'Affected-product extraction',
     short: 'LLM extraction',

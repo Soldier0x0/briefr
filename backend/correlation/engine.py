@@ -17,6 +17,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from db.correlation import list_cve_ids_for_precompute, upsert_correlation_cve_snapshot
 from db.timeutil import utcnow_str
 
 logger = logging.getLogger(__name__)
@@ -491,6 +492,43 @@ async def _recover_db_transaction(db) -> None:
 
 # ── Nightly batch job ─────────────────────────────────────
 
+async def run_correlation_precompute_slice(db, progress_cb=None) -> dict:
+    stats = {"precompute_snapshots": 0}
+
+    # Commit prior work so a precompute failure cannot roll it back.
+    await db.commit()
+
+    max_per_run = get_correlation_precompute_max_per_run()
+    precompute_ids = await list_cve_ids_for_precompute(db, max_per_run)
+    if progress_cb:
+        progress_cb(
+            f"Precomputing correlation snapshots for {len(precompute_ids)} CVEs…"
+        )
+    for index, pre_cve_id in enumerate(precompute_ids):
+        if progress_cb and index % 25 == 0:
+            progress_cb(
+                f"Precompute snapshot {pre_cve_id} ({index + 1}/{len(precompute_ids)})…"
+            )
+        try:
+            result = await _compute_correlation_for_cve(db, pre_cve_id, user_sector="")
+            hub_suppressed = int(
+                (result.get("meta") or {}).get("hub_edges_suppressed") or 0
+            )
+            await upsert_correlation_cve_snapshot(
+                db,
+                pre_cve_id,
+                result,
+                hub_edges_suppressed=hub_suppressed,
+            )
+            await db.commit()
+            stats["precompute_snapshots"] += 1
+        except Exception as exc:
+            logger.warning("Correlation precompute skip %s: %s", pre_cve_id, exc)
+            await _recover_db_transaction(db)
+
+    return stats
+
+
 async def run_nightly_correlation(db, progress_cb=None) -> dict:
     """
     Nightly: Run all three correlation levels + v2 campaign rebuild.
@@ -593,38 +631,8 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
 
     stats["precompute_snapshots"] = 0
     if get_correlation_precompute_enabled():
-        from db.correlation import list_cve_ids_for_precompute, upsert_correlation_cve_snapshot
-
-        # Commit nightly correlation work so a precompute failure cannot roll it back.
-        await db.commit()
-
-        max_per_run = get_correlation_precompute_max_per_run()
-        precompute_ids = await list_cve_ids_for_precompute(db, max_per_run)
-        if progress_cb:
-            progress_cb(
-                f"Precomputing correlation snapshots for {len(precompute_ids)} CVEs…"
-            )
-        for index, pre_cve_id in enumerate(precompute_ids):
-            if progress_cb and index % 25 == 0:
-                progress_cb(
-                    f"Precompute snapshot {pre_cve_id} ({index + 1}/{len(precompute_ids)})…"
-                )
-            try:
-                result = await _compute_correlation_for_cve(db, pre_cve_id, user_sector="")
-                hub_suppressed = int(
-                    (result.get("meta") or {}).get("hub_edges_suppressed") or 0
-                )
-                await upsert_correlation_cve_snapshot(
-                    db,
-                    pre_cve_id,
-                    result,
-                    hub_edges_suppressed=hub_suppressed,
-                )
-                await db.commit()
-                stats["precompute_snapshots"] += 1
-            except Exception as exc:
-                logger.warning("Correlation precompute skip %s: %s", pre_cve_id, exc)
-                await _recover_db_transaction(db)
+        precompute_stats = await run_correlation_precompute_slice(db, progress_cb=progress_cb)
+        stats["precompute_snapshots"] = precompute_stats.get("precompute_snapshots", 0)
 
     await delete_feed_cache_prefix(db, "correlation:v2:")
     await delete_feed_cache_prefix(db, "correlation:v1:")

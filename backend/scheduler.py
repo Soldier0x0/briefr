@@ -11,6 +11,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
+from catchup_mode import get_catchup_status
+from correlation.config import get_correlation_precompute_enabled
+from correlation.engine import run_correlation_precompute_slice
 from db.errors import DatabaseLockedError, format_db_exception_message
 from scheduler_locks import any_locked, get_lock, locked_jobs
 from database import (
@@ -1439,6 +1442,67 @@ async def run_nightly_correlation() -> bool:
     return True
 
 
+async def run_correlation_precompute_tick() -> dict:
+    """Run only the bounded correlation snapshot precompute slice."""
+    if not get_correlation_precompute_enabled():
+        return {"precompute_snapshots": 0}
+
+    lock = get_lock("nightly_correlation")
+    if lock is None or lock.locked():
+        logger.info("Correlation precompute tick skipped: nightly correlation in progress")
+        return {"precompute_snapshots": 0}
+
+    async with lock:
+        db = await get_db()
+        try:
+            def _progress(msg: str) -> None:
+                _job_progress["catchup_tick"] = msg
+
+            return await run_correlation_precompute_slice(db, progress_cb=_progress)
+        finally:
+            await db.close()
+
+
+async def run_catchup_tick() -> bool:
+    """Kick eligible backlog work while Catch-up mode is active."""
+    lock = get_lock("catchup_tick")
+    if lock is None or lock.locked():
+        logger.info("Catch-up tick already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    _records = 0
+    async with lock:
+        try:
+            status = get_catchup_status()
+            if not status.get("should_start_new_work"):
+                logger.debug("Catch-up tick skipped: inactive or in wind-down")
+                return True
+
+            await run_embeddings_sync()
+
+            if get_correlation_precompute_enabled():
+                stats = await run_correlation_precompute_tick()
+                _records = int(stats.get("precompute_snapshots") or 0)
+                logger.info("Catch-up tick precomputed %d correlation snapshot(s)", _records)
+        except Exception as exc:
+            _had_error = True
+            _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+            logger.error("Catch-up tick failed: %s", exc, exc_info=True)
+        finally:
+            _job_progress.pop("catchup_tick", None)
+            await _write_job_last_run(
+                "catchup_tick",
+                _start,
+                records=_records,
+                had_error=_had_error,
+                error_message=_error_msg,
+            )
+    return not _had_error
+
+
 async def run_otx_nightly_sync() -> bool:
     if get_lock("otx_nightly_correlation").locked():
         logger.warning("OTX nightly correlation already in progress — skipping")
@@ -2156,6 +2220,16 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=90),
     )
 
+    scheduler.add_job(
+        run_catchup_tick,
+        trigger=IntervalTrigger(minutes=5, timezone=sched_tz),
+        id="catchup_tick",
+        name="Catch-up tick",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
     cpe_catalog_hours = int(os.environ.get("CPE_CATALOG_SYNC_INTERVAL_HOURS", "6"))
     scheduler.add_job(
         run_cpe_catalog_sync,
@@ -2454,6 +2528,8 @@ def _trigger_for_job(job_id: str) -> IntervalTrigger | CronTrigger | None:
     if job_id == "embeddings_backfill":
         hours = int(os.environ.get("EMBEDDINGS_SYNC_INTERVAL_HOURS", "6"))
         return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "catchup_tick":
+        return IntervalTrigger(minutes=5, timezone=sched_tz)
     if job_id == "llm_product_extraction":
         hours = int(os.environ.get("LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "6"))
         return IntervalTrigger(hours=hours, timezone=sched_tz)

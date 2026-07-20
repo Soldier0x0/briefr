@@ -245,6 +245,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "vulnrichment_snapshot_sync": "run_vulnrichment_sync",
     "cvelistv5_incremental_sync": "run_cvelistv5_sync",
     "embeddings_backfill": "run_embeddings_sync",
+    "catchup_tick": "run_catchup_tick",
     "llm_product_extraction": "run_llm_extraction_sync",
     "detection_context_sync": "run_detection_context_sync_job",
     "detection_context_llm": "run_detection_context_llm_job",
