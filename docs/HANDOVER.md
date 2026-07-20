@@ -20,6 +20,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 - **FE display-only:** removed live `calculateThreatScore` export; DetailDrawer already consumes API `threat` / `environment` / `operational_priority`. S1/S4 tests use `frontend/src/scoring/fixtures/threat_parity.json`.
 - **Correlation escalation:** FE merge kept temporary; SYSTEM_DESIGN note + FE/backend parity tests for HIGH×UNKNOWN / MED×UNKNOWN contracts.
 - Docs: PRODUCT_STATUS, SYSTEM_DESIGN, API_REFERENCE, plan Tasks 5–9 + sprint W2 ticked.
+- **Verify gate:** monkeypatch TokenBucket rates in `test_login_rate_limited_per_ip` / wallboard rate tests (direct mutation left `rate_per_minute=2` and failed `test_get_bucket_stats` with assert 2==5).
 
 **GRAPHIFY_MISSING:** `graphify` CLI not on PATH; no `graphify-out/` invented. Study-guide/learn regen skipped (no taught scoring chapter source text changed beyond operator docs).
 
