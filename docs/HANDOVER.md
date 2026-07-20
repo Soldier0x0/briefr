@@ -12,6 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Wave 5 Task 8: stack backfill rate-limit durable resume
+
+**Done** (branch `cursor/w5-stack-resume-91c2`):
+- **RCA:** `process_stack_backfill_run` persisted run/checkpoint status
+  `deferred` on NVD rate limit, but returned immediately after commit; the
+  operator copy promised automatic resume even though no Procrastinate job was
+  scheduled.
+- **Fix:** rate-limit deferral now queues `jobs:stack_backfill` with
+  `queueing_lock=f"stack_backfill:{run_id}"` and `schedule_in={"seconds": 180}`
+  when the durable app is available. `AlreadyEnqueued` remains an idempotent
+  success; unavailable durable queue leaves truthful manual-resume copy.
+- **Guard:** `test_rate_limited_run_schedules_durable_resume` covers the worker
+  branch, schedule delay, per-run lock, defer payload, status, and copy.
+
+**Verify:** `cd backend && pytest tests/test_stack_backfill_idempotency.py tests/test_stack_backfill_q4.py -q`.
+
+---
+
 ## 2026-07-20 — Wave 4 Task 7: FEED surfaces technique/campaign semantic hits
 
 **Done** (branch `cursor/w4-semantic-hits-91c2`):

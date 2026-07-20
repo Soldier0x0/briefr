@@ -152,6 +152,57 @@ def test_terminal_run_is_never_reclaimed(tmp_path):
     run_db_test(run())
 
 
+def test_rate_limited_run_schedules_durable_resume(tmp_path, monkeypatch):
+    db_file = _setup_db(tmp_path)
+    configured = []
+    deferred = []
+
+    class FakeDeferrer:
+        async def defer_async(self, **kwargs):
+            deferred.append(kwargs)
+            return 123
+
+    class FakeTask:
+        def configure(self, **kwargs):
+            configured.append(kwargs)
+            return FakeDeferrer()
+
+    async def fake_page(*_args, **_kwargs):
+        return [], 0, "rate_limited"
+
+    async def fake_open_app():
+        return object()
+
+    async def run():
+        import database as db_module
+        import services.stack_backfill_worker as worker
+
+        db_module.DB_PATH = db_file
+        await db_module.init_db()
+        run_id = await _make_run(db_module)
+
+        monkeypatch.setattr(worker, "fetch_cves_keyword_page", fake_page)
+        monkeypatch.setattr(worker, "is_procrastinate_enabled", lambda: True, raising=False)
+        monkeypatch.setattr(worker, "open_app", fake_open_app, raising=False)
+        monkeypatch.setattr(worker, "_get_stack_backfill_task", lambda: FakeTask(), raising=False)
+
+        result = await worker.process_stack_backfill_run(run_id)
+
+        row = await _run_row(db_module, run_id)
+        assert result == {"ok": True, "status": "deferred", "resume_scheduled": True}
+        assert row["status"] == "deferred"
+        assert row["progress_message"] == "Rate limited — durable resume queued."
+        assert configured == [
+            {
+                "queueing_lock": f"stack_backfill:{run_id}",
+                "schedule_in": {"seconds": 180},
+            }
+        ]
+        assert deferred == [{"run_id": run_id}]
+
+    run_db_test(run())
+
+
 async def _run_row(db_module, run_id: int) -> dict:
     db = await db_module.get_db()
     try:

@@ -11,6 +11,8 @@ import os
 import time
 from datetime import datetime, timezone
 
+from procrastinate.exceptions import AlreadyEnqueued
+
 from database import get_db
 from db.cve import ADDITIVE_ENRICHMENT_COMMIT_CHUNK
 from db.enrichment import mark_cves_as_kev, update_epss_scores, upsert_kev_batch
@@ -25,9 +27,50 @@ from db.stack_backfill import (
 from feeds.epss import fetch_epss_bulk
 from feeds.kev import fetch_kev
 from feeds.nvd import RESULTS_PER_PAGE, fetch_cves_keyword_page
+from jobs.app import is_procrastinate_enabled, open_app
 from jobs.context import outbound_context
 
 logger = logging.getLogger(__name__)
+
+STACK_BACKFILL_RATE_LIMIT_RESUME_SECONDS = 180
+
+
+def _get_stack_backfill_task():
+    # Imported lazily because jobs.tasks imports this worker to register the task.
+    from jobs.tasks import stack_backfill_tick
+
+    return stack_backfill_tick
+
+
+async def _defer_rate_limit_resume(run_id: int) -> bool:
+    if not is_procrastinate_enabled():
+        return False
+    app = await open_app()
+    if app is None:
+        logger.warning(
+            "PROCRASTINATE_ENABLED=1 but no durable app is available — stack backfill "
+            "run %s remains deferred",
+            run_id,
+        )
+        return False
+    try:
+        await _get_stack_backfill_task().configure(
+            queueing_lock=f"stack_backfill:{run_id}",
+            schedule_in={"seconds": STACK_BACKFILL_RATE_LIMIT_RESUME_SECONDS},
+        ).defer_async(run_id=run_id)
+    except AlreadyEnqueued:
+        logger.info(
+            "stack backfill resume already queued for run %s — skipping duplicate",
+            run_id,
+        )
+    except Exception:
+        logger.warning(
+            "Failed to schedule stack backfill rate-limit resume for run %s",
+            run_id,
+            exc_info=True,
+        )
+        return False
+    return True
 
 
 async def process_stack_backfill_run(run_id: int) -> dict:
@@ -137,10 +180,25 @@ async def _process(run_id: int) -> dict:
                     db,
                     run_id,
                     status="deferred",
-                    progress_message="Rate limited — will resume automatically.",
+                    progress_message="Rate limited — scheduling durable resume.",
                 )
                 await db.commit()
-                return {"ok": True, "status": "deferred"}
+                resume_scheduled = await _defer_rate_limit_resume(run_id)
+                await update_run(
+                    db,
+                    run_id,
+                    progress_message=(
+                        "Rate limited — durable resume queued."
+                        if resume_scheduled
+                        else "Rate limited — resume manually when ready."
+                    ),
+                )
+                await db.commit()
+                return {
+                    "ok": True,
+                    "status": "deferred",
+                    "resume_scheduled": resume_scheduled,
+                }
             if err in ("http_5xx", "error"):
                 await upsert_checkpoint(
                     db,
