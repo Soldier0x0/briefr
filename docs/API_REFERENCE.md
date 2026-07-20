@@ -1592,7 +1592,7 @@ generator's output exactly.
   "clusters": [{"id": "api", "label": "API Routers", "kind": "component"}, "..."],
   "nodes": [
     {"id": "routers-cves", "label": "routers.cves", "kind": "component", "cluster": "api",
-     "endpoint_count": 22, "source_refs": [{"type": "file", "ref": "backend/routers/cves.py"}]},
+     "endpoint_count": 22, "source_refs": [{"type": "file", "ref": "backend/routers/cves/"}]},
     {"id": "table:cves", "label": "cves", "kind": "table", "cluster": "database",
      "source_refs": [{"type": "table", "ref": "cves"}]},
     {"id": "job:nvd_incremental_sync", "label": "NVD Incremental Sync", "kind": "job",

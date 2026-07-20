@@ -201,7 +201,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](diagrams/flow_cve_feed
 ### B. CVE detail drill-down
 
 1. **Card click:** `App.jsx:handleSelectCVE` sets list CVE, then `fetchCVE(cve_id)` → `GET /api/cves/{id}`.
-2. **Server path:** `_load_cve_detail_from_db` reads core rows and releases the pool connection; Sploitus, OTX, OSV, and CIRCL enrich via `asyncio.gather` with short-lived connections per task (`routers/cves.py:get_cve`). GreyNoise remains on-demand only (`GET /api/cves/{id}/greynoise-scans`).
+2. **Server path:** `_load_cve_detail_from_db` reads core rows and releases the pool connection; Sploitus, OTX, OSV, and CIRCL enrich via `asyncio.gather` with short-lived connections per task (`routers/cves/detail.py:get_cve`). GreyNoise remains on-demand only (`GET /api/cves/{id}/greynoise-scans`).
 3. **Drawer opens** with enriched CVE; parallel client fetches on `cve_id` change:
    - `POST /api/cves/{id}/risk` (immediate — canonical score; optional profile body)
    - `GET /api/cves/{id}/sentences` (immediate)
