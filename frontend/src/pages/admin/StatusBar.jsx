@@ -93,7 +93,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
       {confirmRestart && (
         <ConfirmModal
           actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
-          title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart now?'}
+          title={confirmRestart === 'drain' ? 'Finish jobs, then restart' : 'Restart now?'}
           message={
             confirmRestart === 'drain'
               ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'

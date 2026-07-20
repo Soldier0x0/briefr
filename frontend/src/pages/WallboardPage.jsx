@@ -232,7 +232,7 @@ function PageTwo({ payload, activeTile }) {
             <thead>
               <tr>
                 <th>Source</th>
-                <th>Circuit</th>
+                <th>Status</th>
                 <th>Last success</th>
               </tr>
             </thead>
@@ -242,7 +242,7 @@ function PageTwo({ payload, activeTile }) {
                 <tr key={row.source}>
                   <td className="mono">{row.source}</td>
                   <td className={row.circuit_open ? 'wallboard-status-degraded' : 'wallboard-status-ok'}>
-                    {row.circuit_open ? 'OPEN' : 'OK'}
+                    {row.circuit_open ? 'PAUSED' : 'OK'}
                   </td>
                   <td className="mono">{row.last_success || '—'}</td>
                 </tr>

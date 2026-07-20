@@ -12,7 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Ops wording + bulk DB command_timeout class fix
+
+**Done**
+- **Class fix:** `sync_vulncheck_exploited_flags`, `mark_cves_as_kev`, `update_epss_scores`, and `snapshot_epss_scores` accept `commit_every`; scheduler + stack backfill pass `ADDITIVE_ENRICHMENT_COMMIT_CHUNK`. EPSS snapshot pages by `cve_id` keyset (no single whole-table INSERT…SELECT).
+- **UI copy:** operator-facing “circuit open / Drain / LOCKED-as-word / watermark / token-bucket / RSS / Tier A” → plain language (Sources paused, Finish jobs then restart, RUNNING, sync checkpoint, rate-limit slots, process memory, historical backfill). Internal API fields unchanged.
+- Plan: `docs/superpowers/plans/2026-07-20-ops-wording-db-timeout.md`.
+
+**Why:** VulnCheck KEV Tier Sync failed with asyncpg `command_timeout` on bulk `cves` writers; same pattern as additive enrichment. Operator jargon inventory approved for product UI.
+
+**Next:** merge after Gemini disposition; operators can Retry VulnCheck after deploy.
+
+---
+
 ## 2026-07-19 — Docs UI: shared palette + a11y (study-guide + learn)
+
 
 **Done**
 - Shared dark-only palette SSOT: `docs/assets/briefr-docs-tokens.css` (mirrors product `tokens.css` dark neutrals / accent / soft focus-ring).

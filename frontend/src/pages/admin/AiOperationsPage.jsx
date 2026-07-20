@@ -305,7 +305,7 @@ function ProvidersTab({ providers }) {
     <div className="admin-card">
       <div className="admin-card-title">
         Provider health
-        <HelpTip text="Circuit state from the shared outbound client. Providers without traffic yet show empty health until first call." />
+        <HelpTip text="Pause state from the shared outbound client. Providers without traffic yet show empty health until first call." />
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table className="admin-table">

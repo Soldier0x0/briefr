@@ -158,7 +158,7 @@ export default function SchedulerPage({ toast, system }) {
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           Pinned quick triggers
-          <HelpTip text="Shortcuts for the most common syncs — every job (including these) can also be run from its row in the All jobs table below; both use the same run path. A job shows 'Running…' while active and cannot be triggered again until it finishes (LOCKED status)." />
+          <HelpTip text="Shortcuts for the most common syncs — every job (including these) can also be run from its row in the All jobs table below; both use the same run path. A job shows Running while active and cannot be triggered again until it finishes." />
         </div>
         <div className="admin-action-bar" style={{ flexWrap: 'wrap' }}>
           {MANUAL_PIPELINES.map(p => {
@@ -203,7 +203,7 @@ export default function SchedulerPage({ toast, system }) {
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           All jobs
-          <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it. LOCKED = currently executing (can't be triggered again until done). DISABLED = registered but turned off in configuration — enable the matching setting under API keys & config." />
+          <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it (operator pause). RUNNING = currently executing (can't be triggered again until done). DISABLED = registered but turned off in configuration — enable the matching setting under API keys & config. Sources paused separately means an upstream API is cooling down after failures." />
         </div>
         <div className="admin-filter-chips" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
           <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>

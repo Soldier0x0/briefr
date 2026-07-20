@@ -169,7 +169,7 @@ export default function FilterBar({
       setBackfillRun({ id: body.run_id, status: 'pending', progress_message: body.message, ...body.eta })
       startBackfillPolling(body.run_id)
     } catch (e) {
-      setBackfillError(e?.message || 'Could not start Tier A backfill')
+      setBackfillError(e?.message || 'Could not start historical backfill')
     } finally {
       setBackfillBusy(false)
     }
@@ -458,7 +458,7 @@ export default function FilterBar({
               <span className="mono stack-hint-label">CORPUS GAP</span>
               {' '}
               Shallow history for {coverage.shallow_count} stack product(s).
-              Tier A ETA ~{Math.round((coverage.eta?.eta_low_seconds || 0) / 60)}–
+              Historical backfill ETA ~{Math.round((coverage.eta?.eta_low_seconds || 0) / 60)}–
               {Math.round((coverage.eta?.eta_high_seconds || 0) / 60)} min
               {!coverage.eta?.has_nvd_key ? ' (anonymous NVD pacing — key recommended)' : ''}.
               Deep intel stays on background jobs.
@@ -468,9 +468,9 @@ export default function FilterBar({
               className="filter-export-btn mono"
               disabled={backfillBusy}
               onClick={handleAgreeBackfill}
-              aria-label="Agree to Tier A historical backfill"
+              aria-label="Agree to historical backfill"
             >
-              {backfillBusy ? 'Starting…' : 'Agree — Tier A backfill'}
+              {backfillBusy ? 'Starting…' : 'Agree — historical backfill'}
             </button>
           </div>
         )}
@@ -482,7 +482,7 @@ export default function FilterBar({
         {backfillRun && (
           <div className="stack-gap-banner" role="status" aria-label="Backfill progress">
             <div className="stack-gap-banner-text mono">
-              Tier A [{backfillRun.status}] — {backfillRun.progress_message || 'Running…'}
+              Historical backfill [{backfillRun.status}] — {backfillRun.progress_message || 'Running…'}
               {backfillRun.cves_upserted != null ? ` · ${backfillRun.cves_upserted} CVEs` : ''}
             </div>
             {['deferred', 'on_hold', 'partial'].includes(backfillRun.status) && (

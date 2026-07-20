@@ -1,10 +1,15 @@
 import { HelpCircle } from 'lucide-react'
 import { CIRCUIT_UI } from '../circuitLabels.js'
+import { statusLabel } from '../catalog.js'
 
 const LEGEND = [
   { tag: 'ACTIVE', className: 'active', desc: 'Scheduled and running on its interval.' },
-  { tag: 'PAUSED', className: 'paused', desc: "Won't run until you resume it." },
-  { tag: 'LOCKED', className: 'locked', desc: "Currently executing — can't be triggered again until done." },
+  { tag: 'PAUSED', className: 'paused', desc: "Won't run until you resume it (operator pause)." },
+  {
+    tag: statusLabel('LOCKED'),
+    className: 'locked',
+    desc: "Currently executing — can't be triggered again until done.",
+  },
   { tag: 'DISABLED', className: 'disabled', desc: 'Turned off in configuration (API keys & config).' },
   { tag: CIRCUIT_UI.legendTag, className: 'circuit', desc: CIRCUIT_UI.legendDesc },
 ]

@@ -18,7 +18,7 @@ export default function OperatorSystemActions({
       {confirmRestart && (
         <ConfirmModal
           actionId={confirmRestart === 'drain' ? 'system.restart.drain' : 'system.restart'}
-          title={confirmRestart === 'drain' ? 'Drain then restart' : 'Restart backend now?'}
+          title={confirmRestart === 'drain' ? 'Finish jobs, then restart' : 'Restart backend now?'}
           message={
             confirmRestart === 'drain'
               ? 'Wait for all running jobs to finish, then shut the backend down gracefully (systemd will restart it).'
@@ -61,9 +61,9 @@ export default function OperatorSystemActions({
             onClick={() => setConfirmRestart('drain')}
             style={{ fontSize: '0.8125rem' }}
           >
-            <Hourglass size={12} strokeWidth={2} /> Drain then restart
+            <Hourglass size={12} strokeWidth={2} /> Finish jobs, then restart
           </button>
-          <HelpTip text="Drain waits for in-flight scheduler jobs to finish before restarting — safer during active syncs." />
+          <HelpTip text="Waits for in-flight scheduler jobs to finish before restarting — safer during active syncs. Does not abort running work." />
         </div>
       </DangerZone>
     </>

@@ -27,20 +27,41 @@ _WRITE_AUDIT_LOG_PG = (
     "INSERT INTO audit_log (actor, action, target, metadata_json) VALUES ($1, $2, $3, $4)"
 )
 
-_SNAPSHOT_EPSS_SQLITE = """
+# Keyset pages — avoid one whole-table INSERT…SELECT that can exceed command_timeout.
+_SNAPSHOT_EPSS_PAGE_SQLITE = """
 INSERT OR REPLACE INTO epss_history (cve_id, score, recorded_date)
 SELECT cve_id, epss_score, ?
 FROM cves
 WHERE epss_score IS NOT NULL
+  AND cve_id > ?
+ORDER BY cve_id
+LIMIT ?
 """
 
-_SNAPSHOT_EPSS_PG = """
+_SNAPSHOT_EPSS_PAGE_PG = """
 INSERT INTO epss_history (cve_id, score, recorded_date)
 SELECT cve_id, epss_score, $1
 FROM cves
 WHERE epss_score IS NOT NULL
+  AND cve_id > $2
+ORDER BY cve_id
+LIMIT $3
 ON CONFLICT (cve_id, recorded_date) DO UPDATE SET
     score = excluded.score
+"""
+
+_SELECT_EPSS_PAGE_CURSOR_SQLITE = """
+SELECT cve_id FROM cves
+WHERE epss_score IS NOT NULL AND cve_id > ?
+ORDER BY cve_id
+LIMIT ?
+"""
+
+_SELECT_EPSS_PAGE_CURSOR_PG = """
+SELECT cve_id FROM cves
+WHERE epss_score IS NOT NULL AND cve_id > $1
+ORDER BY cve_id
+LIMIT $2
 """
 
 _UPDATE_EPSS_SQLITE = (
@@ -288,8 +309,25 @@ async def write_audit_log(
     await db.execute(sql, ((actor or "").strip(), action, target or "", metadata_json))
 
 
-async def mark_cves_as_kev(db: DbConnection, cve_ids: list) -> list[str]:
-    """Mark CVEs as KEV; return IDs that transitioned from is_kev=0 to 1."""
+async def _maybe_bulk_commit(
+    db: DbConnection, ops_done: int, commit_every: int | None
+) -> None:
+    """Commit when *ops_done* hits a multiple of *commit_every* (scheduler bulk paths)."""
+    if commit_every and ops_done > 0 and ops_done % commit_every == 0:
+        await db.commit()
+
+
+async def mark_cves_as_kev(
+    db: DbConnection,
+    cve_ids: list,
+    *,
+    commit_every: int | None = None,
+) -> list[str]:
+    """Mark CVEs as KEV; return IDs that transitioned from is_kev=0 to 1.
+
+    When *commit_every* is set (scheduler), commit after that many IN-chunks so large
+    CISA KEV catalogs do not hold one transaction across hundreds of statements.
+    """
     if not cve_ids:
         return []
     normalized = [c.upper() for c in cve_ids if c]
@@ -297,6 +335,7 @@ async def mark_cves_as_kev(db: DbConnection, cve_ids: list) -> list[str]:
         return []
     pg = _is_postgres_connection(db)
     newly_kev: list[str] = []
+    ops = 0
     for i in range(0, len(normalized), _SQLITE_IN_CHUNK):
         chunk = normalized[i : i + _SQLITE_IN_CHUNK]
         placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
@@ -314,21 +353,58 @@ async def mark_cves_as_kev(db: DbConnection, cve_ids: list) -> list[str]:
             f"UPDATE cves SET is_kev = 1 WHERE cve_id IN ({placeholders})",
             tuple(chunk),
         )
+        ops += 1
+        await _maybe_bulk_commit(db, ops, commit_every)
     return newly_kev
 
 
-async def snapshot_epss_scores(db: DbConnection, recorded_date: str | None = None) -> int:
-    """Persist current EPSS scores before a bulk update (one row per CVE per day)."""
+async def snapshot_epss_scores(
+    db: DbConnection,
+    recorded_date: str | None = None,
+    *,
+    commit_every: int | None = None,
+    page_size: int | None = None,
+) -> int:
+    """Persist current EPSS scores before a bulk update (one row per CVE per day).
+
+    Pages by ``cve_id`` keyset so a full-corpus snapshot cannot exceed Postgres
+    ``command_timeout`` on a single INSERT…SELECT. Optional *commit_every* commits
+    after that many pages (scheduler).
+    """
     day = recorded_date or datetime.now(timezone.utc).date().isoformat()
-    sql = _SNAPSHOT_EPSS_PG if _is_postgres_connection(db) else _SNAPSHOT_EPSS_SQLITE
-    cursor = await db.execute(sql, (day,))
-    return cursor.rowcount
+    pg = _is_postgres_connection(db)
+    limit = page_size or _SQLITE_IN_CHUNK
+    insert_sql = _SNAPSHOT_EPSS_PAGE_PG if pg else _SNAPSHOT_EPSS_PAGE_SQLITE
+    cursor_sql = (
+        _SELECT_EPSS_PAGE_CURSOR_PG if pg else _SELECT_EPSS_PAGE_CURSOR_SQLITE
+    )
+    total = 0
+    after = ""
+    pages = 0
+    while True:
+        page_rows = await db.execute_fetchall(cursor_sql, (after, limit))
+        if not page_rows:
+            break
+        cursor = await db.execute(insert_sql, (day, after, limit))
+        total += cursor.rowcount or 0
+        after = page_rows[-1]["cve_id"]
+        pages += 1
+        await _maybe_bulk_commit(db, pages, commit_every)
+        if len(page_rows) < limit:
+            break
+    return total
 
 
-async def update_epss_scores(db: DbConnection, scores: dict) -> None:
+async def update_epss_scores(
+    db: DbConnection,
+    scores: dict,
+    *,
+    commit_every: int | None = None,
+) -> None:
     """Apply EPSS score (and optional percentile) updates from the daily feed.
 
     Values may be bare floats (legacy) or ``{"score": float, "percentile": float|None}``.
+    When *commit_every* is set, commit after that many UPDATE batches (scheduler).
     """
     if not scores:
         return
@@ -393,7 +469,12 @@ async def update_epss_scores(db: DbConnection, scores: dict) -> None:
     await _insert_cve_changes_batch(db, history)
     if updates:
         update_sql = _UPDATE_EPSS_PG if pg else _UPDATE_EPSS_SQLITE
-        await db.executemany(update_sql, updates)
+        batches = 0
+        for i in range(0, len(updates), _SQLITE_IN_CHUNK):
+            batch = updates[i : i + _SQLITE_IN_CHUNK]
+            await db.executemany(update_sql, batch)
+            batches += 1
+            await _maybe_bulk_commit(db, batches, commit_every)
 
 
 def _parse_epss_feed_record(value: dict) -> dict | None:
@@ -644,8 +725,17 @@ async def insert_epss_history_rows(db: DbConnection, rows: list[dict]) -> int:
     return inserted
 
 
-async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -> int:
-    """Mark CVEs present in VulnCheck KEV catalog (clears stale flags via indexed lookup)."""
+async def sync_vulncheck_exploited_flags(
+    db: DbConnection,
+    cve_ids: list[str],
+    *,
+    commit_every: int | None = None,
+) -> int:
+    """Mark CVEs present in VulnCheck KEV catalog (clears stale flags via indexed lookup).
+
+    When *commit_every* is set (scheduler), commit after that many UPDATE chunks so
+    large catalogs do not trip Postgres ``command_timeout`` on one long transaction.
+    """
     catalog = sorted({(c or "").strip().upper() for c in cve_ids if c})
     pg = _is_postgres_connection(db)
 
@@ -656,6 +746,7 @@ async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -
     catalog_set = set(catalog)
     to_clear = sorted(currently_flagged - catalog_set)
 
+    ops = 0
     for i in range(0, len(to_clear), _SQLITE_IN_CHUNK):
         chunk = to_clear[i : i + _SQLITE_IN_CHUNK]
         placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
@@ -663,6 +754,8 @@ async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -
             f"UPDATE cves SET is_vulncheck_exploited = 0 WHERE cve_id IN ({placeholders})",
             tuple(chunk),
         )
+        ops += 1
+        await _maybe_bulk_commit(db, ops, commit_every)
 
     updated = 0
     for i in range(0, len(catalog), _SQLITE_IN_CHUNK):
@@ -673,4 +766,6 @@ async def sync_vulncheck_exploited_flags(db: DbConnection, cve_ids: list[str]) -
             tuple(chunk),
         )
         updated += cursor.rowcount or 0
+        ops += 1
+        await _maybe_bulk_commit(db, ops, commit_every)
     return updated
