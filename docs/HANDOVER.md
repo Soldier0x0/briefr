@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-20 — Catch-up mode v1 (design + plan only)
+
+**Decisions locked:** Admin-only; default **6h**; scope **B** (internal + paced
+external via LLM headroom / job ticks; non-LLM floors unchanged); **neutral**
+copy for laptop/server; **GPU parked**.
+
+**Artifacts:**
+- `docs/superpowers/specs/2026-07-20-catchup-mode-design.md`
+- `docs/superpowers/plans/2026-07-20-catchup-mode.md`
+
+**Next:** Implement per plan (separate feature branch) when maintainer starts
+execution — no product code in this planning PR.
+
+---
+
 ## 2026-07-20 — RCA: cvelistV5 DB timeout + absurd Background Sync retries
 
 **Observed (Build 5678d6f):**
