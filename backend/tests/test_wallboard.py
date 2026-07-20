@@ -212,9 +212,10 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", True)
     monkeypatch.setattr(_settings, "rate_limit_wallboard_per_minute", 2)
-    _rl.wallboard_bucket.rate_per_minute = 2
-    _rl.wallboard_bucket.capacity = 2.0
-    _rl.wallboard_bucket.refill_per_second = 2 / 60.0
+    # Monkeypatch bucket fields so get_bucket_stats / later tests see defaults restored
+    monkeypatch.setattr(_rl.wallboard_bucket, "rate_per_minute", 2)
+    monkeypatch.setattr(_rl.wallboard_bucket, "capacity", 2.0)
+    monkeypatch.setattr(_rl.wallboard_bucket, "refill_per_second", 2 / 60.0)
     _rl.wallboard_bucket._buckets.clear()
 
     from main import app
