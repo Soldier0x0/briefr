@@ -85,7 +85,8 @@ Create `frontend/src/apiOutboundJobs.js`:
 
 ```js
 export function outboundJobsPath(limit = 50) {
-  const n = Math.max(1, Math.min(200, Number(limit) || 50))
+  const parsed = Number(limit)
+  const n = Math.max(1, Math.min(200, Number.isFinite(parsed) ? parsed : 50))
   return `/api/admin/jobs/outbound?limit=${n}`
 }
 ```
@@ -323,7 +324,7 @@ Prefer **A** if CVEFeed structure allows with small diff; else **B**.
 
 - [ ] **Step 1: Failing test** — when worker sets deferred due to rate limit, a Procrastinate job is scheduled in the future (mock `defer_async` / `configure(schedule_in=...)`).
 
-- [ ] **Step 2: Replace “will resume automatically” lie with actual `schedule_in` using retry_policy delays (or stack-specific 180s).
+- [ ] **Step 2:** Replace “will resume automatically” lie with actual `schedule_in` using retry_policy delays (or stack-specific 180s).
 
 - [ ] **Step 3: PASS + commit** `fix(stack-backfill): actually schedule durable resume after rate limit`
 
