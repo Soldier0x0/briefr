@@ -509,11 +509,9 @@ python -c "..."  # dump route list to /tmp/routes-before.txt
 
 ### Task 16: Program closeout
 
-- [ ] **Step 1: Tick all Phase 1 / scoring checkboxes in SPRINT + HANDOVER “program complete” entry.**
-
-- [ ] **Step 2: Final `graphify update .` if CLI available; final study-guide/learn if any drift.**
-
-- [ ] **Step 3: Confirm success criteria from design §9.**
+- [x] **Step 1: Tick all Phase 1 / scoring checkboxes in SPRINT + HANDOVER “program complete” entry.**
+- [x] **Step 2: Final `graphify update .` if CLI available; final study-guide/learn if any drift.** *(GRAPHIFY_MISSING — CLI still absent; study-guide not regenerated — operator docs updated per wave)*
+- [x] **Step 3: Confirm success criteria from design §9.** *(Met for in-scope waves; deferred: CVE package split, FE F1.5 extracts, full ruff format, Testcontainers)*
 
 ---
 
