@@ -72,6 +72,7 @@ const TABS = [
 
 export default function DetailDrawer({ cve, loading = false, error = null, onRetry, onClose, onCveReplace, watchlistState = null, onWatchlistChange }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['overview']))
   const [reportOpen, setReportOpen] = useState(false)
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -315,6 +316,10 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     return cleanup
   }, [activeTab, cve?.cve_id, loadDetection])
 
+  useEffect(() => {
+    setVisitedTabs(prev => (prev.has(activeTab) ? prev : new Set(prev).add(activeTab)))
+  }, [activeTab])
+
   async function refreshCorrelation() {
     if (!cve?.cve_id) return
     const sector = assetCtx?.profile?.environment?.industry || ''
@@ -427,6 +432,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       document.body.classList.add('briefr-drawer-open')
       document.body.style.overflow = 'hidden'
       setActiveTab('overview')
+      setVisitedTabs(new Set(['overview']))
       setReportOpen(false)
       setActionsMenuOpen(false)
     } else {
@@ -869,107 +875,139 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
             </div>
           )}
 
-        <div
-          className="drawer-tab-panel"
-          role="tabpanel"
-          id={`drawer-panel-${activeTab}`}
-          aria-labelledby={`drawer-tab-${activeTab}`}
-        >
-          {activeTab === 'overview' && (
-            <TabOverview
-              cve={cve}
-              riskScore={displayRiskScore}
-              riskLoading={riskLoading}
-              riskError={riskError}
-              onOpenProfile={assetCtx?.openProfileFlow}
-              momentumData={momentumData}
-              products={products}
-              cwes={cwes}
-              capecIds={capecIds}
-              urls={urls}
-              sentences={sentences}
-              sentencesLoading={sentencesLoading}
-              epssHistory={epssHistory}
-              epssLoading={epssLoading}
-              epssSparklineRef={epssSparklineRef}
-            />
-          )}
-          {activeTab === 'intel' && (
-            <DrawerTabErrorBoundary>
-            <TabIntel
-              techniques={techniques}
-              publicExploits={cve.public_exploits}
-              exploitProvenance={cve.exploit_provenance}
-              greynoiseConfigured={cve.greynoise_configured}
-              greynoiseScans={greynoiseScans}
-              greynoiseLoading={greynoiseLoading}
-              greynoiseLoaded={greynoiseLoaded}
-              greynoiseQuota={greynoiseQuota}
-              onLoadGreynoise={loadGreynoiseScans}
-              otxPulses={cve.otx_pulses}
-              otxConfigured={cve.otx_configured}
-              cve={cve}
-              loading={loading}
-              onInvestigateIp={
-                investigation
-                  ? (ip, cveCtx) => investigation.pivotToIoc(ip, {
-                      type: 'cve',
-                      id: cveCtx.cve_id,
-                      title: cveCtx.cve_id,
-                      description: (cveCtx.summary || '').slice(0, 80),
-                    })
-                  : undefined
-              }
-              onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
-              onInvestigateCampaign={
-                investigation?.pivotToCampaign
-                  ? (item, cveCtx) => investigation.pivotToCampaign(item, cveCtx)
-                  : undefined
-              }
-              onOpenForgeTechnique={
-                investigation?.pivotToTechnique
-                  ? (techniqueId, name) => investigation.pivotToTechnique(techniqueId, name, {
-                      type: 'cve',
-                      id: cve.cve_id,
-                      title: cve.cve_id,
-                      description: (cve.summary || '').slice(0, 80),
-                    })
-                  : undefined
-              }
-              pivotNotice={investigation?.pivotNotice}
-              correlation={correlation}
-              correlationLoading={correlationLoading}
-              onSelectCorrelatedCve={handleSelectRelated}
-              onRequestSuppressCorrelation={handleRequestSuppressCorrelation}
-              onConfirmCorrelation={handleConfirmCorrelation}
-              correlationFeedback={correlationFeedback}
-              suppressions={correlationSuppressions}
-              onRestoreSuppression={handleRestoreSuppression}
-            />
-            </DrawerTabErrorBoundary>
-          )}
-          {activeTab === 'detect' && (
-            <TabDetect
-              detection={detection}
-              loading={detectionLoading}
-              error={detectionError}
-              onRetry={() => {
-                detectionFetchedRef.current = true
-                const cleanup = loadDetection()
-                detectionCancelRef.current = cleanup ?? null
-              }}
-            />
-          )}
-          {activeTab === 'related' && (
-            <TabRelated
-              related={related}
-              relatedMethod={relatedMethod}
-              relatedNews={relatedNews}
-              loading={relatedLoading}
-              onSelectRelated={handleSelectRelated}
-            />
-          )}
-        </div>
+          <div
+            className="drawer-tab-panel"
+            role="tabpanel"
+            id="drawer-panel-overview"
+            aria-labelledby="drawer-tab-overview"
+            hidden={activeTab !== 'overview'}
+            aria-hidden={activeTab !== 'overview'}
+          >
+            {(visitedTabs.has('overview') || activeTab === 'overview') && (
+              <TabOverview
+                cve={cve}
+                riskScore={displayRiskScore}
+                riskLoading={riskLoading}
+                riskError={riskError}
+                onOpenProfile={assetCtx?.openProfileFlow}
+                momentumData={momentumData}
+                products={products}
+                cwes={cwes}
+                capecIds={capecIds}
+                urls={urls}
+                sentences={sentences}
+                sentencesLoading={sentencesLoading}
+                epssHistory={epssHistory}
+                epssLoading={epssLoading}
+                epssSparklineRef={epssSparklineRef}
+              />
+            )}
+          </div>
+
+          <div
+            className="drawer-tab-panel"
+            role="tabpanel"
+            id="drawer-panel-intel"
+            aria-labelledby="drawer-tab-intel"
+            hidden={activeTab !== 'intel'}
+            aria-hidden={activeTab !== 'intel'}
+          >
+            {(visitedTabs.has('intel') || activeTab === 'intel') && (
+              <DrawerTabErrorBoundary>
+                <TabIntel
+                  techniques={techniques}
+                  publicExploits={cve.public_exploits}
+                  exploitProvenance={cve.exploit_provenance}
+                  greynoiseConfigured={cve.greynoise_configured}
+                  greynoiseScans={greynoiseScans}
+                  greynoiseLoading={greynoiseLoading}
+                  greynoiseLoaded={greynoiseLoaded}
+                  greynoiseQuota={greynoiseQuota}
+                  onLoadGreynoise={loadGreynoiseScans}
+                  otxPulses={cve.otx_pulses}
+                  otxConfigured={cve.otx_configured}
+                  cve={cve}
+                  loading={loading}
+                  onInvestigateIp={
+                    investigation
+                      ? (ip, cveCtx) => investigation.pivotToIoc(ip, {
+                          type: 'cve',
+                          id: cveCtx.cve_id,
+                          title: cveCtx.cve_id,
+                          description: (cveCtx.summary || '').slice(0, 80),
+                        })
+                      : undefined
+                  }
+                  onInvestigatePulse={investigation?.pivotToOtxPulse ? (pulse, cveCtx) => investigation.pivotToOtxPulse(pulse, cveCtx) : undefined}
+                  onInvestigateCampaign={
+                    investigation?.pivotToCampaign
+                      ? (item, cveCtx) => investigation.pivotToCampaign(item, cveCtx)
+                      : undefined
+                  }
+                  onOpenForgeTechnique={
+                    investigation?.pivotToTechnique
+                      ? (techniqueId, name) => investigation.pivotToTechnique(techniqueId, name, {
+                          type: 'cve',
+                          id: cve.cve_id,
+                          title: cve.cve_id,
+                          description: (cve.summary || '').slice(0, 80),
+                        })
+                      : undefined
+                  }
+                  pivotNotice={investigation?.pivotNotice}
+                  correlation={correlation}
+                  correlationLoading={correlationLoading}
+                  onSelectCorrelatedCve={handleSelectRelated}
+                  onRequestSuppressCorrelation={handleRequestSuppressCorrelation}
+                  onConfirmCorrelation={handleConfirmCorrelation}
+                  correlationFeedback={correlationFeedback}
+                  suppressions={correlationSuppressions}
+                  onRestoreSuppression={handleRestoreSuppression}
+                />
+              </DrawerTabErrorBoundary>
+            )}
+          </div>
+
+          <div
+            className="drawer-tab-panel"
+            role="tabpanel"
+            id="drawer-panel-detect"
+            aria-labelledby="drawer-tab-detect"
+            hidden={activeTab !== 'detect'}
+            aria-hidden={activeTab !== 'detect'}
+          >
+            {(visitedTabs.has('detect') || activeTab === 'detect') && (
+              <TabDetect
+                detection={detection}
+                loading={detectionLoading}
+                error={detectionError}
+                onRetry={() => {
+                  detectionFetchedRef.current = true
+                  const cleanup = loadDetection()
+                  detectionCancelRef.current = cleanup ?? null
+                }}
+              />
+            )}
+          </div>
+
+          <div
+            className="drawer-tab-panel"
+            role="tabpanel"
+            id="drawer-panel-related"
+            aria-labelledby="drawer-tab-related"
+            hidden={activeTab !== 'related'}
+            aria-hidden={activeTab !== 'related'}
+          >
+            {(visitedTabs.has('related') || activeTab === 'related') && (
+              <TabRelated
+                related={related}
+                relatedMethod={relatedMethod}
+                relatedNews={relatedNews}
+                loading={relatedLoading}
+                onSelectRelated={handleSelectRelated}
+              />
+            )}
+          </div>
         </div>
       </aside>
 

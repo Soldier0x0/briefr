@@ -571,9 +571,13 @@
 .drawer-tab-panel {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.drawer-tab-panel[hidden] {
+  display: none !important;
 }
 
 .drawer-section {
