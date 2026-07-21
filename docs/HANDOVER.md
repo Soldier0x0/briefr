@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 4: section headings without `//` + MITRE empty composition
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/sectionHeading.js` plus `sectionHeading.test.js` to normalize section-heading copy by stripping a leading `//`.
+- Removed `//` from section headings across the targeted DetailDrawer and shell surfaces, including correlation group labels and the FEED vendor label, while leaving empty/loading copy on `//` lines.
+- MITRE ATT&CK in the drawer now uses the human heading style and only shows its educational hint when ATT&CK techniques exist; loading/empty states show only the `//` line.
+- Related removed the redundant Incidents lane note and keeps related-CVE disambiguation as plain secondary copy; Detect gates its framing note so it only appears when there is real detection content to frame.
+
+**Verify:** `cd frontend && npm run test:unit -- src/utils/sectionHeading.test.js` and `npm run build`.
+
+---
+
 ## 2026-07-21 — Task 3: Overview IA + drawer panel chrome + accent-ghost
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):

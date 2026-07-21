@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { displayText } from '../../utils/displayText.js'
+import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import {
   buildConnectionPanel,
   confidenceBadgeClass,
@@ -20,6 +21,15 @@ const GENERIC_EXPLOIT_TITLES = new Set([
   'Proof-of-concept published',
   'Untitled exploit',
 ])
+
+const CORRELATION_HEADING = formatSectionHeading('// CORRELATION FINDINGS')
+const CAMPAIGN_LINKS_HEADING = formatSectionHeading('// CAMPAIGN LINKS')
+const SHARED_INDICATOR_LINKS_HEADING = formatSectionHeading('// SHARED INDICATOR LINKS')
+const ACTOR_ATTRIBUTION_HEADING = formatSectionHeading('// ACTOR ATTRIBUTION')
+const TEMPORAL_ANOMALY_HEADING = formatSectionHeading('// TEMPORAL ANOMALY')
+const PUBLIC_EXPLOITS_HEADING = formatSectionHeading('// PUBLIC EXPLOITS')
+const ACTIVE_SCANNING_HEADING = formatSectionHeading('// ACTIVE SCANNING')
+const ACTIVE_CAMPAIGNS_HEADING = formatSectionHeading('// ACTIVE CAMPAIGNS')
 
 function exploitDisplayTitle(exp) {
   const title = displayText(exp.title) || ''
@@ -327,7 +337,7 @@ function CorrelationFindings({
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
         <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-          // CORRELATION FINDINGS
+          {CORRELATION_HEADING}
         </h3>
         <p className="drawer-intel-empty mono">// Loading correlation analysis…</p>
       </section>
@@ -341,7 +351,7 @@ function CorrelationFindings({
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
         <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-          // CORRELATION FINDINGS
+          {CORRELATION_HEADING}
         </h3>
         <IntelProvenanceLine provenance={correlation?.provenance} />
         <ErrorState
@@ -365,7 +375,7 @@ function CorrelationFindings({
   return (
     <section className="drawer-section" aria-labelledby="corr-heading">
       <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-        // CORRELATION FINDINGS
+        {CORRELATION_HEADING}
       </h3>
 
       <IntelProvenanceLine provenance={correlation?.provenance} />
@@ -386,7 +396,7 @@ function CorrelationFindings({
 
       {campaigns.length > 0 && (
         <div className="corr-group" aria-label="Campaign correlation">
-          <p className="corr-group-label mono">// CAMPAIGN LINKS</p>
+          <p className="corr-group-label mono">{CAMPAIGN_LINKS_HEADING}</p>
           {campaigns.map(item => {
             const campaignMembers = (item.members || []).filter(id => id && id !== correlation?.cve_id)
             return (
@@ -464,7 +474,7 @@ function CorrelationFindings({
 
       {infra.length > 0 && (
         <div className="corr-group" aria-label="Related threat infrastructure">
-          <p className="corr-group-label mono">// SHARED INDICATOR LINKS</p>
+          <p className="corr-group-label mono">{SHARED_INDICATOR_LINKS_HEADING}</p>
           <InfrastructureList
             items={infra}
             onSelectCve={onSelectCve}
@@ -485,7 +495,7 @@ function CorrelationFindings({
       {/* Level 2: Actor / Sector — infra block replaced above */}
       {actor.length > 0 && (
         <div className="corr-group" aria-label="Actor correlation">
-          <p className="corr-group-label mono">// ACTOR ATTRIBUTION</p>
+          <p className="corr-group-label mono">{ACTOR_ATTRIBUTION_HEADING}</p>
           {actor.map(item => (
             <div key={item.actor_name} className="corr-finding">
               <div className="corr-finding-head">
@@ -517,7 +527,7 @@ function CorrelationFindings({
       {/* Level 3: Temporal */}
       {temporal.length > 0 && (
         <div className="corr-group" aria-label="Temporal anomaly">
-          <p className="corr-group-label mono">// TEMPORAL ANOMALY</p>
+          <p className="corr-group-label mono">{TEMPORAL_ANOMALY_HEADING}</p>
           {temporal.map(item => (
             <div key={item.vendor} className="corr-finding">
               <div className="corr-finding-head">
@@ -707,7 +717,7 @@ export default function TabIntel({
       <section className="drawer-section" aria-labelledby="exploits-heading">
         <div className="drawer-intel-section-head">
           <h3 id="exploits-heading" className="drawer-human-label mono">
-            // PUBLIC EXPLOITS
+            {PUBLIC_EXPLOITS_HEADING}
           </h3>
           <span className="drawer-count-badge mono" aria-label={`${exploits.length} exploits`}>
             {exploits.length}
@@ -769,7 +779,7 @@ export default function TabIntel({
       </section>
 
       <section className="drawer-section" aria-labelledby="scanning-heading">
-        <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
+        <h3 id="scanning-heading" className="drawer-human-label mono">{ACTIVE_SCANNING_HEADING}</h3>
         {greynoiseConfigured === false ? (
           <p className="drawer-intel-empty mono">
             GreyNoise is not configured on this server — on-demand IP context is unavailable.
@@ -854,7 +864,7 @@ export default function TabIntel({
 
       <section className="drawer-section" aria-labelledby="campaigns-heading">
         <div className="drawer-intel-section-head">
-          <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
+          <h3 id="campaigns-heading" className="drawer-human-label mono">{ACTIVE_CAMPAIGNS_HEADING}</h3>
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
         {otxConfigured === false ? (
@@ -876,59 +886,61 @@ export default function TabIntel({
       </section>
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
-        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-        <p className="drawer-capec-hint mono">
-          Adversary techniques mapped to this CVE — ATT&amp;CK is MITRE&apos;s knowledge base of real-world attacker tactics and techniques.
-        </p>
+        <h3 id="mitre-heading" className="drawer-human-label mono">MITRE ATT&CK</h3>
         {loading && techList.length === 0 ? (
           <p className="mitre-empty mono">// Loading ATT&CK mapping…</p>
         ) : techList.length === 0 ? (
           <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
-          <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-            {techList.map(tech => {
-              const tid = tech.id || tech.technique_id
-              const href = techniqueLink(tech)
-              const forgeHref = forgeCoverageHref(tid)
-              return (
-                <article key={tid} className="mitre-technique-card" role="listitem">
-                  <div className="mitre-technique-top">
-                    <span className="mitre-technique-id mono">{tid}</span>
-                    {tech.tactic && (
-                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
-                    )}
-                  </div>
-                  <p className="mitre-technique-name">{tech.name}</p>
-                  <div className="mitre-technique-actions">
-                    {forgeHref && (
-                      <button
-                        type="button"
-                        className="mitre-technique-link mono"
-                        onClick={() => {
-                          if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
-                          else window.location.assign(forgeHref)
-                        }}
-                        aria-label={`Open ${tid} in Forge ATT&CK navigator`}
-                      >
-                        Open in Forge →
-                      </button>
-                    )}
-                    {href && (
-                      <a
-                        className="mitre-technique-link mitre-technique-link--ext mono"
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
-                      >
-                        attack.mitre.org →
-                      </a>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+          <>
+            <p className="drawer-capec-hint mono">
+              Adversary techniques mapped to this CVE — ATT&amp;CK is MITRE&apos;s knowledge base of real-world attacker tactics and techniques.
+            </p>
+            <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
+              {techList.map(tech => {
+                const tid = tech.id || tech.technique_id
+                const href = techniqueLink(tech)
+                const forgeHref = forgeCoverageHref(tid)
+                return (
+                  <article key={tid} className="mitre-technique-card" role="listitem">
+                    <div className="mitre-technique-top">
+                      <span className="mitre-technique-id mono">{tid}</span>
+                      {tech.tactic && (
+                        <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+                      )}
+                    </div>
+                    <p className="mitre-technique-name">{tech.name}</p>
+                    <div className="mitre-technique-actions">
+                      {forgeHref && (
+                        <button
+                          type="button"
+                          className="mitre-technique-link mono"
+                          onClick={() => {
+                            if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
+                            else window.location.assign(forgeHref)
+                          }}
+                          aria-label={`Open ${tid} in Forge ATT&CK navigator`}
+                        >
+                          Open in Forge →
+                        </button>
+                      )}
+                      {href && (
+                        <a
+                          className="mitre-technique-link mitre-technique-link--ext mono"
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                        >
+                          attack.mitre.org →
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </>
         )}
       </section>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import useModalLayer from '../hooks/useModalLayer.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import './ShortcutsPanel.css'
 
 const SHORTCUTS = [
@@ -23,7 +24,7 @@ export default function ShortcutsPanel({ placement = 'header', listOnly = false,
       role="dialog"
       aria-label="Keyboard shortcuts reference"
     >
-      <div className="shortcuts-title mono">// SHORTCUTS</div>
+      <div className="shortcuts-title mono">{formatSectionHeading('// SHORTCUTS')}</div>
       <ul className="shortcuts-list">
         {SHORTCUTS.map(s => (
           <li key={s.key} className="shortcut-row">

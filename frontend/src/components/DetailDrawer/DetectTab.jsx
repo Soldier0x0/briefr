@@ -8,6 +8,7 @@ import {
   composeBasisTooltip,
   formatEvidenceSummary,
 } from '../../utils/detectLabels.js'
+import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import ControlTooltip from '../ControlTooltip.jsx'
 import IntelProvenanceLine from './IntelProvenanceLine.jsx'
 
@@ -205,9 +206,9 @@ function GeneratedSigmaSection({
 }) {
   const confidence = (meta?.briefr_confidence || 'MEDIUM').toUpperCase()
   const confidenceCls = confidence === 'LOW' ? 'det-confidence-low' : 'det-confidence-badge'
-  const heading = hasCommunity
-    ? '// BRIEFR HUNT STARTER · SUPPLEMENT'
-    : '// BRIEFR HUNT STARTER'
+  const heading = formatSectionHeading(
+    hasCommunity ? '// BRIEFR HUNT STARTER · SUPPLEMENT' : '// BRIEFR HUNT STARTER'
+  )
   const supplementNote = hasCommunity
     ? 'Community rules above are primary — this generated template is an additional class-aware starting point.'
     : 'No community Sigma/Elastic rules were found — use this generated template as a starting point.'
@@ -288,7 +289,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
     return (
       <section className="drawer-section">
         <p className="drawer-intel-empty mono">
-          Detection content is loading for this CVE.
+          // Detection content is loading for this CVE.
         </p>
       </section>
     )
@@ -303,31 +304,42 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
   const logPatterns = siemQueries.log_patterns || []
   const detectionClass = siemQueries.detection_class || generatedMeta.briefr_class || ''
   const evidenceSummary = formatEvidenceSummary(detection.evidence)
+  const hasSiemQueries = [
+    siemQueries.elastic_kql,
+    siemQueries.splunk_spl,
+    siemQueries.sentinel_kql,
+    siemQueries.qradar_aql,
+  ].some(entry => entry?.query)
+  const showFraming = Boolean(evidenceSummary || hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0)
 
   return (
     <>
       <IntelProvenanceLine provenance={detection.provenance} />
 
-      <section className="drawer-section det-framing-section" aria-label="Detection framing">
-        <p className="det-framing-note mono">
-          Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template
-          keyed to this CVE&apos;s weakness class. Community rules stay primary when present.
-        </p>
-        {evidenceSummary && (
-          <ControlTooltip
-            text="Evidence pack from the detection composer (community rules, Nuclei artifacts, YARA). No LLM on this path."
-            trigger="hover-focus"
-          >
-            <p className="det-evidence-summary mono" data-testid="det-evidence-summary">
-              {evidenceSummary}
+      {showFraming && (
+        <section className="drawer-section det-framing-section" aria-label="Detection framing">
+          {(hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0) && (
+            <p className="det-framing-note mono">
+              Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template
+              keyed to this CVE&apos;s weakness class. Community rules stay primary when present.
             </p>
-          </ControlTooltip>
-        )}
-      </section>
+          )}
+          {evidenceSummary && (
+            <ControlTooltip
+              text="Evidence pack from the detection composer (community rules, Nuclei artifacts, YARA). No LLM on this path."
+              trigger="hover-focus"
+            >
+              <p className="det-evidence-summary mono" data-testid="det-evidence-summary">
+                {evidenceSummary}
+              </p>
+            </ControlTooltip>
+          )}
+        </section>
+      )}
 
       <section className="drawer-section" aria-labelledby="det-community-heading">
         <h3 id="det-community-heading" className="drawer-human-label drawer-tab-anchor mono">
-          // EXISTING COMMUNITY RULES
+          {formatSectionHeading('// EXISTING COMMUNITY RULES')}
         </h3>
         {!hasCommunity && (
           <p className="drawer-intel-empty mono">
@@ -350,7 +362,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
 
       <section className="drawer-section" aria-labelledby="det-siem-heading">
         <h3 id="det-siem-heading" className="drawer-human-label mono">
-          // SIEM QUICK SEARCH
+          {formatSectionHeading('// SIEM QUICK SEARCH')}
           {siemQueries.title && (
             <span className="det-siem-technique-label"> · {siemQueries.title}</span>
           )}
@@ -366,7 +378,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
       {logPatterns.length > 0 && (
         <section className="drawer-section" aria-labelledby="det-logs-heading">
           <h3 id="det-logs-heading" className="drawer-human-label mono">
-            // LOG PATTERNS
+            {formatSectionHeading('// LOG PATTERNS')}
           </h3>
           <ul className="det-log-patterns" aria-label="Log patterns to look for">
             {logPatterns.map((p, i) => (

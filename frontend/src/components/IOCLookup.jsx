@@ -6,6 +6,7 @@ import { useInvestigationOptional } from '../context/InvestigationContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { isValidDomain } from '../utils/domainValidation.js'
 import { IOC_NOT_FOUND_IN_DATABASES } from '../utils/iocLookupMessages.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import { Checkbox } from './ui/index.js'
 import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './IOCLookup.css'
@@ -343,7 +344,7 @@ export default function IOCLookup({ prefill }) {
       {/* ── Input section ── */}
       <div className="ioc-input-section">
         <label htmlFor="ioc-value-input" className="ioc-input-label">
-          // INDICATOR
+          {formatSectionHeading('// INDICATOR')}
         </label>
         <textarea
           id="ioc-value-input"
@@ -482,7 +483,7 @@ export default function IOCLookup({ prefill }) {
 
           {result.type === 'ip' ? null : result.greynoise_sentence && (
             <EnrichmentBlock
-              heading="// GREYNOISE"
+              heading="GREYNOISE"
               sentence={result.greynoise_sentence}
               tip={DOMAIN_TERM_TIPS.greynoise}
             >
@@ -507,7 +508,7 @@ export default function IOCLookup({ prefill }) {
 
           {result.type === 'hash' && result.malwarebazaar_sentence && (
             <EnrichmentBlock
-              heading="// MALWAREBAZAAR"
+              heading="MALWAREBAZAAR"
               sentence={result.malwarebazaar_sentence}
               tip={DOMAIN_TERM_TIPS.malwarebazaar}
             />
@@ -515,7 +516,7 @@ export default function IOCLookup({ prefill }) {
 
           {result.type === 'domain' && result.urlhaus_sentence && (
             <EnrichmentBlock
-              heading="// URLHAUS"
+              heading="URLHAUS"
               sentence={result.urlhaus_sentence}
               tip={DOMAIN_TERM_TIPS.urlhaus}
             >
@@ -559,7 +560,7 @@ export default function IOCLookup({ prefill }) {
       {/* ── History ── */}
       {history.length > 0 && (
         <div className="ioc-history" aria-label="Recent lookups this session">
-          <h2 className="ioc-history-heading mono">// RECENT</h2>
+          <h2 className="ioc-history-heading mono">{formatSectionHeading('// RECENT')}</h2>
           <div className="history-list" role="list">
             {history.map(item => (
               <div key={item.value} role="listitem">

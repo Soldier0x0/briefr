@@ -1,4 +1,5 @@
 import { cveMatchesDeclaredAi } from '../utils/aiAssets.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 
 function atlasTechniqueHref(tech) {
   if (tech?.url) return tech.url
@@ -18,7 +19,7 @@ export default function DrawerAtlasSection({ cve }) {
     <section className="drawer-section drawer-atlas-section" aria-labelledby="atlas-heading">
       <div className="drawer-atlas-head">
         <h3 id="atlas-heading" className="drawer-atlas-label mono">
-          // AI/ML THREAT CONTEXT
+          {formatSectionHeading('// AI/ML THREAT CONTEXT')}
         </h3>
         <a
           className="drawer-atlas-badge mono"
@@ -73,7 +74,7 @@ export default function DrawerAtlasSection({ cve }) {
 
       {studies.length > 0 && (
         <div className="atlas-case-studies">
-          <h4 className="drawer-atlas-subhead mono">// RELATED CASE STUDIES</h4>
+          <h4 className="drawer-atlas-subhead mono">{formatSectionHeading('// RELATED CASE STUDIES')}</h4>
           <ul className="atlas-case-list">
             {studies.map(study => (
               <li key={study.study_id} className="atlas-case-item">

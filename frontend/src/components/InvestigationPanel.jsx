@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useInvestigation, INV_TYPES } from '../context/InvestigationContext.jsx'
 import { techniqueBadgeLabel } from '../utils/investigationLabels.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import PdfExportModal from './PdfExportModal.jsx'
 import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import './InvestigationPanel.css'
@@ -89,7 +90,7 @@ function PanelChrome({ expanded, onToggle, onPdf, onClear, count }) {
         >
           ‹
         </button>
-        <span className="inv-panel-title mono">// INVESTIGATION SESSION</span>
+        <span className="inv-panel-title mono">{formatSectionHeading('// INVESTIGATION SESSION')}</span>
         <span className="inv-panel-count mono">{count}</span>
       </div>
       <p className="inv-panel-capture-hint mono">
@@ -197,7 +198,7 @@ export default function InvestigationPanel() {
             onClick={e => e.stopPropagation()}
           >
             <div className="inv-sheet-head">
-              <span className="mono">// INVESTIGATION ({count})</span>
+              <span className="mono">{`${formatSectionHeading('// INVESTIGATION')} (${count})`}</span>
               <button
                 type="button"
                 className="inv-sheet-close"

@@ -33,6 +33,7 @@ import { formatKevDueDate } from '../../utils/kevDeadline.js'
 import { buildReferenceRows } from '../../utils/referenceRows.js'
 import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
 import { buildExploitationDisplay } from '../../utils/exploitationDisplay.js'
+import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import ControlTooltip from '../ControlTooltip.jsx'
 import ReferenceTooltip from '../ui/ReferenceTooltip.jsx'
 import ErrorState from '../ui/ErrorState.jsx'
@@ -40,6 +41,7 @@ import { drawerEpssBarColor, capecHref, capecLabel, flattenOsvPackageRows } from
 
 const OP_PRIORITY_TOOLTIP =
   "BRIEFR's rule-based P1–P4 band from threat signals and environment relevance. Separate from CVSS."
+const OPERATIONAL_PRIORITY_HEADING = formatSectionHeading('// OPERATIONAL PRIORITY')
 
 
 function KeyExploitationSignals({ cve, riskScore, momentumData }) {
@@ -595,7 +597,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
             id="op-priority-heading"
             className="drawer-risk-section-label drawer-tab-anchor mono"
           >
-            // OPERATIONAL PRIORITY
+            {OPERATIONAL_PRIORITY_HEADING}
           </h3>
         </ControlTooltip>
         <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted)' }}>
@@ -612,7 +614,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
             id="op-priority-heading"
             className="drawer-risk-section-label drawer-tab-anchor mono"
           >
-            // OPERATIONAL PRIORITY
+            {OPERATIONAL_PRIORITY_HEADING}
           </h3>
         </ControlTooltip>
         <ErrorState error={riskError} compact />
@@ -635,7 +637,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
           id="op-priority-heading"
           className="drawer-risk-section-label drawer-tab-anchor mono"
         >
-          // OPERATIONAL PRIORITY
+          {OPERATIONAL_PRIORITY_HEADING}
         </h3>
       </ControlTooltip>
       <div className="drawer-risk-hero drawer-op-hero">

@@ -11,6 +11,7 @@ import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import FeedVisibleRange from './FeedVisibleRange.jsx'
 import { nextLocalStack } from '../utils/stackLocalSync.js'
@@ -551,7 +552,7 @@ export default function FilterBar({
       {(active === 'all' || selectedVendors.length > 0) && (
         <div className="vendor-filter-block">
           <div className="vendor-filter-header">
-            <span className="vendor-filter-label mono">// COMMON VENDORS</span>
+            <span className="vendor-filter-label mono">{formatSectionHeading('// COMMON VENDORS')}</span>
             {selectedVendors.length > 0 && (
               <button
                 type="button"
