@@ -1,6 +1,6 @@
 # Study guide — stale claims & orphan paths (RCA)
 
-_Verified against repo HEAD on 2026-07-19 (Phase 0 truth-hardening pass). Code / `PRODUCT_STATUS.md` win over guide prose._
+_Verified against repo HEAD on 2026-07-21 (full docs-library refresh after Waves 1–7 / Phase 1 / UX RCA). Code / `PRODUCT_STATUS.md` win over guide prose._
 
 ## Mechanical orphan (path named, file missing)
 
@@ -8,17 +8,29 @@ _Verified against repo HEAD on 2026-07-19 (Phase 0 truth-hardening pass). Code /
 |---------|----------|-----|-------------|
 | `backend/db/dialect.py` | `be-data`, `roadmap-reversed` | **Not a content bug.** Post-B (2026-07) deleted the general SQL translator. Guide prose correctly teaches that it was removed and replaced by paired `_SQLITE`/`_PG` constants + narrow `pg_adapt.py`. The auditor flags any non-existent path. | Keep historical prose. Do **not** add a file chip for the deleted path. |
 
-No other `orphan_mention` rows remain.
+No other `orphan_mention` rows remain after the 2026-07-21 source refresh (router packages, Recharts-complete, durable LLM job, Catch-up mode).
 
-## Phase 0 inventory gates (G1–G3)
+## Phase 0 / refresh inventory gates
 
-| Gate | Status (2026-07-19) |
+Latest audit: `covered=646 weak=0 gap=0 orphan=1 out_of_scope=86`.
+
+| Gate | Status (2026-07-21) |
 |------|---------------------|
 | G1 `gap=0` | **Pass** |
-| G2 `weak=0` (FE `*.test.js` + empty `__init__.py` → `out_of_scope`) | **Pass** (`--strict` exit 0) |
-| G3 orphans | Only intentional `dialect.py` |
+| G2 `weak=0` | **Pass** (FE `*.test.js` + empty `__init__.py` → `out_of_scope`) |
+| G3 orphans | **Pass** — only intentional `dialect.py` historical mention |
 
 Auditor: `scripts/audit_study_guide.py --strict`
+
+## Closed in 2026-07-21 refresh (was stale mid-July)
+
+| Topic | Disposition |
+|-------|-------------|
+| `routers/cves.py` / `routers/admin.py` monoliths | **Closed** — guide teaches `routers/cves/` + `routers/admin/` packages; `_JOB_RUN_MAP` → `admin/jobs.py` |
+| Chart.js mid-migration | **Closed** — Recharts-only; Chart.js marked removed |
+| Durable jobs inventory | **Closed** — `health_ping` + `stack_backfill_tick` + `llm_product_extraction` |
+| Catch-up mode | **Closed** — scheduler + admin shell chapters |
+| Learn pathway hrefs | **Closed** — `../../study-guide/pages` from `docs/learn/pathways/` |
 
 ## Former PRODUCT_STATUS thin spots — disposition
 
@@ -28,9 +40,9 @@ Auditor: `scripts/audit_study_guide.py --strict`
 | Operator settings | **Closed** — chips in config/usersettings chapters |
 | Read cache / storage / resource collectors | **Closed** — named in `api-ops` |
 | API metering / queue ops | **Closed** — named in queue chapter |
-| Frontend surface inventory | **Closed** — Part I-B + globs (`utils/*.js`, `components/*.css`, admin pages, …); FE gate tests OOS |
+| Frontend surface inventory | **Closed** — Part I-B + globs |
 | Deploy helpers / sec-arch corpus | **Closed** in earlier coverage PRs |
-| Digest / primer self-checks | **Closed (2026-07-19 polish)** — `preface`, `primer-mechanics`, and all five `sec-*` digests have ≥3 self-check items |
+| Digest / primer self-checks | **Closed** — digests have ≥3 self-check items |
 
 ## False assumptions to avoid
 
@@ -43,5 +55,6 @@ Auditor: `scripts/audit_study_guide.py --strict`
 ```bash
 backend/.venv/bin/python scripts/audit_study_guide.py --strict
 backend/.venv/bin/python scripts/build_study_guide_book.py
+python3 scripts/build_learn_site.py
 cd backend && .venv/bin/python -m pytest tests/test_audit_study_guide.py tests/test_build_study_guide_book.py -q
 ```

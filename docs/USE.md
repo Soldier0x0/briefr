@@ -2,57 +2,70 @@
 
 For analysts, security enthusiasts, and anyone using the UI — not deploying it.
 
+Screenshots are not committed yet. Use [`IMAGE_BRIEFS.md`](IMAGE_BRIEFS.md) for capture prompts.
+
 ---
 
-## Tabs
+## Main shell
 
-![BRIEF tab — pending](assets/placeholder-diagram.svg)
+| URL tab | Header label | What you get |
+|---------|--------------|--------------|
+| `brief` | **BRIEF** | Morning queue, OP/Threat-ranked cards, charts, heatmap, what changed |
+| `feed` | **FEED** | Full CVE list, filters, KEV deadlines, export, hybrid search |
+| `ioc` | **IOC LOOKUP** | IP / hash / domain enrichment and investigation pivots |
+| `atlas` | **INCIDENTS & NEWS** | RSS × 5 security news + MITRE ATLAS narratives |
+| `forge` | **FORGE** | ATT&CK navigator, hunt packs, scenarios, campaigns, backlog, library |
 
-> **Add:** `assets/ui-brief-tab.png` · [IMAGE_BRIEFS §11](IMAGE_BRIEFS.md#11-ui-brief-tab)
+Tab changes push browser history; hygiene cleanup replaces it. Back restores the last tab or Forge context. Opening a CVE writes `?cve=CVE-...`, so Back closes the drawer before leaving the page.
 
-| Tab | What you get |
-|-----|----------------|
-| **BRIEF** | Morning brief, what changed, heatmap, charts |
-| **FEED** | Full CVE list, filters, KEV deadlines, export |
-| **IOC LOOKUP** | IP / hash / domain enrichment |
-| **INCIDENTS & NEWS** | RSS security news + MITRE ATLAS |
-| **Forge** | Detection coverage, hunt packs |
+---
 
-![FEED tab — pending](assets/placeholder-diagram.svg)
+## FEED
 
-> **Add:** `assets/ui-feed-tab.png` · [IMAGE_BRIEFS §12](IMAGE_BRIEFS.md#12-ui-feed-tab)
+Search is hybrid when a query is present: keyword/CVE hits plus semantic results. It can show **TECHNIQUES**, **CAMPAIGNS**, then **CVES** in one result set.
+
+The stack filter is server-side. If BRIEFR needs historical coverage, FEED shows a backfill banner; approve it, watch progress, and resume if a run is deferred or partial.
+
+Exports: CSV, Excel, selected-CVE PDF, and markdown copy.
 
 ---
 
 ## CVE detail drawer
 
-Click any CVE → drawer with Intel, Related, Detect, and more.
+Click any CVE. The drawer stays mounted while you switch drawer tabs.
 
-![Detail drawer — pending](assets/placeholder-diagram.svg)
+| Tab | Order / purpose |
+|-----|-----------------|
+| **OVERVIEW** | Description → Operational Priority + Environment Relevance → Why this matters → CVSS/EPSS/exploitation → affected products → patch/references → SSVC/OSV |
+| **INTEL** | Exploits, KEV, ATT&CK/ATLAS, GreyNoise, OTX pulses, active campaigns, explainable correlation |
+| **DETECT** | Sigma, Elastic, SIEM queries, YARA, generated fallbacks |
+| **RELATED** | Related CVEs and related news |
 
-> **Add:** `assets/ui-detail-drawer.png` · [IMAGE_BRIEFS §13](IMAGE_BRIEFS.md#13-ui-detail-drawer)
+OTX pulse names are normalized with `formatIntelLabel`, so cluster labels stay readable. Pulse clustering is explainable: campaigns, shared infrastructure, actor/sector, and temporal lanes show why items are connected.
 
-**Correlation** (Intel tab) shows explainable links between CVEs — see [HOW_IT_WORKS.md](HOW_IT_WORKS.md#correlation).
-
-**Investigation:** pivot CVE → IOC → related CVE (session-only in browser).
+**Investigation:** pivot CVE → IOC → ATLAS/Forge/related CVE. The thread is session-only in the browser.
 
 ---
 
 ## IOC lookup
 
-![IOC lookup — pending](assets/placeholder-diagram.svg)
+Sources depend on keys: VirusTotal, AbuseIPDB, GreyNoise, OTX, abuse.ch. Results cache about 6 hours; GreyNoise is opt-in per lookup.
 
-> **Add:** `assets/ui-ioc-lookup.png` · [IMAGE_BRIEFS §14](IMAGE_BRIEFS.md#14-ui-ioc-lookup)
+---
 
-Sources depend on your keys (VirusTotal, AbuseIPDB, GreyNoise, OTX, etc.). Results cached ~6 hours.
+## Forge
+
+Views: **ATT&CK navigator**, **Threat scenarios**, **Campaigns**, **Backlog**, **Library**.
+
+The ATT&CK navigator is the primary workspace for CVE inventory and hunt-pack generation. Library packs can deep-link back into navigator context.
 
 ---
 
 ## Admin & wallboard
 
-Operators: `/admin` for security, backups, jobs. Optional wallboard display with `WALLBOARD_TOKEN`.
+Operators use `/admin`: Scheduler includes **Catch-up mode** and the durable outbound jobs panel; Security posture lives inside Admin.
 
-> **Add:** `assets/ui-admin-security.png` · [IMAGE_BRIEFS §15](IMAGE_BRIEFS.md#15-ui-admin-security)
+`/wallboard` is a read-only kiosk surface. It uses `WALLBOARD_TOKEN`, rotates OP/Threat-ranked CVEs, KEV-on-stack, campaign, source-health, and coverage-gap tiles.
 
 ---
 
@@ -60,13 +73,12 @@ Operators: `/admin` for security, backups, jobs. Optional wallboard display with
 
 | Key | Action |
 |-----|--------|
-| `/` | Focus search |
-| `F` | Cycle filters |
-| `Esc` | Close drawer |
+| `/` | Focus FEED search |
+| `F` | Cycle FEED filters |
+| `g` then `d` | Generate digest from visible FEED cards |
+| `↑` / `↓` | Move through FEED cards |
+| `Enter` | Open highlighted CVE |
+| `Esc` | Close the topmost drawer/modal |
 | `C` | Copy CVE markdown (drawer open) |
 
----
-
-## Deploying?
-
-That's a different doc → [SELF_HOST.md](SELF_HOST.md)
+Deploying? Read [SELF_HOST.md](SELF_HOST.md).

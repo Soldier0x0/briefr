@@ -69,9 +69,10 @@ reality. Everything downstream inherits errors made here.
   `CLAUDE.md` because it has stalled real sessions.
 - **Identify the blast radius up front.** For every plan, explicitly check it
   against the `CLAUDE.md` danger zones: does it touch `db/` (→ test both
-  SQLite and Postgres)? `backend/scheduler.py` job ids (→ sync `backend/routers/admin.py`
-  locks)? migrations (→ forward-only)? `deploy/` (→ additive only)? request
-  handlers (→ no heavy work)? Logging (→ no secrets in message strings)?
+  SQLite and Postgres)? `backend/scheduler.py` job ids (→ sync
+  `backend/routers/admin/jobs.py` `_JOB_RUN_MAP`)? migrations (→
+  forward-only)? `deploy/` (→ additive only)? request handlers (→ no heavy
+  work)? Logging (→ no secrets in message strings)?
 - **Prefer the plan that can be abandoned.** When two approaches look equal,
   pick the one that is easier to revert or split into independent PRs.
   Optionality is worth more than elegance mid-task.

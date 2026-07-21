@@ -35,20 +35,7 @@ This repository is source-available under the Business Source License 1.1 — cl
 
 ## Screenshots
 
-<table>
-<tr>
-<td width="33%" align="center"><strong>BRIEF</strong><br/>morning brief, charts, heatmap</td>
-<td width="33%" align="center"><strong>IOC LOOKUP</strong><br/>multi-source indicator enrichment</td>
-<td width="33%" align="center"><strong>INCIDENTS &amp; NEWS</strong><br/>RSS security news + MITRE ATLAS</td>
-</tr>
-<tr>
-<td><img src="docs/assets/screenshots/brief.png" alt="BRIEF tab — morning brief action queue"/></td>
-<td><img src="docs/assets/screenshots/ioc-lookup.png" alt="IOC Lookup tab"/></td>
-<td><img src="docs/assets/screenshots/incidents-news.png" alt="Incidents and News tab"/></td>
-</tr>
-</table>
-
-More UI screenshots (FEED, CVE detail drawer, admin, wallboard) are captured as they're taken — see [`docs/USE.md`](docs/USE.md).
+Committed UI screenshots are not in this tree yet. Maintainers can use [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md) and `scripts/capture_readme_screenshots.mjs` to regenerate reader-facing captures when the app is running with seeded data.
 
 ---
 
@@ -58,13 +45,13 @@ Every morning, analysts check NVD, CISA KEV, VirusTotal, and exploit trackers to
 
 Five main areas:
 
-| Tab | What it does |
-|-----|----------------|
-| **BRIEF** | Morning brief action queue, analyst charts, 90-day heatmap, Hero + KPI stats |
-| **FEED** | Full paginated CVE list with FilterBar stack field, sidebar KEV deadlines |
-| **IOC LOOKUP** | IP / hash / domain enrichment via VirusTotal, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus |
-| **INCIDENTS & NEWS** | Security RSS feeds (6 sources) plus MITRE ATLAS incident narratives |
-| **Forge** | Detection coverage map, hunt-pack generation, rule-testing bench |
+| URL tab | Header label | What it does |
+|---------|--------------|--------------|
+| `brief` | **BRIEF** | Morning brief action queue, Recharts panels, 90-day heatmap, OP/Threat-ranked tiles |
+| `feed` | **FEED** | Paginated CVE list, stack filter/backfill banner, KEV deadlines, export, hybrid search |
+| `ioc` | **IOC LOOKUP** | IP / hash / domain enrichment via VirusTotal, AbuseIPDB, GreyNoise, OTX, MalwareBazaar, URLhaus |
+| `atlas` | **INCIDENTS & NEWS** | Security RSS feeds (5 sources) plus MITRE ATLAS incident narratives |
+| `forge` | **FORGE** | ATT&CK navigator, threat scenarios, campaigns, backlog, hunt-pack library |
 
 ---
 
@@ -73,8 +60,8 @@ Five main areas:
 One FastAPI process, one database, a scheduler that does all the heavy lifting so the API stays fast. The picture at the top of this README is the real shape of it — for the full story (why it's built this way, not just what it is), see:
 
 - [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) — the short version, with diagrams
-- [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) — the long version: a full, paginated architecture textbook covering every backend subsystem, the frontend stack decisions, ML/LLM internals, deployment, CI, and security posture, file by file, with self-check questions. Open it in a browser.
-- [`docs/study-guide/`](docs/study-guide/) — the same textbook as a multi-file book (regenerate with `python scripts/build_study_guide_book.py`)
+- [`docs/study-guide/`](docs/study-guide/) — the primary generated architecture book: backend subsystems, frontend stack decisions, ML/LLM internals, deployment, CI, security posture, file by file
+- [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) — editable standalone source for the generated study-guide book
 - [`docs/learn/`](docs/learn/) — pathway chooser (System Design / Security analyst / Security architect) linking into the study guide
 - [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) — the reference architecture essay
 
@@ -88,12 +75,12 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 - MITRE ATT&CK technique mapping and top-technique sidebar
 - MITRE ATLAS AI/ML threat context (weekly refresh; per-CVE drawer + Incidents tab)
 - 90-day publication timeline heatmap beside the **What changed** panel on wide screens (≥901px); stacked on narrower viewports
-- Server-side **Risk Score v1.1b** (asset, KEV, EPSS, exploit, CVSS, momentum) plus a split Threat Score / Environment Relevance / Operational Priority model
+- Server-side **Risk Score v1.1b** plus split Threat Score / Environment Relevance / Operational Priority via `POST /api/cves/{cve_id}/risk`
 
 **Threat investigation**
-- Investigation panel with cross-tab pivots (CVE → IOC → related CVE)
+- Investigation panel with cross-tab pivots (CVE → IOC → ATLAS / Forge / related CVE)
 - Explainable correlation engine (shared OTX infrastructure, actor/sector match, temporal vendor anomalies, campaign clustering) — no black-box ML score
-- Detection tab (Forge): SigmaHQ + Elastic community rules, generated Sigma fallback, per-platform SIEM queries (Elastic KQL, Splunk SPL, Sentinel KQL, QRadar AQL), YARA generation from observed hashes
+- Detection tab and Forge: SigmaHQ + Elastic community rules, generated Sigma fallback, per-platform SIEM queries (Elastic KQL, Splunk SPL, Sentinel KQL, QRadar AQL), YARA generation from observed hashes
 - Asset profile wizard with CPE-based exposure matching (`POST /api/cves/match` only — inventory never stored server-side)
 
 **IOC enrichment**
@@ -111,8 +98,8 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 - Dark terminal aesthetic (semantic design tokens, Radix UI primitives — see ADR-003/ADR-005)
 - Timezone selector (server-persisted per user)
 - Keyboard shortcuts (`/`, `F`, `Esc`, `g d` digest, arrow keys in feed)
-- Tab panels stay mounted when switching BRIEF / FEED / IOC / Forge (scroll and filter state preserved)
-- CVE detail drawer slides over content; closing during load does not reopen when fetch completes
+- Tab panels stay mounted when switching BRIEF / FEED / IOC / ATLAS / Forge (scroll and filter state preserved)
+- CVE detail drawer slides over content, keeps drawer tabs mounted after visit, and syncs open state to `?cve=`
 - Session-only investigation thread; stack filter persisted server-side
 
 ---
@@ -124,11 +111,11 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 | FastAPI 0.139 · Uvicorn 0.51 (single worker, by design) | React 19.2 · React Router 7.18 |
 | httpx 0.28 · APScheduler 3.11 | Vite 8.1 |
 | asyncpg 0.31 + psycopg 3.3 (Alembic migrations) | Radix UI primitives + semantic CSS tokens (no Tailwind) |
-| Pydantic 2.13 · Procrastinate (durable jobs) | Recharts (charting, mid-migration from Chart.js) · TanStack Table |
+| Pydantic 2.13 · Procrastinate (durable jobs) | Recharts via shared `ChartShell` · TanStack Table |
 | bcrypt + PyJWT (built-in auth) | jsPDF + html2canvas (client-side PDF) · write-excel-file |
 | fastembed / ONNX (local CPU embeddings, optional) | `node:test` (unit) + Playwright (E2E) |
 
-**Database:** PostgreSQL 16 in production (required); SQLite is the zero-config dev/test fallback only — see [`docs/POSTGRES.md`](docs/POSTGRES.md).
+**Database:** PostgreSQL 16 in production (required); use a pgvector-enabled Postgres image for embeddings. SQLite is the zero-config dev/test fallback only — see [`docs/POSTGRES.md`](docs/POSTGRES.md).
 
 **LLM enrichment (all optional, all free/cheap-tier, none load-bearing):** Groq → Cerebras → OpenRouter → Gemini, in that fixed failover order. Every LLM-backed feature (PDF summaries, product extraction, detection-context artifacts) has a deterministic non-LLM fallback — BRIEFR is fully functional with zero LLM keys configured.
 
@@ -162,7 +149,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | VulnCheck | Community KEV supplement | Scheduler | `VULNCHECK_API_KEY` optional |
 | Groq / Cerebras / OpenRouter / Gemini | PDF executive summary, product extraction, detection-context artifacts | On demand / scheduler | see LLM keys below |
 | GitHub | Sigma + Elastic community rule search | On Detect tab open | `GITHUB_TOKEN` optional |
-| RSS × 6 | Security news cards | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
+| RSS × 5 | Security news cards (The Hacker News, Krebs, Dark Reading, Schneier, CISA Advisories) | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
 
 </details>
 
@@ -289,6 +276,7 @@ Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What change
 | `GEMINI_API_KEY` | LLM chain, last resort | — |
 | `EMBEDDINGS_ENABLED` | Semantic "similar CVEs" via local CPU embeddings (`pip install fastembed`; off = shared-product heuristic) | `0` |
 | `EMBEDDINGS_MODEL` | Local embedding model (ONNX, CPU-only) | `BAAI/bge-small-en-v1.5` |
+| `EMBEDDINGS_PGVECTOR` | Store embeddings in Postgres pgvector when the extension exists | `1` |
 | `LLM_PRODUCT_EXTRACTION_ENABLED` | Fill empty `affected_products` for NVD-unanalyzed CVEs via the LLM chain (provenance-marked, superseded by official CPE) | `0` |
 | `DETECTION_CONTEXT_LLM_ENABLED` | LLM-based detection-artifact extraction (Nuclei-based extraction runs regardless, on by default) | `0` |
 | `BRIEFR_ENV` | `production` disables Swagger/OpenAPI docs | `development` |
@@ -296,6 +284,7 @@ Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What change
 | `RATE_LIMIT_IOC_PER_MINUTE` / `RATE_LIMIT_REFRESH_PER_MINUTE` | Per-client-IP budgets (429 + `Retry-After` over the limit) | `30` / `10` |
 | `RATE_LIMIT_WALLBOARD_PER_MINUTE` | Per-client-IP budget for `GET /api/wallboard` | `60` |
 | `BRIEFR_RATE_LIMIT_STORE` | `db` shares rate-limit buckets across workers via `sync_state` (only needed if you ever run more than 1 worker) | in-memory |
+| `PROCRASTINATE_ENABLED` | Enable PostgreSQL-backed durable jobs for restart-safe outbound work | `0` |
 | `WALLBOARD_TOKEN` | Optional read-only gate for `GET /api/wallboard` + `/wallboard` UI | — |
 | `LOG_FORMAT` | `json` structured logs with `request_id`, or `plain` | `json` |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
@@ -333,7 +322,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | `GET /api/cves/{cve_id}/sentences` | Human-readable intel sentences (template-based, no LLM) |
 | `GET /api/cves/{cve_id}/epss-history` | EPSS sparkline data (30 days) |
 | `GET /api/cves/{cve_id}/momentum` | Momentum score + signals |
-| `GET /api/cves/{cve_id}/risk` | Risk Score v1.1b + split Threat/Environment/Priority |
+| `POST /api/cves/{cve_id}/risk` | Risk Score v1.1b + split Threat/Environment/Priority |
 | `GET /api/cves/{cve_id}/correlation` | Campaign / infrastructure / actor / temporal correlation |
 | `GET /api/correlation/clusters` | Stack-ranked campaign cluster list |
 | `GET /api/cves/{cve_id}/detection` | Sigma, Elastic, SIEM queries, YARA |
@@ -364,7 +353,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | Use the product | [`docs/USE.md`](docs/USE.md) |
 | Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Understand internals (short version) | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
-| **Learn the entire architecture, file by file** | [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) — a full interactive textbook, open in a browser |
+| **Learn the entire architecture, file by file** | [`docs/study-guide/`](docs/study-guide/) — generated book; [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) is the editable source |
 | Develop / contribute | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) + [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | See what's actually shipped today | [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) |
 

@@ -147,7 +147,7 @@ flowchart LR
     UI["React 19 SPA\n(Radix + tokens, no Tailwind)"]
   end
   subgraph API["FastAPI backend"]
-    RT["routers/*.py\n(auth, cves, admin, forge...)"]
+    RT["routers/ packages\n(auth, cves/, admin/, forge...)"]
     DEP["dependencies.py\n(require_user / require_admin)"]
   end
   subgraph Data["Data layer"]
@@ -212,7 +212,7 @@ sequenceDiagram
         A-->>B: fresh briefr_at
         B->>A: retry GET .../drawer
     end
-    par read-only fan-out (Chapter 25's cves.py)
+    par read-only fan-out (Chapter 25's cves package)
         A->>D: read cached risk/threat score
         A->>D: read precomputed correlation snapshot
         A->>D: read cached detection context
@@ -238,7 +238,7 @@ flowchart LR
   SCH["scheduler.py\nAPScheduler jobs, one lock per job"]
   ENG["scoring/ · correlation/ · detection/\nrisk, campaigns, Sigma/SIEM"]
   DB[("cves · correlation_* · embeddings\n(the message bus between scheduler and API)")]
-  API["routers/*.py\nread-only, cheap, indexed"]
+  API["routers/ packages\nread-only, cheap, indexed"]
   UI["Browser"]
 
   Ext --> Q --> SCH --> ENG --> DB

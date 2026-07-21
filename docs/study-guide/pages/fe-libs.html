@@ -148,14 +148,14 @@
         <tr><td>cmdk</td><td class="status-approved">Approved — direct use</td><td>Powers the ⌘/Ctrl-K command palette</td></tr>
         <tr><td>TanStack Table</td><td class="status-approved">Approved — headless only</td><td>Table logic without imposed markup or styling; drives the shared DataGrid</td></tr>
         <tr><td>Floating UI</td><td class="status-approved">Approved, prefer Radix first</td><td>Positioning for custom popovers — Radix already uses it internally</td></tr>
-        <tr><td>Chart.js</td><td class="status-deprecated">Deprecated, mid-migration</td><td>Superseded by Recharts (ticket E7-5); removed once every chart is ported</td></tr>
+        <tr><td>Chart.js</td><td class="status-prohibited">Removed — do not re-add</td><td>E7-5 completed the migration; <code>package.json</code> contains Recharts only</td></tr>
         <tr><td>shadcn/ui, Magic UI</td><td class="status-deprecated">Pattern-reference only</td><td>Copy markup/composition patterns; strip Tailwind and Framer-Motion; re-skin with BRIEFR tokens; never ship as a runtime dependency</td></tr>
         <tr><td>MUI, Chakra, Mantine, Bootstrap, DaisyUI, Tailwind</td><td class="status-prohibited">Prohibited</td><td>Ships its own theme or injects global CSS — structurally incompatible with a token-only styling contract</td></tr>
       </table>
 
       <h4 class="subhead why">The charting decision, as a worked example of the registry in action</h4>
       <div class="prose">
-        <p>Chart.js and Recharts technically coexist in the repo right now, mid-migration — which sounds like exactly the kind of drift ADR-005 exists to prevent. The registry resolves the apparent contradiction with a specific rule: migration is <em>page-atomic</em> (every chart on a given route moves to Recharts in one PR, never split across two PRs) and chart bundles are lazy-loaded per route, so any single page loads Recharts's chunk <em>or</em> Chart.js's chunk, never both at once. The coexistence is real but bounded and temporary by construction — Chart.js is deleted entirely once the last chart is ported (tracked as ticket E7-5). This is worth sitting with: a registry doesn't mean "zero exceptions ever," it means every exception is named, bounded, and has an exit condition, instead of being silent and permanent.</p>
+        <p>Chart.js is the useful example precisely because the exception has ended. During E7-5, Chart.js and Recharts briefly coexisted under a page-atomic migration rule: every chart on a route moved together, and chart bundles stayed lazy-loaded so one page never loaded both libraries. That bounded exception is now closed — current <code>package.json</code> has <code>recharts</code> and no Chart.js dependency, and chart surfaces render through Recharts plus the shared <code>ChartShell</code> wrapper (EPSS sparklines remain custom SVG). The registry's lesson is not "exceptions are impossible"; it is that an exception must be named, bounded, and deleted when its exit condition is met.</p>
       </div>
 
       <h4 class="subhead how">The governance gate itself</h4>
@@ -166,7 +166,7 @@
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
-          <li>Both Recharts and Chart.js exist in the repo during migration. What specific mechanism — not just written policy — prevents a single page from ever loading both chunks at once?</li>
+          <li>Chart.js used to be the temporary exception in this registry. What mechanism bounded that exception during migration, and what proves the exception is closed now?</li>
           <li>Why does the registry require a license check specifically, and why does that check matter for BRIEFR's source-available BSL-1.1 model even though BSL isn't a copyleft license the way AGPL is?</li>
           <li>A future contributor wants to add a date-picker library that isn't on any list here. Walk through, step by step, what has to happen before that's allowed.</li>
         </ol>

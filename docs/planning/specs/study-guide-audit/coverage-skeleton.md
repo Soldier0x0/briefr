@@ -1,11 +1,11 @@
 # Interview coverage skeleton
 
-_Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this file only lists chapters._
+_Regenerated 2026-07-21. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this file only lists chapters._
 
 | Chapter id | Title | Mentions | Concept | Why | How | Self-check | Interview-ready? |
 |------------|-------|---------:|---------|-----|-----|------------|------------------|
 | `preface` | Preface — how to use this book | 1 |  |  |  |  |  |
-| `system-design` | System Design — 4 diagrams | 58 |  |  |  |  |  |
+| `system-design` | System Design — 4 diagrams | 35 |  |  |  |  |  |
 | `primer-mechanics` | Concepts primer | 0 |  |  |  |  |  |
 | `arch-monolith` | Monolith by design | 1 |  |  |  |  |  |
 | `arch-resources` | The resource-consciousness thread | 2 |  |  |  |  |  |
@@ -15,14 +15,14 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `fe-react` | Ch 1 · Why React 19 | 3 |  |  |  |  |  |
 | `fe-design` | Ch 2 · Tokens + Radix (ADR-003) | 34 |  |  |  |  |  |
 | `fe-libs` | Ch 3 · The library registry (ADR-005) | 0 |  |  |  |  |  |
-| `fe-state` | Ch 4 · State & data flow | 4 |  |  |  |  |  |
+| `fe-state` | Ch 4 · State & data flow | 7 |  |  |  |  |  |
 | `fe-tooling` | Ch 5 · Fonts, exports, testing | 0 |  |  |  |  |  |
 | `fe-analyst-shell` | Ch 5B · Analyst shell | 11 |  |  |  |  |  |
-| `fe-admin-shell` | Ch 5C · Admin shell | 107 |  |  |  |  |  |
+| `fe-admin-shell` | Ch 5C · Admin shell | 109 |  |  |  |  |  |
 | `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 10 |  |  |  |  |  |
-| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 216 |  |  |  |  |  |
-| `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 3 |  |  |  |  |  |
-| `be-config` | Ch 7 · Config & encrypted secrets | 5 |  |  |  |  |  |
+| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 226 |  |  |  |  |  |
+| `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 4 |  |  |  |  |  |
+| `be-config` | Ch 7 · Config & encrypted secrets | 4 |  |  |  |  |  |
 | `be-shim` | Ch 8 · The database.py shim | 3 |  |  |  |  |  |
 | `be-data` | Ch 9 · The data layer | 39 |  |  |  |  |  |
 | `be-alembic` | Ch 10 · Alembic migrations | 35 |  |  |  |  |  |
@@ -30,10 +30,10 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `be-ratelimit` | Ch 12 · Rate limiting | 2 |  |  |  |  |  |
 | `be-logging` | Ch 13 · Logging & redaction | 2 |  |  |  |  |  |
 | `in-feeds` | Ch 14 · Feed sources | 29 |  |  |  |  |  |
-| `in-scheduler` | Ch 15 · Scheduler & locks | 3 |  |  |  |  |  |
+| `in-scheduler` | Ch 15 · Scheduler & locks | 5 |  |  |  |  |  |
 | `in-queue` | Ch 16 · Outbound queue & circuit breakers | 5 |  |  |  |  |  |
-| `in-jobs` | Ch 17 · Durable jobs (Procrastinate) | 8 |  |  |  |  |  |
-| `ie-scoring` | Ch 18 · Risk & Threat scoring | 7 |  |  |  |  |  |
+| `in-jobs` | Ch 17 · Durable jobs (Procrastinate) | 11 |  |  |  |  |  |
+| `ie-scoring` | Ch 18 · Risk & Threat scoring | 9 |  |  |  |  |  |
 | `ie-matching` | Ch 19 · Asset/CPE matching | 2 |  |  |  |  |  |
 | `ie-correlation` | Ch 20 · Correlation engine | 23 |  |  |  |  |  |
 | `ie-detection` | Ch 21 · Detection engineering | 15 |  |  |  |  |  |
@@ -42,13 +42,13 @@ _Regenerated 2026-07-19. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `ie-ml` | Ch 24 · ML & LLM enrichment | 7 |  |  |  |  |  |
 | `ie-ml-providers` | Ch 24B · Inside the LLM chain | 13 |  |  |  |  |  |
 | `ie-retrieval-ops` | Ch 24C · Retrieval ops & auto-on-ingest | 4 |  |  |  |  |  |
-| `api-routers` | Ch 25 · Routers | 5 |  |  |  |  |  |
+| `api-routers` | Ch 25 · Routers | 46 |  |  |  |  |  |
 | `api-secarch` | Ch 26 · Security architecture (self-doc) | 27 |  |  |  |  |  |
 | `api-webhooks` | Ch 27 · Webhooks & SSRF | 8 |  |  |  |  |  |
 | `api-usersettings` | Ch 28 · User-facing settings | 5 |  |  |  |  |  |
 | `api-proof` | Ch 29 · Proof, services & templates | 7 |  |  |  |  |  |
 | `api-ops` | Ch 30 · Ops & observability | 16 |  |  |  |  |  |
-| `api-scripts` | Ch 31 · Scripts & guardrails | 10 |  |  |  |  |  |
+| `api-scripts` | Ch 31 · Scripts & guardrails | 9 |  |  |  |  |  |
 | `devops-deploy` | Ch 32 · Deployment & infrastructure | 25 |  |  |  |  |  |
 | `devops-ci` | Ch 33 · CI/CD & testing | 0 |  |  |  |  |  |
 | `sec-identity` | 1 · Identity & session security | 0 |  |  |  |  |  |

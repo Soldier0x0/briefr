@@ -1,9 +1,9 @@
 {
-  "generated": "2026-07-19",
+  "generated": "2026-07-21",
   "guide": "docs/STUDY_GUIDE.html",
   "counts": {
-    "covered": 612,
-    "out_of_scope": 75,
+    "covered": 646,
+    "out_of_scope": 85,
     "orphan_mention": 1
   },
   "chapters": [
@@ -15,7 +15,7 @@
     {
       "id": "system-design",
       "title": "System Design \u2014 4 diagrams",
-      "mention_count": 58
+      "mention_count": 35
     },
     {
       "id": "primer-mechanics",
@@ -65,7 +65,7 @@
     {
       "id": "fe-state",
       "title": "Ch 4 \u00b7 State & data flow",
-      "mention_count": 4
+      "mention_count": 7
     },
     {
       "id": "fe-tooling",
@@ -80,7 +80,7 @@
     {
       "id": "fe-admin-shell",
       "title": "Ch 5C \u00b7 Admin shell",
-      "mention_count": 107
+      "mention_count": 109
     },
     {
       "id": "fe-forge-wallboard",
@@ -90,17 +90,17 @@
     {
       "id": "fe-shared-utils",
       "title": "Ch 5E \u00b7 Hooks, utils & scoring helpers",
-      "mention_count": 216
+      "mention_count": 226
     },
     {
       "id": "be-bootstrap",
       "title": "Ch 6 \u00b7 Bootstrap & lifespan",
-      "mention_count": 3
+      "mention_count": 4
     },
     {
       "id": "be-config",
       "title": "Ch 7 \u00b7 Config & encrypted secrets",
-      "mention_count": 5
+      "mention_count": 4
     },
     {
       "id": "be-shim",
@@ -140,7 +140,7 @@
     {
       "id": "in-scheduler",
       "title": "Ch 15 \u00b7 Scheduler & locks",
-      "mention_count": 3
+      "mention_count": 5
     },
     {
       "id": "in-queue",
@@ -150,12 +150,12 @@
     {
       "id": "in-jobs",
       "title": "Ch 17 \u00b7 Durable jobs (Procrastinate)",
-      "mention_count": 8
+      "mention_count": 11
     },
     {
       "id": "ie-scoring",
       "title": "Ch 18 \u00b7 Risk & Threat scoring",
-      "mention_count": 7
+      "mention_count": 9
     },
     {
       "id": "ie-matching",
@@ -200,7 +200,7 @@
     {
       "id": "api-routers",
       "title": "Ch 25 \u00b7 Routers",
-      "mention_count": 5
+      "mention_count": 46
     },
     {
       "id": "api-secarch",
@@ -230,7 +230,7 @@
     {
       "id": "api-scripts",
       "title": "Ch 31 \u00b7 Scripts & guardrails",
-      "mention_count": 10
+      "mention_count": 9
     },
     {
       "id": "devops-deploy",
@@ -926,6 +926,15 @@
       "notes": ""
     },
     {
+      "path": "backend/catchup_mode.py",
+      "status": "covered",
+      "chapters": [
+        "in-scheduler"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
       "path": "backend/config_schema.py",
       "status": "covered",
       "chapters": [
@@ -992,15 +1001,6 @@
     },
     {
       "path": "backend/correlation/confirm.py",
-      "status": "covered",
-      "chapters": [
-        "ie-correlation"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
-      "path": "backend/correlation/copy.py",
       "status": "covered",
       "chapters": [
         "ie-correlation"
@@ -1087,6 +1087,15 @@
       "status": "covered",
       "chapters": [
         "be-data",
+        "ie-correlation"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/correlation/narrative.py",
+      "status": "covered",
+      "chapters": [
         "ie-correlation"
       ],
       "evidence": "exact path mention in chapter body/chips",
@@ -2021,6 +2030,15 @@
       "notes": ""
     },
     {
+      "path": "backend/jobs/retry_policy.py",
+      "status": "covered",
+      "chapters": [
+        "in-jobs"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
       "path": "backend/jobs/tasks.py",
       "status": "covered",
       "chapters": [
@@ -2227,6 +2245,15 @@
       "notes": ""
     },
     {
+      "path": "backend/pyproject.toml",
+      "status": "covered",
+      "chapters": [
+        "be-bootstrap"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
       "path": "backend/pytest.ini",
       "status": "covered",
       "chapters": [
@@ -2294,7 +2321,7 @@
       "path": "backend/routers/__init__.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2303,21 +2330,155 @@
       "path": "backend/routers/_validators.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
     },
     {
-      "path": "backend/routers/admin.py",
+      "path": "backend/routers/admin/__init__.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/ai_ops.py",
       "status": "covered",
       "chapters": [
         "api-routers",
-        "api-scripts",
-        "be-config",
-        "ie-retrieval-ops",
-        "in-scheduler",
-        "system-design"
+        "ie-retrieval-ops"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/catchup.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers",
+        "in-scheduler"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/config.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/data_ops.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/database.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/diagnostics.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/feeds.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/helpers.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/jobs.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers",
+        "in-jobs",
+        "in-scheduler"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/router.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/storage.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/system.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/tokens.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/webhooks.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/admin/webhooks_logs.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2326,7 +2487,7 @@
       "path": "backend/routers/atlas.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2335,8 +2496,7 @@
       "path": "backend/routers/auth.py",
       "status": "covered",
       "chapters": [
-        "api-routers",
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2345,7 +2505,7 @@
       "path": "backend/routers/brief.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2354,7 +2514,7 @@
       "path": "backend/routers/config.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2363,19 +2523,72 @@
       "path": "backend/routers/correlation.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
     },
     {
-      "path": "backend/routers/cves.py",
+      "path": "backend/routers/cves/__init__.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/changes.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/common.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/detail.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/intel.py",
       "status": "covered",
       "chapters": [
         "api-routers",
-        "api-secarch",
-        "arch-connectivity",
-        "system-design"
+        "arch-connectivity"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/list.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers",
+        "api-secarch"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/routers/cves/models.py",
+      "status": "covered",
+      "chapters": [
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2384,7 +2597,7 @@
       "path": "backend/routers/detection_backlog.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2393,8 +2606,8 @@
       "path": "backend/routers/forge.py",
       "status": "covered",
       "chapters": [
-        "api-secarch",
-        "system-design"
+        "api-routers",
+        "api-secarch"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2403,7 +2616,7 @@
       "path": "backend/routers/health.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2412,7 +2625,7 @@
       "path": "backend/routers/ioc.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2421,8 +2634,8 @@
       "path": "backend/routers/me.py",
       "status": "covered",
       "chapters": [
-        "fe-state",
-        "system-design"
+        "api-routers",
+        "fe-state"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2431,7 +2644,7 @@
       "path": "backend/routers/meta.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2440,7 +2653,7 @@
       "path": "backend/routers/notifications_me.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2449,7 +2662,7 @@
       "path": "backend/routers/proof.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2458,7 +2671,7 @@
       "path": "backend/routers/refresh.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2467,7 +2680,7 @@
       "path": "backend/routers/search.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2476,7 +2689,7 @@
       "path": "backend/routers/stack_catalog.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2485,7 +2698,7 @@
       "path": "backend/routers/threat_model.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2494,7 +2707,7 @@
       "path": "backend/routers/wallboard.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2503,7 +2716,7 @@
       "path": "backend/routers/watchlist.py",
       "status": "covered",
       "chapters": [
-        "system-design"
+        "api-routers"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -2569,6 +2782,15 @@
         "api-routers",
         "arch-ai-restraint",
         "ie-correlation",
+        "ie-scoring"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/scoring/ssvc.py",
+      "status": "covered",
+      "chapters": [
         "ie-scoring"
       ],
       "evidence": "exact path mention in chapter body/chips",
@@ -3074,6 +3296,22 @@
       "status": "covered",
       "chapters": [
         "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/api.outboundJobs.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
+      "path": "frontend/src/apiOutboundJobs.js",
+      "status": "covered",
+      "chapters": [
+        "in-jobs"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -3968,6 +4206,47 @@
       "notes": ""
     },
     {
+      "path": "frontend/src/components/ioc/IOCLookup.loc.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
+      "path": "frontend/src/components/ioc/IOCQuotaPanel.jsx",
+      "status": "covered",
+      "chapters": [
+        "fe-state"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/components/ioc/IOCResultComponents.jsx",
+      "status": "covered",
+      "chapters": [
+        "fe-state"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/components/ioc/iocUtils.js",
+      "status": "covered",
+      "chapters": [
+        "fe-state"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/components/ioc/iocUtils.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/components/timeWindowDateUtils.js",
       "status": "covered",
       "chapters": [
@@ -4536,6 +4815,15 @@
       "notes": ""
     },
     {
+      "path": "frontend/src/pages/admin/CatchupCard.jsx",
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
       "path": "frontend/src/pages/admin/ComingSoonPage.jsx",
       "status": "covered",
       "chapters": [
@@ -4582,6 +4870,15 @@
     },
     {
       "path": "frontend/src/pages/admin/IngestLogPage.jsx",
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/pages/admin/OutboundJobsPanel.jsx",
       "status": "covered",
       "chapters": [
         "fe-admin-shell"
@@ -4773,6 +5070,22 @@
       "notes": ""
     },
     {
+      "path": "frontend/src/pages/admin/catchupCopy.js",
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/pages/admin/catchupCopy.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/pages/admin/circuitLabels.js",
       "status": "covered",
       "chapters": [
@@ -4857,6 +5170,22 @@
       "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
+      "path": "frontend/src/pages/admin/outboundJobsCopy.js",
+      "status": "covered",
+      "chapters": [
+        "fe-admin-shell"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/pages/admin/outboundJobsCopy.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/pages/admin/rateLimits.js",
       "status": "covered",
       "chapters": [
@@ -4883,15 +5212,6 @@
     },
     {
       "path": "frontend/src/pages/admin/resourcesChartsRecharts.jsx",
-      "status": "covered",
-      "chapters": [
-        "fe-admin-shell"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
-      "path": "frontend/src/pages/admin/shared/ActionProgress.jsx",
       "status": "covered",
       "chapters": [
         "fe-admin-shell"
@@ -5035,15 +5355,6 @@
       "notes": ""
     },
     {
-      "path": "frontend/src/pages/admin/shared/OperatorSystemActions.jsx",
-      "status": "covered",
-      "chapters": [
-        "fe-admin-shell"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
       "path": "frontend/src/pages/admin/shared/OpsCharts.jsx",
       "status": "covered",
       "chapters": [
@@ -5054,15 +5365,6 @@
     },
     {
       "path": "frontend/src/pages/admin/shared/RestartBanner.jsx",
-      "status": "covered",
-      "chapters": [
-        "fe-admin-shell"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
-      "path": "frontend/src/pages/admin/shared/RunningJobsPanel.jsx",
       "status": "covered",
       "chapters": [
         "fe-admin-shell"
@@ -5090,15 +5392,6 @@
     },
     {
       "path": "frontend/src/pages/admin/shared/ToggleSwitch.jsx",
-      "status": "covered",
-      "chapters": [
-        "fe-admin-shell"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
-      "path": "frontend/src/pages/admin/shared/adminListResponse.js",
       "status": "covered",
       "chapters": [
         "fe-admin-shell"
@@ -5319,6 +5612,15 @@
       "notes": ""
     },
     {
+      "path": "frontend/src/scoring/fixtures/threat_parity.json",
+      "status": "covered",
+      "chapters": [
+        "ie-scoring"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
       "path": "frontend/src/scoring/riskScore.js",
       "status": "covered",
       "chapters": [
@@ -5338,17 +5640,9 @@
       "path": "frontend/src/styles/tokens.css",
       "status": "covered",
       "chapters": [
+        "fe-admin-shell",
         "fe-design",
         "fe-shared-utils"
-      ],
-      "evidence": "exact path mention in chapter body/chips",
-      "notes": ""
-    },
-    {
-      "path": "frontend/src/theme/light-theme.css",
-      "status": "covered",
-      "chapters": [
-        "fe-admin-shell"
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
@@ -5510,6 +5804,22 @@
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/clearPointerState.js",
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/clearPointerState.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/correlationPresentation.js",
@@ -5754,6 +6064,22 @@
       "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
+      "path": "frontend/src/utils/formatIntelLabel.js",
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/formatIntelLabel.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/utils/heatmapGrid.js",
       "status": "covered",
       "chapters": [
@@ -5957,6 +6283,22 @@
       "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
+      "path": "frontend/src/utils/navHistory.js",
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/navHistory.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/utils/notificationChime.js",
       "status": "covered",
       "chapters": [
@@ -6043,6 +6385,22 @@
       "notes": ""
     },
     {
+      "path": "frontend/src/utils/personalizationCopy.js",
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/personalizationCopy.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
       "path": "frontend/src/utils/rechartsTheme.js",
       "status": "covered",
       "chapters": [
@@ -6094,6 +6452,22 @@
     },
     {
       "path": "frontend/src/utils/safeExternalUrl.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
+    },
+    {
+      "path": "frontend/src/utils/sectionHeading.js",
+      "status": "covered",
+      "chapters": [
+        "fe-shared-utils"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/sectionHeading.test.js",
       "status": "out_of_scope",
       "chapters": [],
       "evidence": "",

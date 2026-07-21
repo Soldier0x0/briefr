@@ -43,16 +43,19 @@ and why does a public API need that cap?
 ## Module 2 — The data layer (the most important module)
 
 **Files:** `backend/db/config.py`, `backend/db/connection.py`,
-`backend/db/dialect.py`, `backend/alembic/versions/` (read 2–3 migrations).
+`backend/db/pg_adapt.py`, `backend/alembic/versions/` (read 2–3 migrations).
 
-**Trace:** find `_postgres_translate_sql` in `dialect.py`. Pick three regex
-rewrites and, for each, write down: the SQLite SQL that goes in, the Postgres
-SQL that comes out, and what would break without the rewrite.
+**Trace:** find `_postgres_translate_sql` in `pg_adapt.py`. Pick three boundary
+adaptations (for example `datetime('now')`, `INSERT OR IGNORE`, or `?`
+placeholders) and, for each, write down: the legacy SQLite-shaped SQL that goes
+in, the Postgres SQL that comes out, and why new `db/*.py` modules should prefer
+native `_SQLITE` / `_PG` query constants instead of growing the adapter.
 
 **Self-check:** Why do `SqliteConnection` and `PostgresConnection` expose the
 same method surface? What is a connection pool and what happens when it's
-exhausted (`PoolExhaustedError`)? Why is a regex SQL translator risky, and
-what is the long-term fix? Why are migrations forward-only?
+exhausted (`PoolExhaustedError`)? Why is boundary SQL adaptation risky, and
+where is it still tolerated for legacy router/auth code? Why are migrations
+forward-only?
 
 ## Module 3 — Ingest and the scheduler (where the data comes from)
 
@@ -73,17 +76,19 @@ git HEAD SHA instead of timestamps?
 
 ## Module 4 — Scoring and the morning brief (the product's brain)
 
-**Files:** `backend/scoring/risk.py`, `backend/scoring/asset_match.py`,
-`backend/brief/service.py`, `backend/matching/`.
+**Files:** `backend/scoring/threat.py`, `backend/scoring/environment.py`,
+`backend/scoring/operational_priority.py`, `backend/scoring/ssvc.py`,
+`backend/scoring/risk.py`, `backend/brief/service.py`, `backend/matching/`.
 
-**Trace:** pick one CVE from your feed. By hand, on paper, compute its Risk
-Score v1.1b from the six weighted components (asset 0.35, KEV 0.25, EPSS
-0.15, exploit 0.10, CVSS 0.10, momentum 0.05). Compare to what the API
-returns. Then change your saved stack and watch the score move.
+**Trace:** pick one CVE from your feed. By hand, compute its Threat score,
+Environment tier, Operational Priority band, and SSVC annotation from
+`POST /api/cves/{id}/risk`. Then inspect `legacy_risk_v11b` only as the
+backward-compatible v1.1b blend, not the primary product decision.
 
-**Self-check:** Why is asset exposure the heaviest weight? Why consume EPSS
-rather than re-derive it? Why is the score explainable (fixed weights)
-instead of an ML model? What is CPE matching and where does it run?
+**Self-check:** Which inputs can change Threat, which inputs can change
+Environment, and which profile flags can escalate Operational Priority or SSVC
+without changing Threat? Why keep SSVC parallel to OP instead of replacing it?
+What is CPE matching and where does it run?
 
 ## Module 5 — Correlation engine (the differentiator)
 
@@ -101,16 +106,21 @@ Cloudflare IP create)? Why nightly pre-compute instead of live API calls?
 ## Module 6 — Detection content (Forge)
 
 **Files:** `backend/detection/sigma_generator.py`, `yara_generator.py`,
-`siem_queries.py`, `rule_sources.py`, `backend/routers/forge.py`.
+`siem_queries.py`, `class_router.py`, `class_queries.py`,
+`context_nuclei_sync.py`, `composer.py`, `rule_sources.py`,
+`backend/routers/forge.py`.
 
 **Trace:** open the Detect tab for a CVE with an ATT&CK mapping and one
-without. Explain the difference in output. Read the T1190 template line by
-line and explain what each detection key matches.
+without. Explain the difference in output. Then pick a CVE with CWE IDs and
+trace how `class_router` resolves a class slug, how CWE class templates fill
+Sigma/SIEM/log-pattern fallbacks, and how Nuclei artifacts enter the evidence
+pack when a parsed template is available.
 
 **Self-check:** Be precise: which parts of the rule are CVE-specific and
 which are template? Why is every generated rule marked `experimental` with a
-confidence note? What would "CVE-specific artifact injection" from Nuclei
-templates add (see `docs/planning/STRATEGY.md` §4)?
+confidence note? What can Nuclei artifact injection add that CWE class
+templates cannot? Why is `compose_basis` useful when reviewing a generated
+pack?
 
 ## Module 7 — Auth, sessions, and application security
 
@@ -142,7 +152,52 @@ Why age-encrypt archives? What does `request_id` in the JSON logs enable?
 
 ---
 
-## After the eight modules
+## Module 9 — Hybrid search and retrieval health
+
+**Files:** `backend/routers/search.py`, `backend/services/semantic_search.py`,
+`backend/ml/embeddings.py`, `backend/services/retrieval_health.py`,
+`backend/routers/admin/ai_ops.py`.
+
+**Trace:** run `GET /api/search/semantic?q=remote code execution&mode=hybrid`
+with embeddings disabled, then enabled on a seeded database. Compare
+`meta.method`, `match_reasons`, and the Admin retrieval health counts.
+
+**Self-check:** When does BRIEFR fall back to keyword search? Why are corpus
+embeddings scheduler-side while a single query embedding is allowed on the
+request path? What does `EMBEDDINGS_AUTO_ON_INGEST` protect after fresh ingest?
+
+## Module 10 — Durable jobs and catch-up
+
+**Files:** `backend/jobs/`, `backend/routers/admin/jobs.py`,
+`backend/routers/admin/catchup.py`, `backend/catchup_mode.py`,
+`backend/api_queue.py`, `backend/scheduler.py`.
+
+**Trace:** with `PROCRASTINATE_ENABLED=0`, trigger the LLM product extraction
+job manually and observe the in-process path. Then read the durable branch and
+explain how queueing locks avoid duplicate `llm_product_extraction` or
+`stack_backfill` work. Start Catch-up mode and follow `catchup_tick` through
+the API queue summary.
+
+**Self-check:** Why is Procrastinate not a second scheduler? Which jobs are
+durable-owned today? What must change when running multiple uvicorn workers?
+
+## Module 11 — Security posture admin
+
+**Files:** `backend/security_architecture/`, `backend/routers/admin/diagnostics.py`,
+`backend/routers/admin/system.py`, `frontend/src/pages/security-architecture/`,
+`docs/decisions/`.
+
+**Trace:** open ARCH and Admin → Security. Follow one posture warning or stale
+record from UI tile → API route → corpus/live merge → source evidence. Then run
+the corpus drift diagnostic and explain what generated vs curated vs live means.
+
+**Self-check:** Why does the Security Architecture module avoid invented
+composite scores? What is stale-record decay? Which checks are operator posture
+signals versus analyst threat-intelligence views?
+
+---
+
+## After the eleven modules
 
 1. Write the ADRs listed in `docs/planning/STRATEGY.md` §7 — each one is now a
    30-minute exercise instead of research.

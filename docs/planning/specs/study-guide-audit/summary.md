@@ -1,14 +1,14 @@
 # Study guide audit summary
 
-_Regenerated 2026-07-19 by `scripts/audit_study_guide.py`._
+_Regenerated 2026-07-21 by `scripts/audit_study_guide.py`._
 
 ## Counts
 
-- Covered: **612**
+- Covered: **646**
 - Weak (dir-only): **0**
 - Gaps: **0**
 - Orphan mentions: **1**
-- Out of scope rows: **75**
+- Out of scope rows: **85**
 - TOC chapters: **69**
 
 ## Top gap directories
