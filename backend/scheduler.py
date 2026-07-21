@@ -73,6 +73,7 @@ from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 from feeds.atlas import get_latest_atlas_release, refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
+from feeds.extended import enrich_cves_extended
 from feeds.exploit_sync import (
     exploit_sources_enabled,
     get_exploit_sources_interval_hours,
@@ -381,6 +382,7 @@ async def _run_nvd_incremental_sync() -> None:
         else:
             new_watermark = mod_end_iso
 
+        updated_ids: list[str] = []
         db = await get_db()
         try:
             _job_progress["nvd_incremental_sync"] = f"Writing {len(cves)} CVEs to database, purging {len(rejected_ids)} rejected IDs…"
@@ -408,32 +410,56 @@ async def _run_nvd_incremental_sync() -> None:
                 poc_marked = await backfill_has_poc(db, updated_ids)
             else:
                 stripped = filled = poc_marked = 0
-            if updated_ids:
-                enrich_cap = 40
-                enrich_batch = min(len(updated_ids), enrich_cap)
-                _job_progress["nvd_incremental_sync"] = (
-                    f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
-                    f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
-                )
-                from feeds.extended import enrich_cves_extended
 
-                def _enrich_progress(msg: str) -> None:
-                    _job_progress["nvd_incremental_sync"] = msg
+            # Release cves row locks AND the pool connection before outbound
+            # source HTTP (CIRCL/Sploitus) or embeddings. Source latency must
+            # not share the ingest transaction's command_timeout budget —
+            # concurrent VulnCheck/KEV/EPSS writers otherwise wait out CIRCL
+            # DNS hangs and fail with Database command timeout. Per-source
+            # HTTP timeouts stay in feed modules; do not raise the global
+            # DATABASE_POOL_COMMAND_TIMEOUT_SECONDS for slow APIs.
+            await db.commit()
+            logger.info(
+                "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
+                stripped,
+                filled,
+                poc_marked,
+            )
+        finally:
+            await db.close()
 
+        if updated_ids:
+            enrich_cap = 40
+            enrich_batch = min(len(updated_ids), enrich_cap)
+            _job_progress["nvd_incremental_sync"] = (
+                f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
+                f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
+            )
+            def _enrich_progress(msg: str) -> None:
+                _job_progress["nvd_incremental_sync"] = msg
+
+            db = await get_db()
+            try:
                 ext_stats = await enrich_cves_extended(
                     db,
                     updated_ids,
                     progress_cb=_enrich_progress,
                 )
+                await db.commit()
                 logger.info(
                     "Extended enrichment: Sploitus %d, CIRCL %d",
                     ext_stats.get("sploitus", 0),
                     ext_stats.get("circl", 0),
                 )
-            if updated_ids and embeddings_auto_on_ingest_enabled():
-                _job_progress["nvd_incremental_sync"] = (
-                    f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
-                )
+            finally:
+                await db.close()
+
+        if updated_ids and embeddings_auto_on_ingest_enabled():
+            _job_progress["nvd_incremental_sync"] = (
+                f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
+            )
+            db = await get_db()
+            try:
                 try:
                     emb_stats = await run_embeddings_backfill(
                         db,
@@ -460,12 +486,17 @@ async def _run_nvd_incremental_sync() -> None:
                             }
                         ),
                     )
+                    await db.commit()
                 except Exception as emb_exc:
                     # Fail-safe: never fail NVD ingest because the index tail broke.
                     logger.exception(
                         "Embeddings ingest tail failed (NVD sync continues): %s",
                         emb_exc,
                     )
+                    try:
+                        await db.rollback()
+                    except Exception:
+                        pass
                     try:
                         await set_sync_state_value(
                             db,
@@ -481,19 +512,13 @@ async def _run_nvd_incremental_sync() -> None:
                                 }
                             ),
                         )
+                        await db.commit()
                     except Exception:
                         logger.exception(
                             "Failed to persist embeddings ingest-tail error state"
                         )
-            await db.commit()
-            logger.info(
-                "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
-                stripped,
-                filled,
-                poc_marked,
-            )
-        finally:
-            await db.close()
+            finally:
+                await db.close()
 
         mode = "incremental (lastMod)" if used_incremental else "full (published window)"
         logger.info("NVD sync complete (%s): %d CVEs upserted", mode, new_or_updated)

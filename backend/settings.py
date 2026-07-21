@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     db_path: str = ""
     database_pool_size: int = 10
     database_pool_acquire_timeout_seconds: int = 10
-    database_pool_command_timeout_seconds: int = 60
+    database_pool_command_timeout_seconds: int = 60  # SQL only; not feed HTTP
     briefr_require_postgres: bool = False
 
     # §5.5 — structured logging + rate limiting (import-time config)

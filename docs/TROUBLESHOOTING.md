@@ -6,6 +6,8 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
 |---------|-----|
 | **Empty or slow CVE feed** | First boot ingests in background — wait or run `python scripts/seed_screenshot_data.py`. Check `curl localhost:8000/api/health` |
 | **NVD sync slow / 503 / circuit open** | NVD pacing is upstream behavior, not usually a bad key. Wait for cooldown; avoid repeated manual refresh. Keep `NVD_API_KEY` set |
+| **VulnCheck / KEV job: `Database command timeout`** | Shared SQL timeout (60s), not that job’s HTTP budget. Confirm NVD is not holding locks across CIRCL/Sploitus (fixed by commit/close before enrich). Do **not** raise `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` as the first fix — see [POSTGRES.md](POSTGRES.md) |
+| **CIRCL DNS / circuit open during NVD** | Upstream CIRCL reachability; circuit breaker is correct. Ingest CVEs still commit; extended enrich is best-effort after watermark |
 | **Hybrid search returns no semantic hits** | Keyword CVE results can still work. Enable `EMBEDDINGS_ENABLED=1`, install `fastembed`, use Postgres + pgvector, then run embeddings backfill / Catch-up |
 | **Embeddings / pgvector missing** | Use `pgvector/pgvector:pg16`, run migrations, keep `EMBEDDINGS_PGVECTOR=1`. Without pgvector BRIEFR falls back to heuristic related-CVE matching |
 | **429 Too Many Requests** | Normal rate limit — wait for `Retry-After`. Don't hammer IOC/refresh endpoints |

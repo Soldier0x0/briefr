@@ -12,6 +12,39 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Source HTTP vs shared DB command_timeout (class fix)
+
+**Problem:** Not every feed/API shares the same latency budget as Postgres
+`command_timeout` (60s). Nesting CIRCL/Sploitus (and similar) HTTP inside an open
+write txn made concurrent VulnCheck/KEV/EPSS writers hit `Database command timeout`.
+
+**Observed:** VulnCheck KEV Tier Sync timeout (~16:58 UTC) while NVD logged CIRCL
+DNS / circuit open (~17:02). Docs build `72d0272` unrelated.
+
+**Invariant:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is **SQL-only**. Per-source
+HTTP timeouts stay in `feeds/`. Commit or close before outbound source I/O —
+helper `db/txn_boundaries.commit_before_source_io`. Do **not** raise the global
+SQL timeout to paper over slow APIs.
+
+**Done:** NVD commits + closes the ingest connection before enrich/embeddings;
+CIRCL/Sploitus/GreyNoise/URLHaus/MalwareBazaar commit before HTTP; enrich
+post-lookup commit failures roll back and re-raise (no poisoned-connection
+continue); config + POSTGRES/OPERATIONS/PRODUCT_STATUS docs updated. Tests:
+`tests/test_nvd_txn_boundary.py`.
+
+**Accepted residual:** Watermark advances before enrich (enrich is best-effort).
+CIRCL can self-heal via missing-CAPEC query; Sploitus only runs from this NVD
+path, so a mid-enrich crash may leave exploit refs until those CVEs reappear in
+a later NVD batch. Pure-DB writer overlap remains possible but rarer.
+
+**Docs:** `SYSTEM_DESIGN` CVE lifecycle + SQL vs source I/O; `TROUBLESHOOTING`
+timeout / CIRCL rows; `POSTGRES` / `OPERATIONS` / `ONBOARDING` / `PRODUCT_STATUS`.
+
+**Next:** Merged via PR #732; deploy and confirm VulnCheck stays healthy during
+CIRCL blips.
+
+---
+
 ## 2026-07-21 — Full documentation library refresh
 
 **Done** (branch `cursor/docs-library-refresh-af21`):

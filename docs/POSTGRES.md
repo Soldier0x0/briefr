@@ -170,6 +170,8 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 | `DATABASE_URL` | **Required.** `postgresql://user:pass@host:5432/dbname` |
 | `BRIEFR_REQUIRE_POSTGRES` | Set `1` to refuse startup without Postgres |
 | `DATABASE_POOL_SIZE` | asyncpg pool size (default `10`) |
+| `DATABASE_POOL_ACQUIRE_TIMEOUT_SECONDS` | Wait for a free pool slot before HTTP 503 (default `10`) |
+| `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | **SQL statement** timeout on pooled connections (default `60`). Not for feed/API HTTP — each source has its own timeout in `feeds/`. Do not raise this to mask slow CIRCL/Sploitus/etc.; commit or close the connection before outbound source I/O (`db/txn_boundaries.py`). |
 | `EMBEDDINGS_ENABLED` | Optional semantic retrieval toggle; requires `pgvector/pgvector:pg16` on Postgres |
 | `EMBEDDINGS_AUTO_ON_INGEST` | When embeddings are enabled, warm vectors for new/updated CVEs after ingest (default `1`) |
 | `BACKUP_DIR` | Archive directory (default `/var/lib/briefr/backups`) |
@@ -187,6 +189,7 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 | Timeline/charts empty but `cve_count` > 0 | Fixed in app — ensure `/api/stats/timeline` returns non-zero counts; hard-refresh browser |
 | Empty feed on first boot | Fewer than 10 CVE rows triggers NVD ingest, or run `scripts/seed_screenshot_data.py` with `DATABASE_URL` set |
 | `extension "vector" is not available` / Alembic 032 fails | Postgres image lacks pgvector — use `pgvector/pgvector:pg16` (same major as prod); recreate disposable containers after the image change |
+| Job fails with `Database command timeout` during another feed’s CIRCL/HTTP | SQL `command_timeout` budget shared under lock wait — not that job’s HTTP timeout. Ensure writers commit/close before source I/O (`db/txn_boundaries.py`); do not raise `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` first |
 
 ## pgvector cutover (embeddings E1)
 
