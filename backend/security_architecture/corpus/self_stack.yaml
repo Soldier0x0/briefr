@@ -160,14 +160,6 @@ terms:
   origin: generated
   term: numpy
   source: backend/requirements.txt
-- id: self-stack-openpyxl
-  title: openpyxl
-  summary: BRIEFR dependency term derived from backend/requirements.txt.
-  owner: platform
-  status: active
-  origin: generated
-  term: openpyxl
-  source: backend/requirements.txt
 - id: self-stack-orjson
   title: orjson
   summary: BRIEFR dependency term derived from backend/requirements.txt.

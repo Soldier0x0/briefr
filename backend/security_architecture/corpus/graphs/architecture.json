@@ -173,6 +173,18 @@
       ]
     },
     {
+      "id": "job:catchup_tick",
+      "label": "Catch-up tick",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "catchup_tick"
+        }
+      ]
+    },
+    {
       "id": "job:cpe_catalog_sync",
       "label": "NVD CPE Software Catalog Sync",
       "kind": "job",
@@ -474,6 +486,19 @@
       ]
     },
     {
+      "id": "routers-admin-catchup",
+      "label": "routers.admin.catchup",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/catchup.py"
+        }
+      ]
+    },
+    {
       "id": "routers-admin-config",
       "label": "routers.admin.config",
       "kind": "component",
@@ -543,7 +568,7 @@
       "label": "routers.admin.jobs",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 9,
+      "endpoint_count": 10,
       "source_refs": [
         {
           "type": "file",
@@ -682,15 +707,54 @@
       ]
     },
     {
-      "id": "routers-cves",
-      "label": "routers.cves",
+      "id": "routers-cves-changes",
+      "label": "routers.cves.changes",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 25,
+      "endpoint_count": 1,
       "source_refs": [
         {
           "type": "file",
-          "ref": "backend/routers/cves.py"
+          "ref": "backend/routers/cves/changes.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-cves-detail",
+      "label": "routers.cves.detail",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/cves/detail.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-cves-intel",
+      "label": "routers.cves.intel",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 12,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/cves/intel.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-cves-list",
+      "label": "routers.cves.list",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 7,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/cves/list.py"
         }
       ]
     },
@@ -1825,6 +1889,66 @@
       "id": "job:cache_retention_cleanup->table:cves",
       "source": "job:cache_retention_cleanup",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:atlas_case_studies",
+      "source": "job:catchup_tick",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:atlas_techniques",
+      "source": "job:catchup_tick",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:cve_atlas_map",
+      "source": "job:catchup_tick",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:cve_exploits",
+      "source": "job:catchup_tick",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:cve_technique_map",
+      "source": "job:catchup_tick",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:cves",
+      "source": "job:catchup_tick",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:group_technique_map",
+      "source": "job:catchup_tick",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:mitre_groups",
+      "source": "job:catchup_tick",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:mitre_techniques",
+      "source": "job:catchup_tick",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:sync_state",
+      "source": "job:catchup_tick",
+      "target": "table:sync_state",
       "kind": "references_table"
     },
     {
@@ -3550,6 +3674,48 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-catchup->table:audit_log",
+      "source": "routers-admin-catchup",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:cve_change_history",
+      "source": "routers-admin-catchup",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:cve_exploits",
+      "source": "routers-admin-catchup",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:cves",
+      "source": "routers-admin-catchup",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:epss_history",
+      "source": "routers-admin-catchup",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:kev_deadlines",
+      "source": "routers-admin-catchup",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:sync_state",
+      "source": "routers-admin-catchup",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-config->table:api_call_events",
       "source": "routers-admin-config",
       "target": "table:api_call_events",
@@ -4072,6 +4238,24 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-tokens->table:search_api_tokens",
+      "source": "routers-admin-tokens",
+      "target": "table:search_api_tokens",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:sync_state",
+      "source": "routers-admin-tokens",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:user_preferences",
+      "source": "routers-admin-tokens",
+      "target": "table:user_preferences",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:audit_log",
       "source": "routers-admin-webhooks",
       "target": "table:audit_log",
@@ -4354,182 +4538,518 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:atlas_case_studies",
-      "source": "routers-cves",
-      "target": "table:atlas_case_studies",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:atlas_techniques",
-      "source": "routers-cves",
-      "target": "table:atlas_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:audit_log",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:audit_log",
+      "source": "routers-cves-changes",
       "target": "table:audit_log",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:correlation_actor",
-      "source": "routers-cves",
-      "target": "table:correlation_actor",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_campaign_members",
-      "source": "routers-cves",
-      "target": "table:correlation_campaign_members",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_campaigns",
-      "source": "routers-cves",
-      "target": "table:correlation_campaigns",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_cve_snapshot",
-      "source": "routers-cves",
-      "target": "table:correlation_cve_snapshot",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_feedback",
-      "source": "routers-cves",
-      "target": "table:correlation_feedback",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_metrics",
-      "source": "routers-cves",
-      "target": "table:correlation_metrics",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_suppressions",
-      "source": "routers-cves",
-      "target": "table:correlation_suppressions",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:correlation_temporal",
-      "source": "routers-cves",
-      "target": "table:correlation_temporal",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:cve_atlas_map",
-      "source": "routers-cves",
-      "target": "table:cve_atlas_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:cve_change_history",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:cve_change_history",
+      "source": "routers-cves-changes",
       "target": "table:cve_change_history",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:cve_embeddings",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:cve_embeddings",
+      "source": "routers-cves-changes",
       "target": "table:cve_embeddings",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:cve_exploits",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:cve_exploits",
+      "source": "routers-cves-changes",
       "target": "table:cve_exploits",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:cve_technique_map",
-      "source": "routers-cves",
-      "target": "table:cve_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:cves",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:cves",
+      "source": "routers-cves-changes",
       "target": "table:cves",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:embeddings",
-      "source": "routers-cves",
-      "target": "table:embeddings",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:epss_history",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:epss_history",
+      "source": "routers-cves-changes",
       "target": "table:epss_history",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:feed_cache",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:feed_cache",
+      "source": "routers-cves-changes",
       "target": "table:feed_cache",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:group_technique_map",
-      "source": "routers-cves",
-      "target": "table:group_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:ioc_cache",
-      "source": "routers-cves",
-      "target": "table:ioc_cache",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:ioc_degree",
-      "source": "routers-cves",
-      "target": "table:ioc_degree",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-cves->table:kev_deadlines",
-      "source": "routers-cves",
+      "id": "routers-cves-changes->table:kev_deadlines",
+      "source": "routers-cves-changes",
       "target": "table:kev_deadlines",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:mitre_groups",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:atlas_case_studies",
+      "source": "routers-cves-detail",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:atlas_techniques",
+      "source": "routers-cves-detail",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:audit_log",
+      "source": "routers-cves-detail",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_actor",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_actor",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_campaigns",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_cve_snapshot",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_cve_snapshot",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_feedback",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_feedback",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_metrics",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_metrics",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_suppressions",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_suppressions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:correlation_temporal",
+      "source": "routers-cves-detail",
+      "target": "table:correlation_temporal",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cve_atlas_map",
+      "source": "routers-cves-detail",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cve_change_history",
+      "source": "routers-cves-detail",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cve_embeddings",
+      "source": "routers-cves-detail",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cve_exploits",
+      "source": "routers-cves-detail",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cve_technique_map",
+      "source": "routers-cves-detail",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:cves",
+      "source": "routers-cves-detail",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:embeddings",
+      "source": "routers-cves-detail",
+      "target": "table:embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:epss_history",
+      "source": "routers-cves-detail",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:feed_cache",
+      "source": "routers-cves-detail",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:group_technique_map",
+      "source": "routers-cves-detail",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:ioc_cache",
+      "source": "routers-cves-detail",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:ioc_degree",
+      "source": "routers-cves-detail",
+      "target": "table:ioc_degree",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:kev_deadlines",
+      "source": "routers-cves-detail",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-detail->table:mitre_groups",
+      "source": "routers-cves-detail",
       "target": "table:mitre_groups",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:mitre_techniques",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:mitre_techniques",
+      "source": "routers-cves-detail",
       "target": "table:mitre_techniques",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:otx_cve_pulses",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:otx_cve_pulses",
+      "source": "routers-cves-detail",
       "target": "table:otx_cve_pulses",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:otx_pulse_iocs",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:otx_pulse_iocs",
+      "source": "routers-cves-detail",
       "target": "table:otx_pulse_iocs",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:otx_pulses",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:otx_pulses",
+      "source": "routers-cves-detail",
       "target": "table:otx_pulses",
       "kind": "references_table"
     },
     {
-      "id": "routers-cves->table:watchlist",
-      "source": "routers-cves",
+      "id": "routers-cves-detail->table:watchlist",
+      "source": "routers-cves-detail",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:audit_log",
+      "source": "routers-cves-intel",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_actor",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_actor",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_cve_snapshot",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_cve_snapshot",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_feedback",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_feedback",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_metrics",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_metrics",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_suppressions",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_suppressions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:correlation_temporal",
+      "source": "routers-cves-intel",
+      "target": "table:correlation_temporal",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:cve_change_history",
+      "source": "routers-cves-intel",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:cve_embeddings",
+      "source": "routers-cves-intel",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:cve_exploits",
+      "source": "routers-cves-intel",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:cve_technique_map",
+      "source": "routers-cves-intel",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:cves",
+      "source": "routers-cves-intel",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:epss_history",
+      "source": "routers-cves-intel",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:feed_cache",
+      "source": "routers-cves-intel",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:group_technique_map",
+      "source": "routers-cves-intel",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:ioc_cache",
+      "source": "routers-cves-intel",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:ioc_degree",
+      "source": "routers-cves-intel",
+      "target": "table:ioc_degree",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:kev_deadlines",
+      "source": "routers-cves-intel",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:mitre_groups",
+      "source": "routers-cves-intel",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:otx_cve_pulses",
+      "source": "routers-cves-intel",
+      "target": "table:otx_cve_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:otx_pulse_iocs",
+      "source": "routers-cves-intel",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:otx_pulses",
+      "source": "routers-cves-intel",
+      "target": "table:otx_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:pulse_families",
+      "source": "routers-cves-intel",
+      "target": "table:pulse_families",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:watchlist",
+      "source": "routers-cves-intel",
+      "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:atlas_case_studies",
+      "source": "routers-cves-list",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:atlas_techniques",
+      "source": "routers-cves-list",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_campaign_members",
+      "source": "routers-cves-list",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_campaigns",
+      "source": "routers-cves-list",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_cve_snapshot",
+      "source": "routers-cves-list",
+      "target": "table:correlation_cve_snapshot",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_feedback",
+      "source": "routers-cves-list",
+      "target": "table:correlation_feedback",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_metrics",
+      "source": "routers-cves-list",
+      "target": "table:correlation_metrics",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:correlation_suppressions",
+      "source": "routers-cves-list",
+      "target": "table:correlation_suppressions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cve_atlas_map",
+      "source": "routers-cves-list",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cve_change_history",
+      "source": "routers-cves-list",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cve_embeddings",
+      "source": "routers-cves-list",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cve_exploits",
+      "source": "routers-cves-list",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cve_technique_map",
+      "source": "routers-cves-list",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:cves",
+      "source": "routers-cves-list",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:feed_cache",
+      "source": "routers-cves-list",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:group_technique_map",
+      "source": "routers-cves-list",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:ioc_cache",
+      "source": "routers-cves-list",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:ioc_degree",
+      "source": "routers-cves-list",
+      "target": "table:ioc_degree",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:kev_deadlines",
+      "source": "routers-cves-list",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:mitre_groups",
+      "source": "routers-cves-list",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:mitre_techniques",
+      "source": "routers-cves-list",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:otx_cve_pulses",
+      "source": "routers-cves-list",
+      "target": "table:otx_cve_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:otx_pulse_iocs",
+      "source": "routers-cves-list",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:otx_pulses",
+      "source": "routers-cves-list",
+      "target": "table:otx_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-list->table:watchlist",
+      "source": "routers-cves-list",
       "target": "table:watchlist",
       "kind": "references_table"
     },
@@ -4612,48 +5132,6 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-forge->table:audit_log",
-      "source": "routers-forge",
-      "target": "table:audit_log",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_campaign_members",
-      "source": "routers-forge",
-      "target": "table:correlation_campaign_members",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_campaigns",
-      "source": "routers-forge",
-      "target": "table:correlation_campaigns",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_cve_snapshot",
-      "source": "routers-forge",
-      "target": "table:correlation_cve_snapshot",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_feedback",
-      "source": "routers-forge",
-      "target": "table:correlation_feedback",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_metrics",
-      "source": "routers-forge",
-      "target": "table:correlation_metrics",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:correlation_suppressions",
-      "source": "routers-forge",
-      "target": "table:correlation_suppressions",
-      "kind": "references_table"
-    },
-    {
       "id": "routers-forge->table:cve_atlas_map",
       "source": "routers-forge",
       "target": "table:cve_atlas_map",
@@ -4690,12 +5168,6 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-forge->table:epss_history",
-      "source": "routers-forge",
-      "target": "table:epss_history",
-      "kind": "references_table"
-    },
-    {
       "id": "routers-forge->table:feed_cache",
       "source": "routers-forge",
       "target": "table:feed_cache",
@@ -4720,18 +5192,6 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-forge->table:ioc_degree",
-      "source": "routers-forge",
-      "target": "table:ioc_degree",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:kev_deadlines",
-      "source": "routers-forge",
-      "target": "table:kev_deadlines",
-      "kind": "references_table"
-    },
-    {
       "id": "routers-forge->table:mitre_groups",
       "source": "routers-forge",
       "target": "table:mitre_groups",
@@ -4741,30 +5201,6 @@
       "id": "routers-forge->table:mitre_techniques",
       "source": "routers-forge",
       "target": "table:mitre_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:otx_cve_pulses",
-      "source": "routers-forge",
-      "target": "table:otx_cve_pulses",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:otx_pulse_iocs",
-      "source": "routers-forge",
-      "target": "table:otx_pulse_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:otx_pulses",
-      "source": "routers-forge",
-      "target": "table:otx_pulses",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-forge->table:watchlist",
-      "source": "routers-forge",
-      "target": "table:watchlist",
       "kind": "references_table"
     },
     {

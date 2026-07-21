@@ -186,7 +186,7 @@ def test_attack_surface_endpoint_shape():
 
 def test_context_endpoint_known_component_node():
     with TestClient(app) as client:
-        res = client.get("/api/security-architecture/context/routers-cves")
+        res = client.get("/api/security-architecture/context/routers-cves-list")
         assert res.status_code == 200
         body = res.json()
         assert body["kind"] == "component"
@@ -220,7 +220,7 @@ def test_new_graph_routes_require_session_auth():
         for path in (
             "/api/security-architecture/graph/architecture",
             "/api/security-architecture/graph/attack-surface",
-            "/api/security-architecture/context/routers-cves",
+            "/api/security-architecture/context/routers-cves-list",
         ):
             res = client.get(path)
             assert res.status_code == 401, path

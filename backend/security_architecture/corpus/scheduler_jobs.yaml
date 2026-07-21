@@ -36,6 +36,15 @@ jobs:
   source_refs:
   - type: job
     ref: cache_retention_cleanup
+- id: catchup_tick
+  title: Catch-up tick
+  summary: Scheduled job registered in scheduler.py (id=catchup_tick).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: catchup_tick
 - id: cpe_catalog_sync
   title: NVD CPE Software Catalog Sync
   summary: Scheduled job registered in scheduler.py (id=cpe_catalog_sync).

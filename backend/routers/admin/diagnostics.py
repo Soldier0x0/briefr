@@ -12,21 +12,22 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import BackgroundTasks, HTTPException, Query, Request
+from fastapi import BackgroundTasks, HTTPException, Query, Request, Response
 
+import routers.admin as _admin_pkg
 from database import get_db
 from db.integrity import run_integrity_check
 from dependencies import audit
 from destructive_actions import require_confirm
 from rate_limit import get_bucket_stats, get_top_consumers
 from settings import production_posture_warnings, settings
-from structured_logging import LOG_CATEGORIES, get_log_buffer, get_known_loggers
-
-import routers.admin as _admin_pkg
+from structured_logging import LOG_CATEGORIES, get_known_loggers, get_log_buffer
 
 from .router import router
+
 
 @router.get("/logs")
 async def get_logs(
@@ -318,9 +319,8 @@ async def get_onboarding_checklist():
 @router.post("/onboarding/dismiss")
 async def dismiss_onboarding_checklist(request: Request):
     """Hide the first-hour checklist until items change (operator ack)."""
-    from onboarding.checklist import ONBOARDING_DISMISS_KEY
-
     from db.timeutil import utcnow_str
+    from onboarding.checklist import ONBOARDING_DISMISS_KEY
 
     stamp = utcnow_str()
     db = await get_db()

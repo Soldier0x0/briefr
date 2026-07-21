@@ -19,7 +19,7 @@ trust_boundaries:
     origin: curated
     review_date: '2026-07-13'
     evidence: [backend/auth/tokens.py, backend/db/connection.py]
-    related_ids: [jwt-session-auth, rate-limiting, parameterized-sql, routers-auth, routers-cves, cves]
+    related_ids: [jwt-session-auth, rate-limiting, parameterized-sql, routers-auth, routers-cves-list, routers-cves-detail, routers-cves-intel, routers-cves-changes, cves]
     data_classification: Analyst credentials, session tokens, CVE intelligence data
     authentication: JWT session cookie (see jwt-session-auth control)
     encryption: TLS in transit (deployment-terminated); PostgreSQL at-rest encryption is deployment-configured, not enforced by the app itself
