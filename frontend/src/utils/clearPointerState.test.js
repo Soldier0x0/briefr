@@ -54,11 +54,11 @@ describe('clearPointerState', () => {
     assert.equal(blurred, false)
   })
 
-  it('wires tab changes through clearStalePointerState and keeps Intel campaign groups closed by default', () => {
+  it('wires activeTab changes through clearStalePointerState and keeps Intel campaign groups closed by default', () => {
     const app = fs.readFileSync(APP, 'utf8')
     assert.match(app, /import \{ clearStalePointerState \} from '\.\/utils\/clearPointerState\.js'/)
-    assert.match(app, /const selectAppTab = useCallback/)
-    assert.match(app, /clearStalePointerState\(/)
+    assert.match(app, /useEffect\(\(\) => \{\s*schedulePointerStateClear\(\)/)
+    assert.match(app, /\}, \[activeTab\]\)/)
 
     const intel = fs.readFileSync(INTEL_TAB, 'utf8')
     assert.match(intel, /defaultOpen=\{false\}/)

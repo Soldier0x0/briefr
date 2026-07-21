@@ -333,8 +333,14 @@ export default function App() {
   const selectAppTab = useCallback((tab) => {
     setActiveTab(tab)
     setSearchParams((prev) => buildAppTabSearchParams(prev, tab), { replace: true })
-    schedulePointerStateClear()
   }, [setActiveTab, setSearchParams])
+
+  // Clear sticky focus/hover left inside a [hidden] app-tab-panel after ANY
+  // activeTab change (selectAppTab, deep-links, back/forward, Forge pivots).
+  useEffect(() => {
+    schedulePointerStateClear()
+  }, [activeTab])
+
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)
   const [filters, setFilters]                   = useState(DEFAULT_FILTERS)
