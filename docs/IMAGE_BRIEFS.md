@@ -19,7 +19,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 
 **Miro prompt:**
 
-> Dark-mode professional system architecture diagram for a self-hosted security product "BRIEFR". Five horizontal zones stacked vertically with subtle tinted backgrounds and gold accent headers. Zone 01 CLIENT: web browser, React SPA. Zone 02 EDGE optional: Cloudflare Tunnel, nginx :80 proxy to :8000. Zone 03 APPLICATION: FastAPI, APScheduler 13 jobs, admin console. Zone 04 DATA: PostgreSQL 16, pg_dump backups to /var/lib/briefr/backups. Zone 05 EXTERNAL: outbound API chips. Clean spacing, numbered labels, no clip art clutter. Colors: near-black #0a0a08, gold accent #c8b88a, green for database.
+> Dark-mode professional system architecture diagram for a self-hosted security product "BRIEFR". Five horizontal zones stacked vertically with subtle tinted backgrounds and gold accent headers. Zone 01 CLIENT: web browser, React SPA. Zone 02 EDGE optional: Cloudflare Tunnel, nginx :80 proxy to :8000. Zone 03 APPLICATION: FastAPI, APScheduler (~26 registered jobs + optional catch-up/embeddings/detection-context jobs), admin console. Zone 04 DATA: PostgreSQL 16 + pgvector, pg_dump backups to /var/lib/briefr/backups. Zone 05 EXTERNAL: outbound API chips. Clean spacing, numbered labels, no clip art clutter. Colors: near-black #0a0a08, gold accent #c8b88a, green for database.
 
 ---
 

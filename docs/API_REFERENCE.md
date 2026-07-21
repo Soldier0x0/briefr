@@ -1712,7 +1712,7 @@ typed table/timeline/card layout instead of a plain list.
   to security-relevant action prefixes (`auth.`, `backup.`, `database.`,
   `diagnostics.integrity`, `config.apply`, `system.restart`, `scheduler.`) and reusing
   `redact.mask_audit_log_target` — the same table and masking rule as the Admin Audit
-  Log view (`routers/admin.py::get_audit_log`), not a duplicate.
+  Log view (`routers/admin/diagnostics.py::get_audit_log`), not a duplicate.
 
 **Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
 

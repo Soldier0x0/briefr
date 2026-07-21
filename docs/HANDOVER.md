@@ -12,6 +12,20 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Full documentation library refresh
+
+**Done** (branch `cursor/docs-library-refresh-af21`):
+- Codebase-first audit (not graphify) against ~40 merged PRs (#687–#729) + parallel BE/FE/study-guide gap reports.
+- Plan: `docs/superpowers/plans/2026-07-21-docs-library-refresh.md`.
+- Living docs: `SYSTEM_DESIGN`, `API_REFERENCE`, `README`, `USE`, `HOW_IT_WORKS`, `SELF_HOST`, `TROUBLESHOOTING`, `index`, `PRODUCT`, `ONBOARDING`, `OPERATIONS`, `LEARNING_PATH`, `POSTGRES`, `DOCUMENTATION_PLAN`, `design-system` (implemented vs target), `IMAGE_BRIEFS`, `PRODUCT_STATUS` rollout, `AGENT_METHODOLOGY`.
+- Study guide: `STUDY_GUIDE.html` truth pass (router packages, Recharts-complete, durable LLM job, Catch-up, dark-only) → regenerated `docs/study-guide/` + `docs/learn/` (fixed pathway hrefs to `../../study-guide/pages`).
+- Audit notes: `planning/specs/study-guide-audit/STALE_CLAIMS.md` + `gaps.md`.
+- Did **not** edit `docs/archive/**`.
+
+**Next:** `graphify update .` after docs land; triage Gemini PR review comments before merge.
+
+---
+
 ## 2026-07-21 — Task 9: UX RCA docs + verify-local (PR-A–E closeout)
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):

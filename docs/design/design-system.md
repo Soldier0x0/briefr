@@ -246,14 +246,24 @@ E9: failing Discord webhook + 91% LLM fail rate were not surfaced prominently).
 
 Three layers. Higher layers compose lower ones; never re-implement a lower layer.
 
-1. **Primitives (Radix behavior + BRIEFR CSS tokens)** — Button, Checkbox, RadioGroup,
-   Switch, Select, Slider, Tabs, Tooltip, Popover, Dialog/Modal, DropdownMenu, ScrollArea,
-   AlertDialog (typed-confirm).
-2. **Composites** — Table/DataGrid, StatCard, Badge/Pill, Chip/Filter, Card/Panel,
-   Toast/notification, EmptyState, ChartShell (fixed-height wrapper), FormField
-   (label+control+error), SidebarNav, PageHeader/Breadcrumbs, DangerZone.
+### Implemented today (`frontend/src/components/ui/`)
+
+1. **Primitives (Radix behavior + BRIEFR CSS tokens)** — Button, Checkbox, Switch,
+   Select, Slider, Tabs, Tooltip, Dialog/`Modal`, AlertDialog/`ConfirmModal`,
+   DropdownMenu (includes radio-item helpers).
+2. **Composites** — DataGrid, StatCard, Badge, Pill, Card, Toast, EmptyState,
+   ErrorState, AsyncState, Skeleton/SkeletonStack, ChartShell, ChartDataTable,
+   DateTimePicker, DateTimeRangeField, ReferenceTooltip.
 3. **Features** — FEED cards, DetailDrawer + tabs, BRIEF widgets, IOC panels, Forge,
-   ARCH pages, Admin pages. Features consume composites/primitives only.
+   Admin Security posture (legacy ARCH redirects here), Admin pages. Features consume
+   composites/primitives only.
+
+### Target / not yet exported as shared primitives
+
+RadioGroup, Popover, ScrollArea, FormField (label+control+error), SidebarNav, and
+PageHeader/Breadcrumbs remain design targets — prefer composing existing primitives
+until those land in `components/ui/`. Admin breadcrumbs and sidebar patterns exist as
+page-local markup today; do not invent a second shared nav kit outside this inventory.
 
 ## 19. Component usage rules
 
@@ -268,8 +278,8 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
   overflowed over other content).
 - Tables use `DataGrid` with `table-layout: fixed` + shared `<col>` so column resize keeps
   header/body aligned (audit UI-BUG-2, plan ticket E2-3: resize desynced header from body).
-- Selected/active state = `--accent-selected` via the shared SidebarNav/Tabs/Chip
-  components; do not hand-roll active styling.
+- Selected/active state = `--accent-selected` via shared Tabs/Chip/nav patterns; do not
+  hand-roll a second active color.
 - Clickable elements must look clickable (hover + cursor + affordance); non-clickable
   cards must not look interactive (audit UI-15: stat cards/header icons).
 - Charts use **Recharts 3.x** (the approved engine — ADR-005; shadcn look re-skinned to
@@ -299,7 +309,8 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
 - **A2:** `tokens.css` supersedes the ad-hoc token block in `App.css`; legacy raw names
   (`--red`, `--bg2`, `--text3`, …) remain as aliases until migration completes, then are
   removed. **Open:** exact alias-removal cut-line per component.
-- **A3:** Light theme is a parity target, not a shipped feature (currently not imported).
+- **A3:** **Dark-only product.** Light theme was removed (W6 hygiene); do not reintroduce
+  without an ADR. There is no `frontend/src/theme/light-theme.css`.
 - **Open Q1:** final `--text-muted` value validated by an automated contrast lint.
 - **Open Q2:** whether the command palette becomes the primary nav (affects sidebar work).
 - **Open Q3:** icon library choice (existing inline SVGs vs a set like Lucide).
@@ -356,7 +367,9 @@ exception: filled selection is allowed; neon **borders** are not.
 
 - Breadcrumb and section wayfinding labels use **consistent uppercase** mono
   styling (`letter-spacing`, `text-transform: uppercase`) — see `AdminBreadcrumbs`
-  and shared `PageHeader` patterns. Do not mix Title Case and ALL CAPS in one trail.
+  and the same uppercase mono trail pattern on other surfaces. A shared
+  `PageHeader` primitive is still a target (not yet exported from `components/ui`).
+  Do not mix Title Case and ALL CAPS in one trail.
 
 ### 23.6 Health vs freshness (ops surfaces)
 
