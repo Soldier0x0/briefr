@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — RCA: intermittent BRIEF "Not authenticated" while header shows user
+
+**Symptom:** BRIEF hero stats strip shows `Not authenticated (ref: …)` + Retry while
+header UserMenu still shows the logged-in username.
+
+**RCA:** Stats call (`GET /api/stats` via `fetchStats` → `require_user`) returned 401
+because `briefr_at` was missing/expired/invalid. `api.js` already dedupes 401→`/auth/refresh`
+through a shared promise (to avoid refresh-token **reuse detection** revoking all
+sessions). `AuthContext` still called `/api/auth/refresh` with a bare `fetch`, so a
+parallel bootstrap/expiry refresh could race API retries, revoke sessions, and leave
+widgets with a sticky 401 while React auth state briefly still had the user.
+
+**Fix:** export `refreshAccessToken` from `api.js` for shared in-flight dedupe.
+`AuthContext` bootstrap uses `fetchMe()` only (`request()` already refreshes on 401) —
+no bare `/auth/refresh` and no redundant second refresh in the catch (Gemini review).
+Gate: `frontend/src/utils/authRefreshRaceGate.test.js`.
+
+**Next:** Merge after review; multi-tab refresh races remain a residual edge (same
+reuse detector by design).
+
+---
+
 ## 2026-07-21 — Source HTTP vs shared DB command_timeout (class fix)
 
 **Problem:** Not every feed/API shares the same latency budget as Postgres
