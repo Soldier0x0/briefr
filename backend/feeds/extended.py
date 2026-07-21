@@ -647,6 +647,12 @@ async def enrich_cves_extended(
             stats["sploitus"] += 1
         except Exception as exc:
             logger.warning("Scheduler Sploitus failed for %s: %s", cve_id, exc)
+        # Commit after each outbound lookup so source HTTP/DNS latency cannot
+        # hold cves/feed_cache locks into the next CVE (shared command_timeout).
+        try:
+            await db.commit()
+        except Exception as exc:
+            logger.warning("Sploitus post-lookup commit failed for %s: %s", cve_id, exc)
 
     circl_ids = await get_cve_ids_missing_circl_capec(db, limit=max_per_run)
     if circl_ids:
@@ -676,6 +682,12 @@ async def enrich_cves_extended(
                 stats["circl"] += 1
             except Exception as exc:
                 logger.warning("Scheduler CIRCL failed for %s: %s", row["cve_id"], exc)
+            try:
+                await db.commit()
+            except Exception as exc:
+                logger.warning(
+                    "CIRCL post-lookup commit failed for %s: %s", row["cve_id"], exc
+                )
 
     return stats
 

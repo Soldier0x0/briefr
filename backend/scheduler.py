@@ -408,6 +408,19 @@ async def _run_nvd_incremental_sync() -> None:
                 poc_marked = await backfill_has_poc(db, updated_ids)
             else:
                 stripped = filled = poc_marked = 0
+
+            # Release cves row locks BEFORE outbound source HTTP (CIRCL/Sploitus)
+            # or embeddings. Source latency must not share the ingest transaction's
+            # command_timeout budget — concurrent VulnCheck/KEV/EPSS writers otherwise
+            # wait out CIRCL DNS hangs and fail with Database command timeout.
+            await db.commit()
+            logger.info(
+                "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
+                stripped,
+                filled,
+                poc_marked,
+            )
+
             if updated_ids:
                 enrich_cap = 40
                 enrich_batch = min(len(updated_ids), enrich_cap)
@@ -425,6 +438,7 @@ async def _run_nvd_incremental_sync() -> None:
                     updated_ids,
                     progress_cb=_enrich_progress,
                 )
+                await db.commit()
                 logger.info(
                     "Extended enrichment: Sploitus %d, CIRCL %d",
                     ext_stats.get("sploitus", 0),
@@ -460,12 +474,17 @@ async def _run_nvd_incremental_sync() -> None:
                             }
                         ),
                     )
+                    await db.commit()
                 except Exception as emb_exc:
                     # Fail-safe: never fail NVD ingest because the index tail broke.
                     logger.exception(
                         "Embeddings ingest tail failed (NVD sync continues): %s",
                         emb_exc,
                     )
+                    try:
+                        await db.rollback()
+                    except Exception:
+                        pass
                     try:
                         await set_sync_state_value(
                             db,
@@ -481,17 +500,11 @@ async def _run_nvd_incremental_sync() -> None:
                                 }
                             ),
                         )
+                        await db.commit()
                     except Exception:
                         logger.exception(
                             "Failed to persist embeddings ingest-tail error state"
                         )
-            await db.commit()
-            logger.info(
-                "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
-                stripped,
-                filled,
-                poc_marked,
-            )
         finally:
             await db.close()
 
