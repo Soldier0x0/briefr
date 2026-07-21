@@ -20,10 +20,10 @@ function matchBasisLabel(r) {
 }
 
 function riskCsvRows(rows) {
-  const header = ['ID', 'Title', 'Category', 'Severity', 'Status', 'Origin', 'Stale', 'Review Date', 'Matched Term', 'Summary']
+  const header = ['ID', 'Title', 'Category', 'Severity', 'Status', 'Origin', 'Stale', 'Review Date', 'Matched Term', 'Match Basis', 'Summary']
   const body = rows.map(r => [
     r.id ?? '', r.title ?? '', r.category ?? '', r.severity ?? '', r.status ?? '',
-    r.origin ?? '', r.stale ? 'yes' : 'no', r.review_date ?? '', r.matched_term ?? '', r.summary ?? '',
+    r.origin ?? '', r.stale ? 'yes' : 'no', r.review_date ?? '', r.matched_term ?? '', matchBasisLabel(r), r.summary ?? '',
   ])
   return [header, ...body]
     .map(row => row.map(v => {

@@ -131,7 +131,9 @@ def _hydrate_cpe_matches(row: dict) -> list[dict]:
             raw = json.loads(raw)
         except json.JSONDecodeError:
             raw = []
-    matches = list(raw or [])
+    if not isinstance(raw, list):
+        raw = []
+    matches = raw
     if matches:
         return matches
     products = row.get("affected_products")
@@ -140,8 +142,10 @@ def _hydrate_cpe_matches(row: dict) -> list[dict]:
             products = json.loads(products)
         except json.JSONDecodeError:
             products = []
+    if not isinstance(products, list):
+        products = []
     out = []
-    for entry in products or []:
+    for entry in products:
         if isinstance(entry, str) and ":" in entry:
             vendor, product = entry.split(":", 1)
             out.append({"vendor": vendor, "product": product})
@@ -270,7 +274,7 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
     live_rows.sort(key=lambda row: (
         bool(row.get("is_kev")),
         row.get("match_score") or 0,
-        row.get("published") or "",
+        str(row.get("published") or ""),
     ), reverse=True)
     return live_rows[:50]
 
