@@ -78,8 +78,11 @@ deploy (backup + same volume); see `docs/POSTGRES.md`.
 - Frontend build: from `frontend/`, `npm run build`.
 - Frontend unit tests: from `frontend/`, `npm run test:unit`.
 - Frontend dependency audit: from `frontend/`, `npm run audit:ci` after `npm ci`.
-- There is **no ESLint/ruff/flake8** lint config yet (Phase 1 W6). UI is also validated via
-  Playwright (`scripts/` / `backend/tests/test_playwright_smoke.py`, gated behind `PLAYWRIGHT_SMOKE=1`).
+- Lint (scoped, not whole-repo): frontend ESLint via `npm run lint` (config `frontend/eslint.config.js`,
+  scopes `src/scoring` + `src/pages/admin`); backend `ruff check --select F,E9` (`ruff` ships in
+  `backend/requirements-dev.txt`). Both run inside `./scripts/verify-local.sh`. There is still no
+  `flake8` and no whole-repo lint gate. UI is also validated via Playwright (`scripts/` /
+  `backend/tests/test_playwright_smoke.py`, gated behind `PLAYWRIGHT_SMOKE=1`).
 - **Dark mode only** — light theme was removed (W6 hygiene); do not reintroduce a light theme without ADR.
 - **Tab state** — main nav tabs use `hidden` panels instead of unmounting so FEED scroll/filters survive tab switches.
 - **Snooze removed from UI** — pin/watchlist remains; app clears legacy snooze rows on startup.
@@ -105,3 +108,13 @@ deploy (backup + same volume); see `docs/POSTGRES.md`.
   10+ rows exist).
 - `backend/.python-version` pins `3.13`, but CI and this environment use **Python 3.12**, which is
   fully supported (`requirements.txt` is 3.11+).
+- **Bare cloud VM has no Docker/Postgres.** `/opt/infra/postgres` and `docker` are not present, so the
+  production Postgres start command does not apply here. `backend/.env` ships a placeholder
+  `DATABASE_URL=postgresql://…@127.0.0.1:5432/briefr`; running `uvicorn`/`pytest` as-is fails with
+  `ConnectionRefusedError [Errno 111] … 5432`. Use the documented zero-config **SQLite** dev fallback
+  by running with `DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0` (health then reports
+  `"backend":"sqlite"`, DB file `backend/briefr.db`). `./scripts/verify-local.sh` already sets this for
+  its SQLite pytest step. A handful of Postgres-only tests (e.g. `test_stack_backfill_q4`,
+  `test_nvd_txn_boundary`, `test_api_metering_q2`, `test_cpe_catalog_q3`, `test_procrastinate_q1`) still
+  attempt `127.0.0.1:5432` and fail without Postgres — expected on the SQLite path; run them via
+  `./scripts/verify-local.sh --full` with a Postgres container if needed.
