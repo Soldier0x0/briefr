@@ -37,7 +37,11 @@ CIRCL can self-heal via missing-CAPEC query; Sploitus only runs from this NVD
 path, so a mid-enrich crash may leave exploit refs until those CVEs reappear in
 a later NVD batch. Pure-DB writer overlap remains possible but rarer.
 
-**Next:** Deploy PR #732; confirm VulnCheck stays healthy during CIRCL blips.
+**Docs:** `SYSTEM_DESIGN` CVE lifecycle + SQL vs source I/O; `TROUBLESHOOTING`
+timeout / CIRCL rows; `POSTGRES` / `OPERATIONS` / `ONBOARDING` / `PRODUCT_STATUS`.
+
+**Next:** Merged via PR #732; deploy and confirm VulnCheck stays healthy during
+CIRCL blips.
 
 ---
 

@@ -209,9 +209,10 @@ the CVE or asset profile changes and renders `threat` / `environment` /
 
 1. **Ingest:** `scheduler.run_nvd_incremental_sync` → `feeds/nvd.py:fetch_nvd_cve_updates` (NVD REST 2.0, watermark in `sync_state`).
 2. **Persist:** `database.upsert_cves` → `cves` table (`ON CONFLICT DO UPDATE`), optional `cve_change_history` rows. Ingest batches upserts via `executemany` in 500-row chunks (`db/cve.py`).
-3. **Post-process:** strip auto-summaries, backfill display fields, `enrich_cves_extended` (Sploitus/CIRCL).
-4. **List:** `GET /api/cves` builds SQL from `_build_cve_filters`, paginates (`page`, `limit` max **50**). `CVE_SELECT` uses a `LEFT JOIN kev_deadlines` (no correlated KEV subquery). `total` is cached 45s per filter set (`read_cache.py`). Postgres search benefits from Alembic `012_cve_trgm_search` GIN indexes on description/summary/affected_products.
-5. **UI:** `CVEFeed.jsx:loadPage` → `fetchCVEs` → `CVECard.jsx` renders each row. Scroll “Showing X–Y” is tracked by leaf component `FeedVisibleRange.jsx` (rAF-throttled) so scrolling does not re-render the card list (`React.memo` on `CVECard`).
+3. **Post-process (DB only):** strip auto-summaries, backfill display fields / PoC flags, **commit and close** the ingest connection. Source HTTP must not share this write transaction (see §4 “SQL vs source I/O”).
+4. **Extended enrich (best-effort):** fresh connection → `enrich_cves_extended` (Sploitus/CIRCL) with commit-before-HTTP (`db/txn_boundaries.commit_before_source_io`) and per-lookup commits; optional embeddings ingest tail on another fresh connection. Watermark already advanced — enrich failure does not roll back upserts.
+5. **List:** `GET /api/cves` builds SQL from `_build_cve_filters`, paginates (`page`, `limit` max **50**). `CVE_SELECT` uses a `LEFT JOIN kev_deadlines` (no correlated KEV subquery). `total` is cached 45s per filter set (`read_cache.py`). Postgres search benefits from Alembic `012_cve_trgm_search` GIN indexes on description/summary/affected_products.
+6. **UI:** `CVEFeed.jsx:loadPage` → `fetchCVEs` → `CVECard.jsx` renders each row. Scroll “Showing X–Y” is tracked by leaf component `FeedVisibleRange.jsx` (rAF-throttled) so scrolling does not re-render the card list (`React.memo` on `CVECard`).
 
 Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](diagrams/flow_cve_feed.mermaid)
 
@@ -459,6 +460,7 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 5× RSS, 
 - **NVD exception:** keeps its bespoke 429/key-rejection retry logic but uses the pooled client and reports into the same health registry.
 - **Quota-billed sources** (VirusTotal, AbuseIPDB, GreyNoise) use `retries=0` — a failed call is never retried automatically, so quota cannot be burned by the retry loop. Circuit breakers still apply.
 - **CIRCL negative caching:** failed/missing lookups are cached for 24h (`circl_miss:*` keys) so a rate-limited upstream is not re-hammered with the same IDs on every sync cycle.
+- **SQL vs source I/O:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` (default 60) is an asyncpg **SQL statement** budget only. Feed/API HTTP timeouts stay per-source in `feeds/` (CIRCL ~25s, Sploitus ~30s, ThreatFox ~120s, …). Scheduler paths commit or close before outbound source I/O (`db/txn_boundaries.commit_before_source_io`) so slow CIRCL/Sploitus cannot hold `cves` locks and burn concurrent writers (VulnCheck/KEV/EPSS) into `Database command timeout`. Do not raise the global SQL timeout to paper over slow APIs.
 
 All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
 
@@ -497,6 +499,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 ### PostgreSQL first; SQLite only as test/dev fallback
 
 - **Why:** Production requires `DATABASE_URL` and normally `BRIEFR_REQUIRE_POSTGRES=1`. Runtime uses an asyncpg pool, Alembic migrations, pgvector embeddings, db-backed rate-limit buckets, resource metrics, durable Procrastinate jobs, API metering, and Postgres backup/restore smoke tests.
+- **Pool timeouts:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is SQL-only; source HTTP timeouts live per feed. See resilient-client § “SQL vs source I/O” and `docs/POSTGRES.md`.
 - **Compatibility:** SQLite remains as the zero-config local/test fallback through `db/connection.py` + `db/pg_adapt.py`, not as a production architecture choice.
 - **Trade-off:** New persistence features are written Postgres-first. Where the default test suite needs SQLite support, the adapter or explicit `_SQLITE` / `_PG` query variants keep tests honest without reintroducing a dialect layer.
 

@@ -165,6 +165,7 @@ All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebra
 | `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit for a zero-config local SQLite dev/test fallback |
 | `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production) |
 | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
+| `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | `60` | SQL statement timeout only — not feed HTTP; see [POSTGRES.md](POSTGRES.md) |
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |
 | `BACKUP_RETENTION_COUNT` | `100` | Max archives kept (~25 days at 6h intervals) |
 | `BACKUP_ENABLED` | `1` | Set `0` to disable backups and startup auto-restore |

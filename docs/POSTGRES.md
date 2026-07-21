@@ -189,6 +189,7 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 | Timeline/charts empty but `cve_count` > 0 | Fixed in app — ensure `/api/stats/timeline` returns non-zero counts; hard-refresh browser |
 | Empty feed on first boot | Fewer than 10 CVE rows triggers NVD ingest, or run `scripts/seed_screenshot_data.py` with `DATABASE_URL` set |
 | `extension "vector" is not available` / Alembic 032 fails | Postgres image lacks pgvector — use `pgvector/pgvector:pg16` (same major as prod); recreate disposable containers after the image change |
+| Job fails with `Database command timeout` during another feed’s CIRCL/HTTP | SQL `command_timeout` budget shared under lock wait — not that job’s HTTP timeout. Ensure writers commit/close before source I/O (`db/txn_boundaries.py`); do not raise `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` first |
 
 ## pgvector cutover (embeddings E1)
 
