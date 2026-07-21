@@ -135,7 +135,7 @@
         <span class="chapter-num">Part III · Chapter 15</span>
         <h3>The scheduler and its lock layer — a danger zone, verified line by line</h3>
         <p class="dek">Why APScheduler's own overlap protection isn't enough, and the exact coupling CLAUDE.md warns you never to let drift.</p>
-        <div class="files"><span class="chip">scheduler.py</span><span class="chip">scheduler_locks.py</span><span class="chip">routers/admin.py</span></div>
+        <div class="files"><span class="chip">scheduler.py</span><span class="chip">scheduler_locks.py</span><span class="chip">routers/admin/jobs.py</span><span class="chip">routers/admin/catchup.py</span></div>
       </div>
       <div class="prose">
         <p><code>scheduler.py</code> builds an APScheduler <code>AsyncIOScheduler</code> and registers roughly 28 jobs on it — one per feed sync, plus the nightly correlation engine, scheduled backups, session cleanup, and more — each identified by a stable string passed as <code>id=</code> to <code>scheduler.add_job(...)</code>. Every job's coroutine is wrapped in <code>job_log_context(id)</code> so its log lines carry a consistent correlation ID back to Chapter 13's structured logging, and jobs are registered with <code>max_instances=1</code>, meaning APScheduler itself refuses to let a job overlap <em>its own</em> next scheduled run if the previous one is still executing.</p>
@@ -143,7 +143,7 @@
 
       <h4 class="subhead why">The gap <code>max_instances=1</code> doesn't cover</h4>
       <div class="prose">
-        <p><code>max_instances=1</code> only protects a job against colliding with its own next scheduled firing — it says nothing at all about a completely separate code path triggering the same underlying work. BRIEFR's admin UI has exactly such a path: an operator can click "sync NVD now" from <code>routers/admin.py</code>, invoking the same NVD sync function outside the scheduler's own timing entirely. Without additional protection, a manual "sync now" click could start running concurrently with a scheduled sync that happened to already be mid-flight — two processes racing to read the same watermark, fetch overlapping data, and write conflicting updates to the same rows at the same time.</p>
+        <p><code>max_instances=1</code> only protects a job against colliding with its own next scheduled firing — it says nothing at all about a completely separate code path triggering the same underlying work. BRIEFR's admin UI has exactly such a path: an operator can click "sync NVD now" through <code>routers/admin/jobs.py</code>, invoking the same NVD sync function outside the scheduler's own timing entirely. Without additional protection, a manual "sync now" click could start running concurrently with a scheduled sync that happened to already be mid-flight — two processes racing to read the same watermark, fetch overlapping data, and write conflicting updates to the same rows at the same time.</p>
         <p><code>scheduler_locks.py</code> closes exactly this gap with a second, independent layer: a plain Python dictionary mapping each job's ID string to its own <code>asyncio.Lock</code>. Both the scheduled job function <em>and</em> the manual-trigger admin endpoint check the same lock before proceeding — whichever one gets there first acquires it and the other is turned away (the admin endpoint returns HTTP 409 Conflict) rather than both running at once.</p>
       </div>
 
@@ -156,20 +156,27 @@
 _LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
     <span class="str">"nvd_incremental_sync"</span>: asyncio.Lock(),
     <span class="str">"kev_metadata_sync"</span>: asyncio.Lock(),
+    <span class="str">"catchup_tick"</span>: asyncio.Lock(),
+    <span class="str">"llm_product_extraction"</span>: asyncio.Lock(),
     <span class="str">"epss_score_sync"</span>: asyncio.Lock(),
     <span class="str">"nightly_correlation"</span>: asyncio.Lock(),
     <span class="str">"cvelistv5_incremental_sync"</span>: asyncio.Lock(),
-    <span class="cmt"># ...16 more, one per lockable job...</span>
+    <span class="cmt"># ...18 more, one per lockable job...</span>
 }</code></pre>
       <p class="code-caption">scheduler_locks.py, real code and its own comment — note it documents which jobs are <em>intentionally</em> excluded, not just which ones are included</p>
 
       <div class="prose">
-        <p>Checking this directly against <code>scheduler.py</code>'s actual <code>add_job(id=...)</code> calls confirms the two files agree exactly — every locked job ID here matches a real registered job, with no drift as of this reading. <code>routers/admin.py</code>'s own <code>_JOB_RUN_MAP</code> (which the manual "run now" endpoint uses to find each job's function) is a superset that also lists a handful of lock-free jobs — the file's own comment explains why that's fine rather than an inconsistency: those specific jobs rely on APScheduler's <code>max_instances=1</code> alone, because they don't have a manual-trigger button in the admin UI that could race them, so the second layer of protection genuinely isn't needed for them.</p>
+        <p>Checking this directly against <code>scheduler.py</code>'s actual <code>add_job(id=...)</code> calls confirms the two files agree exactly — every locked job ID here matches a real registered job, including <code>catchup_tick</code> and <code>llm_product_extraction</code>. <code>routers/admin/jobs.py</code>'s own <code>_JOB_RUN_MAP</code> (which the manual "run now" endpoint uses to find each job's function) is a superset that also lists a handful of lock-free jobs — the file's own comment explains why that's fine rather than an inconsistency: those specific jobs rely on APScheduler's <code>max_instances=1</code> alone, because they don't have a manual-trigger button in the admin UI that could race them, so the second layer of protection genuinely isn't needed for them.</p>
       </div>
 
       <h4 class="subhead how">Tracing a real request end to end</h4>
       <div class="prose">
         <p>Follow <code>POST /api/refresh/nvd</code> concretely: the request passes <code>require_admin</code> (Chapter 6), then checks <code>refresh_in_progress()</code> — which ORs together the NVD, KEV, and EPSS locks — returning 409 immediately if any is held. If clear, it spawns the sync as a background task via <code>task_registry.spawn_background_task</code>, which holds a strong reference to the task specifically so Python's garbage collector can't silently collect and cancel it mid-flight (a real historical bug class, referenced again in Chapter 30). The spawned function re-checks and acquires its own lock, reads the current watermark (seeding one from the maximum <code>modified</code> timestamp already in the <code>cves</code> table if none exists yet and at least 10 CVEs are already present — a sane bootstrap for a database that already has data but no recorded watermark), fetches and upserts, advances the watermark <em>only after</em> the upsert has actually succeeded, and in a <code>finally</code> block always records the job's last-run time for the admin UI and releases the lock — regardless of whether the sync succeeded or raised partway through.</p>
+      </div>
+
+      <h4 class="subhead how">Catch-up mode: a time-boxed backlog drain, not a new scheduler</h4>
+      <div class="prose">
+        <p>Admin → Scheduler now includes a Catch-up card backed by <code>routers/admin/catchup.py</code> and <code>catchup_mode.py</code>. Starting Catch-up sets a bounded end time; while active, <code>scheduler.py</code>'s <code>catchup_tick</code> job runs every five minutes and nudges eligible backlog work through the same gates and locks the normal jobs already use: embeddings, correlation precompute, LLM product extraction, and CPE catalog sync. The point is controlled backlog drain, not bypassing safety — provider <code>Retry-After</code>, the shared <code>api_queue</code>, feature flags, and per-job locks still apply.</p>
       </div>
 
       <div class="self-check">
@@ -178,6 +185,7 @@ _LOCKS: dict[<span class="kw">str</span>, asyncio.Lock] = {
           <li>Why isn't APScheduler's <code>max_instances=1</code> sufficient on its own, and what specific race does <code>scheduler_locks.py</code> close that it doesn't?</li>
           <li>If the process crashed mid-sync, right after reading the watermark but before writing the new one, what state would the database be left in — and why is that state safe to resume from?</li>
           <li>Why does <code>task_registry.spawn_background_task</code> need to hold a strong reference to a spawned task at all — what would silently go wrong without it?</li>
+          <li>Why does Catch-up mode still route work through the existing locks and queue instead of bypassing them for speed?</li>
         </ol>
       </div>
     </section>

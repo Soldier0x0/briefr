@@ -177,7 +177,7 @@
           <span class="chip">pages/security-architecture/*.css</span>
           <span class="chip">pages/security-architecture/sections/*.jsx</span>
           <span class="chip">pages/security-architecture/shared/*.jsx</span>
-          <span class="chip">theme/light-theme.css</span>
+          <span class="chip">styles/tokens.css</span>
         </div>
       </div>
 
@@ -188,7 +188,7 @@
 
       <h4 class="subhead how">Health vs freshness, jobs, retrieval</h4>
       <div class="prose">
-        <p><code>FeedHealthPage.jsx</code> is the canonical "circuit OK ≠ sync fresh" surface — operators need both. <code>SchedulerPage.jsx</code> surfaces job locks and progress while <code>LOCKED</code>. <code>AiOperationsPage.jsx</code> is where retrieval health (Chapter 24C) lands for humans. <code>StoragePage.jsx</code> includes the allowlisted DB explorer; <code>WebhooksPage.jsx</code> is the destination CRUD UI. Shared helpers under <code>pages/admin/</code> (<code>formatters.js</code>, <code>jobStatus.js</code>, <code>needsAttention.js</code>) keep presentation consistent without copying logic into every page.</p>
+        <p><code>FeedHealthPage.jsx</code> is the canonical "circuit OK ≠ sync fresh" surface — operators need both. <code>SchedulerPage.jsx</code> surfaces job locks and progress while <code>LOCKED</code>, plus the Catch-up card and Durable outbound jobs panel from Chapters 15 and 17. <code>AiOperationsPage.jsx</code> is where retrieval health (Chapter 24C) lands for humans. <code>StoragePage.jsx</code> includes the allowlisted DB explorer; <code>WebhooksPage.jsx</code> is the destination CRUD UI. Shared helpers under <code>pages/admin/</code> (<code>formatters.js</code>, <code>jobStatus.js</code>, <code>needsAttention.js</code>) keep presentation consistent without copying logic into every page.</p>
       </div>
 
       <h4 class="subhead why">Density over marketing</h4>

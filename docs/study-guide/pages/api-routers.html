@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Routers — 23 files, and the provenance that explains their shape — BRIEFR Study Guide</title>
+  <title>Routers — packages, and the provenance that explains their shape — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="../assets/book.css">
 </head>
 <body data-page-id="api-routers" data-pages-base="" data-assets-base="../assets/">
@@ -133,15 +133,15 @@
     <section class="page active chapter" id="api-routers">
       <div class="chapter-head">
         <span class="chapter-num">Part V · Chapter 25</span>
-        <h3>Routers — 23 files, and the provenance that explains their shape</h3>
-        <p class="dek">Why one file still holds four logically separate sub-routers, and what that tells you about respecting a refactor's history.</p>
-        <div class="files"><span class="chip">routers/cves.py</span><span class="chip">routers/admin.py</span><span class="chip">routers/auth.py</span><span class="chip">+20 more</span></div>
+        <h3>Routers — packages, and the provenance that explains their shape</h3>
+        <p class="dek">Why endpoint ownership now lives in package modules, and what the split preserved from the monoliths it replaced.</p>
+        <div class="files"><span class="chip">routers/cves/</span><span class="chip">routers/admin/</span><span class="chip">routers/auth.py</span><span class="chip">routers/forge.py</span><span class="chip">+ package modules</span></div>
       </div>
       <div class="prose">
-        <p>The 23 router files group naturally by feature area. <strong>CVE core</strong> (<code>cves.py</code> — itself containing four distinct sub-routers: changes, list, detail, intel — plus <code>atlas.py</code>, <code>correlation.py</code>, and a small shared <code>_validators.py</code> holding the one <code>require_cve_id</code> helper every one of those sub-routers imports rather than re-validating CVE ID shape independently) covers listing, filtering, exporting, and the full per-CVE detail view: sentences, EPSS history, related CVEs, the "drawer" bundle, risk, momentum, detection, correlation — most of it read-heavy, with on-demand enrichment calls fanned out concurrently via <code>asyncio.gather</code> so a detail view stays responsive even while quietly checking several external sources at once. <strong>Admin</strong> (<code>admin.py</code>, 2,667 lines — the single largest file in the entire backend) is the full operator control plane: system health, scheduler introspection and manual triggers (Chapter 15), backup management, a deliberately read-only, allowlisted database explorer (deny-by-default — there is no arbitrary-SQL box anywhere in this UI, on purpose), and the entire runtime configuration surface from Chapter 7. <strong>Auth</strong> (<code>auth.py</code>, <code>me.py</code>, <code>notifications_me.py</code>) covers the whole login lifecycle plus per-user preferences and the notification inbox. <strong>Detection engineering</strong> (<code>forge.py</code>, <code>detection_backlog.py</code>, <code>proof.py</code>, <code>threat_model.py</code>) exposes the MITRE coverage map, hunt-pack generation, rule testing, and scenario narratives from Part IV. The remainder — IOC/search, wallboard/brief/health, refresh/watchlist — round out the surface.</p>
+        <p>The router tree now groups naturally by package and feature area. <strong>CVE core</strong> lives under <code>routers/cves/</code>: <code>list.py</code> owns listing, filtering, export, top vendors, stack matching, and framework filters; <code>detail.py</code> owns the per-CVE detail and drawer bundle; <code>intel.py</code> owns risk, momentum, detection, correlation, feedback, and suppression; <code>changes.py</code> owns CVE change history; and <code>common.py</code>/<code>models.py</code> hold shared conversion and request models. <strong>Admin</strong> lives under <code>routers/admin/</code>: <code>jobs.py</code> owns scheduler introspection, manual triggers, <code>_JOB_RUN_MAP</code>, and durable outbound jobs; <code>catchup.py</code> owns Catch-up mode; <code>ai_ops.py</code> owns AI operations and retrieval health; the rest of the package covers system health, storage, config, webhooks, diagnostics, database, and feed-health surfaces. <strong>Auth</strong> (<code>auth.py</code>, <code>me.py</code>, <code>notifications_me.py</code>) covers login lifecycle, per-user preferences, and notifications. <strong>Detection engineering</strong> (<code>forge.py</code>, <code>detection_backlog.py</code>, <code>proof.py</code>, <code>threat_model.py</code>) exposes the MITRE coverage map, hunt-pack generation, rule testing, and scenario narratives from Part IV. The remainder — IOC/search, wallboard/brief/health, refresh/watchlist — rounds out the surface.</p>
       </div>
       <div class="prose">
-        <p>The detail worth understanding, not just noting in passing: <code>cves.py</code> still contains four sub-routers rather than being split cleanly into four files, and the code carries explicit "moved verbatim from <code>main.py</code>" provenance comments explaining why. Before an earlier router-split refactor, these four concerns were interleaved with ATLAS and IOC routes in one large monolithic <code>main.py</code>, and — recall Chapter 6's lesson about frozen route registration order — reordering or restructuring those routes risks the exact same silent-route-shadowing bug that snapshot test exists to catch. The refactor prioritized "move code into logical modules without changing observable behavior" over "achieve the cleanest possible file boundaries" — a reasonable trade when the alternative risk is a subtle, hard-to-detect routing regression in a security-relevant surface.</p>
+        <p>The detail worth understanding, not just noting in passing: both large router monoliths have been split, but the split deliberately preserved registration order. <code>routers/cves/__init__.py</code> re-exports the four CVE sub-routers and shared helpers, and <code>routers/admin/__init__.py</code> imports its modules for side-effect route registration in the same order the pre-split OpenAPI snapshot expected. Before this refactor, these concerns were interleaved in much larger modules (<code>main.py</code>, then <code>routers/cves.py</code> and <code>routers/admin.py</code>), and — recall Chapter 6's lesson about frozen route registration order — restructuring routes risks the exact same silent-route-shadowing bug that snapshot tests exist to catch. The current package shape is the clean boundary the earlier refactors were moving toward, not a new behavior surface.</p>
       </div>
 
       <h4 class="subhead how">The ten routers behind "the remainder," named precisely</h4>
@@ -153,10 +153,10 @@
         <h4>Self-check</h4>
         <ol>
           <li>How do you add a second admin account to a running BRIEFR instance? Why is that path deliberately not exposed over HTTP at all?</li>
-          <li>Why does <code>cves.py</code> still contain four logically separate sub-routers instead of being split into four files — connect this back to Chapter 6's route-ordering lesson.</li>
+          <li>Why do <code>routers/cves/__init__.py</code> and <code>routers/admin/__init__.py</code> care about import and registration order even after the monolith files were split?</li>
           <li>Why is the admin database explorer read-only and allowlisted rather than a general SQL query box, given that it's already gated behind <code>require_admin</code>?</li>
           <li>Why does <code>refresh.py</code>'s full-ingest route return 409 when a sync is already running, while its MITRE-refresh route doesn't need that same guard?</li>
-          <li><code>watchlist.py</code>'s CVE pin/snooze feature is still single-user, unlike <code>ioc.py</code>'s IOC watchlist. What would have to change in the schema to make it per-user, and why hasn't that happened yet?</li>
+          <li><code>watchlist.py</code>'s CVE pin/watchlist state is still single-user, unlike <code>ioc.py</code>'s IOC watchlist. What would have to change in the schema to make it per-user, and why hasn't that happened yet?</li>
         </ol>
       </div>
     </section>

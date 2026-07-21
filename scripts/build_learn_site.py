@@ -195,8 +195,8 @@ def build(
     pathways_dir.mkdir()
     (assets / "learn.css").write_text(_load_docs_tokens() + LEARN_CSS, encoding="utf-8")
 
-    # Sibling link: docs/learn/pathways/x.html → docs/study-guide/pages/y.html
-    book_href_prefix = "../study-guide/pages"
+    # Pathway link: docs/learn/pathways/x.html → docs/study-guide/pages/y.html
+    book_href_prefix = "../../study-guide/pages"
 
     cards = []
     for pw in pathways:
