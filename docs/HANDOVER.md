@@ -19,11 +19,12 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 - `SYSTEM_DESIGN.md` Forge: CVE inventory primary; Generate pack secondary.
 - `PRODUCT_STATUS.md`: DetailDrawer chrome row + last-updated stamp for full UX RCA pass.
 - Follow-up: `?tab=forge&cve=` deep links align URL `tab=feed` with forced shell (Task 8 hygiene).
-- Plan: `docs/superpowers/plans/2026-07-21-ux-rca-drawer-forge-shell.md` — execution complete pending verify-local green.
+- Plan: `docs/superpowers/plans/2026-07-21-ux-rca-drawer-forge-shell.md` — execution complete.
+- Bonus: cleared pre-existing admin `ruff` F/E9 (unused imports + missing `re`/`json`/`Path`/`DB_PATH`/`get_feed_health`) so verify-local gate passes.
 
-**Verify:** `./scripts/verify-local.sh`
+**Verify:** `./scripts/verify-local.sh` — **green** (SQLite pytest, design-token lint, ruff F/E9, FE build, eslint, unit tests, pip-audit, npm audit).
 
-**Next:** Merge PR #729 after verify-local + review; no further plan tasks.
+**Next:** Merge PR #729 after human review; no further plan tasks.
 
 ---
 

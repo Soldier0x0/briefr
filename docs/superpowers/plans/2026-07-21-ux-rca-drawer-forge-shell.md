@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status (2026-07-21):** **EXECUTED** on branch `cursor/ux-rca-drawer-forge-shell-86fc` (PR #729). Tasks 1–9 implemented; merge when `./scripts/verify-local.sh` is green.
+**Status (2026-07-21):** **EXECUTED** on branch `cursor/ux-rca-drawer-forge-shell-86fc` (PR #729). Tasks 1–9 implemented; `./scripts/verify-local.sh` green.
 
 **Goal:** Fix 23 reported UX defects and their codebase-wide sibling instances by repairing shared root classes (not one-screen patches).
 
