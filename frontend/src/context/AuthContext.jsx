@@ -11,7 +11,6 @@ import {
   fetchSetupRequired,
   login as apiLogin,
   logout as apiLogout,
-  refreshAccessToken,
   setupAccount,
 } from '../api.js'
 import { clearUserStackOnLogout, loadUserStack } from '../utils/userStack.js'
@@ -26,6 +25,9 @@ export function AuthProvider({ children }) {
 
   const refreshAuthState = useCallback(async () => {
     try {
+      // fetchMe → request() already refreshes once on 401 via shared
+      // refreshAccessToken(); do not call /auth/refresh with a bare fetch
+      // (that raced API retries and tripped reuse detection).
       const me = await fetchMe()
       setUser(me)
       setStatus('authed')
@@ -33,22 +35,6 @@ export function AuthProvider({ children }) {
       await loadUserPreferences()
       return me
     } catch {
-      // Access cookie may have expired while a persistent refresh cookie remains.
-      // Use the shared refreshAccessToken() so we never race api.js 401 retries
-      // (concurrent /auth/refresh rotations trip reuse detection and revoke all
-      // sessions — intermittent BRIEF "Not authenticated" with a still-visible user).
-      try {
-        if (await refreshAccessToken()) {
-          const me = await fetchMe()
-          setUser(me)
-          setStatus('authed')
-          await loadUserStack()
-          await loadUserPreferences()
-          return me
-        }
-      } catch {
-        // fall through to anon
-      }
       setUser(null)
       setStatus('anon')
       clearUserStackOnLogout()

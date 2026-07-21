@@ -7,10 +7,10 @@ const REQUEST_TIMEOUT_MS = 20000
 // /api/auth/refresh call instead of each racing to rotate the same refresh
 // token — a second independent call would find the token already rotated
 // and trip the backend's reuse-detection, revoking every session.
-// AuthContext MUST use this helper too (do not call /auth/refresh with a
-// bare fetch), or a parallel bootstrap refresh can revoke the session and
-// leave BRIEF widgets showing "Not authenticated" while the header still
-// briefly shows the cached user.
+// Callers (including AuthContext bootstrap via fetchMe → request) must use
+// this helper — never bare-fetch /auth/refresh — or a parallel refresh can
+// revoke the session and leave BRIEF widgets sticky "Not authenticated"
+// while the header still briefly shows the cached user.
 let refreshPromise = null
 
 export function refreshAccessToken() {

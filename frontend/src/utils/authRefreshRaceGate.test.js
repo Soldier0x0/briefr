@@ -40,13 +40,12 @@ test('refreshAccessToken dedupes concurrent callers onto one /auth/refresh', asy
   }
 })
 
-test('AuthContext imports refreshAccessToken from api.js (no bare /auth/refresh fetch)', async () => {
+test('AuthContext does not call /auth/refresh with a bare fetch', async () => {
   const { readFileSync } = await import('node:fs')
   const { fileURLToPath } = await import('node:url')
   const { dirname, join } = await import('node:path')
   const here = dirname(fileURLToPath(import.meta.url))
   const src = readFileSync(join(here, '../context/AuthContext.jsx'), 'utf8')
-  assert.match(src, /refreshAccessToken/)
   assert.doesNotMatch(
     src,
     /fetch\(\s*['"`]\/api\/auth\/refresh['"`]/,
