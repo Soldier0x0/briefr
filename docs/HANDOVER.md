@@ -12,6 +12,23 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Program 2 Task 3: self-stack match-basis honesty
+
+**Done** (branch `cursor/self-stack-precision-91c2`):
+- Risk Register live self-stack rows now show the server-provided match basis:
+  `MATCH: product+version` for version-pinned matches and
+  `MATCH: product-only (version unverified)` for product-only fallback rows.
+- Regenerated the security architecture corpus with
+  `backend/.venv/bin/python scripts/generate_security_corpus.py`; generator output
+  matched the committed corpus, so no generated file diff remained.
+- `PRODUCT_STATUS.md` now records that live self-stack risks use structured CPE /
+  `affected_products` scoring with version pins when available; description `LIKE`
+  matching is not used for self-stack admission.
+
+**Verify:** targeted security architecture pytest and frontend build for Task 3.
+
+---
+
 ## 2026-07-21 — Program 1: restore verify-local merge gate (imports + corpus + docs)
 
 **Done** (branch `cursor/verify-local-gate-91c2`):
