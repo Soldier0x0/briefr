@@ -1094,8 +1094,9 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-gn-load-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--border-active);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 }
 
 .drawer-gn-load-btn:focus-visible {
