@@ -18,37 +18,26 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 `command_timeout` (60s). Nesting CIRCL/Sploitus (and similar) HTTP inside an open
 write txn made concurrent VulnCheck/KEV/EPSS writers hit `Database command timeout`.
 
+**Observed:** VulnCheck KEV Tier Sync timeout (~16:58 UTC) while NVD logged CIRCL
+DNS / circuit open (~17:02). Docs build `72d0272` unrelated.
+
 **Invariant:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is **SQL-only**. Per-source
 HTTP timeouts stay in `feeds/`. Commit or close before outbound source I/O —
-helper `db/txn_boundaries.commit_before_source_io`.
+helper `db/txn_boundaries.commit_before_source_io`. Do **not** raise the global
+SQL timeout to paper over slow APIs.
 
-**Done:** NVD closes the ingest connection before enrich/embeddings; CIRCL/
-Sploitus/GreyNoise/URLHaus/MalwareBazaar commit before HTTP; config + POSTGRES
-docs updated. Tests: `tests/test_nvd_txn_boundary.py`.
+**Done:** NVD commits + closes the ingest connection before enrich/embeddings;
+CIRCL/Sploitus/GreyNoise/URLHaus/MalwareBazaar commit before HTTP; enrich
+post-lookup commit failures roll back and re-raise (no poisoned-connection
+continue); config + POSTGRES/OPERATIONS/PRODUCT_STATUS docs updated. Tests:
+`tests/test_nvd_txn_boundary.py`.
+
+**Accepted residual:** Watermark advances before enrich (enrich is best-effort).
+CIRCL can self-heal via missing-CAPEC query; Sploitus only runs from this NVD
+path, so a mid-enrich crash may leave exploit refs until those CVEs reappear in
+a later NVD batch. Pure-DB writer overlap remains possible but rarer.
 
 **Next:** Deploy PR #732; confirm VulnCheck stays healthy during CIRCL blips.
-
----
-
-## 2026-07-21 — RCA fix: NVD must not hold cves locks across CIRCL/Sploitus HTTP
-
-**Observed:** VulnCheck KEV Tier Sync `Database command timeout` (~16:58 UTC) while
-NVD incremental sync logged CIRCL DNS failures / circuit open (~17:02). Docs build
-`72d0272` unrelated.
-
-**RCA:** `nvd_incremental_sync` opened one Postgres transaction for upsert +
-postprocess + **outbound** CIRCL/Sploitus (and optional embeddings) before
-`commit()`. Source HTTP/DNS latency shared the same lock set and competed with
-VulnCheck’s chunked `cves` UPDATEs under asyncpg `command_timeout` (60s). Per-job
-asyncio locks do not serialize different writers. Chunked VulnCheck commits (#696)
-were already correct — the blocker was NVD’s network-inside-txn design.
-
-**Fix:** Commit after NVD write/postprocess **before** extended enrich; commit again
-after enrich and after embeddings tail; `enrich_cves_extended` commits after each
-Sploitus/CIRCL lookup. Tests: `tests/test_nvd_txn_boundary.py`.
-
-**Next:** Deploy; confirm VulnCheck no longer times out during CIRCL blips. Residual:
-overlapping pure-DB writers can still contend (rarer).
 
 ---
 

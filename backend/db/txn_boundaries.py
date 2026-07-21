@@ -14,10 +14,6 @@ the global DB command timeout.
 
 from __future__ import annotations
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 async def commit_before_source_io(db) -> None:
     """Flush pending writes so source HTTP cannot hold row locks.
@@ -25,8 +21,4 @@ async def commit_before_source_io(db) -> None:
     Safe when there is nothing to commit. Call immediately before any outbound
     feed/API request that may take longer than a typical SQL statement.
     """
-    try:
-        await db.commit()
-    except Exception as exc:
-        logger.warning("commit_before_source_io failed: %s", exc)
-        raise
+    await db.commit()

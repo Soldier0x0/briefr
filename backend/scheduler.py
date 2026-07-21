@@ -73,6 +73,7 @@ from feeds.kev import fetch_kev
 from feeds.epss import fetch_epss
 from feeds.atlas import get_latest_atlas_release, refresh_atlas_data
 from feeds.mitre import refresh_mitre_data
+from feeds.extended import enrich_cves_extended
 from feeds.exploit_sync import (
     exploit_sources_enabled,
     get_exploit_sources_interval_hours,
@@ -434,8 +435,6 @@ async def _run_nvd_incremental_sync() -> None:
                 f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
                 f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
             )
-            from feeds.extended import enrich_cves_extended
-
             def _enrich_progress(msg: str) -> None:
                 _job_progress["nvd_incremental_sync"] = msg
 
