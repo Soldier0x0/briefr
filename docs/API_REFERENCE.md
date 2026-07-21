@@ -3,8 +3,8 @@
 Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
 **Base URL:** `/api` (proxied from Vite dev server at `http://localhost:5173/api` → `http://localhost:8000/api`)  
-**Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Analyst routes** (`/api/*` except health, auth, wallboard, and dev OpenAPI) require a valid session — 401 without login (#441). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.  
-**Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc) — **unprotected; disable in production**
+**Auth:** built-in app login (`briefr_at` / `briefr_rt` cookies). **Analyst routes** (`/api/*` except health, auth, wallboard, and dev OpenAPI) pass through `require_user` and require a valid session — 401 without login (#441). **Ingest** `POST /api/refresh*` and all `/api/admin/*` routes require the `admin` role. See [Authentication](#authentication) below.
+**Interactive docs:** `GET /api/docs` (Swagger UI), `GET /api/redoc` (ReDoc), `GET /api/openapi.json` — available outside production only; `BRIEFR_ENV=production` disables all three.
 
 Default error shape (FastAPI): `{"detail": "<message>"}`
 
@@ -24,6 +24,8 @@ Built-in app login (Sprint A0). Sessions use HttpOnly cookies:
 | `briefr_rt` | `/api/auth` | Rotating refresh token (stored hashed in `sessions`) |
 
 **Roles:** `admin` (full admin/ingest routes) and standard users. Admin-only routes return `403` for non-admin sessions.
+
+**Route gate:** middleware calls `require_user` for non-public `/api/*` routes. Public API paths are limited to `/api/auth/*`, `/api/health`, `/api/health/live`, `/api/wallboard/*`, and the dev-only docs/OpenAPI paths above. `/api/admin/*` and `/api/refresh*` skip the middleware gate because their routers call `require_admin`.
 
 ### GET /api/auth/setup-required
 
@@ -101,7 +103,7 @@ Built-in app login (Sprint A0). Sessions use HttpOnly cookies:
 
 **Description:** Paginated CVE feed with filters.
 
-**Auth:** None
+**Auth:** Required (`briefr_at`; enforced by `require_user` middleware).
 
 **Query params:**
 
@@ -435,6 +437,14 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 | `limit` | int | 30 | 1–100 |
 
 **Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at}], unread_count}` — `unread_count` counts undismissed `critical`/`high` rows with `read_at` null.
+
+### GET /api/me/notifications/unread-count
+
+**Description:** Lightweight badge count for one scope. Standard users requesting `operator` scope receive `{unread_count: 0}` rather than operator events.
+
+**Params:** `scope` = `analyst` (default) or `operator`.
+
+**Response:** `{unread_count}`
 
 ### POST /api/me/notifications/seen
 
@@ -1862,7 +1872,7 @@ fetches this once at startup to keep weights single-sourced from
 `backend/scoring/risk.py`; it falls back to its bundled constants if the
 request fails.
 
-**Auth:** None
+**Auth:** Required (`briefr_at`; enforced by `require_user` middleware).
 
 **Response:**
 
@@ -1938,7 +1948,7 @@ sum deviates by more than 1 × 10⁻⁶.
 
 ---
 
-**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap; all seven weekday row labels S–S). Chart.js is used in `BriefCharts.jsx` and admin `OpsCharts.jsx` (lazy-loaded Vite chunk; CSP `script-src 'self'` — no CDN).
+**Frontend:** `TimelineHeatmap.jsx` (90-day SVG heatmap; all seven weekday row labels S–S). Chart views use Recharts 3 via shared `rechartsTheme` helpers (`BriefCharts.jsx`, admin ops/resource charts); no Chart.js runtime is current.
 
 ---
 
@@ -1954,7 +1964,7 @@ sum deviates by more than 1 × 10⁻⁶.
 
 ## Admin Dashboard — `/api/admin/*`
 
-All admin endpoints require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles (Sprint A0). All are rate-limited by the refresh bucket.
+All admin endpoints require an authenticated session (`briefr_at` cookie) with the `admin` role — 401 without a session, 403 for non-admin roles (Sprint A0). Admin `GET`s use the `RATE_LIMIT_ADMIN_READ_PER_MINUTE` bucket; mutating admin requests share the refresh bucket (`RATE_LIMIT_REFRESH_PER_MINUTE`).
 
 ### GET /api/admin/catchup
 Returns Catch-up mode status for Admin → Scheduler. Key fields: `active`, `started_at`, `ends_at`, `duration_hours`, `started_by`, `cleared_reason`, `in_wind_down`, `should_start_new_work`, and `api_queue` (`total_queued`, `total_active`, `has_pending`).
@@ -2117,8 +2127,8 @@ Runs in-process smoke checks: CVE count > 0, KEV count > 0, DB integrity, feed h
 Response: `{ok, checks: [{name, passed, detail}], duration_ms}`.
 
 ### POST /api/admin/diagnostics/integrity
-Runs `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
-Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations}`.
+Runs the dialect-aware DB integrity probe from `db.integrity`: SQLite uses `PRAGMA integrity_check` + `PRAGMA foreign_key_check`; Postgres uses `pg_catalog` probes for invalid indexes, unvalidated constraints, and FK violations.
+Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations, backend, method, checks}`.
 
 ### POST /api/admin/diagnostics/corpus-drift
 Regenerates the security architecture **generated** corpus layer (`components.yaml`, `api_inventory.yaml`, scheduler/DB/self-stack YAML, `graphs/architecture.json`) into a temp directory and diffs against the committed files. Read-only — does not modify the repo.
@@ -2160,7 +2170,7 @@ Security panel readout. Response: `{failed_auth_last_24h, environment, posture_w
 
 Clears stored EPSS CSV file identity (`sync_state.epss_csv_file_identity`) so the
 next scheduled or triggered EPSS sync re-parses and applies scores even if the
-remote FIRST CSV.GZ bytes are unchanged. Admin JWT required.
+remote FIRST CSV.GZ bytes are unchanged. Admin session required.
 Returns `{ok, cleared, message}`.
 
 **All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
@@ -2240,17 +2250,17 @@ Aggregated intel posture payload for the `/wallboard` kiosk view. Built from exi
 
 ## OpenAPI / Swagger
 
-FastAPI auto-generates OpenAPI spec at runtime.
+FastAPI auto-generates OpenAPI spec at runtime. It is exposed at `/api/openapi.json` outside production only; `BRIEFR_ENV=production` sets `openapi_url=None`, `docs_url=None`, and `redoc_url=None`.
 
 To export:
 
-1. Start backend: `cd backend && uvicorn main:app --host 0.0.0.0 --port 8000`
-2. `curl http://localhost:8000/openapi.json > docs/openapi.json`
+1. Start backend with `BRIEFR_ENV` unset or set to `development`: `cd backend && uvicorn main:app --host 0.0.0.0 --port 8000`
+2. `curl http://localhost:8000/api/openapi.json > docs/openapi.json`
 3. Import `openapi.json` into Postman or Swagger UI for interactive docs
 
 The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api/docs` when running locally.
 
-**NOTE:** `/api/docs` and `/api/redoc` are unprotected — disable or restrict in production (`docs_url=None` in FastAPI constructor).
+**NOTE:** `/api/docs`, `/api/redoc`, and `/api/openapi.json` are intentionally unprotected in development; production disables them in `main.py`.
 
 ---
 

@@ -2,8 +2,8 @@
 
 Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
-**Last updated:** 2026-07-11  
-**Status:** Planning — ops contract for releases V1.2–V2.0
+**Last updated:** 2026-07-21
+**Status:** Current production ops contract — Postgres-first systemd/nginx deploy with opt-in durable queue, embeddings, and catch-up controls.
 
 ---
 
@@ -67,6 +67,10 @@ These env vars must remain supported across releases (defaults preserved):
 | `JWT_SECRET` | Signs login session tokens. **Required in production — the app fails to start (`RuntimeError`, non-zero exit) if `BRIEFR_ENV=production` and this is unset.** Generate with `openssl rand -hex 32`; all replicas must share the same value. Dev/test auto-generates and persists to `.env`. |
 | `ALLOWED_ORIGINS` | CORS |
 | `GITHUB_TOKEN`, IOC keys | Optional enrichment |
+| `PROCRASTINATE_ENABLED` | Optional Postgres-backed durable job queue for owned background tasks |
+| `EMBEDDINGS_ENABLED` / `EMBEDDINGS_AUTO_ON_INGEST` | Optional local embeddings + post-ingest index warming |
+| `BRIEFR_SCHEDULER_ENABLED` | `1` on the single scheduler owner; `0` on API-only workers |
+| `BRIEFR_RATE_LIMIT_STORE` | Set `db` when multiple workers share rate limits |
 
 **V2.0 adds:** `WALLBOARD_TOKEN`, webhook secrets.
 
@@ -167,6 +171,24 @@ The deploy file rotates `/var/lib/briefr/logs/*.log` daily (14 generations, comp
 | **Parallel HTTP** | `asyncio.gather` for RSS in scheduler job |
 | **No heavy work on tab open** | Incidents feed from snapshot |
 | **Multiple uvicorn workers** | Allowed with Postgres + pool sizing |
+
+---
+
+## Catch-up mode and durable work
+
+Catch-up mode is an operator-controlled window for backlog work after downtime or a long pause. Admin exposes `GET /api/admin/catchup`, `POST /api/admin/catchup/start`, and `POST /api/admin/catchup/stop`; the scheduler registers `catchup_tick` every 5 minutes and starts new work only while the persisted catch-up status says it should. The status response includes an outbound API queue summary so operators can distinguish "catch-up active but waiting" from "queue still draining."
+
+`PROCRASTINATE_ENABLED=1` enables the Postgres-backed durable queue. It is not a second scheduler; it owns only documented durable tasks:
+
+| Task | Owner path |
+|------|------------|
+| `jobs:health_ping` | Admin canary via `POST /api/admin/jobs/outbound/ping` |
+| `jobs:llm_product_extraction` | Scheduler/manual `llm_product_extraction` when durable queue is available |
+| `jobs:stack_backfill` | Per-run stack backfill kicks from `/api/stack/backfill/*` |
+
+When Procrastinate is disabled or unavailable, those paths fall back to existing in-process scheduler/background execution where applicable. Keep exactly one backend instance responsible for scheduler ownership (`BRIEFR_SCHEDULER_ENABLED=1`); API-only workers must set `BRIEFR_SCHEDULER_ENABLED=0`.
+
+Embeddings are scheduler-side. With `EMBEDDINGS_ENABLED=1`, the backfill job runs on `EMBEDDINGS_SYNC_INTERVAL_HOURS`; `EMBEDDINGS_AUTO_ON_INGEST=1` (default when embeddings are enabled) also warms vectors for newly ingested/updated CVEs after NVD ingest, capped by `EMBEDDINGS_INGEST_MAX_PER_RUN`. Production Postgres must use `pgvector/pgvector:pg16` before enabling embeddings.
 
 ---
 

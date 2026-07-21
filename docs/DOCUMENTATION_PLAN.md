@@ -38,7 +38,9 @@ docs/                  # THE PRESENT — what is true today
 ├── index.md, SELF_HOST, USE, TROUBLESHOOTING, HOW_IT_WORKS   # readers
 ├── PRODUCT_STATUS.md, HANDOVER.md                            # living ops
 ├── ONBOARDING, OPERATIONS, POSTGRES, LEARNING_PATH           # deep guides
-├── STUDY_GUIDE.html                                          # standalone interactive textbook, not in nav
+├── STUDY_GUIDE.html                                          # source for generated study-guide/ book
+├── study-guide/                                              # generated multi-file book from STUDY_GUIDE.html
+├── learn/                                                    # generated pathway chooser linking into study-guide/pages/
 ├── API_REFERENCE, SYSTEM_DESIGN, PRODUCT,                    # deep reference
 │   DATA_SNAPSHOT, BRIEFR_PRODUCT_VOICE, IMAGE_BRIEFS
 ├── AGENT_METHODOLOGY.md                                      # agent working method (linked from AGENTS.md)
@@ -75,6 +77,17 @@ gitignored and regenerated on demand.
 - One-off bot review dumps (e.g. Gemini inline JSON reconciliations) — fix in code/PR threads, not permanent docs
 - Duplicate stubs that only redirect to another doc — fix links instead
 - Generated artifacts in git (`*.xlsx`, `*.pdf` from scripts) — regenerate on demand
+
+---
+
+## Generated study guide / learn site
+
+`docs/STUDY_GUIDE.html` is the editable source of truth for the long-form textbook. After changing it, regenerate derived reader surfaces from the repo root:
+
+1. `python scripts/build_study_guide_book.py` — writes `docs/study-guide/` from `STUDY_GUIDE.html`.
+2. `python scripts/build_learn_site.py` — writes `docs/learn/` pathway pages from `docs/learn/pathways.json` and links into `docs/study-guide/pages/`.
+
+Do not hand-edit generated `study-guide/` or `learn/` pages unless the generator itself is being fixed; edit the source/generator and rebuild.
 
 ---
 

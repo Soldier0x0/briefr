@@ -71,7 +71,7 @@ python3 scripts/seed_screenshot_data.py
 
 Useful when testing the Incidents tab, README screenshots, or an empty local database.
 
-### Frontend UI conventions (2026-06)
+### Frontend UI conventions (2026-07)
 
 | Area | Behaviour |
 |------|-----------|
@@ -82,6 +82,7 @@ Useful when testing the Incidents tab, README screenshots, or an empty local dat
 | **Watchlist** | Pin only in UI; legacy snoozes cleared on load via `DELETE /api/watchlist/snoozes` |
 | **Analyst charts** | `TimeWindowPicker` — preset windows (6h–90d) or custom datetime range |
 | **Morning brief** | `action_queue` includes `description`; reason chips and metrics are color-coded |
+| **Design system** | Use semantic CSS tokens from `frontend/src/styles/tokens.css`; Radix primitives are preferred for checkboxes, radios, selects, switches, tabs, dialogs, popovers, and tooltips |
 
 Key files: `FilterBar.jsx`, `MorningBrief.jsx`, `BriefCharts.jsx`, `TimeWindowPicker.jsx`, `utils/openCveDrawer.js`.
 
@@ -89,7 +90,15 @@ Key files: `FilterBar.jsx`, `MorningBrief.jsx`, `BriefCharts.jsx`, `TimeWindowPi
 
 ## 3. Running tests
 
-Backend tests use **pytest** (same as CI).
+Use the local merge gate when possible:
+
+```bash
+./scripts/verify-local.sh
+```
+
+That mirrors the core CI checks (backend pytest, frontend build, dependency audit, frontend unit tests). Use `./scripts/verify-local.sh --full` when Postgres, gitleaks, and Playwright smoke are available.
+
+Backend tests use **pytest**:
 
 ```bash
 cd backend
@@ -114,7 +123,15 @@ CI runs `pytest tests/ -q` via [`.github/workflows/backend-tests.yml`](../.githu
 | `test_exploit_sources.py` | PoC-in-GitHub, ExploitDB, Metasploit, Nuclei parsers + DB merge |
 | Others | OTX, EPSS, MITRE feeds, domain validation, exploit refs |
 
-There is no frontend unit test suite today; UI changes are validated manually or via Playwright scripts in `scripts/`.
+Frontend validation:
+
+```bash
+cd frontend
+npm run build
+npm run test:unit
+```
+
+UI changes should also be checked in the browser or with the Playwright smoke path when the change affects interaction.
 
 ---
 
@@ -230,9 +247,21 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
 | `EMBEDDINGS_CACHE_DIR` | fastembed default | Model download/cache directory — must be writable by the service user. The production systemd unit sets `/var/lib/briefr/models` and adds it to `ReadWritePaths` (the default home-dir HuggingFace cache fails with EROFS under `ProtectSystem=strict`) |
 | `EMBEDDINGS_SYNC_INTERVAL_HOURS` | `6` | Embeddings backfill job cadence |
 | `EMBEDDINGS_MAX_PER_RUN` | `2000` | CVEs embedded per backfill run (bounds CPU per cycle) |
-| `LLM_PRODUCT_EXTRACTION_ENABLED` | `0` | Fill empty `affected_products` for NVD-unanalyzed CVEs from description text via Groq. Requires `GROQ_API_KEY`. Writes only while the field is empty, marks `affected_products_source='llm'`; official CPE supersedes |
+| `LLM_PRODUCT_EXTRACTION_ENABLED` | `0` | Fill empty `affected_products` for NVD-unanalyzed CVEs through the multi-provider LLM router (Groq → Cerebras → OpenRouter → Gemini; any configured provider key is enough). Writes only while the field is empty, marks `affected_products_source='llm'`; official CPE supersedes |
 | `LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS` | `6` | Extraction job cadence |
-| `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | `25` | Groq calls per run (2s throttle; completed extractions negative-cached for 7 days, errors retried next run) |
+| `LLM_PRODUCT_EXTRACTION_MAX_PER_RUN` | `10` | CVEs processed per run (provider throttling/circuits apply; completed extractions negative-cached for 7 days, errors retried next run) |
+
+### Recent opt-in features
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PROCRASTINATE_ENABLED` | `0` | Postgres-backed durable queue for selected outbound/admin-triggered jobs (`health_ping`, LLM product extraction, stack backfill) |
+| `API_CALL_EVENTS_ENABLED` | `1` | Record outbound HTTP attempts into `api_call_events` for Admin API metering |
+| `CPE_CATALOG_SYNC_ENABLED` | `0` | Scheduler sync of the NVD CPE dictionary into `software_catalog` for stack autocomplete |
+| `STACK_BACKFILL_ENABLED` | `0` | Enable user-approved Tier A NVD keyword backfill for shallow My Stack products |
+| `EMBEDDINGS_AUTO_ON_INGEST` | `1` | When embeddings are enabled, embed newly ingested/updated CVEs immediately after ingest (capped by `EMBEDDINGS_INGEST_MAX_PER_RUN`) |
+| `BRIEFR_RATE_LIMIT_STORE` | unset | Set `db` for shared token buckets across multiple uvicorn workers |
+| `BRIEFR_SCHEDULER_ENABLED` | `1` | Set `0` on API-only workers; keep one scheduler owner enabled |
 
 ---
 
@@ -275,10 +304,10 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 | Correlation | `backend/correlation/engine.py` |
 | Detection rules | `backend/detection/` |
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
-| Database schema | `backend/database.py` (`init_db`), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
+| Database schema / SQL adaptation | `backend/database.py` (`init_db`), `backend/db/pg_adapt.py` (legacy SQLite-shaped SQL adapted at the Postgres connection boundary), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
 | Morning brief | `frontend/src/components/MorningBrief.jsx` (unified `action_queue` list + filter chips) |
-| Analyst charts | `frontend/src/components/BriefCharts.jsx` (KEV histogram + EPSS movers table), `CveDescriptionClamp.jsx`, `chart.js` (lazy chunk for histogram only) |
+| Analyst charts | `frontend/src/components/BriefCharts.jsx` (activity/KEV/vendor views + EPSS movers table), `CveDescriptionClamp.jsx`, `frontend/src/components/briefVendorChartRecharts.jsx`, `frontend/src/utils/rechartsTheme.js` |
 | FEED stack filter | `frontend/src/components/FilterBar.jsx` (`STACK //` row — replaces Hero stack on FEED tab) |
 | Backups | `backend/backup/manager.py`, `deploy/briefr-backup.sh` |
 
