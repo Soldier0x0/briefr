@@ -10,6 +10,7 @@ import {
 } from '../utils/hybridFeedSearch.js'
 import { scrollBehavior } from '../utils/motion.js'
 import { shouldIgnoreGlobalShortcut } from '../utils/keyboardScope.js'
+import { formatIntelLabelText } from '../utils/formatIntelLabel.js'
 import { buildCombinedReport, copyToClipboard } from '../utils/report.js'
 import { notifyCopyFailure, notifyCopySuccess, notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import PdfExportModal from './PdfExportModal.jsx'
@@ -67,13 +68,15 @@ function SemanticTechniqueRow({ technique, onSelectTechnique }) {
 }
 
 function SemanticCampaignRow({ campaign, onOpenForgeCampaigns }) {
-  const label = campaign.label || campaign.campaign_id
+  const rawLabel = campaign.label || campaign.campaign_id
+  const label = formatIntelLabelText(rawLabel) || rawLabel
   return (
     <button
       type="button"
       className="feed-semantic-row feed-semantic-row-campaign"
       onClick={onOpenForgeCampaigns}
       aria-label={`Open campaign ${label} in Forge`}
+      title={typeof rawLabel === 'string' ? rawLabel : undefined}
     >
       <span className="feed-semantic-row-id mono">CAMPAIGN</span>
       <span className="feed-semantic-row-body">

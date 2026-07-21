@@ -1171,7 +1171,28 @@ a.drawer-related-news-title:focus-visible {
 .drawer-otx-more-btn:hover { color: var(--text); }
 .drawer-otx-more-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .drawer-otx-item { padding: 12px; background: var(--bg2); border: 1px solid var(--border); }
-.drawer-otx-name { font-size: 0.875rem; color: var(--text); margin: 0 0 8px; line-height: 1.4; }
+.drawer-otx-name {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin: 0 0 8px;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.drawer-otx-name-text { min-width: 0; }
+.drawer-otx-part {
+  flex-shrink: 0;
+  font-size: var(--type-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  padding: 1px var(--space-2);
+  cursor: help;
+}
 .drawer-otx-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
 .drawer-otx-author { font-size: 0.6875rem; color: var(--text3); }
 .drawer-otx-date, .drawer-otx-ioc-count { font-size: 0.6875rem; color: var(--text3); }
@@ -3245,6 +3266,7 @@ a.drawer-related-news-title:focus-visible {
 .det-generated-meta .control-tooltip-wrap,
 .corr-finding-head .control-tooltip-wrap,
 .drawer-otx-tags .control-tooltip-wrap,
+.drawer-otx-name .control-tooltip-wrap,
 .product-tags .control-tooltip-wrap,
 .cwe-list .control-tooltip-wrap,
 .capec-list .control-tooltip-wrap,

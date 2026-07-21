@@ -6,6 +6,7 @@ import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { campaignBadgeTooltip, campaignLifecycleClass } from '../../utils/correlationPresentation.js'
 import { clusterOpenTarget, openCvesLabel } from '../../utils/campaignClusterOpen.js'
+import { formatIntelLabelText } from '../../utils/formatIntelLabel.js'
 import { SkeletonRows } from './shared.jsx'
 
 export default function CampaignsView({ profileStack }) {
@@ -80,10 +81,14 @@ export default function CampaignsView({ profileStack }) {
             const target = clusterOpenTarget(cluster)
             const canOpen = Boolean(target && investigation?.openCveById)
             const label = openCvesLabel(cluster.member_count)
+            const rawClusterLabel = cluster.label || cluster.campaign_id
+            const clusterLabel = formatIntelLabelText(rawClusterLabel) || rawClusterLabel
             return (
               <li key={cluster.campaign_id} className="fg-backlog-row fg-campaign-row">
                 <div className="fg-backlog-main">
-                  <span className="fg-cve-id mono">{cluster.label || cluster.campaign_id}</span>
+                  <span className="fg-cve-id mono" title={typeof rawClusterLabel === 'string' ? rawClusterLabel : undefined}>
+                    {clusterLabel}
+                  </span>
                   <Tooltip text={campaignBadgeTooltip(lifecycle)}>
                     <span className={`fg-lifecycle-badge mono ${campaignLifecycleClass(lifecycle)}`}>
                       {(lifecycle || 'active').toUpperCase()}
@@ -123,7 +128,7 @@ export default function CampaignsView({ profileStack }) {
                         disabled={!canOpen}
                         aria-label={
                           canOpen
-                            ? `${label}: open ${target} from ${cluster.label || cluster.campaign_id}`
+                            ? `${label}: open ${target} from ${clusterLabel}`
                             : `${label} unavailable — no member CVE`
                         }
                       >

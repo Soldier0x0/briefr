@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { displayText } from '../../utils/displayText.js'
+import { formatIntelLabel, INTEL_PART_TOOLTIP } from '../../utils/formatIntelLabel.js'
 import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import {
   buildConnectionPanel,
@@ -399,6 +400,9 @@ function CorrelationFindings({
           <p className="corr-group-label mono">{CAMPAIGN_LINKS_HEADING}</p>
           {campaigns.map(item => {
             const campaignMembers = (item.members || []).filter(id => id && id !== correlation?.cve_id)
+            const campaignLabel = item.summary
+              || formatIntelLabel(item.label).title
+              || item.campaign_id
             return (
               <div key={item.campaign_id} className="corr-finding">
                 <div className="corr-finding-head">
@@ -406,7 +410,7 @@ function CorrelationFindings({
                   <div className="corr-finding-body">
                     <p className="corr-finding-text">
                       <span className="corr-lane-tag mono">Campaign link</span>{' '}
-                      {item.summary || item.label}
+                      {campaignLabel}
                       {item.attribution_conflict && (
                         <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
                           <span className="corr-conflict-note">
@@ -566,9 +570,20 @@ function groupPulsesByAuthor(pulses) {
   return Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)
 }
 function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
+  const intel = formatIntelLabel(displayText(pulse.pulse_name))
+  const title = intel.title || 'Unnamed pulse'
   return (
     <li className="drawer-otx-item drawer-otx-item-compact">
-      <p className="drawer-otx-name">{displayText(pulse.pulse_name) || 'Unnamed pulse'}</p>
+      <p className="drawer-otx-name" title={intel.raw || undefined}>
+        <span className="drawer-otx-name-text">{title}</span>
+        {intel.part && (
+          <ControlTooltip text={INTEL_PART_TOOLTIP} trigger="hover-focus">
+            <span className="drawer-otx-part mono" aria-label={`OTX author part ${intel.part.n} of ${intel.part.m}`}>
+              Part {intel.part.n}/{intel.part.m}
+            </span>
+          </ControlTooltip>
+        )}
+      </p>
       <div className="drawer-otx-meta">
         {pulse.created_date && (
           <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>

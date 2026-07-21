@@ -12,6 +12,18 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 5: formatIntelLabel SSOT (OTX/campaign titles)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/formatIntelLabel.js` (+ unit tests) as the **display-only** SSOT for OTX pulse / campaign / intel titles (`Known_Cve` → `Known Cve`; parse author `| Part N/M` into a badge + tooltip; never mutates API/filter keys).
+- Wired into DetailDrawer `IntelTab` pulse rows (Part badge when present), Forge `CampaignsView`, Wallboard campaign tiles, `correlationPresentation` same-pulse evidence, and FEED hybrid `SemanticCampaignRow`.
+
+**Verify:** `cd frontend && npm run test:unit -- src/utils/formatIntelLabel.test.js`
+
+**Next:** Task 6 (PR-C pulse aggregation / `normalize_pulse_name`) — do not fabricate missing Part 2/2.
+
+---
+
 ## 2026-07-21 — Task 4: section headings without `//` + MITRE empty composition
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
