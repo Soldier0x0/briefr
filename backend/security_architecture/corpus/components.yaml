@@ -10,6 +10,16 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/admin/ai_ops.py
+- id: routers-admin-catchup
+  title: routers.admin.catchup
+  summary: FastAPI router module with 3 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 3
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/catchup.py
 - id: routers-admin-config
   title: routers.admin.config
   summary: FastAPI router module with 4 endpoint(s).
@@ -62,11 +72,11 @@ components:
     ref: backend/routers/admin/feeds.py
 - id: routers-admin-jobs
   title: routers.admin.jobs
-  summary: FastAPI router module with 9 endpoint(s).
+  summary: FastAPI router module with 10 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 9
+  endpoint_count: 10
   source_refs:
   - type: file
     ref: backend/routers/admin/jobs.py
@@ -170,16 +180,46 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/correlation.py
-- id: routers-cves
-  title: routers.cves
-  summary: FastAPI router module with 25 endpoint(s).
+- id: routers-cves-changes
+  title: routers.cves.changes
+  summary: FastAPI router module with 1 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 25
+  endpoint_count: 1
   source_refs:
   - type: file
-    ref: backend/routers/cves.py
+    ref: backend/routers/cves/changes.py
+- id: routers-cves-detail
+  title: routers.cves.detail
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/cves/detail.py
+- id: routers-cves-intel
+  title: routers.cves.intel
+  summary: FastAPI router module with 12 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 12
+  source_refs:
+  - type: file
+    ref: backend/routers/cves/intel.py
+- id: routers-cves-list
+  title: routers.cves.list
+  summary: FastAPI router module with 7 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 7
+  source_refs:
+  - type: file
+    ref: backend/routers/cves/list.py
 - id: routers-detection_backlog
   title: routers.detection_backlog
   summary: FastAPI router module with 2 endpoint(s).

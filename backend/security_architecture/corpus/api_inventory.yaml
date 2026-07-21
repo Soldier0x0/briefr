@@ -37,6 +37,15 @@ endpoints:
   path: /api/admin/backups/verify/{filename}
   component_id: routers-admin-storage
 - method: GET
+  path: /api/admin/catchup
+  component_id: routers-admin-catchup
+- method: POST
+  path: /api/admin/catchup/start
+  component_id: routers-admin-catchup
+- method: POST
+  path: /api/admin/catchup/stop
+  component_id: routers-admin-catchup
+- method: GET
   path: /api/admin/config
   component_id: routers-admin-config
 - method: POST
@@ -116,6 +125,9 @@ endpoints:
   component_id: routers-admin-data_ops
 - method: GET
   path: /api/admin/jobs/outbound
+  component_id: routers-admin-jobs
+- method: POST
+  path: /api/admin/jobs/outbound/ping
   component_id: routers-admin-jobs
 - method: GET
   path: /api/admin/logs
@@ -263,7 +275,7 @@ endpoints:
   component_id: routers-atlas
 - method: GET
   path: /api/changes
-  component_id: routers-cves
+  component_id: routers-cves-changes
 - method: GET
   path: /api/config/risk
   component_id: routers-config
@@ -272,61 +284,61 @@ endpoints:
   component_id: routers-correlation
 - method: GET
   path: /api/cves
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/cves/export
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: POST
   path: /api/cves/match
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/cves/{cve_id}
-  component_id: routers-cves
+  component_id: routers-cves-detail
 - method: GET
   path: /api/cves/{cve_id}/correlation
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: DELETE
   path: /api/cves/{cve_id}/correlation/feedback
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/correlation/feedback
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: POST
   path: /api/cves/{cve_id}/correlation/feedback
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: DELETE
   path: /api/cves/{cve_id}/correlation/suppress
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: POST
   path: /api/cves/{cve_id}/correlation/suppress
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/correlation/suppressions
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/detection
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/drawer
-  component_id: routers-cves
+  component_id: routers-cves-detail
 - method: GET
   path: /api/cves/{cve_id}/epss-history
-  component_id: routers-cves
+  component_id: routers-cves-detail
 - method: GET
   path: /api/cves/{cve_id}/greynoise-scans
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/momentum
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/related
-  component_id: routers-cves
+  component_id: routers-cves-detail
 - method: POST
   path: /api/cves/{cve_id}/risk
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/cves/{cve_id}/sentences
-  component_id: routers-cves
+  component_id: routers-cves-detail
 - method: GET
   path: /api/detection-backlog
   component_id: routers-detection_backlog
@@ -371,7 +383,7 @@ endpoints:
   component_id: routers-ioc
 - method: GET
   path: /api/kev/deadlines
-  component_id: routers-cves
+  component_id: routers-cves-intel
 - method: GET
   path: /api/me/notifications
   component_id: routers-notifications_me
@@ -473,16 +485,16 @@ endpoints:
   component_id: routers-stack_catalog
 - method: GET
   path: /api/stats
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/stats/timeline
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/stats/top-vendors
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/techniques/top
-  component_id: routers-cves
+  component_id: routers-cves-list
 - method: GET
   path: /api/threat-model/scenarios
   component_id: routers-threat_model
