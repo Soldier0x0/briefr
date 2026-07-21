@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
+from database import get_db
 from security_architecture import merge
 
 COMMUNITY_TID = "T1190"
@@ -129,6 +130,33 @@ async def _insert_cve_coro(
         await db.close()
 
 
+async def _insert_cves_coro(rows):
+    db = await get_db()
+    try:
+        for row in rows:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, affected_products, cpe_matches,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row["cve_id"],
+                    row["description"],
+                    row.get("affected_products", "[]"),
+                    json.dumps(row["cpe_matches"]),
+                    row.get("severity", "CRITICAL"),
+                    9.8,
+                    0.9,
+                    row.get("is_kev", 1),
+                    row["published"],
+                ),
+            )
+        await db.commit()
+    finally:
+        await db.close()
+
+
 async def _self_stack_risk_rows_coro(corpus):
     from database import get_db
 
@@ -164,6 +192,10 @@ def _insert_cve(
 
 def _self_stack_risk_rows(client, corpus):
     return client.portal.call(_self_stack_risk_rows_coro, corpus)
+
+
+def _insert_cves(client, rows):
+    client.portal.call(_insert_cves_coro, rows)
 
 
 # ── MITRE (wraps routers.forge.build_coverage_map) ─────────────────────
@@ -329,6 +361,37 @@ def test_product_only_match_is_weaker_labeled(client):
     assert rows[0]["match_score"] == 55
     assert rows[0]["match_basis"] == "product-only"
 
+
+def test_self_stack_prefilter_finds_older_matching_kev_after_many_newer_nonmatches(client):
+    corpus = {
+        "self_stack": {
+            "terms": [
+                {"term": "fastapi", "ecosystem": "pypi", "version": None},
+            ],
+        },
+    }
+    newer_nonmatches = [
+        {
+            "cve_id": f"CVE-2025-{i:04d}",
+            "description": "Newer urgent row with structured metadata for another product.",
+            "cpe_matches": [_cpe(f"unrelated-{i}")],
+            "published": f"2025-02-{(i % 28) + 1:02d}T00:00:00",
+        }
+        for i in range(501)
+    ]
+    older_match = {
+        "cve_id": "CVE-2020-4242",
+        "description": "Older KEV row; recall must come from structured product fields.",
+        "cpe_matches": [_cpe("fastapi")],
+        "published": "2020-01-01T00:00:00",
+    }
+    _insert_cves(client, [*newer_nonmatches, older_match])
+
+    rows = _self_stack_risk_rows(client, corpus)
+
+    assert [row["cve_id"] for row in rows] == ["CVE-2020-4242"]
+
+
 def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/section/risks")
@@ -445,17 +508,6 @@ def test_resolve_control_active_unset_opt_in_flag_defaults_inactive(monkeypatch)
     assert merge.resolve_control_active(control) is False
     monkeypatch.setenv("SOME_OPT_IN_FLAG", "1")
     assert merge.resolve_control_active(control) is True
-
-
-def test_matched_term_none_reads_as_unknown_not_python_none():
-    """Gemini review on PR #494: a fallback match miss must never leak the
-    literal string 'None' into a row's title/summary."""
-    row = {"cve_id": "CVE-2024-0001", "description": "no overlap here", "affected_products": "[]"}
-    assert merge._matched_term(row, ["zzz-unrelated-term"]) is None
-    # self_stack_risk_rows applies the `or "unknown"` fallback around the
-    # call site (merge.py), not inside _matched_term itself -- covered by
-    # test_risks_section_includes_live_self_stack_row_with_matched_term's
-    # assertion that matched_term is always truthy.
 
 
 def test_self_stack_terms_reads_generated_layer():

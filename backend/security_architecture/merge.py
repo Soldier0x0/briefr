@@ -124,19 +124,6 @@ def enrich_controls(controls: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{**c, "active": resolve_control_active(c)} for c in controls]
 
 
-def _matched_term(cve_row: dict[str, Any], terms: list[str]) -> str | None:
-    """Which self-stack term matched this CVE row -- shown on every live row
-    per the every-status-word-explains-itself rule (spec §4.5)."""
-    cve_id = (cve_row.get("cve_id") or "").upper()
-    haystack = f"{cve_row.get('description') or ''} {cve_row.get('affected_products') or ''}".lower()
-    for term in terms:
-        if term.upper() == cve_id:
-            return term
-        if term.lower() and term.lower() in haystack:
-            return term
-    return None
-
-
 def _hydrate_cpe_matches(row: dict) -> list[dict]:
     raw = row.get("cpe_matches")
     if isinstance(raw, str):
@@ -205,21 +192,40 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
     assets = _self_stack_assets(corpus)
     if not assets:
         return []
+    product_tokens = sorted({
+        product
+        for asset in assets
+        if (product := (asset.get("product") or "").strip().lower())
+    })
+    if not product_tokens:
+        return []
+
+    product_clauses = " OR ".join(
+        "(LOWER(COALESCE(c.cpe_matches, '')) LIKE ? OR "
+        "LOWER(COALESCE(c.affected_products, '')) LIKE ?)"
+        for _ in product_tokens
+    )
+    product_params = tuple(
+        pattern
+        for token in product_tokens
+        for pattern in (f"%{token}%", f"%{token}%")
+    )
 
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT c.cve_id, c.severity, c.cvss_score, c.epss_score, c.is_kev, c.published,
                c.description, c.affected_products, c.cpe_matches
         FROM cves c
-        WHERE (c.is_kev = 1 OR UPPER(c.severity) = 'CRITICAL')
+        WHERE (c.is_kev = 1 OR c.severity = 'CRITICAL')
           AND (
-            (c.cpe_matches IS NOT NULL AND c.cpe_matches NOT IN ('', '[]'))
-            OR (c.affected_products IS NOT NULL AND c.affected_products NOT IN ('', '[]'))
+            COALESCE(c.cpe_matches, '') NOT IN ('', '[]')
+            OR COALESCE(c.affected_products, '') NOT IN ('', '[]')
           )
+          AND ({product_clauses})
         ORDER BY c.is_kev DESC, c.published DESC
-        LIMIT 500
+        LIMIT 2000
         """,
-        (),
+        product_params,
     )
 
     live_rows = []
