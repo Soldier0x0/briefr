@@ -200,7 +200,7 @@ async def get_overview():
     tiles.append({
         "id": "self_cve_exposure", "label": "Self CVE Exposure",
         "value": exposure["count"],
-        "help": f"KEV or critical CVEs matching BRIEFR's own generated self-stack ({len(exposure['terms'])} dependency terms from requirements.txt / package.json). Term match, not SBOM-precise -- see the matched term on each row.",
+        "help": f"KEV or critical CVEs matching BRIEFR's own generated self-stack ({len(exposure['terms'])} dependency terms from requirements.txt / package.json) through structured CPE product/version scoring. See each row's match basis.",
         "section": "risks", "filter": {"origin": "live"},
     })
 

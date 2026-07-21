@@ -18,6 +18,7 @@ is re-run.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -640,43 +641,63 @@ def build_architecture_graph(
 _RUNTIME_COMPONENTS: list[str] = ["postgresql", "nginx"]
 
 
-def extract_requirements_terms(requirements_text: str) -> list[str]:
-    """Bare package names from a pip requirements.txt -- strips version
-    pins/extras/markers, skips comments, blank lines, and pip options
-    (-r, --hash, ...)."""
-    terms: set[str] = set()
+_NPM_EXACT_VERSION_RE = re.compile(
+    r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+)
+
+
+def extract_requirements_entries(requirements_text: str) -> list[dict[str, str | None]]:
+    """Package names from requirements.txt, preserving only exact == pins."""
+    entries: dict[str, dict[str, str | None]] = {}
     for raw_line in requirements_text.splitlines():
         line = raw_line.split("#", 1)[0].strip()
         if not line or line.startswith("-"):
             continue
-        name = re.split(r"[=<>!~\[;]", line, maxsplit=1)[0].strip()
+        requirement = line.split(";", 1)[0].strip()
+        name = re.split(r"[=<>!~\[]", requirement, maxsplit=1)[0].strip()
         if name:
-            terms.add(name)
-    return sorted(terms)
+            match = re.match(
+                r"^[A-Za-z0-9_.-]+(?:\[[^\]]+\])?\s*==\s*([^,;\s]+)$",
+                requirement,
+            )
+            version = match.group(1) if match else None
+            existing = entries.get(name)
+            if existing is None or (existing["version"] is None and version is not None):
+                entries[name] = {"name": name, "version": version}
+    return [entries[name] for name in sorted(entries)]
 
 
-def extract_package_json_terms(package_json_text: str) -> list[str]:
-    """Package names from package.json's dependencies + devDependencies."""
-    import json
-
+def extract_package_json_entries(package_json_text: str) -> list[dict[str, str | None]]:
+    """Package names from package.json dependencies, preserving exact semver only."""
     data = json.loads(package_json_text)
-    names = set(data.get("dependencies", {})) | set(data.get("devDependencies", {}))
-    return sorted(names)
+    entries: dict[str, dict[str, str | None]] = {}
+    for section in ("dependencies", "devDependencies"):
+        for name, spec in data.get(section, {}).items():
+            version = spec if _NPM_EXACT_VERSION_RE.match(str(spec)) else None
+            existing = entries.get(name)
+            if existing is None or (existing["version"] is None and version is not None):
+                entries[name] = {"name": name, "version": version}
+    return [entries[name] for name in sorted(entries)]
 
 
 def build_self_stack_yaml(
-    requirements_terms: list[str],
-    package_json_terms: list[str],
+    requirements_entries: list[dict[str, str | None]],
+    package_json_entries: list[dict[str, str | None]],
     runtime_components: list[str],
 ) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for source, terms in (
-        ("backend/requirements.txt", requirements_terms),
-        ("frontend/package.json", package_json_terms),
-        ("declared runtime component", runtime_components),
+    for source, ecosystem, manifest_entries in (
+        ("backend/requirements.txt", "pypi", requirements_entries),
+        ("frontend/package.json", "npm", package_json_entries),
+        (
+            "declared runtime component",
+            "runtime",
+            [{"name": component, "version": None} for component in runtime_components],
+        ),
     ):
-        for term in terms:
+        for manifest_entry in manifest_entries:
+            term = manifest_entry["name"]
             slug = re.sub(r"[^a-z0-9]+", "-", term.lower()).strip("-")
             entry_id = f"self-stack-{slug}"
             if entry_id in seen:
@@ -691,6 +712,8 @@ def build_self_stack_yaml(
                 "origin": "generated",
                 "term": term,
                 "source": source,
+                "ecosystem": ecosystem,
+                "version": manifest_entry.get("version"),
             })
     entries.sort(key=lambda e: e["id"])
     return entries
@@ -744,8 +767,8 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
 
     jobs = extract_scheduler_jobs(scheduler_source)
     tables = extract_db_tables(db_source)
-    requirements_terms = extract_requirements_terms(requirements_text)
-    package_json_terms = extract_package_json_terms(package_json_text)
+    requirements_entries = extract_requirements_entries(requirements_text)
+    package_json_entries = extract_package_json_entries(package_json_text)
 
     components = build_components(routes_by_module)
     jobs_yaml = build_scheduler_jobs_yaml(jobs)
@@ -800,7 +823,7 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
         output_dir / "self_stack.yaml": {
             "version": 1,
             "terms": build_self_stack_yaml(
-                requirements_terms, package_json_terms, _RUNTIME_COMPONENTS
+                requirements_entries, package_json_entries, _RUNTIME_COMPONENTS
             ),
         },
     }

@@ -129,24 +129,55 @@ def test_build_db_tables_yaml_shape():
 
 # ── Self-stack (spec §4.5) ─────────────────────────────────────────────
 
-def test_extract_requirements_terms_strips_pins_extras_and_comments():
-    text = "fastapi==0.139.0\nuvicorn[standard]==0.49.0\n# comment\n\n-r other.txt\nbcrypt>=4.0\n"
-    assert gen.extract_requirements_terms(text) == ["bcrypt", "fastapi", "uvicorn"]
+def test_extract_self_stack_requirements_entries_keeps_exact_pins():
+    text = "fastapi==0.115.0\nuvicorn[standard]==0.49.0\n# comment\n\n-r other.txt\nbcrypt>=4.0\n"
+    entries = gen.extract_requirements_entries(text)
+    by_name = {e["name"]: e for e in entries}
+    assert set(by_name) == {"bcrypt", "fastapi", "uvicorn"}
+    assert by_name["fastapi"]["version"] == "0.115.0"
+    assert by_name["uvicorn"]["version"] == "0.49.0"
+    assert by_name["bcrypt"]["version"] is None
 
 
-def test_extract_package_json_terms_merges_deps_and_dev_deps():
-    text = '{"dependencies": {"react": "^19.0.0"}, "devDependencies": {"vite": "^8.0.0"}}'
-    assert gen.extract_package_json_terms(text) == ["react", "vite"]
+def test_extract_self_stack_package_json_entries_keeps_exact_versions_only():
+    text = (
+        '{"dependencies": {"react": "^19.0.0", "vite": "7.0.0"}, '
+        '"devDependencies": {"eslint": "~9.0.0"}}'
+    )
+    entries = gen.extract_package_json_entries(text)
+    by_name = {e["name"]: e for e in entries}
+    assert by_name["vite"]["version"] == "7.0.0"
+    assert by_name["react"]["version"] is None
+    assert by_name["eslint"]["version"] is None
 
 
-def test_build_self_stack_yaml_shape_and_dedup():
-    out = gen.build_self_stack_yaml(["fastapi"], ["react"], ["postgresql"])
+def test_build_self_stack_yaml_includes_ecosystem_version_and_dedup():
+    out = gen.build_self_stack_yaml(
+        [{"name": "fastapi", "version": "0.115.0"}],
+        [{"name": "react", "version": None}],
+        ["postgresql"],
+    )
     assert {e["term"] for e in out} == {"fastapi", "react", "postgresql"}
     assert all(e["origin"] == "generated" for e in out)
     assert all(e["id"].startswith("self-stack-") for e in out)
+    fastapi = next(e for e in out if e["term"] == "fastapi")
+    assert fastapi["source"] == "backend/requirements.txt"
+    assert fastapi["ecosystem"] == "pypi"
+    assert fastapi["version"] == "0.115.0"
+    react = next(e for e in out if e["term"] == "react")
+    assert react["source"] == "frontend/package.json"
+    assert react["ecosystem"] == "npm"
+    assert react["version"] is None
+    postgresql = next(e for e in out if e["term"] == "postgresql")
+    assert postgresql["ecosystem"] == "runtime"
+    assert postgresql["version"] is None
     # A term appearing in two sources collapses to one entry (id is derived
     # from the slugified term, not the source).
-    out2 = gen.build_self_stack_yaml(["fastapi"], ["fastapi"], [])
+    out2 = gen.build_self_stack_yaml(
+        [{"name": "fastapi", "version": "0.115.0"}],
+        [{"name": "fastapi", "version": "1.0.0"}],
+        [],
+    )
     assert len(out2) == 1
 
 
@@ -154,8 +185,12 @@ def test_build_self_stack_yaml_renaming_a_dependency_changes_output():
     """Same acceptance-criterion shape as the router-rename test: a new
     dependency changes self_stack.yaml, which is what keeps the drift
     check honest about self-stack staleness (spec §4.5)."""
-    before = gen.build_self_stack_yaml(["fastapi"], [], [])
-    after = gen.build_self_stack_yaml(["fastapi", "django"], [], [])
+    before = gen.build_self_stack_yaml([{"name": "fastapi", "version": "0.115.0"}], [], [])
+    after = gen.build_self_stack_yaml(
+        [{"name": "fastapi", "version": "0.115.0"}, {"name": "django", "version": None}],
+        [],
+        [],
+    )
     assert before != after
 
 

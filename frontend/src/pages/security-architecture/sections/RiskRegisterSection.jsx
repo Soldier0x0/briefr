@@ -13,11 +13,17 @@ const ORIGIN_HELP = {
   live: 'Auto-derived from a live KEV/critical CVE hit on BRIEFR\'s own generated self-stack -- cannot be closed by hand, closes itself when the CVE stops matching.',
 }
 
+function matchBasisLabel(r) {
+  if (r.match_basis === 'product+version') return 'MATCH: product+version'
+  if (r.match_basis === 'product-only') return 'MATCH: product-only (version unverified)'
+  return '—'
+}
+
 function riskCsvRows(rows) {
-  const header = ['ID', 'Title', 'Category', 'Severity', 'Status', 'Origin', 'Stale', 'Review Date', 'Matched Term', 'Summary']
+  const header = ['ID', 'Title', 'Category', 'Severity', 'Status', 'Origin', 'Stale', 'Review Date', 'Matched Term', 'Match Basis', 'Summary']
   const body = rows.map(r => [
     r.id ?? '', r.title ?? '', r.category ?? '', r.severity ?? '', r.status ?? '',
-    r.origin ?? '', r.stale ? 'yes' : 'no', r.review_date ?? '', r.matched_term ?? '', r.summary ?? '',
+    r.origin ?? '', r.stale ? 'yes' : 'no', r.review_date ?? '', r.matched_term ?? '', matchBasisLabel(r), r.summary ?? '',
   ])
   return [header, ...body]
     .map(row => row.map(v => {
@@ -88,6 +94,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
     { id: 'review_date', label: 'Review Date', width: 110, render: (r) => r.review_date || '—' },
     { id: 'owner', label: 'Owner', width: 110, render: (r) => r.owner || '—' },
     { id: 'matched_term', label: 'Matched Term', width: 130, render: (r) => r.matched_term || '—' },
+    { id: 'match_basis', label: 'Match Basis', width: 220, render: (r) => <span className="mono">{matchBasisLabel(r)}</span> },
     { id: 'summary', label: 'Mitigation / Summary', minWidth: 260, render: (r) => r.summary || '—' },
   ], [])
 

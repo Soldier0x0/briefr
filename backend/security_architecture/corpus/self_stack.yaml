@@ -8,6 +8,8 @@ terms:
   origin: generated
   term: aiosqlite
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.22.1
 - id: self-stack-alembic
   title: alembic
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -16,6 +18,8 @@ terms:
   origin: generated
   term: alembic
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 1.18.5
 - id: self-stack-apscheduler
   title: apscheduler
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -24,6 +28,8 @@ terms:
   origin: generated
   term: apscheduler
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 3.11.3
 - id: self-stack-asyncpg
   title: asyncpg
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -32,6 +38,8 @@ terms:
   origin: generated
   term: asyncpg
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.31.0
 - id: self-stack-bcrypt
   title: bcrypt
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -40,6 +48,8 @@ terms:
   origin: generated
   term: bcrypt
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 5.0.0
 - id: self-stack-cryptography
   title: cryptography
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -48,6 +58,8 @@ terms:
   origin: generated
   term: cryptography
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 49.0.0
 - id: self-stack-eslint
   title: eslint
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -56,6 +68,8 @@ terms:
   origin: generated
   term: eslint
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-eslint-config-prettier
   title: eslint-config-prettier
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -64,6 +78,8 @@ terms:
   origin: generated
   term: eslint-config-prettier
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-eslint-plugin-react
   title: eslint-plugin-react
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -72,6 +88,8 @@ terms:
   origin: generated
   term: eslint-plugin-react
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-eslint-plugin-react-hooks
   title: eslint-plugin-react-hooks
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -80,6 +98,8 @@ terms:
   origin: generated
   term: eslint-plugin-react-hooks
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-fastapi
   title: fastapi
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -88,6 +108,8 @@ terms:
   origin: generated
   term: fastapi
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.139.2
 - id: self-stack-fontsource-dm-sans
   title: '@fontsource/dm-sans'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -96,6 +118,8 @@ terms:
   origin: generated
   term: '@fontsource/dm-sans'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-fontsource-dm-serif-display
   title: '@fontsource/dm-serif-display'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -104,6 +128,8 @@ terms:
   origin: generated
   term: '@fontsource/dm-serif-display'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-fontsource-ibm-plex-mono
   title: '@fontsource/ibm-plex-mono'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -112,6 +138,8 @@ terms:
   origin: generated
   term: '@fontsource/ibm-plex-mono'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-html2canvas
   title: html2canvas
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -120,6 +148,8 @@ terms:
   origin: generated
   term: html2canvas
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-httpx
   title: httpx
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -128,6 +158,8 @@ terms:
   origin: generated
   term: httpx
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.28.1
 - id: self-stack-jspdf
   title: jspdf
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -136,6 +168,8 @@ terms:
   origin: generated
   term: jspdf
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-lucide-react
   title: lucide-react
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -144,6 +178,8 @@ terms:
   origin: generated
   term: lucide-react
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-nginx
   title: nginx
   summary: BRIEFR dependency term derived from declared runtime component.
@@ -152,6 +188,8 @@ terms:
   origin: generated
   term: nginx
   source: declared runtime component
+  ecosystem: runtime
+  version: null
 - id: self-stack-numpy
   title: numpy
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -160,6 +198,8 @@ terms:
   origin: generated
   term: numpy
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 2.5.1
 - id: self-stack-orjson
   title: orjson
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -168,6 +208,8 @@ terms:
   origin: generated
   term: orjson
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 3.11.9
 - id: self-stack-playwright
   title: playwright
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -176,6 +218,8 @@ terms:
   origin: generated
   term: playwright
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-postgresql
   title: postgresql
   summary: BRIEFR dependency term derived from declared runtime component.
@@ -184,6 +228,8 @@ terms:
   origin: generated
   term: postgresql
   source: declared runtime component
+  ecosystem: runtime
+  version: null
 - id: self-stack-prettier
   title: prettier
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -192,6 +238,8 @@ terms:
   origin: generated
   term: prettier
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-procrastinate
   title: procrastinate
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -200,6 +248,8 @@ terms:
   origin: generated
   term: procrastinate
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 3.9.0
 - id: self-stack-psutil
   title: psutil
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -208,6 +258,8 @@ terms:
   origin: generated
   term: psutil
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 7.2.2
 - id: self-stack-psycopg
   title: psycopg
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -216,6 +268,8 @@ terms:
   origin: generated
   term: psycopg
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 3.3.4
 - id: self-stack-pydantic
   title: pydantic
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -224,6 +278,8 @@ terms:
   origin: generated
   term: pydantic
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 2.13.4
 - id: self-stack-pydantic-settings
   title: pydantic-settings
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -232,6 +288,8 @@ terms:
   origin: generated
   term: pydantic-settings
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 2.14.2
 - id: self-stack-pyjwt
   title: PyJWT
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -240,6 +298,8 @@ terms:
   origin: generated
   term: PyJWT
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 2.13.0
 - id: self-stack-pyrage
   title: pyrage
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -248,6 +308,8 @@ terms:
   origin: generated
   term: pyrage
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 1.3.0
 - id: self-stack-python-dotenv
   title: python-dotenv
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -256,6 +318,8 @@ terms:
   origin: generated
   term: python-dotenv
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 1.2.2
 - id: self-stack-python-multipart
   title: python-multipart
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -264,6 +328,8 @@ terms:
   origin: generated
   term: python-multipart
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.0.32
 - id: self-stack-pyyaml
   title: PyYAML
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -272,6 +338,8 @@ terms:
   origin: generated
   term: PyYAML
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 6.0.3
 - id: self-stack-radix-ui-react-alert-dialog
   title: '@radix-ui/react-alert-dialog'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -280,6 +348,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-alert-dialog'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-checkbox
   title: '@radix-ui/react-checkbox'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -288,6 +358,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-checkbox'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-dialog
   title: '@radix-ui/react-dialog'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -296,6 +368,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-dialog'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-dropdown-menu
   title: '@radix-ui/react-dropdown-menu'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -304,6 +378,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-dropdown-menu'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-select
   title: '@radix-ui/react-select'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -312,6 +388,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-select'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-slider
   title: '@radix-ui/react-slider'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -320,6 +398,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-slider'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-switch
   title: '@radix-ui/react-switch'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -328,6 +408,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-switch'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-tabs
   title: '@radix-ui/react-tabs'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -336,6 +418,8 @@ terms:
   origin: generated
   term: '@radix-ui/react-tabs'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-react
   title: react
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -344,6 +428,8 @@ terms:
   origin: generated
   term: react
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-react-dom
   title: react-dom
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -352,6 +438,8 @@ terms:
   origin: generated
   term: react-dom
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-react-router-dom
   title: react-router-dom
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -360,6 +448,8 @@ terms:
   origin: generated
   term: react-router-dom
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-recharts
   title: recharts
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -368,6 +458,8 @@ terms:
   origin: generated
   term: recharts
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-tanstack-react-table
   title: '@tanstack/react-table'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -376,6 +468,8 @@ terms:
   origin: generated
   term: '@tanstack/react-table'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-uvicorn
   title: uvicorn
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -384,6 +478,8 @@ terms:
   origin: generated
   term: uvicorn
   source: backend/requirements.txt
+  ecosystem: pypi
+  version: 0.51.0
 - id: self-stack-vite
   title: vite
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -392,6 +488,8 @@ terms:
   origin: generated
   term: vite
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-vitejs-plugin-react
   title: '@vitejs/plugin-react'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -400,6 +498,8 @@ terms:
   origin: generated
   term: '@vitejs/plugin-react'
   source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-write-excel-file
   title: write-excel-file
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -408,3 +508,5 @@ terms:
   origin: generated
   term: write-excel-file
   source: frontend/package.json
+  ecosystem: npm
+  version: null
