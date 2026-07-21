@@ -9,11 +9,13 @@ Pick **one** guide — you do not need to read anything else unless something br
 | **Fix something** | [Troubleshooting](TROUBLESHOOTING.md) | **Authoritative** (symptom → fix) |
 | **Understand how it works** | [How it works](HOW_IT_WORKS.md) *(optional)* | Overview (defers to SYSTEM_DESIGN / PRODUCT_STATUS) |
 | **Change the code** | [Onboarding](ONBOARDING.md) | **Authoritative** (dev setup) |
-| **Learn the whole architecture, file by file** | [Study Guide](STUDY_GUIDE.html) *(open in a browser — full interactive textbook)* | Teaching corpus (regenerated; not runtime SSOT) |
+| **Learn the whole architecture, file by file** | [Study Guide book](study-guide/) | Generated teaching corpus (not runtime SSOT) |
 
 Deep reference: [API catalog](API_REFERENCE.md) · [System design](SYSTEM_DESIGN.md) · [Product principles](PRODUCT.md)
 
 [What's shipped today](PRODUCT_STATUS.md) · [Planned work](planning/) · [Decisions (ADRs)](decisions/) · [Archive](archive/) *(historical — skip unless curious)*
+
+Study-guide source: [`STUDY_GUIDE.html`](STUDY_GUIDE.html) is the editable standalone source; [`study-guide/`](study-guide/) is the generated book readers should use.
 
 ## Authority map (top-level `docs/`)
 
@@ -41,7 +43,9 @@ Deep reference: [API catalog](API_REFERENCE.md) · [System design](SYSTEM_DESIGN
 | [DATA_SNAPSHOT.md](DATA_SNAPSHOT.md) | **Snapshot** — may lag code; verify against source |
 | [IMAGE_BRIEFS.md](IMAGE_BRIEFS.md) | Reference — image-brief feature notes |
 | [TEMPLATE_concept.md](TEMPLATE_concept.md) | Template — not product truth |
-| [STUDY_GUIDE.html](STUDY_GUIDE.html) / [learn/](learn/) | Teaching corpus — regenerated; not runtime SSOT |
+| [study-guide/](study-guide/) | Teaching corpus — generated book; primary reader path |
+| [STUDY_GUIDE.html](STUDY_GUIDE.html) | Editable standalone study-guide source |
+| [learn/](learn/) | Teaching path chooser into the generated book |
 | [archive/](archive/) | **Snapshot / historical** — never resurrect as living truth |
 | [archive/snapshots/](archive/snapshots/) | **Snapshot** — periodic inventories; may lag |
 

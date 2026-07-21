@@ -62,29 +62,22 @@ can actually operate and fully understand.
 
 ## Brand Personality
 
-Dual-mode by design, operator-selectable:
-1. **Terminal-native** — dense, monospace-forward, no-nonsense. The
-   existing dark theme (`App.css` dark tokens, IBM Plex Mono, sharp borders,
-   minimal shadow) is this mode already built and should stay this way.
-2. **Clean, modern SaaS** — a second selectable visual mode for operators
-   who want a more conventional dashboard look. Not a simple color
-   inversion of the terminal theme — a genuinely different visual register
-   (more whitespace, softer surfaces, conventional sans-serif hierarchy)
-   while keeping the same information density and layout structure.
+Dark terminal-native by design: dense, monospace-forward, no-nonsense. The
+existing dark token system, IBM Plex Mono labels, sharp boundaries, minimal
+shadow, and working-tool density are the product's visual register.
 
-Both modes serve the same product register (product, not brand) — neither
-should drift toward marketing-site visual language (no hero sections, no
-big display type, no scroll-driven storytelling).
+There is no light theme and no alternate theme. Any future display
+preferences must preserve the same dark BRIEFR identity and must not drift
+toward marketing-site language (no hero sections, no big display type, no
+scroll-driven storytelling).
 
 ## Anti-references
 
 Generic cream/warm AI-SaaS dashboard look: no `--paper`/`--cream`/`--sand`
 near-white body backgrounds, no hero-metric-card clichés, no gradient text,
 no tiny-uppercase-tracked eyebrows, no identical icon+heading+text card
-grids, no side-stripe accent borders. If the "clean SaaS" mode is built, it
-must avoid this exact templated look while still reading as "clean" and
-"modern" — true off-white or a deliberate light neutral, not the saturated
-warm-cream default.
+grids, no side-stripe accent borders. Do not reintroduce a light theme
+without a new ADR.
 
 ## Design Principles
 
@@ -96,11 +89,10 @@ warm-cream default.
 3. **An analyst who didn't write the code should understand the UI.** Every
    page states its purpose; every config field states its effect.
 4. **Density over decoration.** This is a working tool used under time
-   pressure — information density and scan-speed beat visual flourish, in
-   both visual modes.
+   pressure — information density and scan-speed beat visual flourish.
 5. **Self-hosted means operator control.** Visual preferences (theme,
-   density, font scale) are the operator's choice, persisted locally, not
-   dictated by the build.
+   density, font scale) must stay inside the dark terminal identity and be
+   persisted locally, not dictated by a cloud service.
 6. **Domain terms explain themselves, same as status words.** KEV, EPSS,
    CVSS, CWE, CAPEC, ATT&CK technique IDs, and every other
    assumed-knowledge acronym gets the same discoverable explanation
