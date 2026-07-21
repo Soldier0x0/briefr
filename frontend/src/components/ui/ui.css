@@ -1,12 +1,9 @@
 /* Shared UI primitives — ui-* prefix (Spec H §1) */
 
 /*
- * Variant semantics (ux-audit Issue 37 / UX-C1): `primary` and `danger` both
- * use --red because BRIEFR's brand accent IS red — `primary` is prominent
- * emphasis, `danger` is a destructive/severity action. Neither is "just red
- * for attention." Any control for a neutral action (toggle, navigate, add-to-
- * investigation, load-more) must use `ghost`, never primary/danger — red is
- * reserved for destructive operations and severity indicators app-wide.
+ * Variant semantics (ux-audit Issue 37 / UX-C1): neutral actions use `ghost`
+ * so they inherit the shared accent-ghost treatment instead of reusing the
+ * stronger prominent/destructive button affordances.
  */
 .ui-btn {
   display: inline-flex;
@@ -49,8 +46,14 @@
 
 .ui-btn--ghost {
   background: transparent;
-  border-color: var(--border);
-  color: var(--text2);
+  border-color: var(--border2);
+  color: var(--accent-primary);
+}
+
+.ui-btn--ghost:hover:not(:disabled) {
+  border-color: var(--border-active);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  color: var(--accent-primary);
 }
 
 .ui-btn--danger {

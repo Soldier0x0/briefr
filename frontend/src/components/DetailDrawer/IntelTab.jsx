@@ -387,71 +387,78 @@ function CorrelationFindings({
       {campaigns.length > 0 && (
         <div className="corr-group" aria-label="Campaign correlation">
           <p className="corr-group-label mono">// CAMPAIGN LINKS</p>
-          {campaigns.map(item => (
-            <div key={item.campaign_id} className="corr-finding">
-              <div className="corr-finding-head">
-                <ConfidenceBadge confidence={item.confidence} />
-                <p className="corr-finding-text">
-                  <span className="corr-lane-tag mono">Campaign link</span>{' '}
-                  {item.summary || item.label}
-                  {item.attribution_conflict && (
-                    <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
-                      <span className="corr-conflict-note">
-                        {' '}Attribution conflict — treat as unverified.
-                      </span>
-                    </ControlTooltip>
-                  )}
-                  {item.attribution_claims?.claims?.length > 1 && (
-                    <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
-                      <p className="corr-conflicting-label mono">Conflicting attribution</p>
-                      <ul className="corr-conflicting-list">
-                        {item.attribution_claims.claims.map((claim, idx) => (
-                          <li key={`${claim.source}-${idx}`}>
-                            <span className="mono">{claim.source}</span>: {claim.value}
-                          </li>
+          {campaigns.map(item => {
+            const campaignMembers = (item.members || []).filter(id => id && id !== correlation?.cve_id)
+            return (
+              <div key={item.campaign_id} className="corr-finding">
+                <div className="corr-finding-head">
+                  <ConfidenceBadge confidence={item.confidence} />
+                  <div className="corr-finding-body">
+                    <p className="corr-finding-text">
+                      <span className="corr-lane-tag mono">Campaign link</span>{' '}
+                      {item.summary || item.label}
+                      {item.attribution_conflict && (
+                        <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
+                          <span className="corr-conflict-note">
+                            {' '}Attribution conflict — treat as unverified.
+                          </span>
+                        </ControlTooltip>
+                      )}
+                    </p>
+                    {item.attribution_claims?.claims?.length > 1 && (
+                      <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
+                        <p className="corr-conflicting-label mono">Conflicting attribution</p>
+                        <ul className="corr-conflicting-list">
+                          {item.attribution_claims.claims.map((claim, idx) => (
+                            <li key={`${claim.source}-${idx}`}>
+                              <span className="mono">{claim.source}</span>: {claim.value}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {campaignMembers.length > 0 && (
+                      <div className="corr-member-cves" aria-label="Campaign member CVEs">
+                        {campaignMembers.map(cveId => (
+                          <button
+                            key={cveId}
+                            type="button"
+                            className="corr-cve-link corr-cve-chip mono"
+                            onClick={() => onSelectCve?.(cveId)}
+                            aria-label={`Open ${cveId} in drawer`}
+                          >
+                            {cveId}
+                          </button>
                         ))}
-                      </ul>
-                    </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
+                <div className="corr-finding-foot">
+                  {onInvestigateCampaign && campaignMembers.length > 0 && (
+                    <button
+                      type="button"
+                      className="drawer-investigate-btn"
+                      onClick={() => onInvestigateCampaign(item, cve)}
+                    >
+                      Add to investigation
+                    </button>
                   )}
-                  {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
-                    <span key={cveId}>
-                      {idx === 0 ? ' ' : ', '}
-                      <button
-                        type="button"
-                        className="corr-cve-link mono"
-                        onClick={() => onSelectCve?.(cveId)}
-                        aria-label={`Open ${cveId} in drawer`}
-                      >
-                        {cveId}
-                      </button>
-                    </span>
-                  ))}
-                </p>
+                  <CorrelationConfirmAction
+                    onConfirm={onConfirmCorrelation}
+                    body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                    scopeKey={item.campaign_id}
+                    feedback={correlationFeedback}
+                  />
+                  <CorrelationSuppressAction
+                    onRequestSuppress={onRequestSuppress}
+                    body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                  />
+                </div>
               </div>
-              <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
-              <div className="corr-finding-foot">
-                {onInvestigateCampaign && (item.members || []).some(id => id && id !== correlation?.cve_id) && (
-                  <button
-                    type="button"
-                    className="drawer-investigate-btn"
-                    onClick={() => onInvestigateCampaign(item, cve)}
-                  >
-                    Add to investigation
-                  </button>
-                )}
-                <CorrelationConfirmAction
-                  onConfirm={onConfirmCorrelation}
-                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
-                  scopeKey={item.campaign_id}
-                  feedback={correlationFeedback}
-                />
-                <CorrelationSuppressAction
-                  onRequestSuppress={onRequestSuppress}
-                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
-                />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

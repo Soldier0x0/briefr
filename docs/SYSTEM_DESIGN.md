@@ -159,6 +159,12 @@ prefetches weights at startup and provides **UI helpers only** (colors, hero
 summary text, correlation OP merge, SSVC display) — it does **not** recompute Threat or
 v1.1b totals for displayed numbers (W2 / F1.3).
 
+The Overview tab presents DESCRIPTION first, then a twin-grid row with the
+Operational Priority hero beside the full Environment Relevance panel, followed
+by WHY THIS MATTERS, SEVERITY CONTEXT (CVSS), KEY EXPLOITATION SIGNALS,
+EXPLOITATION, AFFECTED PRODUCTS/CWE, REMEDIATION, REFERENCES, and enrichment
+sections (CAPEC, SSVC, OSV).
+
 **Correlation escalation (temporary FE merge):** when the drawer loads
 correlation after `/risk`, `applyCorrelationEscalationToRiskScore` may bump
 Operational Priority one band (P3→P2 / P2→P1) using the same rules as

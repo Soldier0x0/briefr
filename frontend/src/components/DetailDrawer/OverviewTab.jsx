@@ -439,7 +439,7 @@ function RiskScoreBar({ score }) {
   )
 }
 
-function AssetExposureSection({ riskScore, onOpenProfile }) {
+function AssetExposureSection({ riskScore, onOpenProfile, inTwin = false }) {
   const env = getEnvironmentDisplay(riskScore)
   if (!env) return null
 
@@ -448,7 +448,7 @@ function AssetExposureSection({ riskScore, onOpenProfile }) {
 
   return (
     <section
-      className={`drawer-asset-exposure ${tierClass}${compact ? ' drawer-asset-exposure--compact' : ''}`}
+      className={`drawer-asset-exposure ${tierClass}${compact ? ' drawer-asset-exposure--compact' : ''}${inTwin ? ' drawer-overview-twin-cell drawer-overview-twin-cell--env' : ''}`}
       aria-labelledby="asset-exposure-heading"
     >
       <h4 id="asset-exposure-heading" className="drawer-asset-exposure-label mono">
@@ -475,22 +475,6 @@ function AssetExposureSection({ riskScore, onOpenProfile }) {
         </button>
       )}
     </section>
-  )
-}
-
-function EnvironmentTierChip({ riskScore }) {
-  const env = getEnvironmentDisplay(riskScore)
-  if (!env) return null
-  return (
-    <ControlTooltip text={env.evidence || env.label} trigger="hover-focus">
-      <span
-        className="drawer-op-env-chip mono"
-        style={{ color: environmentTierColor(env.tier) }}
-      >
-        {env.label}
-        {env.versionVerified ? ' ✓' : ''}
-      </span>
-    </ControlTooltip>
   )
 }
 
@@ -599,12 +583,13 @@ function OperationalPriorityBreakdown({ riskScore, momentumData }) {
   )
 }
 
-function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momentumData }) {
+function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momentumData, inTwin = false }) {
   const [expanded, setExpanded] = useState(false)
+  const sectionClassName = inTwin ? 'drawer-overview-twin-cell drawer-overview-twin-cell--op' : 'drawer-section drawer-risk-hero-section'
 
   if (riskLoading) {
     return (
-      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+      <section className={sectionClassName} aria-labelledby="op-priority-heading">
         <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
           <h3
             id="op-priority-heading"
@@ -613,7 +598,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
             // OPERATIONAL PRIORITY
           </h3>
         </ControlTooltip>
-        <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted, var(--text3))' }}>
+        <p className="drawer-risk-summary mono" style={{ color: 'var(--text-muted)' }}>
           Computing priority…
         </p>
       </section>
@@ -621,7 +606,7 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
   }
   if (riskError) {
     return (
-      <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+      <section className={sectionClassName} aria-labelledby="op-priority-heading">
         <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
           <h3
             id="op-priority-heading"
@@ -638,14 +623,13 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
 
   const op = getOperationalPriorityDisplay(riskScore)
   const threat = riskScore.threat
-  const env = getEnvironmentDisplay(riskScore)
   if (!op || !threat) return null
 
   const summary = buildOperationalHeroSummary(cve, riskScore)
   const threatColor = riskScoreDisplayColor(threat.score, cve?.severity)
 
   return (
-    <section className="drawer-section drawer-risk-hero-section" aria-labelledby="op-priority-heading">
+    <section className={sectionClassName} aria-labelledby="op-priority-heading">
       <ControlTooltip text={OP_PRIORITY_TOOLTIP} trigger="hover">
         <h3
           id="op-priority-heading"
@@ -685,13 +669,9 @@ function OperationalPriorityHero({ cve, riskScore, riskLoading, riskError, momen
               <span className="drawer-risk-momentum-arrow" aria-label="Rising threat momentum">↑</span>
             )}
           </div>
-          <EnvironmentTierChip riskScore={riskScore} />
         </div>
         {summary && (
           <p className="drawer-risk-summary mono">{summary}</p>
-        )}
-        {env?.evidence && env.tier !== 'UNKNOWN' && (
-          <p className="drawer-op-env-detail mono">{env.evidence}</p>
         )}
       </div>
 
@@ -734,21 +714,30 @@ export default function TabOverview({
 }) {
   return (
     <>
-      <OperationalPriorityHero
-        cve={cve}
-        riskScore={riskScore}
-        riskLoading={riskLoading}
-        riskError={riskError}
-        momentumData={momentumData}
-      />
-
-      {!riskLoading && riskScore && (
-        <section className="drawer-section">
-          <AssetExposureSection riskScore={riskScore} onOpenProfile={onOpenProfile} />
+      {cve.description && (
+        <section className="drawer-section" aria-labelledby="desc-heading">
+          <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
+          <p className="drawer-description">{cve.description}</p>
         </section>
       )}
 
-      <KeyExploitationSignals cve={cve} riskScore={riskScore} momentumData={momentumData} />
+      {(riskLoading || riskError || riskScore) && (
+        <section className="drawer-section drawer-overview-twin" aria-label="Operational priority and environment relevance">
+          <div className="drawer-overview-twin-grid">
+            <OperationalPriorityHero
+              cve={cve}
+              riskScore={riskScore}
+              riskLoading={riskLoading}
+              riskError={riskError}
+              momentumData={momentumData}
+              inTwin
+            />
+            {!riskLoading && riskScore && (
+              <AssetExposureSection riskScore={riskScore} onOpenProfile={onOpenProfile} inTwin />
+            )}
+          </div>
+        </section>
+      )}
 
       {cve.summary && (
         <section className="drawer-section" aria-labelledby="plain-heading">
@@ -756,8 +745,6 @@ export default function TabOverview({
           <blockquote className="drawer-summary">{cve.summary}</blockquote>
         </section>
       )}
-
-      <PatchActionSection cve={cve} sentences={sentences} urls={urls} />
 
       {sentencesLoading && (
         <section className="drawer-section">
@@ -771,6 +758,8 @@ export default function TabOverview({
         />
       )}
 
+      <KeyExploitationSignals cve={cve} riskScore={riskScore} momentumData={momentumData} />
+
       <ExploitationSection
         cve={cve}
         riskScore={riskScore}
@@ -780,13 +769,6 @@ export default function TabOverview({
         epssLoading={epssLoading}
         epssSparklineRef={epssSparklineRef}
       />
-
-      {cve.description && (
-        <section className="drawer-section" aria-labelledby="desc-heading">
-          <h3 id="desc-heading" className="drawer-human-label mono">DESCRIPTION</h3>
-          <p className="drawer-description">{cve.description}</p>
-        </section>
-      )}
 
       {products.length > 0 && (
         <section className="drawer-section" aria-labelledby="affected-heading">
@@ -817,6 +799,10 @@ export default function TabOverview({
           )}
         </section>
       )}
+
+      <PatchActionSection cve={cve} sentences={sentences} urls={urls} />
+
+      <ReferencesSection urls={urls} cve={cve} />
 
       {capecIds.length > 0 && (
         <section className="drawer-section" aria-labelledby="capec-heading">
@@ -861,7 +847,6 @@ export default function TabOverview({
 
       <SsvcSection ssvc={cve.ssvc} />
       <OsvPackagesSection osvPackages={cve.osv_packages} />
-      <ReferencesSection urls={urls} cve={cve} />
     </>
   )
 }

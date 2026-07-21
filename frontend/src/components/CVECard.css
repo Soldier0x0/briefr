@@ -527,15 +527,15 @@
   padding: 5px 10px;
   border: 1px solid var(--border2);
   background: transparent;
-  color: var(--text2);
+  color: var(--accent-primary);
   cursor: pointer;
   transition: color var(--motion-fast), border-color var(--motion-fast), background-color var(--motion-fast);
 }
 
 .cve-action-btn:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--text3);
-  background: var(--bg2);
+  color: var(--accent-primary);
+  border-color: var(--border-active);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 }
 
 .cve-action-btn:focus-visible {
@@ -560,19 +560,19 @@
 
 .cve-action-btn-secondary {
   border-color: var(--border2);
-  color: var(--text2);
+  color: var(--accent-primary);
 }
 
 .cve-action-btn-secondary:hover {
-  border-color: var(--text3);
-  color: var(--text);
-  background: var(--bg2);
+  border-color: var(--border-active);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 }
 
 .cve-action-btn-active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 @media (max-width: 640px) {

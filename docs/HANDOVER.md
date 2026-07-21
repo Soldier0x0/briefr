@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 3: Overview IA + drawer panel chrome + accent-ghost
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Reordered `DetailDrawer` Overview to the locked IA: DESCRIPTION first, then a
+  twin Operational Priority / Environment Relevance row, followed by WHY THIS
+  MATTERS, SEVERITY CONTEXT, KEY EXPLOITATION SIGNALS, EXPLOITATION, AFFECTED
+  PRODUCTS/CWE, REMEDIATION, REFERENCES, and enrichment last.
+- Kept `OperationalPriorityHero` but moved it into a two-column twin grid with
+  the full Environment panel; removed the inline environment chip from the OP
+  hero so “Why this score?” stays scoped to the OP cell.
+- Applied L-edge boxed chrome to the drawer shell and key subpanels, added
+  motion-safe hover scaling for interactive threat/correlation/OTX cards, and
+  converted CVE/drawer ghost actions to the accent-ghost treatment.
+- Correlation campaign member CVEs now render as a wrapped chip row instead of
+  comma-inline prose; the footer action bar is aligned and tokenized.
+- Synced `PRODUCT_STATUS.md`, `SYSTEM_DESIGN.md`, and `design-system.md` to the
+  new Overview order and drawer chrome guidance.
+
+**Verify:** `cd frontend && npm run build` and `npm run test:unit`.
+
+---
+
 ## 2026-07-21 — Program 2 Task 3: self-stack match-basis honesty
 
 **Done** (branch `cursor/self-stack-precision-91c2`):

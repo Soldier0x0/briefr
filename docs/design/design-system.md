@@ -384,6 +384,15 @@ exception: filled selection is allowed; neon **borders** are not.
   `marginLeft` on the control — that misaligns buttons against the taller label block.
 - Applies to analyst FEED, ARCH, Forge, and admin — not admin-only.
 
+### 23.9 Drawer panel chrome + accent-ghost actions
+
+- Boxed drawer subpanels use the **L-edge** chrome: `--shadow-inset-indicator-start`,
+  a `1px` `--border-active` top edge, and only subtle right/bottom hairlines over
+  `--surface-sunken` / `--surface-raised`.
+- Neutral drawer actions use the shared **accent-ghost** treatment: accent text,
+  `1px` `--border2`, hover `--border-active`, and at most a soft `color-mix(...)`
+  accent fill. Save strong accent borders for active/pinned states only.
+
 ## 24. Suggested additional documentation (future)
 
 - `docs/design/component-inventory.md` — per-control migration map (raw → primitive → files).
