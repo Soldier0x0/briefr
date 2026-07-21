@@ -116,7 +116,7 @@ Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/ar
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
 | Living API / architecture docs | **Refreshed 2026-07-21** — full library pass after Waves 1–7, Phase 1 scoring, UX RCA (#687–#729): `SYSTEM_DESIGN`, `API_REFERENCE`, reader guides, ONBOARDING/OPERATIONS/LEARNING_PATH, study-guide source + regenerated `study-guide/` + `learn/` |
 | Study guide + learn | Editable source `STUDY_GUIDE.html` → `scripts/build_study_guide_book.py` → `docs/study-guide/`; pathways via `scripts/build_learn_site.py` + `docs/learn/pathways.json` |
-| Graphify knowledge graph | Refresh after this docs PR (`graphify update .`); prior rebuild 2026-07-20 (`10591` nodes). Hook auto-rebuilds on code commits; doc moves need manual update. |
+| Graphify knowledge graph | **Refreshed 2026-07-21** after docs library pass — `graphifyy` + `graphify update . --force` → `10875` nodes, `20801` edges, `643` communities (`graphify-out/` gitignored; regenerate on demand). Prior rebuild 2026-07-20 (`10591` nodes). Hook auto-rebuilds on code commits; doc moves need manual update. |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |

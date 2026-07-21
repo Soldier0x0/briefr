@@ -22,7 +22,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 - Audit notes: `planning/specs/study-guide-audit/STALE_CLAIMS.md` + `gaps.md`.
 - Did **not** edit `docs/archive/**`.
 
-**Next:** `graphify update .` after docs land; triage Gemini PR review comments before merge.
+**Next:** Triage Gemini PR review comments before merge. Graphify refreshed locally (`10875` nodes / `20801` edges; `graphify-out/` gitignored).
 
 ---
 
