@@ -13,7 +13,7 @@ import asyncio
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,14 +22,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 import aiosqlite
 
-from config_schema import (
-    APPLY_RESTART,
-    APPLY_SCHEDULER_RESCHEDULE,
-    RESTART_REQUIRED_KEYS,
-    SCHEDULER_RESCHEDULE_KEYS,
-    WRITABLE_CONFIG_KEYS,
-)
-from dependencies import audit, trigger_graceful_restart
+from config_schema import SCHEDULER_RESCHEDULE_KEYS
 from database import get_db
 from redact import mask_secret_value, mask_url_value
 from scheduler_locks import get_lock, locked_jobs
@@ -53,9 +46,6 @@ def _read_build_info() -> dict[str, Any]:
             return json.load(f)
     except Exception:
         return {}
-
-
-from redact import mask_secret_value, mask_url_value
 
 
 def _mask_key(value: str) -> str:

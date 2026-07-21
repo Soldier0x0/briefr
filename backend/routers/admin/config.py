@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 from typing import Any
 
 from fastapi import BackgroundTasks, HTTPException, Request
@@ -19,7 +20,6 @@ from config_schema import (
     APPLY_RESTART,
     APPLY_SCHEDULER_RESCHEDULE,
     RESTART_REQUIRED_KEYS,
-    SCHEDULER_RESCHEDULE_KEYS,
     WRITABLE_CONFIG_KEYS,
     get_field,
     list_schema,
@@ -27,7 +27,6 @@ from config_schema import (
     validate_value,
 )
 from dependencies import audit
-from settings import settings
 
 import routers.admin as _admin_pkg
 

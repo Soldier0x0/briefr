@@ -23,6 +23,7 @@ from db.integrity import run_integrity_check
 from dependencies import audit
 from destructive_actions import require_confirm
 from rate_limit import get_bucket_stats, get_top_consumers
+from resilient_client import get_feed_health
 from settings import production_posture_warnings, settings
 from structured_logging import LOG_CATEGORIES, get_known_loggers, get_log_buffer
 

@@ -24,7 +24,6 @@ from fastapi import BackgroundTasks, Depends, HTTPException, Query, Request, Upl
 from fastapi.responses import FileResponse
 
 from database import (
-    DB_PATH,
     EPSS_BACKFILL_DONE_KEY,
     NVD_SYNC_WATERMARK_KEY,
     get_db,
@@ -34,7 +33,7 @@ from dependencies import audit
 from destructive_actions import list_actions, require_confirm
 from rate_limit import rate_limit_db_explorer
 
-from .helpers import BACKUP_DIR, _backup_running
+from .helpers import _backup_running
 from .router import router
 
 # ── Backups ────────────────────────────────────────────────────────────────

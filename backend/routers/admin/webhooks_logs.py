@@ -14,7 +14,6 @@ from typing import Any
 from fastapi import Query, Request
 
 from database import get_db
-from settings import settings
 
 from .router import router
 
