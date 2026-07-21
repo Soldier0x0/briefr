@@ -12,6 +12,28 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — RCA fix: NVD must not hold cves locks across CIRCL/Sploitus HTTP
+
+**Observed:** VulnCheck KEV Tier Sync `Database command timeout` (~16:58 UTC) while
+NVD incremental sync logged CIRCL DNS failures / circuit open (~17:02). Docs build
+`72d0272` unrelated.
+
+**RCA:** `nvd_incremental_sync` opened one Postgres transaction for upsert +
+postprocess + **outbound** CIRCL/Sploitus (and optional embeddings) before
+`commit()`. Source HTTP/DNS latency shared the same lock set and competed with
+VulnCheck’s chunked `cves` UPDATEs under asyncpg `command_timeout` (60s). Per-job
+asyncio locks do not serialize different writers. Chunked VulnCheck commits (#696)
+were already correct — the blocker was NVD’s network-inside-txn design.
+
+**Fix:** Commit after NVD write/postprocess **before** extended enrich; commit again
+after enrich and after embeddings tail; `enrich_cves_extended` commits after each
+Sploitus/CIRCL lookup. Tests: `tests/test_nvd_txn_boundary.py`.
+
+**Next:** Deploy; confirm VulnCheck no longer times out during CIRCL blips. Residual:
+overlapping pure-DB writers can still contend (rarer).
+
+---
+
 ## 2026-07-21 — Full documentation library refresh
 
 **Done** (branch `cursor/docs-library-refresh-af21`):
