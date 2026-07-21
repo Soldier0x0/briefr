@@ -606,10 +606,11 @@ export default function App() {
       setActiveTab((prev) => (prev === 'brief' || prev === 'feed' ? prev : 'feed'))
       drawerControllerRef.current?.open({ cve_id: id })
     }
-    // Hygiene only: ensure visible tab= without stripping ?cve= (no history entry).
+    // Hygiene only: align tab= with the shell we landed on (no history entry).
+    // Deep links like ?tab=forge&cve=… force feed above — URL must follow or
+    // nav chrome and Back state disagree with the visible panel.
     const tab = searchParams.get('tab')
     if (tab === 'brief' || tab === 'feed') return
-    if (tab === 'forge' || tab === 'ioc' || tab === 'atlas') return
     replaceHygiene(setSearchParams, (prev) => {
       const next = buildAppTabSearchParams(prev, 'feed')
       next.set('cve', id)
