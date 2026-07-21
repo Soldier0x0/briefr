@@ -25,6 +25,9 @@ export function AuthProvider({ children }) {
 
   const refreshAuthState = useCallback(async () => {
     try {
+      // fetchMe → request() already refreshes once on 401 via shared
+      // refreshAccessToken(); do not call /auth/refresh with a bare fetch
+      // (that raced API retries and tripped reuse detection).
       const me = await fetchMe()
       setUser(me)
       setStatus('authed')
@@ -32,20 +35,6 @@ export function AuthProvider({ children }) {
       await loadUserPreferences()
       return me
     } catch {
-      // Access cookie may have expired while a persistent refresh cookie remains.
-      try {
-        const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-        if (res.ok) {
-          const me = await fetchMe()
-          setUser(me)
-          setStatus('authed')
-          await loadUserStack()
-          await loadUserPreferences()
-          return me
-        }
-      } catch {
-        // fall through to anon
-      }
       setUser(null)
       setStatus('anon')
       clearUserStackOnLogout()
