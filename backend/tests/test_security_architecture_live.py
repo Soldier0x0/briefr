@@ -16,6 +16,7 @@ Verifies:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -41,8 +42,12 @@ def client(tmp_path, monkeypatch):
         yield test_client
 
 
+def _cpe(product: str, **overrides):
+    return {"vendor": "", "product": product, **overrides}
+
+
 async def _seed_coro(self_stack_term="fastapi"):
-    """Seed a technique + a KEV CVE whose description matches a real
+    """Seed a technique + a KEV CVE whose structured CPE matches a real
     self-stack term (fastapi ships in requirements.txt -- see
     corpus/self_stack.yaml) so self-stack merge queries have something to
     match without needing to monkeypatch the corpus."""
@@ -58,14 +63,15 @@ async def _seed_coro(self_stack_term="fastapi"):
         )
         await db.execute(
             """
-            INSERT INTO cves (cve_id, description, affected_products,
+            INSERT INTO cves (cve_id, description, affected_products, cpe_matches,
                               severity, cvss_score, epss_score, is_kev, published)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 "CVE-2024-9999",
                 f"Remote code execution in {self_stack_term} request handling.",
-                "[]", "CRITICAL", 9.8, 0.9, 1, "2024-01-01T00:00:00",
+                "[]", json.dumps([_cpe(self_stack_term)]),
+                "CRITICAL", 9.8, 0.9, 1, "2024-01-01T00:00:00",
             ),
         )
         await db.execute(
@@ -92,6 +98,72 @@ def _seed(client, self_stack_term="fastapi"):
     needs (fixture seeding alone isn't enough -- some tests insert more
     rows mid-test)."""
     client.portal.call(_seed_coro, self_stack_term)
+
+
+async def _insert_cve_coro(
+    cve_id,
+    description,
+    cpe_matches,
+    affected_products="[]",
+    severity="CRITICAL",
+    is_kev=1,
+    published="2024-01-01T00:00:00",
+):
+    from database import get_db
+
+    db = await get_db()
+    try:
+        await db.execute(
+            """
+            INSERT INTO cves (cve_id, description, affected_products, cpe_matches,
+                              severity, cvss_score, epss_score, is_kev, published)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                cve_id, description, affected_products, json.dumps(cpe_matches),
+                severity, 9.8, 0.9, is_kev, published,
+            ),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def _self_stack_risk_rows_coro(corpus):
+    from database import get_db
+
+    db = await get_db()
+    try:
+        return await merge.self_stack_risk_rows(db, corpus)
+    finally:
+        await db.close()
+
+
+def _insert_cve(
+    client,
+    cve_id,
+    *,
+    description,
+    cpe_matches,
+    affected_products="[]",
+    severity="CRITICAL",
+    is_kev=1,
+    published="2024-01-01T00:00:00",
+):
+    client.portal.call(
+        _insert_cve_coro,
+        cve_id,
+        description,
+        cpe_matches,
+        affected_products,
+        severity,
+        is_kev,
+        published,
+    )
+
+
+def _self_stack_risk_rows(client, corpus):
+    return client.portal.call(_self_stack_risk_rows_coro, corpus)
 
 
 # ── MITRE (wraps routers.forge.build_coverage_map) ─────────────────────
@@ -186,6 +258,77 @@ def test_rate_limiting_control_reflects_real_toggle(client, monkeypatch):
 
 # ── Risks: live self-stack rows (spec §4.5) ─────────────────────────────
 
+def test_curveball_does_not_match_pypi_cryptography(client):
+    corpus = {
+        "self_stack": {
+            "terms": [
+                {"term": "cryptography", "ecosystem": "pypi", "version": "41.0.0"},
+            ],
+        },
+    }
+    _insert_cve(
+        client,
+        "CVE-2020-0601",
+        description="Windows CryptoAPI certificate spoofing sometimes called CurveBall; cryptography teams tracked it.",
+        cpe_matches=[_cpe("cryptoapi", vendor="microsoft", version="10")],
+    )
+
+    rows = _self_stack_risk_rows(client, corpus)
+
+    assert rows == []
+
+
+def test_product_version_match_is_strong(client):
+    corpus = {
+        "self_stack": {
+            "terms": [
+                {"term": "react", "ecosystem": "npm", "version": "18.2.0"},
+            ],
+        },
+    }
+    _insert_cve(
+        client,
+        "CVE-2024-2001",
+        description="Structured product metadata only.",
+        cpe_matches=[
+            _cpe(
+                "react",
+                version_start_including="18.0.0",
+                version_end_excluding="18.3.0",
+            ),
+        ],
+    )
+
+    rows = _self_stack_risk_rows(client, corpus)
+
+    assert len(rows) == 1
+    assert rows[0]["cve_id"] == "CVE-2024-2001"
+    assert rows[0]["match_score"] == 100
+    assert rows[0]["match_basis"] == "product+version"
+
+
+def test_product_only_match_is_weaker_labeled(client):
+    corpus = {
+        "self_stack": {
+            "terms": [
+                {"term": "fastapi", "ecosystem": "pypi", "version": None},
+            ],
+        },
+    }
+    _insert_cve(
+        client,
+        "CVE-2024-2002",
+        description="Structured product metadata only.",
+        cpe_matches=[_cpe("fastapi")],
+    )
+
+    rows = _self_stack_risk_rows(client, corpus)
+
+    assert len(rows) == 1
+    assert rows[0]["cve_id"] == "CVE-2024-2002"
+    assert rows[0]["match_score"] == 55
+    assert rows[0]["match_basis"] == "product-only"
+
 def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/section/risks")
@@ -211,14 +354,15 @@ def test_risks_section_live_row_reports_real_severity_not_invented(client):
         try:
             await db.execute(
                 """
-                INSERT INTO cves (cve_id, description, affected_products,
+                INSERT INTO cves (cve_id, description, affected_products, cpe_matches,
                                   severity, cvss_score, epss_score, is_kev, published)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     "CVE-2024-8888",
                     "Remote code execution in fastapi routing.",
-                    "[]", "HIGH", 7.5, 0.4, 1, "2024-02-01T00:00:00",
+                    "[]", json.dumps([_cpe("fastapi")]),
+                    "HIGH", 7.5, 0.4, 1, "2024-02-01T00:00:00",
                 ),
             )
             await db.commit()

@@ -2,12 +2,9 @@
 DB/API data -- MITRE coverage, control active flags, and the self-stack
 CVE exposure merge (spec §4.5).
 
-No new matching or scoring code lives here: this module is glue over the
-existing shipping pipeline -- `routers.cves._stack_match_clause` and
-`threat_model.scenarios.build_threat_scenarios` -- pointed at the
-generated self-stack instead of a user's asset profile. Same fuzzy
-term-matching limitation as user stacks; every self-stack row shows its
-matched term (spec §4.5 honesty constraint).
+Self-stack risk rows use the same structured CPE scorer as analyst asset
+matching, while threat scenarios still reuse the shipping stack query path
+pointed at the generated self-stack instead of a user's asset profile.
 
 Copyright © 2026 Sai Harsha Vardhan
 SPDX-License-Identifier: BUSL-1.1
@@ -15,11 +12,12 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import date, timedelta
 from typing import Any
 
-from routers.cves import _stack_match_clause
+from matching.cpe import score_cve_for_assets
 
 # ENABLED-style env vars across the codebase default to "1" and treat these
 # as falsy (see rate_limit_store, feeds/*_sync.py, ml/embeddings.py, etc.) --
@@ -139,47 +137,111 @@ def _matched_term(cve_row: dict[str, Any], terms: list[str]) -> str | None:
     return None
 
 
+def _hydrate_cpe_matches(row: dict) -> list[dict]:
+    raw = row.get("cpe_matches")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError:
+            raw = []
+    matches = list(raw or [])
+    if matches:
+        return matches
+    products = row.get("affected_products")
+    if isinstance(products, str):
+        try:
+            products = json.loads(products)
+        except json.JSONDecodeError:
+            products = []
+    out = []
+    for entry in products or []:
+        if isinstance(entry, str) and ":" in entry:
+            vendor, product = entry.split(":", 1)
+            out.append({"vendor": vendor, "product": product})
+        elif isinstance(entry, dict) and entry.get("product"):
+            out.append({
+                "vendor": entry.get("vendor") or "",
+                "product": entry.get("product") or "",
+                "version": entry.get("version"),
+                "version_start_including": entry.get("version_start_including"),
+                "version_start_excluding": entry.get("version_start_excluding"),
+                "version_end_including": entry.get("version_end_including"),
+                "version_end_excluding": entry.get("version_end_excluding"),
+            })
+    return out
+
+
+def _self_stack_assets(corpus) -> list[dict]:
+    entries = (corpus.get("self_stack") or {}).get("terms") or []
+    assets = []
+    for e in entries:
+        term = e.get("term") or e.get("title")
+        if not term:
+            continue
+        assets.append({
+            "product": term,
+            "vendor": e.get("vendor") or "",
+            "version": (e.get("version") or "").strip(),
+        })
+    return assets
+
+
+def _match_basis(score: int) -> str:
+    return "product+version" if score == 100 else "product-only"
+
+
+def _matched_asset(cpe_matches: list[dict[str, Any]], assets: list[dict[str, Any]], score: int) -> dict[str, Any] | None:
+    for asset in assets:
+        if score_cve_for_assets(cpe_matches, [asset]) == score:
+            return asset
+    return None
+
+
 async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str, Any]]:
     """Live risk-register rows (origin: live) auto-derived from KEV / critical
     CVE hits on the generated self-stack (spec §4.5, §5.12). These rows
     cannot be closed by hand -- they exist only while the underlying query
     still matches, so there is nothing to store; recomputed at read time."""
-    terms = self_stack_terms(corpus)
-    if not terms:
-        return []
-
-    stack_clause, stack_params, _ = _stack_match_clause(", ".join(terms))
-    if not stack_clause:
+    assets = _self_stack_assets(corpus)
+    if not assets:
         return []
 
     rows = await db.execute_fetchall(
-        f"""
+        """
         SELECT c.cve_id, c.severity, c.cvss_score, c.epss_score, c.is_kev, c.published,
-               c.description, c.affected_products
+               c.description, c.affected_products, c.cpe_matches
         FROM cves c
-        WHERE ({stack_clause}) AND (c.is_kev = 1 OR c.severity = 'CRITICAL')
+        WHERE (c.is_kev = 1 OR UPPER(c.severity) = 'CRITICAL')
+          AND (
+            (c.cpe_matches IS NOT NULL AND c.cpe_matches NOT IN ('', '[]'))
+            OR (c.affected_products IS NOT NULL AND c.affected_products NOT IN ('', '[]'))
+          )
         ORDER BY c.is_kev DESC, c.published DESC
-        LIMIT 50
+        LIMIT 500
         """,
-        stack_params,
+        (),
     )
 
     live_rows = []
     for r in rows:
         row = dict(r)
-        # The WHERE clause guarantees at least one term matched, but which
-        # one is a second, looser scan (substring vs. the exact clause the
-        # DB used) -- fall back to "unknown" rather than let a None slip
-        # into the row's title/summary as the literal string "None".
-        matched = _matched_term(row, terms) or "unknown"
+        cpe_matches = _hydrate_cpe_matches(row)
+        score = score_cve_for_assets(cpe_matches, assets)
+        if score not in (55, 100):
+            continue
+        matched_asset = _matched_asset(cpe_matches, assets, score) or {}
+        matched = matched_asset.get("product") or "unknown"
+        matched_version = matched_asset.get("version") or ""
+        basis = _match_basis(score)
+        matched_label = f"{matched}@{matched_version}" if matched_version else matched
         is_kev = bool(row.get("is_kev"))
         live_rows.append({
             "id": f"self-stack-{row['cve_id']}",
-            "title": f"{row['cve_id']} — term match \"{matched}\"",
+            "title": f"{row['cve_id']} — {basis} CPE match \"{matched_label}\"",
             "summary": (
                 f"{'CISA KEV' if is_kev else 'Critical'} CVE matching BRIEFR's own "
-                f"generated self-stack on the term \"{matched}\" (fuzzy term match, "
-                f"not SBOM/PURL-precise -- see self-stack methodology)."
+                f"generated self-stack via structured CPE {basis} scoring for "
+                f"\"{matched_label}\"."
             ),
             "category": "self-exposure",
             "origin": "live",
@@ -192,12 +254,19 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
             "severity": (row.get("severity") or "").lower(),
             "cve_id": row["cve_id"],
             "matched_term": matched,
+            "match_score": score,
+            "match_basis": basis,
             "is_kev": is_kev,
             "cvss_score": row.get("cvss_score"),
             "epss_score": row.get("epss_score"),
             "published": row.get("published"),
         })
-    return live_rows
+    live_rows.sort(key=lambda row: (
+        bool(row.get("is_kev")),
+        row.get("match_score") or 0,
+        row.get("published") or "",
+    ), reverse=True)
+    return live_rows[:50]
 
 
 async def self_cve_exposure_summary(db: Any, corpus: dict[str, Any]) -> dict[str, Any]:
