@@ -9,11 +9,8 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import Query, Request
 
-from .helpers import _get_job_last_run
 from .router import router
 
 @router.get("/ai/operations/models")

@@ -372,6 +372,10 @@ def test_hunt_pack_detail_shape(forge_client):
     assert body["log_patterns"]
     assert [c["cve_id"] for c in body["linked_cves"]] == ["CVE-2021-44228"]
     assert body["linked_cves"][0]["is_kev"] is True
+    assert body["linked_cve_total"] == 1
+    assert "description" in body["linked_cves"][0]
+    assert body["linked_cves"][0]["description"].startswith("Apache Log4j2")
+    assert len(body["linked_cves"][0]["description"]) <= 180
 
     client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
     body = client.get(f"/api/hunt-packs/{COMMUNITY_TID}").json()

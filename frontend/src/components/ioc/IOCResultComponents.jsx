@@ -1,6 +1,7 @@
 import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { extractActorTags } from '../../utils/investigationActors.js'
 import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
+import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import ControlTooltip from '../ControlTooltip.jsx'
 import ExplainTip from '../ExplainTip.jsx'
 import { abuseScoreColor, enginePillClass, verdictInfo } from './iocUtils.js'
@@ -191,7 +192,7 @@ export function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
 
       <div className="ioc-meta-cards">
         <div className="ioc-meta-card">
-          <h3 className="ioc-meta-card-title">// NETWORK</h3>
+          <h3 className="ioc-meta-card-title">{formatSectionHeading('// NETWORK')}</h3>
           <div className="ioc-meta-row">
             <ControlTooltip text={DOMAIN_TERM_TIPS.isp} trigger="hover-focus">
               <span className="ioc-meta-key">ISP</span>
@@ -219,7 +220,7 @@ export function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
           </div>
         </div>
         <div className="ioc-meta-card">
-          <h3 className="ioc-meta-card-title">// REPUTATION</h3>
+          <h3 className="ioc-meta-card-title">{formatSectionHeading('// REPUTATION')}</h3>
           <div className="ioc-meta-row">
             <span className="ioc-meta-key">Country</span>
             <span className="ioc-meta-val">
@@ -256,7 +257,7 @@ export function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
       {engines.length > 0 && (
         <div className="ioc-vt-engines">
           <h3 className="ioc-vt-engines-title">
-            // VIRUSTOTAL — {flagged.length} flagged of {engines.length} engines
+            {formatSectionHeading('// VIRUSTOTAL')} — {flagged.length} flagged of {engines.length} engines
           </h3>
           <div className="ioc-engine-grid">
             {engines.map(eng => (
@@ -313,7 +314,7 @@ export function IPResultBody({ result, onViewActorTechniques, onOpenCve }) {
 
       {actorTags.length > 0 && (
         <section className="ioc-enrichment-block ioc-actor-tags" aria-label="Threat actor tags">
-          <h3 className="ioc-enrichment-heading mono">// THREAT ACTOR TAGS</h3>
+          <h3 className="ioc-enrichment-heading mono">{formatSectionHeading('// THREAT ACTOR TAGS')}</h3>
           <div className="ioc-actor-tag-row">
             {actorTags.map(tag => (
               <span key={tag} className="ioc-actor-tag mono">{tag}</span>
@@ -366,12 +367,13 @@ export function OtxEnrichment({ result, onOpenCve }) {
 
 export function EnrichmentBlock({ heading, sentence, children, tip }) {
   if (!sentence && !children) return null
-  const headingId = `ioc-${heading.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
+  const headingText = formatSectionHeading(heading)
+  const headingId = `ioc-${headingText.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`
   return (
     <section className="ioc-enrichment-block" aria-labelledby={headingId}>
       <h3 id={headingId} className="ioc-enrichment-heading mono">
-        {heading}
-        {tip ? <ExplainTip text={tip} label={`Explain ${heading}`} /> : null}
+        {headingText}
+        {tip ? <ExplainTip text={tip} label={`Explain ${headingText}`} /> : null}
       </h3>
       {sentence && <p className="ioc-enrichment-sentence">{sentence}</p>}
       {children}
@@ -421,7 +423,7 @@ export function WatchlistPanel({ items, loading, error, errorRequestId, onRemove
   if (!authed) {
     return (
       <div className="ioc-watchlist ioc-watchlist-anon">
-        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <h2 className="ioc-history-heading mono">{formatSectionHeading('// WATCHLIST')}</h2>
         <p className="ioc-watchlist-hint mono">Sign in to save IOCs for nightly retro-match against local OTX + ThreatFox feeds.</p>
       </div>
     )
@@ -429,7 +431,7 @@ export function WatchlistPanel({ items, loading, error, errorRequestId, onRemove
   if (loading && !items.length) {
     return (
       <div className="ioc-watchlist">
-        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <h2 className="ioc-history-heading mono">{formatSectionHeading('// WATCHLIST')}</h2>
         <p className="ioc-watchlist-hint mono">Loading saved IOCs…</p>
       </div>
     )
@@ -437,7 +439,7 @@ export function WatchlistPanel({ items, loading, error, errorRequestId, onRemove
   if (error) {
     return (
       <div className="ioc-watchlist">
-        <h2 className="ioc-history-heading mono">// WATCHLIST</h2>
+        <h2 className="ioc-history-heading mono">{formatSectionHeading('// WATCHLIST')}</h2>
         <p className="ioc-watchlist-hint mono">
           // {error}
           {errorRequestId && (
@@ -454,7 +456,7 @@ export function WatchlistPanel({ items, loading, error, errorRequestId, onRemove
   }
   return (
     <div className="ioc-watchlist" aria-label="Saved IOC watchlist">
-      <h2 className="ioc-history-heading mono">// WATCHLIST ({items.length})</h2>
+      <h2 className="ioc-history-heading mono">{`${formatSectionHeading('// WATCHLIST')} (${items.length})`}</h2>
       <p className="ioc-watchlist-hint mono" title="Nightly job matches saved IOCs against local OTX pulse IOCs and ThreatFox mirror — no per-IOC enrichment API calls.">
         Saved IOCs retro-match nightly against OTX + ThreatFox mirrors on this server.
       </p>

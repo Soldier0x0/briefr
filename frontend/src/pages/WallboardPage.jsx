@@ -8,6 +8,8 @@ import {
   getWallboardToken,
   setWallboardToken,
 } from '../api.js'
+import { formatIntelLabelText } from '../utils/formatIntelLabel.js'
+import { wallboardCoverageEmpty } from '../utils/personalizationCopy.js'
 import './WallboardPage.css'
 
 const POLL_MS = 90_000
@@ -199,7 +201,9 @@ function PageOne({ payload, activeTile }) {
           {(payload?.campaigns?.items || []).length > 0 ? (
             <ul className="wallboard-mini-list">
               {(payload?.campaigns?.items || []).slice(0, 3).map((item) => (
-                <li key={item.campaign_id} className="mono">{item.name} ({item.member_count})</li>
+                <li key={item.campaign_id} className="mono" title={item.name || undefined}>
+                  {formatIntelLabelText(item.name) || item.name} ({item.member_count})
+                </li>
               ))}
             </ul>
           ) : (
@@ -218,7 +222,11 @@ function PageOne({ payload, activeTile }) {
               ))}
             </ul>
           ) : (
-            <MiniListEmpty>No coverage gaps on your stack</MiniListEmpty>
+            <MiniListEmpty>
+              {wallboardCoverageEmpty({
+                stackConfigured: Boolean(payload?.meta?.stack_configured),
+              })}
+            </MiniListEmpty>
           )}
         </TileShell>
       </div>
@@ -287,7 +295,9 @@ function PageTwo({ payload, activeTile }) {
             <ul className="wallboard-mini-list">
               {(payload?.campaigns?.items || []).map((item) => (
                 <li key={item.campaign_id}>
-                  <span className="mono">{item.name}</span>
+                  <span className="mono" title={item.name || undefined}>
+                    {formatIntelLabelText(item.name) || item.name}
+                  </span>
                   <span className="wallboard-tile-sub">{item.member_count} CVEs · {item.confidence}</span>
                 </li>
               ))}

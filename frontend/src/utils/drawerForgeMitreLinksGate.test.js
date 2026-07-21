@@ -23,10 +23,13 @@ describe('PM-4e drawer ↔ Forge MITRE cross-links', () => {
     assert.match(intel, /Open in Forge/)
     assert.match(intel, /onOpenForgeTechnique/)
     assert.match(intel, /forgeCoverageHref/)
+    assert.match(intel, /useNavigate/)
+    assert.doesNotMatch(intel, /location\.assign/)
 
     const app = read('App.jsx')
     assert.match(app, /openForgeTechnique/)
     assert.match(app, /view',\s*'coverage'/)
+    assert.match(app, /pushContext/)
 
     const ctx = read('context/InvestigationContext.jsx')
     assert.match(ctx, /openForgeTechnique/)

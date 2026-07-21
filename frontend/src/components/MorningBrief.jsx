@@ -11,6 +11,7 @@ import {
   kevBucketFilterLabel,
 } from '../utils/kevDeadline.js'
 import { formatSinceHoursLabel } from '../utils/morningBriefFormat.js'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import './MorningBrief.css'
 
 const REASON_LABELS = {
@@ -169,7 +170,7 @@ export default function MorningBrief({
     <section className="morning-brief" aria-label="Morning brief action queue">
       <div className="morning-brief-header">
         <div>
-          <h2 className="morning-brief-heading mono">// MORNING BRIEF</h2>
+          <h2 className="morning-brief-heading mono">{formatSectionHeading('// MORNING BRIEF')}</h2>
           <p className="morning-brief-sub">
             Prioritized CVEs from the last {formatSinceHoursLabel(brief?.meta?.since_hours)}, based on KEV deadlines, EPSS movement, and stack overlap.
           </p>

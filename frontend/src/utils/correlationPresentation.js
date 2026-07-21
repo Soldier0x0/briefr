@@ -2,6 +2,8 @@
  * Analyst-facing copy for correlation evidence and link strength.
  */
 
+import { formatIntelLabelText } from './formatIntelLabel.js'
+
 const IOC_TYPE_LABELS = {
   IP: 'IP',
   DOMAIN: 'Domain',
@@ -230,7 +232,8 @@ export function formatEvidenceItem(ev) {
   }
 
   if (ev.type === 'same_pulse') {
-    const pulseName = ev.pulse_name || ev.pulse_id || 'Unknown pulse'
+    const rawPulse = ev.pulse_name || ev.pulse_id || ''
+    const pulseName = formatIntelLabelText(rawPulse) || rawPulse || 'Unknown pulse'
     return {
       heading: 'Shared OTX pulse',
       value: pulseName,

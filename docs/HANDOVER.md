@@ -12,6 +12,112 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 9: UX RCA docs + verify-local (PR-A–E closeout)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Design-system §23.9–23.12: L-edge/accent-ghost/micro-hover, no `//` headings, keep-mounted drawer panels, pushContext vs replaceHygiene.
+- `SYSTEM_DESIGN.md` Forge: CVE inventory primary; Generate pack secondary.
+- `PRODUCT_STATUS.md`: DetailDrawer chrome row + last-updated stamp for full UX RCA pass.
+- Follow-up: `?tab=forge&cve=` deep links align URL `tab=feed` with forced shell (Task 8 hygiene).
+- Plan: `docs/superpowers/plans/2026-07-21-ux-rca-drawer-forge-shell.md` — execution complete.
+- Bonus: cleared pre-existing admin `ruff` F/E9 (unused imports + missing `re`/`json`/`Path`/`DB_PATH`/`get_feed_health`) so verify-local gate passes.
+
+**Verify:** `./scripts/verify-local.sh` — **green** (SQLite pytest, design-token lint, ruff F/E9, FE build, eslint, unit tests, pip-audit, npm audit).
+
+**Next:** Merge PR #729 after human review; no further plan tasks.
+
+---
+
+## 2026-07-21 — Task 8: PR-E shell history SSOT (issue 21 / C13)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/navHistory.js` (+ tests): `pushContext` vs `replaceHygiene`.
+- **Push:** `selectAppTab`, `openCve` (Forge→CVE), `openForgeTechnique`, `openForgeCampaigns`, Forge `writeUrl`, Admin `setPage`, drawer `?cve=` on open.
+- **Replace (hygiene):** tab=/p= first-paint, stale Forge technique/pack scrub, `?ioc=` one-shot strip, drawer close clears `?cve=`.
+- `NotificationBell` + IntelTab Forge fallback: router `navigate` (no `location.assign`).
+- Optional: open drawer keeps `?cve=`; Back closes drawer first.
+
+**Verify:** `cd frontend && node --test src/utils/navHistory.test.js src/utils/forgeUrlTabClearGate.test.js src/utils/drawerForgeMitreLinksGate.test.js src/utils/forgeDeadControlsGate.test.js`
+
+**Next:** Task 9 (docs + verify-local) — do not start from this Task 8 agent.
+
+---
+
+## 2026-07-21 — Task 7: PR-D Forge navigator + campaigns (issues 17–20)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- **C10:** `.fg-tech-node-name` wraps (no ellipsis); FEED `SemanticTechniqueRow` wraps + `title=`.
+- **C11:** `GET /api/hunt-packs/{technique_id}` adds `linked_cve_total` + ~180-char `description` on `linked_cves`. HuntPackRail CVE inventory primary; Generate pack demoted (secondary). Backlog Generate pack demoted the same way. Campaign rows show member CVE inventory; singular “Open CVE” when count is 1 (no plural OPEN CVEs→one open).
+- **C12:** `frontend/src/utils/personalizationCopy.js` (+ tests). Campaigns empty stack+pins → guidance + “Browse global (unpersonalized)”; never “ranked for your stack”. Forge hero + Wallboard coverage empty copy follow the same honesty rules.
+- Docs: `API_REFERENCE.md`, `PRODUCT_STATUS.md`.
+
+**Verify:**
+- `cd frontend && npm run test:unit -- src/utils/personalizationCopy.test.js src/utils/forgeDeadControlsGate.test.js`
+- `cd backend && pytest tests/test_forge.py -q -k hunt_pack_detail`
+
+**Next:** Task 8 (PR-E shell history SSOT) — do not start until Task 7 is merged/pushed.
+
+---
+
+## 2026-07-21 — Task 6: PR-C pulse aggregation (normalize + UI clusters)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Strengthened matching-only `normalize_pulse_name` (lowercase, whitespace collapse, strip `| Part N/M`, strip trailing `.!?`, `_` → space). Display remains `formatIntelLabel` — Jaccard threshold unchanged.
+- Active Campaigns (`IntelTab`) clusters pulses by normalized base title within each author/source: primary card + “N related pulses”, optional “also seen from …” cross-source meta. Does not fabricate missing Part N/M.
+- Unit tests for Part / punctuation / underscore name identity in `test_pulse_families.py`.
+
+**Verify:** `cd backend && pytest tests/test_pulse_families.py -q`
+
+**Next:** Task 7 (PR-D Forge navigator + campaigns) — do not start until Task 6 is merged/pushed.
+
+---
+
+## 2026-07-21 — Task 5: formatIntelLabel SSOT (OTX/campaign titles)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/formatIntelLabel.js` (+ unit tests) as the **display-only** SSOT for OTX pulse / campaign / intel titles (`Known_Cve` → `Known Cve`; parse author `| Part N/M` into a badge + tooltip; never mutates API/filter keys).
+- Wired into DetailDrawer `IntelTab` pulse rows (Part badge when present), Forge `CampaignsView`, Wallboard campaign tiles, `correlationPresentation` same-pulse evidence, and FEED hybrid `SemanticCampaignRow`.
+
+**Verify:** `cd frontend && npm run test:unit -- src/utils/formatIntelLabel.test.js`
+
+**Next:** Task 6 (PR-C pulse aggregation / `normalize_pulse_name`) — do not fabricate missing Part 2/2.
+
+---
+
+## 2026-07-21 — Task 4: section headings without `//` + MITRE empty composition
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/sectionHeading.js` plus `sectionHeading.test.js` to normalize section-heading copy by stripping a leading `//`.
+- Removed `//` from section headings across the targeted DetailDrawer and shell surfaces, including correlation group labels and the FEED vendor label, while leaving empty/loading copy on `//` lines.
+- MITRE ATT&CK in the drawer now uses the human heading style and only shows its educational hint when ATT&CK techniques exist; loading/empty states show only the `//` line.
+- Related removed the redundant Incidents lane note and keeps related-CVE disambiguation as plain secondary copy; Detect gates its framing note so it only appears when there is real detection content to frame.
+
+**Verify:** `cd frontend && npm run test:unit -- src/utils/sectionHeading.test.js` and `npm run build`.
+
+---
+
+## 2026-07-21 — Task 3: Overview IA + drawer panel chrome + accent-ghost
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Reordered `DetailDrawer` Overview to the locked IA: DESCRIPTION first, then a
+  twin Operational Priority / Environment Relevance row, followed by WHY THIS
+  MATTERS, SEVERITY CONTEXT, KEY EXPLOITATION SIGNALS, EXPLOITATION, AFFECTED
+  PRODUCTS/CWE, REMEDIATION, REFERENCES, and enrichment last.
+- Kept `OperationalPriorityHero` but moved it into a two-column twin grid with
+  the full Environment panel; removed the inline environment chip from the OP
+  hero so “Why this score?” stays scoped to the OP cell.
+- Applied L-edge boxed chrome to the drawer shell and key subpanels, added
+  motion-safe hover scaling for interactive threat/correlation/OTX cards, and
+  converted CVE/drawer ghost actions to the accent-ghost treatment.
+- Correlation campaign member CVEs now render as a wrapped chip row instead of
+  comma-inline prose; the footer action bar is aligned and tokenized.
+- Synced `PRODUCT_STATUS.md`, `SYSTEM_DESIGN.md`, and `design-system.md` to the
+  new Overview order and drawer chrome guidance.
+
+**Verify:** `cd frontend && npm run build` and `npm run test:unit`.
+
+---
+
 ## 2026-07-21 — Program 2 Task 3: self-stack match-basis honesty
 
 **Done** (branch `cursor/self-stack-precision-91c2`):

@@ -9,14 +9,11 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import HTTPException, Query, Request
 
 from database import get_db
 from dependencies import audit
 from destructive_actions import require_confirm
-from settings import settings
 
 from .router import router
 

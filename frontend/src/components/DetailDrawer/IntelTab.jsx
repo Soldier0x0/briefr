@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { displayText } from '../../utils/displayText.js'
+import { formatIntelLabel, INTEL_PART_TOOLTIP } from '../../utils/formatIntelLabel.js'
+import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import {
   buildConnectionPanel,
   confidenceBadgeClass,
@@ -20,6 +23,15 @@ const GENERIC_EXPLOIT_TITLES = new Set([
   'Proof-of-concept published',
   'Untitled exploit',
 ])
+
+const CORRELATION_HEADING = formatSectionHeading('// CORRELATION FINDINGS')
+const CAMPAIGN_LINKS_HEADING = formatSectionHeading('// CAMPAIGN LINKS')
+const SHARED_INDICATOR_LINKS_HEADING = formatSectionHeading('// SHARED INDICATOR LINKS')
+const ACTOR_ATTRIBUTION_HEADING = formatSectionHeading('// ACTOR ATTRIBUTION')
+const TEMPORAL_ANOMALY_HEADING = formatSectionHeading('// TEMPORAL ANOMALY')
+const PUBLIC_EXPLOITS_HEADING = formatSectionHeading('// PUBLIC EXPLOITS')
+const ACTIVE_SCANNING_HEADING = formatSectionHeading('// ACTIVE SCANNING')
+const ACTIVE_CAMPAIGNS_HEADING = formatSectionHeading('// ACTIVE CAMPAIGNS')
 
 function exploitDisplayTitle(exp) {
   const title = displayText(exp.title) || ''
@@ -327,7 +339,7 @@ function CorrelationFindings({
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
         <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-          // CORRELATION FINDINGS
+          {CORRELATION_HEADING}
         </h3>
         <p className="drawer-intel-empty mono">// Loading correlation analysis…</p>
       </section>
@@ -341,7 +353,7 @@ function CorrelationFindings({
     return (
       <section className="drawer-section" aria-labelledby="corr-heading">
         <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-          // CORRELATION FINDINGS
+          {CORRELATION_HEADING}
         </h3>
         <IntelProvenanceLine provenance={correlation?.provenance} />
         <ErrorState
@@ -365,7 +377,7 @@ function CorrelationFindings({
   return (
     <section className="drawer-section" aria-labelledby="corr-heading">
       <h3 id="corr-heading" className="drawer-human-label drawer-tab-anchor mono">
-        // CORRELATION FINDINGS
+        {CORRELATION_HEADING}
       </h3>
 
       <IntelProvenanceLine provenance={correlation?.provenance} />
@@ -386,78 +398,88 @@ function CorrelationFindings({
 
       {campaigns.length > 0 && (
         <div className="corr-group" aria-label="Campaign correlation">
-          <p className="corr-group-label mono">// CAMPAIGN LINKS</p>
-          {campaigns.map(item => (
-            <div key={item.campaign_id} className="corr-finding">
-              <div className="corr-finding-head">
-                <ConfidenceBadge confidence={item.confidence} />
-                <p className="corr-finding-text">
-                  <span className="corr-lane-tag mono">Campaign link</span>{' '}
-                  {item.summary || item.label}
-                  {item.attribution_conflict && (
-                    <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
-                      <span className="corr-conflict-note">
-                        {' '}Attribution conflict — treat as unverified.
-                      </span>
-                    </ControlTooltip>
-                  )}
-                  {item.attribution_claims?.claims?.length > 1 && (
-                    <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
-                      <p className="corr-conflicting-label mono">Conflicting attribution</p>
-                      <ul className="corr-conflicting-list">
-                        {item.attribution_claims.claims.map((claim, idx) => (
-                          <li key={`${claim.source}-${idx}`}>
-                            <span className="mono">{claim.source}</span>: {claim.value}
-                          </li>
+          <p className="corr-group-label mono">{CAMPAIGN_LINKS_HEADING}</p>
+          {campaigns.map(item => {
+            const campaignMembers = (item.members || []).filter(id => id && id !== correlation?.cve_id)
+            const campaignLabel = item.summary
+              || formatIntelLabel(item.label).title
+              || item.campaign_id
+            return (
+              <div key={item.campaign_id} className="corr-finding">
+                <div className="corr-finding-head">
+                  <ConfidenceBadge confidence={item.confidence} />
+                  <div className="corr-finding-body">
+                    <p className="corr-finding-text">
+                      <span className="corr-lane-tag mono">Campaign link</span>{' '}
+                      {campaignLabel}
+                      {item.attribution_conflict && (
+                        <ControlTooltip text="OTX adversary disagrees with MITRE actor mapping" trigger="hover-focus">
+                          <span className="corr-conflict-note">
+                            {' '}Attribution conflict — treat as unverified.
+                          </span>
+                        </ControlTooltip>
+                      )}
+                    </p>
+                    {item.attribution_claims?.claims?.length > 1 && (
+                      <div className="corr-conflicting-claims" aria-label="Conflicting attribution">
+                        <p className="corr-conflicting-label mono">Conflicting attribution</p>
+                        <ul className="corr-conflicting-list">
+                          {item.attribution_claims.claims.map((claim, idx) => (
+                            <li key={`${claim.source}-${idx}`}>
+                              <span className="mono">{claim.source}</span>: {claim.value}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {campaignMembers.length > 0 && (
+                      <div className="corr-member-cves" aria-label="Campaign member CVEs">
+                        {campaignMembers.map(cveId => (
+                          <button
+                            key={cveId}
+                            type="button"
+                            className="corr-cve-link corr-cve-chip mono"
+                            onClick={() => onSelectCve?.(cveId)}
+                            aria-label={`Open ${cveId} in drawer`}
+                          >
+                            {cveId}
+                          </button>
                         ))}
-                      </ul>
-                    </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
+                <div className="corr-finding-foot">
+                  {onInvestigateCampaign && campaignMembers.length > 0 && (
+                    <button
+                      type="button"
+                      className="drawer-investigate-btn"
+                      onClick={() => onInvestigateCampaign(item, cve)}
+                    >
+                      Add to investigation
+                    </button>
                   )}
-                  {(item.members || []).filter(id => id !== correlation?.cve_id).map((cveId, idx) => (
-                    <span key={cveId}>
-                      {idx === 0 ? ' ' : ', '}
-                      <button
-                        type="button"
-                        className="corr-cve-link mono"
-                        onClick={() => onSelectCve?.(cveId)}
-                        aria-label={`Open ${cveId} in drawer`}
-                      >
-                        {cveId}
-                      </button>
-                    </span>
-                  ))}
-                </p>
+                  <CorrelationConfirmAction
+                    onConfirm={onConfirmCorrelation}
+                    body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                    scopeKey={item.campaign_id}
+                    feedback={correlationFeedback}
+                  />
+                  <CorrelationSuppressAction
+                    onRequestSuppress={onRequestSuppress}
+                    body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
+                  />
+                </div>
               </div>
-              <CorrelationEvidence item={item} cveId={correlation?.cve_id} onSelectCve={onSelectCve} />
-              <div className="corr-finding-foot">
-                {onInvestigateCampaign && (item.members || []).some(id => id && id !== correlation?.cve_id) && (
-                  <button
-                    type="button"
-                    className="drawer-investigate-btn"
-                    onClick={() => onInvestigateCampaign(item, cve)}
-                  >
-                    Add to investigation
-                  </button>
-                )}
-                <CorrelationConfirmAction
-                  onConfirm={onConfirmCorrelation}
-                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
-                  scopeKey={item.campaign_id}
-                  feedback={correlationFeedback}
-                />
-                <CorrelationSuppressAction
-                  onRequestSuppress={onRequestSuppress}
-                  body={{ scope: 'campaign_id', key: { campaign_id: item.campaign_id } }}
-                />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {infra.length > 0 && (
         <div className="corr-group" aria-label="Related threat infrastructure">
-          <p className="corr-group-label mono">// SHARED INDICATOR LINKS</p>
+          <p className="corr-group-label mono">{SHARED_INDICATOR_LINKS_HEADING}</p>
           <InfrastructureList
             items={infra}
             onSelectCve={onSelectCve}
@@ -478,7 +500,7 @@ function CorrelationFindings({
       {/* Level 2: Actor / Sector — infra block replaced above */}
       {actor.length > 0 && (
         <div className="corr-group" aria-label="Actor correlation">
-          <p className="corr-group-label mono">// ACTOR ATTRIBUTION</p>
+          <p className="corr-group-label mono">{ACTOR_ATTRIBUTION_HEADING}</p>
           {actor.map(item => (
             <div key={item.actor_name} className="corr-finding">
               <div className="corr-finding-head">
@@ -510,7 +532,7 @@ function CorrelationFindings({
       {/* Level 3: Temporal */}
       {temporal.length > 0 && (
         <div className="corr-group" aria-label="Temporal anomaly">
-          <p className="corr-group-label mono">// TEMPORAL ANOMALY</p>
+          <p className="corr-group-label mono">{TEMPORAL_ANOMALY_HEADING}</p>
           {temporal.map(item => (
             <div key={item.vendor} className="corr-finding">
               <div className="corr-finding-head">
@@ -536,6 +558,16 @@ function CorrelationFindings({
 }
 const CAMPAIGN_SOURCE_PREVIEW = 5
 
+/** Matching/identity only — mirrors backend normalize_pulse_name (not display). */
+function normalizePulseNameForMatch(name) {
+  let text = String(name || '').trim().toLowerCase()
+  text = text.replace(/\s*\|\s*Part\s+\d+\s*\/\s*\d+\s*$/i, '')
+  text = text.replace(/_/g, ' ')
+  text = text.replace(/\s+/g, ' ').trim()
+  text = text.replace(/[.!?]+$/, '').trim()
+  return text
+}
+
 function groupPulsesByAuthor(pulses) {
   const groups = new Map()
   for (const pulse of pulses) {
@@ -548,10 +580,54 @@ function groupPulsesByAuthor(pulses) {
   }
   return Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)
 }
-function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
+
+function buildAuthorPulseClusters(pulses) {
+  const titleAuthors = new Map()
+  for (const pulse of pulses) {
+    const key = normalizePulseNameForMatch(displayText(pulse.pulse_name) || '')
+    const author = displayText(pulse.author) || 'Unknown source'
+    if (!titleAuthors.has(key)) titleAuthors.set(key, new Set())
+    titleAuthors.get(key).add(author)
+  }
+
+  return groupPulsesByAuthor(pulses).map(([author, items]) => {
+    const byTitle = new Map()
+    for (const pulse of items) {
+      const key = normalizePulseNameForMatch(displayText(pulse.pulse_name) || '')
+      if (!byTitle.has(key)) byTitle.set(key, [])
+      byTitle.get(key).push(pulse)
+    }
+    const clusters = Array.from(byTitle.entries()).map(([key, members]) => {
+      const primary = members[0]
+      const related = members.slice(1)
+      const alsoSeenFrom = [...(titleAuthors.get(key) || [])]
+        .filter(other => other !== author)
+        .sort((a, b) => a.localeCompare(b))
+      return { key, primary, related, alsoSeenFrom, pulseCount: members.length }
+    })
+    clusters.sort((a, b) =>
+      String(b.primary.created_date || '').localeCompare(String(a.primary.created_date || '')),
+    )
+    const pulseCount = items.length
+    return [author, clusters, pulseCount]
+  })
+}
+
+function CampaignPulseRow({ pulse, cve, onInvestigatePulse, compact = false }) {
+  const intel = formatIntelLabel(displayText(pulse.pulse_name))
+  const title = intel.title || 'Unnamed pulse'
   return (
-    <li className="drawer-otx-item drawer-otx-item-compact">
-      <p className="drawer-otx-name">{displayText(pulse.pulse_name) || 'Unnamed pulse'}</p>
+    <div className={`drawer-otx-item drawer-otx-item-compact${compact ? ' drawer-otx-item-related' : ''}`}>
+      <p className="drawer-otx-name" title={intel.raw || undefined}>
+        <span className="drawer-otx-name-text">{title}</span>
+        {intel.part && (
+          <ControlTooltip text={INTEL_PART_TOOLTIP} trigger="hover-focus">
+            <span className="drawer-otx-part mono" aria-label={`OTX author part ${intel.part.n} of ${intel.part.m}`}>
+              Part {intel.part.n}/{intel.part.m}
+            </span>
+          </ControlTooltip>
+        )}
+      </p>
       <div className="drawer-otx-meta">
         {pulse.created_date && (
           <span className="drawer-otx-date mono">{String(pulse.created_date).slice(0, 10)}</span>
@@ -586,10 +662,64 @@ function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
           Add to investigation
         </button>
       )}
-    </li>
+    </div>
   )
 }
-function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpen }) {
+
+function CampaignPulseCluster({ cluster, author, cve, onInvestigatePulse }) {
+  const [showRelated, setShowRelated] = useState(false)
+  const relatedCount = cluster.related.length
+  const alsoSeen = cluster.alsoSeenFrom || []
+
+  return (
+    <div className="drawer-otx-cluster">
+      <CampaignPulseRow
+        pulse={cluster.primary}
+        cve={cve}
+        onInvestigatePulse={onInvestigatePulse}
+      />
+      {(relatedCount > 0 || alsoSeen.length > 0) && (
+        <div className="drawer-otx-cluster-meta">
+          {relatedCount > 0 && (
+            <button
+              type="button"
+              className="drawer-otx-more-btn mono"
+              onClick={() => setShowRelated(open => !open)}
+              aria-expanded={showRelated}
+              aria-label={
+                showRelated
+                  ? `Hide ${relatedCount} related pulse${relatedCount === 1 ? '' : 's'} from ${author}`
+                  : `Show ${relatedCount} related pulse${relatedCount === 1 ? '' : 's'} from ${author}`
+              }
+            >
+              {showRelated ? 'Hide related' : `${relatedCount} related pulse${relatedCount === 1 ? '' : 's'}`}
+            </button>
+          )}
+          {alsoSeen.length > 0 && (
+            <p className="drawer-otx-also-seen mono">
+              also seen from {alsoSeen.join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+      {showRelated && relatedCount > 0 && (
+        <div className="drawer-otx-related-list" aria-label={`Related pulses from ${author}`}>
+          {cluster.related.map((pulse, idx) => (
+            <CampaignPulseRow
+              key={pulse.pulse_id || `${author}-related-${idx}`}
+              pulse={pulse}
+              cve={cve}
+              onInvestigatePulse={onInvestigatePulse}
+              compact
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CampaignPulseGroup({ author, clusters, pulseCount, cve, onInvestigatePulse, defaultOpen }) {
   // Freeze initial open state so parent re-renders (e.g. "show more sources")
   // do not reset manual expand/collapse — same pattern as Forge SavedPack.
   const [initialOpen] = useState(defaultOpen)
@@ -599,38 +729,40 @@ function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpe
       <summary className="drawer-otx-group-summary">
         <span className="drawer-otx-group-author mono">{author}</span>
         <span className="drawer-otx-group-count mono">
-          {items.length} pulse{items.length === 1 ? '' : 's'}
+          {pulseCount} pulse{pulseCount === 1 ? '' : 's'}
         </span>
       </summary>
-      <ul className="drawer-otx-list drawer-otx-group-list">
-        {items.map((pulse, pulseIdx) => (
-          <CampaignPulseRow
-            key={pulse.pulse_id || `${author}-${pulseIdx}`}
-            pulse={pulse}
+      <div className="drawer-otx-list drawer-otx-group-list">
+        {clusters.map((cluster, clusterIdx) => (
+          <CampaignPulseCluster
+            key={cluster.key || cluster.primary.pulse_id || `${author}-${clusterIdx}`}
+            cluster={cluster}
+            author={author}
             cve={cve}
             onInvestigatePulse={onInvestigatePulse}
           />
         ))}
-      </ul>
+      </div>
     </details>
   )
 }
 function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
   const [showAllSources, setShowAllSources] = useState(false)
-  const groups = useMemo(() => groupPulsesByAuthor(pulses), [pulses])
+  const groups = useMemo(() => buildAuthorPulseClusters(pulses), [pulses])
   const visibleGroups = showAllSources ? groups : groups.slice(0, CAMPAIGN_SOURCE_PREVIEW)
   const hiddenSourceCount = Math.max(0, groups.length - CAMPAIGN_SOURCE_PREVIEW)
 
   return (
     <div className="drawer-otx-groups">
-      {visibleGroups.map(([author, items]) => (
+      {visibleGroups.map(([author, clusters, pulseCount]) => (
         <CampaignPulseGroup
           key={author}
           author={author}
-          items={items}
+          clusters={clusters}
+          pulseCount={pulseCount}
           cve={cve}
           onInvestigatePulse={onInvestigatePulse}
-          defaultOpen={items.length <= 2 || groups.length === 1}
+          defaultOpen={false}
         />
       ))}
       {hiddenSourceCount > 0 && !showAllSources && (
@@ -690,6 +822,7 @@ export default function TabIntel({
   suppressions,
   onRestoreSuppression,
 }) {
+  const navigate = useNavigate()
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -700,7 +833,7 @@ export default function TabIntel({
       <section className="drawer-section" aria-labelledby="exploits-heading">
         <div className="drawer-intel-section-head">
           <h3 id="exploits-heading" className="drawer-human-label mono">
-            // PUBLIC EXPLOITS
+            {PUBLIC_EXPLOITS_HEADING}
           </h3>
           <span className="drawer-count-badge mono" aria-label={`${exploits.length} exploits`}>
             {exploits.length}
@@ -762,7 +895,7 @@ export default function TabIntel({
       </section>
 
       <section className="drawer-section" aria-labelledby="scanning-heading">
-        <h3 id="scanning-heading" className="drawer-human-label mono">// ACTIVE SCANNING</h3>
+        <h3 id="scanning-heading" className="drawer-human-label mono">{ACTIVE_SCANNING_HEADING}</h3>
         {greynoiseConfigured === false ? (
           <p className="drawer-intel-empty mono">
             GreyNoise is not configured on this server — on-demand IP context is unavailable.
@@ -847,7 +980,7 @@ export default function TabIntel({
 
       <section className="drawer-section" aria-labelledby="campaigns-heading">
         <div className="drawer-intel-section-head">
-          <h3 id="campaigns-heading" className="drawer-human-label mono">// ACTIVE CAMPAIGNS</h3>
+          <h3 id="campaigns-heading" className="drawer-human-label mono">{ACTIVE_CAMPAIGNS_HEADING}</h3>
           <span className="drawer-count-badge mono">{pulses.length}</span>
         </div>
         {otxConfigured === false ? (
@@ -869,59 +1002,61 @@ export default function TabIntel({
       </section>
 
       <section className="drawer-section" aria-labelledby="mitre-heading">
-        <h3 id="mitre-heading" className="drawer-section-label">MITRE ATT&CK</h3>
-        <p className="drawer-capec-hint mono">
-          Adversary techniques mapped to this CVE — ATT&amp;CK is MITRE&apos;s knowledge base of real-world attacker tactics and techniques.
-        </p>
+        <h3 id="mitre-heading" className="drawer-human-label mono">MITRE ATT&CK</h3>
         {loading && techList.length === 0 ? (
           <p className="mitre-empty mono">// Loading ATT&CK mapping…</p>
         ) : techList.length === 0 ? (
           <p className="mitre-empty mono">// No ATT&CK mapping available</p>
         ) : (
-          <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
-            {techList.map(tech => {
-              const tid = tech.id || tech.technique_id
-              const href = techniqueLink(tech)
-              const forgeHref = forgeCoverageHref(tid)
-              return (
-                <article key={tid} className="mitre-technique-card" role="listitem">
-                  <div className="mitre-technique-top">
-                    <span className="mitre-technique-id mono">{tid}</span>
-                    {tech.tactic && (
-                      <span className="mitre-tactic-badge mono">{tech.tactic}</span>
-                    )}
-                  </div>
-                  <p className="mitre-technique-name">{tech.name}</p>
-                  <div className="mitre-technique-actions">
-                    {forgeHref && (
-                      <button
-                        type="button"
-                        className="mitre-technique-link mono"
-                        onClick={() => {
-                          if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
-                          else window.location.assign(forgeHref)
-                        }}
-                        aria-label={`Open ${tid} in Forge ATT&CK navigator`}
-                      >
-                        Open in Forge →
-                      </button>
-                    )}
-                    {href && (
-                      <a
-                        className="mitre-technique-link mitre-technique-link--ext mono"
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
-                      >
-                        attack.mitre.org →
-                      </a>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+          <>
+            <p className="drawer-capec-hint mono">
+              Adversary techniques mapped to this CVE — ATT&amp;CK is MITRE&apos;s knowledge base of real-world attacker tactics and techniques.
+            </p>
+            <div className="mitre-techniques" role="list" aria-label="Mapped ATT&CK techniques">
+              {techList.map(tech => {
+                const tid = tech.id || tech.technique_id
+                const href = techniqueLink(tech)
+                const forgeHref = forgeCoverageHref(tid)
+                return (
+                  <article key={tid} className="mitre-technique-card" role="listitem">
+                    <div className="mitre-technique-top">
+                      <span className="mitre-technique-id mono">{tid}</span>
+                      {tech.tactic && (
+                        <span className="mitre-tactic-badge mono">{tech.tactic}</span>
+                      )}
+                    </div>
+                    <p className="mitre-technique-name">{tech.name}</p>
+                    <div className="mitre-technique-actions">
+                      {forgeHref && (
+                        <button
+                          type="button"
+                          className="mitre-technique-link mono"
+                          onClick={() => {
+                            if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
+                            else navigate(forgeHref)
+                          }}
+                          aria-label={`Open ${tid} in Forge ATT&CK navigator`}
+                        >
+                          Open in Forge →
+                        </button>
+                      )}
+                      {href && (
+                        <a
+                          className="mitre-technique-link mitre-technique-link--ext mono"
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`View ${tid} on attack.mitre.org (opens new tab)`}
+                        >
+                          attack.mitre.org →
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </>
         )}
       </section>
 

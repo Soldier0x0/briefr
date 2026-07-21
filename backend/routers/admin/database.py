@@ -9,10 +9,13 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
 from typing import Any
 
 from fastapi import BackgroundTasks, HTTPException, Request
 
+from database import DB_PATH
 from dependencies import audit
 from settings import settings
 
@@ -24,7 +27,6 @@ from .router import router
 @router.get("/database")
 async def get_database_info(request: Request):
     from db.config import is_postgres, resolve_database_url
-    from settings import settings
 
     current_url = resolve_database_url()
     on_postgres = is_postgres(current_url)

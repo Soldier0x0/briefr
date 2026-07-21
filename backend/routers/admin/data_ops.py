@@ -10,7 +10,6 @@ SPDX-License-Identifier: BUSL-1.1
 from __future__ import annotations
 
 import urllib.parse
-from typing import Any
 
 from fastapi import HTTPException, Query, Request
 

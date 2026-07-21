@@ -27,10 +27,19 @@ export function isEditableTarget(node) {
   return false
 }
 
+export function hasTextSelection() {
+  if (typeof window === 'undefined' || typeof window.getSelection !== 'function') return false
+  const selection = window.getSelection()
+  if (!selection || selection.isCollapsed) return false
+  return String(selection.toString?.() || '').length > 0
+}
+
 export function shouldIgnoreGlobalShortcut(event) {
   if (!event) return true
   if (event.isComposing) return true
+  if (event.ctrlKey || event.metaKey || event.altKey) return true
   if (isEditableTarget(event.target)) return true
   if (typeof document !== 'undefined' && isEditableTarget(document.activeElement)) return true
+  if (hasTextSelection()) return true
   return false
 }

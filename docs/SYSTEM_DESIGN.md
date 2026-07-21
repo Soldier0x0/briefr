@@ -159,6 +159,12 @@ prefetches weights at startup and provides **UI helpers only** (colors, hero
 summary text, correlation OP merge, SSVC display) — it does **not** recompute Threat or
 v1.1b totals for displayed numbers (W2 / F1.3).
 
+The Overview tab presents DESCRIPTION first, then a twin-grid row with the
+Operational Priority hero beside the full Environment Relevance panel, followed
+by WHY THIS MATTERS, SEVERITY CONTEXT (CVSS), KEY EXPLOITATION SIGNALS,
+EXPLOITATION, AFFECTED PRODUCTS/CWE, REMEDIATION, REFERENCES, and enrichment
+sections (CAPEC, SSVC, OSV).
+
 **Correlation escalation (temporary FE merge):** when the drawer loads
 correlation after `/risk`, `applyCorrelationEscalationToRiskScore` may bump
 Operational Priority one band (P3→P2 / P2→P1) using the same rules as
@@ -291,9 +297,11 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
 3. **Technique click:** `GET /api/hunt-packs/{technique_id}` returns technique
    metadata, saved packs, the template SIEM baseline, log patterns, and up to
    20 linked CVEs (KEV first, then EPSS, then recency).
-4. **Generate pack:** "GENERATE PACK" on a linked CVE → `POST
-   /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from the
-   template library, derives priority from KEV/CVSS/EPSS, and upserts into
+4. **CVE inventory + generate pack:** Hunt-pack detail UI leads with the
+   linked-CVE inventory (`linked_cves` + `linked_cve_total`, truncated
+   descriptions). **Generate pack** is a secondary action on a linked CVE →
+   `POST /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from
+   the template library, derives priority from KEV/CVSS/EPSS, and upserts into
    `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
    The UI refetches coverage so the technique flips to `yours`.
 5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on

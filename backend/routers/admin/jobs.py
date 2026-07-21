@@ -9,8 +9,8 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any
 
 from fastapi import HTTPException, Request
 from procrastinate.exceptions import AlreadyEnqueued

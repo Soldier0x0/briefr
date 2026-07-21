@@ -1220,13 +1220,17 @@ ID match.
   "log_patterns": ["..."],
   "case_studies": [ { "study_id": "AML.CS0001", "name": "...", "summary": "...",
                       "target": "AI system", "incident_date": "2021-12-15" } ],
+  "linked_cve_total": 1,
   "linked_cves": [ { "cve_id": "CVE-2021-44228", "severity": "CRITICAL",
                      "cvss_score": 10.0, "epss_score": 0.97, "is_kev": true,
-                     "published": "..." } ]
+                     "published": "...",
+                     "description": "Apache Log4j2 JNDI features allow remote code execution." } ]
 }
 ```
 
 `linked_cves` is capped at 20, ordered KEV first, then EPSS, then recency.
+`linked_cve_total` is the uncapped map count (may exceed the preview list).
+Each `linked_cves[].description` is truncated to ~180 characters for inventory rows.
 `packs[].cwe_ids`/`cvss_score`/`epss_score` and `case_studies` are Forge
 Redesign FR-3 additions — read from the same `cve_technique_map` join already
 used for `linked_cves`, no extra query. `case_studies` capped at 5, matched

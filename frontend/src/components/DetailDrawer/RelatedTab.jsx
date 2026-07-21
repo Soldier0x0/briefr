@@ -8,9 +8,6 @@ function RelatedNewsSection({ relatedNews }) {
       <h3 id="related-news-heading" className="drawer-human-label drawer-tab-anchor mono">
         IN INCIDENTS &amp; NEWS
       </h3>
-      <p className="drawer-related-lane-note mono">
-        // Mentions of this CVE ID in the Incidents feed (RSS / ATLAS snapshot)
-      </p>
       <ul className="drawer-related-news-list" aria-label="Related news articles">
         {relatedNews.map((item, index) => {
           const href = safeExternalUrl(item.url)
@@ -75,8 +72,8 @@ export default function TabRelated({
           </h3>
           <p className="drawer-related-lane-note mono">
             {semantic
-              ? '// Semantic neighbor — not the same as campaign correlation'
-              : '// Same affected product — not the same as campaign correlation'}
+              ? 'Semantic neighbor — not the same as campaign correlation'
+              : 'Same affected product — not the same as campaign correlation'}
           </p>
           <ul className="drawer-related-list" aria-label="Related CVEs">
             {related.map(item => {

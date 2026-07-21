@@ -559,10 +559,15 @@ async def get_hunt_pack(technique_id: str):
             "SELECT * FROM hunt_packs WHERE technique_id = ? ORDER BY updated_at DESC",
             (tid,),
         )
+        linked_count_rows = await db.execute_fetchall(
+            "SELECT COUNT(*) AS cnt FROM cve_technique_map WHERE technique_id = ?",
+            (tid,),
+        )
+        linked_cve_total = int(linked_count_rows[0]["cnt"] or 0) if linked_count_rows else 0
         cve_rows = await db.execute_fetchall(
             """
             SELECT c.cve_id, c.severity, c.cvss_score, c.epss_score,
-                   c.is_kev, c.published, c.cwe_ids
+                   c.is_kev, c.published, c.cwe_ids, c.description
             FROM cve_technique_map m
             JOIN cves c ON c.cve_id = m.cve_id
             WHERE m.technique_id = ?
@@ -625,6 +630,7 @@ async def get_hunt_pack(technique_id: str):
         "siem_queries": baseline,
         "log_patterns": log_patterns,
         "case_studies": case_studies,
+        "linked_cve_total": linked_cve_total,
         "linked_cves": [
             {
                 "cve_id": r["cve_id"],
@@ -633,6 +639,7 @@ async def get_hunt_pack(technique_id: str):
                 "epss_score": r["epss_score"],
                 "is_kev": bool(r["is_kev"]),
                 "published": r["published"],
+                "description": ((r["description"] or "")[:180]),
             }
             for r in cve_rows
         ],

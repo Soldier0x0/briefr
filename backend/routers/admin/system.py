@@ -14,7 +14,6 @@ import pathlib
 import shutil
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from fastapi import Request
 
@@ -28,10 +27,8 @@ from database import (
 )
 from db.integrity import run_integrity_check
 from resilient_client import get_api_queue_status, get_feed_health
-from settings import settings
 
 from .helpers import (
-    _age_seconds,
     _get_active_locks,
     _get_all_scheduler_jobs,
     _iso_to_age_seconds,

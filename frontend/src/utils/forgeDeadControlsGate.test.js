@@ -3,16 +3,23 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clusterOpenTarget, openCvesLabel } from './campaignClusterOpen.js'
+import {
+  clusterMemberInventory,
+  clusterOpenTarget,
+  openCvesLabel,
+} from './campaignClusterOpen.js'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 describe('Forge / notification dead-control gate', () => {
-  it('Campaigns OPEN CVEs uses members fallback and plural label helper', () => {
+  it('Campaigns uses member inventory and honest personalization copy', () => {
     const src = fs.readFileSync(path.join(ROOT, 'components/forge/CampaignsView.jsx'), 'utf8')
-    assert.match(src, /clusterOpenTarget/)
+    assert.match(src, /clusterMemberInventory/)
     assert.match(src, /openCvesLabel/)
-    assert.match(src, /disabled=\{!canOpen\}/)
+    assert.match(src, /personalizationCopy/)
+    assert.match(src, /browseGlobalUnpersonalizedLabel/)
+    assert.doesNotMatch(src, /ranked for your stack/)
+    assert.doesNotMatch(src, /OPEN CVEs/)
     assert.match(
       fs.readFileSync(path.join(ROOT, 'utils/campaignClusterOpen.js'), 'utf8'),
       /cluster\.members\?\.\[0\]/,
@@ -45,14 +52,24 @@ describe('Forge / notification dead-control gate', () => {
       'CVE-3',
     )
     assert.equal(clusterOpenTarget({ members: [] }), null)
-    assert.equal(openCvesLabel(1), 'OPEN CVE')
-    assert.equal(openCvesLabel(25), 'OPEN CVEs')
+    assert.deepEqual(
+      clusterMemberInventory({
+        members_on_stack: ['CVE-1'],
+        watchlisted_members: ['CVE-2'],
+        members: ['CVE-1', 'CVE-2', 'CVE-3'],
+      }),
+      ['CVE-1', 'CVE-2', 'CVE-3'],
+    )
+    assert.equal(openCvesLabel(1), 'Open CVE')
+    assert.equal(openCvesLabel(25), 'Open CVEs')
   })
 
-  it('NotificationBell wires IOC entity_type to tab=ioc&ioc=', () => {
+  it('NotificationBell wires IOC entity_type to tab=ioc&ioc= via navigate', () => {
     const src = fs.readFileSync(path.join(ROOT, 'components/NotificationBell.jsx'), 'utf8')
     assert.match(src, /entity_type === 'ioc'/)
-    assert.match(src, /searchParams\.set\('ioc'/)
+    assert.match(src, /params\.set\('ioc'/)
+    assert.match(src, /useNavigate/)
+    assert.doesNotMatch(src, /location\.assign\(/)
   })
 
   it('App deep-links ?ioc= into IOC Lookup prefill', () => {

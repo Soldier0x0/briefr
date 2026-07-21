@@ -28,6 +28,16 @@ describe('correlationPresentation', () => {
     assert.match(item.lines.join(' '), /Type: IP/)
   })
 
+  it('formatEvidenceItem humanizes same_pulse titles for display', () => {
+    const item = formatEvidenceItem({
+      type: 'same_pulse',
+      pulse_name: 'Known_Cve',
+      pulse_id: 'pulse-1',
+    })
+    assert.equal(item.heading, 'Shared OTX pulse')
+    assert.equal(item.value, 'Known Cve')
+  })
+
   it('explainLimitedConfidence surfaces IP-only caveat', () => {
     const msg = explainLimitedConfidence('IP-only edges are weaker than domain or hash matches', [])
     assert.match(msg, /IP-only relationship/)

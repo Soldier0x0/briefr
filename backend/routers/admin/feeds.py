@@ -9,24 +9,13 @@ SPDX-License-Identifier: BUSL-1.1
 
 from __future__ import annotations
 
-import json
-from typing import Any
-
 from fastapi import BackgroundTasks, HTTPException, Request
 
-from database import (
-    EPSS_BACKFILL_DONE_KEY,
-    get_db,
-    get_feed_cache,
-    get_sync_state_value,
-    set_feed_cache,
-    set_sync_state_value,
-)
+from database import get_db
 from dependencies import audit
 from feeds.file_identity import EPSS_FILE_IDENTITY_KEY, clear_file_identity
 from resilient_client import reset_circuit
 
-from .helpers import _get_scheduler_module, _job_lock_held
 from .router import router
 
 # ── Feed circuit breaker ───────────────────────────────────────────────────

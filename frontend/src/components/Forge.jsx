@@ -12,6 +12,8 @@ import BacklogView from './forge/BacklogView.jsx'
 import LibraryView from './forge/LibraryView.jsx'
 import HuntPackRail from './forge/HuntPackRail.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
+import { forgeHeroSub, hasPersonalizationContext } from '../utils/personalizationCopy.js'
+import { pushContext, replaceHygiene } from '../utils/navHistory.js'
 import './Forge.css'
 
 const VALID_VIEWS = new Set(['coverage', 'scenarios', 'campaigns', 'backlog', 'library'])
@@ -52,15 +54,16 @@ export default function Forge() {
   const [generatingFromScenario, setGeneratingFromScenario] = useState(null)
   const assetCtx = useAssetProfileOptional()
 
+  // Intentional Forge context (view / technique / pack) — Back-able.
   const writeUrl = useCallback((patch) => {
-    setSearchParams((prev) => {
+    pushContext(setSearchParams, (prev) => {
       const next = new URLSearchParams(prev)
       for (const [key, value] of Object.entries(patch)) {
         if (value === null || value === undefined || value === '') next.delete(key)
         else next.set(key, String(value))
       }
       return next
-    }, { replace: true })
+    })
   }, [setSearchParams])
 
   const clearTechniqueSelection = useCallback(() => {
@@ -87,10 +90,13 @@ export default function Forge() {
       setSelectedPackIdState(view === 'library' ? packId : null)
       setRailOpen(false)
       if (techniqueId || (view !== 'library' && packId)) {
-        const next = new URLSearchParams(searchParams)
-        next.delete('technique')
-        if (view !== 'library') next.delete('pack')
-        setSearchParams(next, { replace: true })
+        // Stale param scrub — must not create a history entry.
+        replaceHygiene(setSearchParams, (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('technique')
+          if (view !== 'library') next.delete('pack')
+          return next
+        })
       }
       return
     }
@@ -163,6 +169,8 @@ export default function Forge() {
     return [...new Set(products)].join(', ')
   }, [assetCtx?.isLoaded, assetCtx?.profile])
 
+  const heroPersonalized = hasPersonalizationContext({ stackTerms: profileStack })
+
   useEffect(() => {
     if (!profileStack) setStackOnly(false)
   }, [profileStack])
@@ -219,9 +227,7 @@ export default function Forge() {
         <p className="fg-hero-kicker mono">DETECTION ENGINEERING</p>
         <h1 className="fg-hero-title">Forge</h1>
         <p className="fg-hero-sub">
-          See which ATT&amp;CK techniques your feed CVEs map to, review environment threat scenarios
-          for your stack, find community detection rules, and export Sigma and SIEM hunt templates per CVE.
-          Rules are starting points — validate before production.
+          {forgeHeroSub({ personalized: heroPersonalized })}
         </p>
       </header>
 

@@ -384,6 +384,41 @@ exception: filled selection is allowed; neon **borders** are not.
   `marginLeft` on the control — that misaligns buttons against the taller label block.
 - Applies to analyst FEED, ARCH, Forge, and admin — not admin-only.
 
+### 23.9 Drawer panel chrome + accent-ghost actions
+
+- Boxed drawer subpanels use the **L-edge** chrome: `--shadow-inset-indicator-start`,
+  a `1px` `--border-active` top edge, and only subtle right/bottom hairlines over
+  `--surface-sunken` / `--surface-raised`.
+- Neutral drawer actions use the shared **accent-ghost** treatment: accent text,
+  `1px` `--border2`, hover `--border-active`, and at most a soft `color-mix(...)`
+  accent fill. Save strong accent borders for active/pinned states only.
+- Interactive panels may use a motion-safe micro `scale(1.012)` on hover; animate
+  only `transform`/`opacity` and honor `prefers-reduced-motion` / `data-motion`.
+
+### 23.10 Section headings (no `//` prefix)
+
+- Analyst-facing section titles are uppercase mono **without** a leading `//`
+  (DetailDrawer, Morning Brief, IOC, Investigation, Shortcuts, FilterBar vendor
+  label, and peers). Empty/loading lines may keep `//` as a terminal cue.
+- Use `formatSectionHeading` / `stripSectionHeadingPrefix` when normalizing copy.
+
+### 23.11 Keep-mounted multi-panel UI
+
+- Multi-panel surfaces that must preserve scroll/expand/filter state use
+  `hidden` (or equivalent) rather than unmounting — same pattern as main nav
+  tabs. DetailDrawer Overview/Intel/Detect/Related panels stay mounted after
+  first visit; reset on CVE change/close, not via `user_preferences`.
+
+### 23.12 Shell history: push vs replace
+
+- Intentional context changes (analyst tab, Forge view/technique/pack, Admin
+  page, Forge→CVE, FEED→Forge) use **`pushContext`** so Browser Back restores
+  the prior surface.
+- Cosmetic URL hygiene (first-paint `tab=`/`p=`, stale Forge params, one-shot
+  `?ioc=` strip, clearing `?cve=` on drawer close) uses **`replaceHygiene`**.
+- Deep-link pivots use the router (`navigate` / search-params helpers) — never
+  `location.assign`.
+
 ## 24. Suggested additional documentation (future)
 
 - `docs/design/component-inventory.md` — per-control migration map (raw → primitive → files).
