@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 7: PR-D Forge navigator + campaigns (issues 17–20)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- **C10:** `.fg-tech-node-name` wraps (no ellipsis); FEED `SemanticTechniqueRow` wraps + `title=`.
+- **C11:** `GET /api/hunt-packs/{technique_id}` adds `linked_cve_total` + ~180-char `description` on `linked_cves`. HuntPackRail CVE inventory primary; Generate pack demoted (secondary). Backlog Generate pack demoted the same way. Campaign rows show member CVE inventory; singular “Open CVE” when count is 1 (no plural OPEN CVEs→one open).
+- **C12:** `frontend/src/utils/personalizationCopy.js` (+ tests). Campaigns empty stack+pins → guidance + “Browse global (unpersonalized)”; never “ranked for your stack”. Forge hero + Wallboard coverage empty copy follow the same honesty rules.
+- Docs: `API_REFERENCE.md`, `PRODUCT_STATUS.md`.
+
+**Verify:**
+- `cd frontend && npm run test:unit -- src/utils/personalizationCopy.test.js src/utils/forgeDeadControlsGate.test.js`
+- `cd backend && pytest tests/test_forge.py -q -k hunt_pack_detail`
+
+**Next:** Task 8 (PR-E shell history SSOT) — do not start until Task 7 is merged/pushed.
+
+---
+
 ## 2026-07-21 — Task 6: PR-C pulse aggregation (normalize + UI clusters)
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):

@@ -9,6 +9,7 @@ import {
   setWallboardToken,
 } from '../api.js'
 import { formatIntelLabelText } from '../utils/formatIntelLabel.js'
+import { wallboardCoverageEmpty } from '../utils/personalizationCopy.js'
 import './WallboardPage.css'
 
 const POLL_MS = 90_000
@@ -221,7 +222,11 @@ function PageOne({ payload, activeTile }) {
               ))}
             </ul>
           ) : (
-            <MiniListEmpty>No coverage gaps on your stack</MiniListEmpty>
+            <MiniListEmpty>
+              {wallboardCoverageEmpty({
+                stackConfigured: Boolean(payload?.meta?.stack_configured),
+              })}
+            </MiniListEmpty>
           )}
         </TileShell>
       </div>

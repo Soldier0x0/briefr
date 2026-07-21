@@ -113,11 +113,12 @@ export default function BacklogView({ profileStack, onGeneratePack, generatingCv
               <div className="fg-backlog-actions">
                 <button
                   type="button"
-                  className="fg-generate-btn mono"
+                  className="fg-secondary-btn mono"
                   onClick={() => onGeneratePack(item.cve_id, item.technique_id)}
                   disabled={generatingCve === item.cve_id}
+                  title="Optional: generate a Sigma/SIEM hunt pack for this backlog gap"
                 >
-                  {generatingCve === item.cve_id ? 'GENERATING…' : 'GENERATE PACK'}
+                  {generatingCve === item.cve_id ? 'GENERATING…' : 'Generate pack'}
                 </button>
                 <button
                   type="button"

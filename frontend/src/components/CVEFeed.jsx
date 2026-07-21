@@ -46,16 +46,20 @@ function sortByExposure(cves, getMatchScore) {
 }
 
 function SemanticTechniqueRow({ technique, onSelectTechnique }) {
+  const techniqueTitle = technique.name || technique.technique_id
   return (
     <button
       type="button"
       className="feed-semantic-row feed-semantic-row-technique"
       onClick={() => onSelectTechnique(technique.technique_id)}
-      aria-label={`Filter CVEs by ${technique.technique_id}: ${technique.name}`}
+      aria-label={`Filter CVEs by ${technique.technique_id}: ${techniqueTitle}`}
+      title={typeof techniqueTitle === 'string' ? techniqueTitle : undefined}
     >
       <span className="feed-semantic-row-id mono">{technique.technique_id}</span>
       <span className="feed-semantic-row-body">
-        <span className="feed-semantic-row-title">{technique.name}</span>
+        <span className="feed-semantic-row-title" title={typeof techniqueTitle === 'string' ? techniqueTitle : undefined}>
+          {techniqueTitle}
+        </span>
         {technique.tactic && (
           <span className="feed-semantic-row-meta mono">{technique.tactic}</span>
         )}

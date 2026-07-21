@@ -12,6 +12,7 @@ import BacklogView from './forge/BacklogView.jsx'
 import LibraryView from './forge/LibraryView.jsx'
 import HuntPackRail from './forge/HuntPackRail.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
+import { forgeHeroSub, hasPersonalizationContext } from '../utils/personalizationCopy.js'
 import './Forge.css'
 
 const VALID_VIEWS = new Set(['coverage', 'scenarios', 'campaigns', 'backlog', 'library'])
@@ -163,6 +164,8 @@ export default function Forge() {
     return [...new Set(products)].join(', ')
   }, [assetCtx?.isLoaded, assetCtx?.profile])
 
+  const heroPersonalized = hasPersonalizationContext({ stackTerms: profileStack })
+
   useEffect(() => {
     if (!profileStack) setStackOnly(false)
   }, [profileStack])
@@ -219,9 +222,7 @@ export default function Forge() {
         <p className="fg-hero-kicker mono">DETECTION ENGINEERING</p>
         <h1 className="fg-hero-title">Forge</h1>
         <p className="fg-hero-sub">
-          See which ATT&amp;CK techniques your feed CVEs map to, review environment threat scenarios
-          for your stack, find community detection rules, and export Sigma and SIEM hunt templates per CVE.
-          Rules are starting points — validate before production.
+          {forgeHeroSub({ personalized: heroPersonalized })}
         </p>
       </header>
 

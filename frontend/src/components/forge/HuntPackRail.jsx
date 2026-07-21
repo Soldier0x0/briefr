@@ -30,37 +30,49 @@ function SiemQueryBlock({ platform, label, entry }) {
 
 function LinkedCveRow({ cve, pack, generating, onGenerate, onOpenCve }) {
   return (
-    <li className="fg-cve-row">
-      {onOpenCve ? (
-        <button
-          type="button"
-          className="fg-cve-id mono fg-cve-id-link"
-          onClick={() => onOpenCve(cve.cve_id)}
-          title={`Open ${cve.cve_id} in drawer`}
-        >
-          {cve.cve_id}
-        </button>
-      ) : (
-        <span className="fg-cve-id mono">{cve.cve_id}</span>
+    <li className="fg-cve-row fg-cve-row--inventory">
+      <div className="fg-cve-inventory-main">
+        {onOpenCve ? (
+          <button
+            type="button"
+            className="fg-cve-id mono fg-cve-id-link"
+            onClick={() => onOpenCve(cve.cve_id)}
+            title={`Open ${cve.cve_id} in drawer`}
+          >
+            {cve.cve_id}
+          </button>
+        ) : (
+          <span className="fg-cve-id mono">{cve.cve_id}</span>
+        )}
+        <span className="fg-cve-meta mono" title="CVSS = industry severity (0–10) · EPSS = 30-day exploitation probability (FIRST.org)">
+          {cve.severity || '—'}
+          {cve.cvss_score != null && ` · CVSS ${cve.cvss_score.toFixed(1)}`}
+          {cve.epss_score != null && ` · EPSS ${(cve.epss_score * 100).toFixed(1)}%`}
+        </span>
+        {cve.is_kev && (
+          <span className="fg-kev-badge mono" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">
+            KEV
+          </span>
+        )}
+      </div>
+      {cve.description && (
+        <p className="fg-cve-desc" title={cve.description}>{cve.description}</p>
       )}
-      <span className="fg-cve-meta mono" title="CVSS = industry severity (0–10) · EPSS = 30-day exploitation probability (FIRST.org)">
-        {cve.severity || '—'}
-        {cve.cvss_score != null && ` · CVSS ${cve.cvss_score.toFixed(1)}`}
-        {cve.epss_score != null && ` · EPSS ${(cve.epss_score * 100).toFixed(1)}%`}
-      </span>
-      {cve.is_kev && <span className="fg-kev-badge mono" title="CISA Known Exploited Vulnerabilities — confirmed active exploitation in the wild">KEV</span>}
-      {pack ? (
-        <span className="fg-pack-saved mono">PACK SAVED ✓</span>
-      ) : (
-        <button
-          type="button"
-          className="fg-generate-btn mono"
-          onClick={() => onGenerate(cve.cve_id)}
-          disabled={generating}
-        >
-          {generating ? 'GENERATING…' : 'GENERATE PACK'}
-        </button>
-      )}
+      <div className="fg-cve-inventory-actions">
+        {pack ? (
+          <span className="fg-pack-saved mono">PACK SAVED ✓</span>
+        ) : (
+          <button
+            type="button"
+            className="fg-secondary-btn mono"
+            onClick={() => onGenerate(cve.cve_id)}
+            disabled={generating}
+            title="Optional: generate a Sigma/SIEM hunt pack for this CVE"
+          >
+            {generating ? 'GENERATING…' : 'Generate pack'}
+          </button>
+        )}
+      </div>
     </li>
   )
 }
@@ -406,7 +418,20 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
   }
   if (!detail) return null
 
-  const { technique, status, packs, siem_queries: siemQueries, log_patterns: logPatterns, linked_cves: linkedCves, case_studies: caseStudies } = detail
+  const {
+    technique,
+    status,
+    packs,
+    siem_queries: siemQueries,
+    log_patterns: logPatterns,
+    linked_cves: linkedCves,
+    linked_cve_total: linkedCveTotal,
+    case_studies: caseStudies,
+  } = detail
+  const inventoryTotal = Number(linkedCveTotal) || linkedCves.length
+  const inventoryLabel = inventoryTotal === 1
+    ? 'CVE INVENTORY (1)'
+    : `CVE INVENTORY (${linkedCves.length}${inventoryTotal > linkedCves.length ? ` of ${inventoryTotal}` : ''})`
 
   return (
     <div className="fg-panel">
@@ -431,8 +456,8 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
         </a>
       )}
 
-      <section className="fg-section" aria-label="Linked CVEs">
-        <h4 className="fg-section-label mono">LINKED CVES</h4>
+      <section className="fg-section" aria-label="CVE inventory">
+        <h4 className="fg-section-label mono">{inventoryLabel}</h4>
         {generateError && (
           <p className="fg-error mono">
             // {generateError}
@@ -449,22 +474,27 @@ export default function HuntPackRail({ techniqueId, onPackSaved }) {
         {linkedCves.length === 0 ? (
           <p className="fg-panel-empty mono">// No CVEs mapped to this technique yet</p>
         ) : (
-          <ul className="fg-cve-list">
-            {linkedCves.map(cve => (
-              <LinkedCveRow
-                key={cve.cve_id}
-                cve={cve}
-                pack={packsByCve[cve.cve_id]}
-                generating={generatingCve === cve.cve_id}
-                onGenerate={handleGenerate}
-                onOpenCve={
-                  investigation?.openCveById
-                    ? (cveId) => investigation.openCveById(cveId)
-                    : undefined
-                }
-              />
-            ))}
-          </ul>
+          <>
+            <p className="fg-panel-hint mono">
+              Open a linked CVE to inspect it in the drawer. Pack generation is optional.
+            </p>
+            <ul className="fg-cve-list">
+              {linkedCves.map(cve => (
+                <LinkedCveRow
+                  key={cve.cve_id}
+                  cve={cve}
+                  pack={packsByCve[cve.cve_id]}
+                  generating={generatingCve === cve.cve_id}
+                  onGenerate={handleGenerate}
+                  onOpenCve={
+                    investigation?.openCveById
+                      ? (cveId) => investigation.openCveById(cveId)
+                      : undefined
+                  }
+                />
+              ))}
+            </ul>
+          </>
         )}
       </section>
 

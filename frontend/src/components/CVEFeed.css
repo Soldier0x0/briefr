@@ -308,6 +308,9 @@
 .feed-semantic-row-title {
   font-size: var(--font-size-body);
   color: var(--text-primary, var(--text));
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .feed-semantic-row-meta {

@@ -352,11 +352,12 @@
 .fg-tech-node-name {
   width: 100%;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-size: var(--font-size-micro);
   color: var(--text2);
+  line-height: 1.35;
 }
 
 .fg-tech-node-active .fg-tech-node-name {
@@ -575,19 +576,96 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--text-link, var(--link));
   font: inherit;
   text-align: left;
 }
 
 .fg-cve-id-link:hover {
   text-decoration: underline;
-  color: var(--accent-selected);
+  color: var(--text-link, var(--link));
 }
 
 .fg-cve-meta {
   color: var(--text3);
   flex: 1;
+}
+
+.fg-cve-row--inventory {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2, 8px);
+}
+
+.fg-cve-inventory-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+
+.fg-cve-desc {
+  margin: 0;
+  font-size: var(--font-size-secondary, 0.8125rem);
+  color: var(--text-secondary, var(--text2));
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.fg-cve-inventory-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fg-secondary-btn {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  color: var(--text-muted, var(--text3));
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.fg-secondary-btn:hover:not(:disabled) {
+  color: var(--text-secondary, var(--text2));
+  border-color: var(--border-active);
+  background: var(--surface-overlay, var(--bg3));
+}
+
+.fg-secondary-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.fg-secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.fg-campaign-guidance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+}
+
+.fg-campaign-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-2, 8px);
+}
+
+.fg-unpersonalized-badge {
+  display: inline-block;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  color: var(--text-muted, var(--text3));
+  border: 1px solid var(--border);
+  padding: 1px 6px;
 }
 
 .fg-kev-badge {
