@@ -3,6 +3,7 @@ import { Routes, Route, useLocation, Link, useSearchParams, Navigate } from 'rea
 import { InvestigationProvider } from './context/InvestigationContext.jsx'
 import { overlayDepth } from './hooks/useModalLayer.js'
 import { shouldIgnoreGlobalShortcut } from './utils/keyboardScope.js'
+import { clearStalePointerState } from './utils/clearPointerState.js'
 import Header from './components/Header.jsx'
 import Hero from './components/Hero.jsx'
 import StatsRow from './components/StatsRow.jsx'
@@ -159,6 +160,19 @@ function cycleFilter(filters) {
     return { ...filters, kev_only: false, poc_only: true, severity: null }
   }
   return { ...filters, kev_only: false, poc_only: false, severity: null }
+}
+
+function schedulePointerStateClear() {
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(() => {
+      clearStalePointerState()
+    })
+    return
+  }
+
+  setTimeout(() => {
+    clearStalePointerState()
+  }, 0)
 }
 
 function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
@@ -319,6 +333,7 @@ export default function App() {
   const selectAppTab = useCallback((tab) => {
     setActiveTab(tab)
     setSearchParams((prev) => buildAppTabSearchParams(prev, tab), { replace: true })
+    schedulePointerStateClear()
   }, [setActiveTab, setSearchParams])
   const digestCVEsRef = useRef([])
   const generateDigestRef = useRef(null)

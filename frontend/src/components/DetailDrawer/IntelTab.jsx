@@ -630,7 +630,7 @@ function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
           items={items}
           cve={cve}
           onInvestigatePulse={onInvestigatePulse}
-          defaultOpen={items.length <= 2 || groups.length === 1}
+          defaultOpen={false}
         />
       ))}
       {hiddenSourceCount > 0 && !showAllSources && (

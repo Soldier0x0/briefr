@@ -23,6 +23,7 @@ import { applyCorrelationEscalationToRiskScore } from '../../scoring/riskScore.j
 import { setMomentumScore } from '../../utils/momentumCache.js'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { campaignBadgeTooltip, campaignLifecycleClass, primaryCampaignChip } from '../../utils/correlationPresentation.js'
+import { shouldIgnoreGlobalShortcut } from '../../utils/keyboardScope.js'
 import useModalLayer from '../../hooks/useModalLayer.js'
 import { severityColor } from './helpers.js'
 import { severityTooltip } from '../../utils/severitySemantics.js'
@@ -547,8 +548,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   useEffect(() => {
     if (!isOpen) return
     function onKey(e) {
-      const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (shouldIgnoreGlobalShortcut(e)) return
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault()
         handleCopyMarkdown()
