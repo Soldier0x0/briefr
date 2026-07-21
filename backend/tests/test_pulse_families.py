@@ -19,10 +19,44 @@ from correlation.pulse_families import (
     campaign_id_for_family,
     family_id_for_oldest_pulse,
     legacy_campaign_id_for_pulse,
+    normalize_pulse_name,
 )
 from correlation.suppressions import add_suppression
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
 import database
+
+
+def test_normalize_pulse_name_strips_part_suffix():
+    assert normalize_pulse_name("Known_Cve | Part 1/2") == "known cve"
+    assert normalize_pulse_name("Known_Cve | Part 2/2") == "known cve"
+    assert normalize_pulse_name("Known_Cve | part 1/2") == normalize_pulse_name(
+        "Known_Cve | PART 2/2"
+    )
+
+
+def test_normalize_pulse_name_strips_trailing_punctuation():
+    assert normalize_pulse_name("Apache Struts RCE!") == "apache struts rce"
+    assert normalize_pulse_name("Apache Struts RCE.") == "apache struts rce"
+    assert normalize_pulse_name("Apache Struts RCE?") == "apache struts rce"
+    assert normalize_pulse_name("Apache Struts RCE...!!") == "apache struts rce"
+
+
+def test_normalize_pulse_name_underscores_to_spaces():
+    assert normalize_pulse_name("Known_Cve") == "known cve"
+    assert normalize_pulse_name("Foo__Bar___Baz") == "foo bar baz"
+
+
+def test_normalize_pulse_name_identity_across_variants():
+    """Part / punctuation / underscore variants share one matching identity."""
+    variants = [
+        "Known_Cve | Part 1/2",
+        "known_cve | part 2/2",
+        "Known Cve!",
+        "Known_Cve.",
+        "  Known__Cve  ",
+    ]
+    keys = {normalize_pulse_name(v) for v in variants}
+    assert keys == {"known cve"}
 
 
 async def _seed_cves(db) -> None:

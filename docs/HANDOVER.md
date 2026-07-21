@@ -12,6 +12,19 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 6: PR-C pulse aggregation (normalize + UI clusters)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Strengthened matching-only `normalize_pulse_name` (lowercase, whitespace collapse, strip `| Part N/M`, strip trailing `.!?`, `_` → space). Display remains `formatIntelLabel` — Jaccard threshold unchanged.
+- Active Campaigns (`IntelTab`) clusters pulses by normalized base title within each author/source: primary card + “N related pulses”, optional “also seen from …” cross-source meta. Does not fabricate missing Part N/M.
+- Unit tests for Part / punctuation / underscore name identity in `test_pulse_families.py`.
+
+**Verify:** `cd backend && pytest tests/test_pulse_families.py -q`
+
+**Next:** Task 7 (PR-D Forge navigator + campaigns) — do not start until Task 6 is merged/pushed.
+
+---
+
 ## 2026-07-21 — Task 5: formatIntelLabel SSOT (OTX/campaign titles)
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):

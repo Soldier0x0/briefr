@@ -557,6 +557,16 @@ function CorrelationFindings({
 }
 const CAMPAIGN_SOURCE_PREVIEW = 5
 
+/** Matching/identity only — mirrors backend normalize_pulse_name (not display). */
+function normalizePulseNameForMatch(name) {
+  let text = String(name || '').trim().toLowerCase()
+  text = text.replace(/\s*\|\s*Part\s+\d+\s*\/\s*\d+\s*$/i, '')
+  text = text.replace(/_/g, ' ')
+  text = text.replace(/\s+/g, ' ').trim()
+  text = text.replace(/[.!?]+$/, '').trim()
+  return text
+}
+
 function groupPulsesByAuthor(pulses) {
   const groups = new Map()
   for (const pulse of pulses) {
@@ -569,11 +579,44 @@ function groupPulsesByAuthor(pulses) {
   }
   return Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length)
 }
-function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
+
+function buildAuthorPulseClusters(pulses) {
+  const titleAuthors = new Map()
+  for (const pulse of pulses) {
+    const key = normalizePulseNameForMatch(displayText(pulse.pulse_name) || '')
+    const author = displayText(pulse.author) || 'Unknown source'
+    if (!titleAuthors.has(key)) titleAuthors.set(key, new Set())
+    titleAuthors.get(key).add(author)
+  }
+
+  return groupPulsesByAuthor(pulses).map(([author, items]) => {
+    const byTitle = new Map()
+    for (const pulse of items) {
+      const key = normalizePulseNameForMatch(displayText(pulse.pulse_name) || '')
+      if (!byTitle.has(key)) byTitle.set(key, [])
+      byTitle.get(key).push(pulse)
+    }
+    const clusters = Array.from(byTitle.entries()).map(([key, members]) => {
+      const primary = members[0]
+      const related = members.slice(1)
+      const alsoSeenFrom = [...(titleAuthors.get(key) || [])]
+        .filter(other => other !== author)
+        .sort((a, b) => a.localeCompare(b))
+      return { key, primary, related, alsoSeenFrom, pulseCount: members.length }
+    })
+    clusters.sort((a, b) =>
+      String(b.primary.created_date || '').localeCompare(String(a.primary.created_date || '')),
+    )
+    const pulseCount = items.length
+    return [author, clusters, pulseCount]
+  })
+}
+
+function CampaignPulseRow({ pulse, cve, onInvestigatePulse, compact = false }) {
   const intel = formatIntelLabel(displayText(pulse.pulse_name))
   const title = intel.title || 'Unnamed pulse'
   return (
-    <li className="drawer-otx-item drawer-otx-item-compact">
+    <div className={`drawer-otx-item drawer-otx-item-compact${compact ? ' drawer-otx-item-related' : ''}`}>
       <p className="drawer-otx-name" title={intel.raw || undefined}>
         <span className="drawer-otx-name-text">{title}</span>
         {intel.part && (
@@ -618,10 +661,64 @@ function CampaignPulseRow({ pulse, cve, onInvestigatePulse }) {
           Add to investigation
         </button>
       )}
-    </li>
+    </div>
   )
 }
-function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpen }) {
+
+function CampaignPulseCluster({ cluster, author, cve, onInvestigatePulse }) {
+  const [showRelated, setShowRelated] = useState(false)
+  const relatedCount = cluster.related.length
+  const alsoSeen = cluster.alsoSeenFrom || []
+
+  return (
+    <div className="drawer-otx-cluster">
+      <CampaignPulseRow
+        pulse={cluster.primary}
+        cve={cve}
+        onInvestigatePulse={onInvestigatePulse}
+      />
+      {(relatedCount > 0 || alsoSeen.length > 0) && (
+        <div className="drawer-otx-cluster-meta">
+          {relatedCount > 0 && (
+            <button
+              type="button"
+              className="drawer-otx-more-btn mono"
+              onClick={() => setShowRelated(open => !open)}
+              aria-expanded={showRelated}
+              aria-label={
+                showRelated
+                  ? `Hide ${relatedCount} related pulse${relatedCount === 1 ? '' : 's'} from ${author}`
+                  : `Show ${relatedCount} related pulse${relatedCount === 1 ? '' : 's'} from ${author}`
+              }
+            >
+              {showRelated ? 'Hide related' : `${relatedCount} related pulse${relatedCount === 1 ? '' : 's'}`}
+            </button>
+          )}
+          {alsoSeen.length > 0 && (
+            <p className="drawer-otx-also-seen mono">
+              also seen from {alsoSeen.join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+      {showRelated && relatedCount > 0 && (
+        <div className="drawer-otx-related-list" aria-label={`Related pulses from ${author}`}>
+          {cluster.related.map((pulse, idx) => (
+            <CampaignPulseRow
+              key={pulse.pulse_id || `${author}-related-${idx}`}
+              pulse={pulse}
+              cve={cve}
+              onInvestigatePulse={onInvestigatePulse}
+              compact
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CampaignPulseGroup({ author, clusters, pulseCount, cve, onInvestigatePulse, defaultOpen }) {
   // Freeze initial open state so parent re-renders (e.g. "show more sources")
   // do not reset manual expand/collapse — same pattern as Forge SavedPack.
   const [initialOpen] = useState(defaultOpen)
@@ -631,35 +728,37 @@ function CampaignPulseGroup({ author, items, cve, onInvestigatePulse, defaultOpe
       <summary className="drawer-otx-group-summary">
         <span className="drawer-otx-group-author mono">{author}</span>
         <span className="drawer-otx-group-count mono">
-          {items.length} pulse{items.length === 1 ? '' : 's'}
+          {pulseCount} pulse{pulseCount === 1 ? '' : 's'}
         </span>
       </summary>
-      <ul className="drawer-otx-list drawer-otx-group-list">
-        {items.map((pulse, pulseIdx) => (
-          <CampaignPulseRow
-            key={pulse.pulse_id || `${author}-${pulseIdx}`}
-            pulse={pulse}
+      <div className="drawer-otx-list drawer-otx-group-list">
+        {clusters.map((cluster, clusterIdx) => (
+          <CampaignPulseCluster
+            key={cluster.key || cluster.primary.pulse_id || `${author}-${clusterIdx}`}
+            cluster={cluster}
+            author={author}
             cve={cve}
             onInvestigatePulse={onInvestigatePulse}
           />
         ))}
-      </ul>
+      </div>
     </details>
   )
 }
 function CampaignPulseGroups({ pulses, cve, onInvestigatePulse }) {
   const [showAllSources, setShowAllSources] = useState(false)
-  const groups = useMemo(() => groupPulsesByAuthor(pulses), [pulses])
+  const groups = useMemo(() => buildAuthorPulseClusters(pulses), [pulses])
   const visibleGroups = showAllSources ? groups : groups.slice(0, CAMPAIGN_SOURCE_PREVIEW)
   const hiddenSourceCount = Math.max(0, groups.length - CAMPAIGN_SOURCE_PREVIEW)
 
   return (
     <div className="drawer-otx-groups">
-      {visibleGroups.map(([author, items]) => (
+      {visibleGroups.map(([author, clusters, pulseCount]) => (
         <CampaignPulseGroup
           key={author}
           author={author}
-          items={items}
+          clusters={clusters}
+          pulseCount={pulseCount}
           cve={cve}
           onInvestigatePulse={onInvestigatePulse}
           defaultOpen={false}

@@ -12,6 +12,8 @@ from correlation.lifecycle import _parse_dt
 
 _JACCARD_THRESHOLD = 0.7
 _MIN_IOCS_FOR_JACCARD = 3
+# Matching/identity only — strip author Part N/M so split pulses share a key.
+_PART_SUFFIX_RE = re.compile(r"\s*\|\s*Part\s+\d+\s*/\s*\d+\s*$", re.IGNORECASE)
 
 
 def _is_postgres(db) -> bool:
@@ -25,7 +27,17 @@ def _in_placeholders(count: int, *, pg: bool, start: int = 1) -> str:
 
 
 def normalize_pulse_name(name: str) -> str:
-    text = re.sub(r"\s+", " ", (name or "").strip().lower())
+    """Normalize a pulse title for matching/identity only (not display).
+
+    Lowercase, collapse whitespace, strip ``| Part N/M``, map ``_`` → space,
+    and strip trailing ``.!?``. Display formatting belongs in the frontend
+    ``formatIntelLabel`` helper.
+    """
+    text = (name or "").strip().lower()
+    text = _PART_SUFFIX_RE.sub("", text)
+    text = text.replace("_", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    text = text.rstrip(".!?").strip()
     return text
 
 
