@@ -1680,19 +1680,20 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .corr-cve-link {
-  font-size: 0.8125rem;
-  color: var(--red);
+  font-size: var(--type-secondary);
+  color: var(--text-link);
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   text-decoration: underline;
   text-decoration-color: transparent;
-  transition: text-decoration-color 0.1s;
+  transition: text-decoration-color var(--motion-fast), color var(--motion-fast);
 }
 
 .corr-cve-link:hover {
-  text-decoration-color: var(--red);
+  color: var(--text-primary);
+  text-decoration-color: var(--text-link);
 }
 
 /* Confidence badge */
