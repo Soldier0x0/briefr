@@ -297,9 +297,11 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
 3. **Technique click:** `GET /api/hunt-packs/{technique_id}` returns technique
    metadata, saved packs, the template SIEM baseline, log patterns, and up to
    20 linked CVEs (KEV first, then EPSS, then recency).
-4. **Generate pack:** "GENERATE PACK" on a linked CVE → `POST
-   /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from the
-   template library, derives priority from KEV/CVSS/EPSS, and upserts into
+4. **CVE inventory + generate pack:** Hunt-pack detail UI leads with the
+   linked-CVE inventory (`linked_cves` + `linked_cve_total`, truncated
+   descriptions). **Generate pack** is a secondary action on a linked CVE →
+   `POST /api/hunt-packs/generate` builds the Sigma rule + SIEM queries from
+   the template library, derives priority from KEV/CVSS/EPSS, and upserts into
    `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
    The UI refetches coverage so the technique flips to `yours`.
 5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
