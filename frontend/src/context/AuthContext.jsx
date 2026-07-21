@@ -11,6 +11,7 @@ import {
   fetchSetupRequired,
   login as apiLogin,
   logout as apiLogout,
+  refreshAccessToken,
   setupAccount,
 } from '../api.js'
 import { clearUserStackOnLogout, loadUserStack } from '../utils/userStack.js'
@@ -33,9 +34,11 @@ export function AuthProvider({ children }) {
       return me
     } catch {
       // Access cookie may have expired while a persistent refresh cookie remains.
+      // Use the shared refreshAccessToken() so we never race api.js 401 retries
+      // (concurrent /auth/refresh rotations trip reuse detection and revoke all
+      // sessions — intermittent BRIEF "Not authenticated" with a still-visible user).
       try {
-        const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-        if (res.ok) {
+        if (await refreshAccessToken()) {
           const me = await fetchMe()
           setUser(me)
           setStatus('authed')
