@@ -13,7 +13,7 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
 | **Can't connect to database** | Check Postgres running + `DATABASE_URL`. Dev: `docker compose -f deploy/docker-compose.postgres.yml up -d` |
 | **Backup / restore failed** | Need age key for encrypted archives. `briefr-restore.sh --list` · see [SELF_HOST.md](SELF_HOST.md#updates--backups) |
 | **OTX / correlation empty** | Set `OTX_API_KEY`, wait for nightly job |
-| **Durable jobs panel empty/off** | Set `PROCRASTINATE_ENABLED=1`, restart backend, then check Admin → Scheduler → Durable outbound jobs. If stuck, use Ping queue and inspect request id |
+| **Durable jobs panel empty/off** | Set `PROCRASTINATE_ENABLED=1`, restart backend, then check Admin → Scheduler → Durable outbound jobs. If stuck, use Ping queue and inspect the request ID in the backend logs (`X-Request-ID` / structured `request_id`) to trace the job. |
 | **Catch-up active but backlog not moving** | Catch-up only kicks eligible jobs and never raises provider limits. Check Admin → Scheduler for LOCKED jobs, source cooldowns, and outbound queue rows |
 | **Stack backfill deferred / partial** | FEED backfill respects rate limits and runtime caps. Use Resume from the banner; lower stack terms if the request is too broad |
 | **IOC providers empty** | Add keys in `.env` — see `backend/.env.example` |
