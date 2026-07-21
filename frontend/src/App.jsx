@@ -163,19 +163,6 @@ function cycleFilter(filters) {
   return { ...filters, kev_only: false, poc_only: false, severity: null }
 }
 
-function schedulePointerStateClear() {
-  if (typeof queueMicrotask === 'function') {
-    queueMicrotask(() => {
-      clearStalePointerState()
-    })
-    return
-  }
-
-  setTimeout(() => {
-    clearStalePointerState()
-  }, 0)
-}
-
 function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
                     timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
                     showAiAlerts, onAiAlertsClick, onStatTileClick, onOpenFullFeed, onSelectCVE,
@@ -339,8 +326,9 @@ export default function App() {
 
   // Clear sticky focus/hover left inside a [hidden] app-tab-panel after ANY
   // activeTab change (selectAppTab, deep-links, back/forward, Forge pivots).
+  // useEffect runs after paint, so [hidden] is already applied before blur.
   useEffect(() => {
-    schedulePointerStateClear()
+    clearStalePointerState()
   }, [activeTab])
 
   const digestCVEsRef = useRef([])
