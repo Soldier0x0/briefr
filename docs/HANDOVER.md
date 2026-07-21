@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 9: UX RCA docs + verify-local (PR-A–E closeout)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Design-system §23.9–23.12: L-edge/accent-ghost/micro-hover, no `//` headings, keep-mounted drawer panels, pushContext vs replaceHygiene.
+- `SYSTEM_DESIGN.md` Forge: CVE inventory primary; Generate pack secondary.
+- `PRODUCT_STATUS.md`: DetailDrawer chrome row + last-updated stamp for full UX RCA pass.
+- Follow-up: `?tab=forge&cve=` deep links align URL `tab=feed` with forced shell (Task 8 hygiene).
+- Plan: `docs/superpowers/plans/2026-07-21-ux-rca-drawer-forge-shell.md` — execution complete pending verify-local green.
+
+**Verify:** `./scripts/verify-local.sh`
+
+**Next:** Merge PR #729 after verify-local + review; no further plan tasks.
+
+---
+
 ## 2026-07-21 — Task 8: PR-E shell history SSOT (issue 21 / C13)
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
