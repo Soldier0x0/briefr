@@ -12,6 +12,33 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Program 1: restore verify-local merge gate (imports + corpus + docs)
+
+**Done** (branch `cursor/verify-local-gate-91c2`):
+- **RCA — Admin Security / support-pack 500s:** `routers/admin/diagnostics.py` lost
+  `datetime`/`timedelta`/`timezone` and `Response` imports during the admin package
+  split → `NameError` on `GET /api/admin/security` and
+  `GET /api/admin/diagnostics/support-pack`.
+- **RCA — security corpus drift:** live router inventory changed (admin splits, CVE
+  router split into list/detail/intel/changes) without regenerating the generated
+  corpus layer → `test_committed_corpus_has_no_drift` and architecture-graph drift
+  tests failed as designed.
+- **Fix:** restored top-level imports in `diagnostics.py`; ran
+  `python scripts/generate_security_corpus.py` and committed generated outputs;
+  updated `test_security_architecture_graph.py` to use `routers-cves-list` (replaces
+  removed `routers-cves` node after corpus regen).
+
+**Verify:** targeted pytest (posture, support_pack, corpus drift, graph) — 62 passed.
+Full `./scripts/verify-local.sh` — 1566 passed, 1 failed:
+`test_router_split.py::test_route_list_identical_to_pre_split_snapshot` (route snapshot
+drift from `POST /api/admin/jobs/outbound/ping` and related main-line changes; **not
+caused by this branch** — out of scope per gate-restore design).
+
+**Next:** **Program 2 — self-stack precision** (Risk Register matching; design at
+`docs/superpowers/specs/2026-07-21-self-stack-risk-precision-design.md`).
+
+---
+
 ## 2026-07-20 — Wave 7 Tasks 11–13: durable queue ops polish + docs drift
 
 **Done** (branch `cursor/w7-ops-polish-91c2`):
