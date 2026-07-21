@@ -64,10 +64,12 @@ describe('Forge / notification dead-control gate', () => {
     assert.equal(openCvesLabel(25), 'Open CVEs')
   })
 
-  it('NotificationBell wires IOC entity_type to tab=ioc&ioc=', () => {
+  it('NotificationBell wires IOC entity_type to tab=ioc&ioc= via navigate', () => {
     const src = fs.readFileSync(path.join(ROOT, 'components/NotificationBell.jsx'), 'utf8')
     assert.match(src, /entity_type === 'ioc'/)
-    assert.match(src, /searchParams\.set\('ioc'/)
+    assert.match(src, /params\.set\('ioc'/)
+    assert.match(src, /useNavigate/)
+    assert.doesNotMatch(src, /location\.assign\(/)
   })
 
   it('App deep-links ?ioc= into IOC Lookup prefill', () => {

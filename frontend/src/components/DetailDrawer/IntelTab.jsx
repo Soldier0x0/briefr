@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { displayText } from '../../utils/displayText.js'
 import { formatIntelLabel, INTEL_PART_TOOLTIP } from '../../utils/formatIntelLabel.js'
 import { formatSectionHeading } from '../../utils/sectionHeading.js'
@@ -821,6 +822,7 @@ export default function TabIntel({
   suppressions,
   onRestoreSuppression,
 }) {
+  const navigate = useNavigate()
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
@@ -1031,7 +1033,7 @@ export default function TabIntel({
                           className="mitre-technique-link mono"
                           onClick={() => {
                             if (onOpenForgeTechnique) onOpenForgeTechnique(tid, tech.name)
-                            else window.location.assign(forgeHref)
+                            else navigate(forgeHref)
                           }}
                           aria-label={`Open ${tid} in Forge ATT&CK navigator`}
                         >

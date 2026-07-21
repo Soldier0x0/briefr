@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import {
   dismissAllNotifications,
@@ -33,6 +34,7 @@ function useNotificationSoundEnabled() {
 }
 
 export default function NotificationBell({ scope = 'analyst', className = '' }) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -157,32 +159,31 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
   }
 
   function handleItemClick(item) {
+    // Router navigate (push) — never location.assign (full reload / history dump).
     if (item.entity_type === 'cve' && item.entity_id) {
-      const url = new URL(window.location.href)
-      url.pathname = '/'
-      url.searchParams.set('tab', 'feed')
-      url.searchParams.set('cve', item.entity_id)
-      window.location.assign(url.toString())
+      const params = new URLSearchParams()
+      params.set('tab', 'feed')
+      params.set('cve', item.entity_id)
+      navigate({ pathname: '/', search: `?${params.toString()}` })
     } else if (item.entity_type === 'ioc' && item.entity_id) {
-      const url = new URL(window.location.href)
-      url.pathname = '/'
-      url.searchParams.set('tab', 'ioc')
-      url.searchParams.set('ioc', item.entity_id)
-      window.location.assign(url.toString())
+      const params = new URLSearchParams()
+      params.set('tab', 'ioc')
+      params.set('ioc', item.entity_id)
+      navigate({ pathname: '/', search: `?${params.toString()}` })
     } else if (item.entity_type === 'kev_backlog') {
       // Analyst shell uses tab=; Forge still owns view=/technique=/pack=.
-      const url = new URL(window.location.href)
-      url.pathname = '/'
-      url.searchParams.set('tab', 'forge')
-      url.searchParams.set('view', 'backlog')
-      window.location.assign(url.toString())
+      const params = new URLSearchParams()
+      params.set('tab', 'forge')
+      params.set('view', 'backlog')
+      navigate({ pathname: '/', search: `?${params.toString()}` })
     } else if (item.entity_type === 'webhook' && item.entity_id) {
-      window.location.assign(`/admin?p=webhooks`)
+      navigate('/admin?p=webhooks')
     } else if (item.entity_type === 'api_key' && item.entity_id) {
-      window.location.assign('/admin?p=apikeys')
+      navigate('/admin?p=apikeys')
     } else if (item.entity_type === 'job' && item.entity_id) {
-      window.location.assign(`/admin?p=scheduler&job_id=${encodeURIComponent(item.entity_id)}`)
+      navigate(`/admin?p=scheduler&job_id=${encodeURIComponent(item.entity_id)}`)
     }
+    setOpen(false)
   }
 
   return (

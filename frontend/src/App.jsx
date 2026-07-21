@@ -36,6 +36,7 @@ import { hasTutorialSeen, markTutorialSeen } from './utils/tutorial.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
 import { resolveAppTab, buildAppTabSearchParams } from './utils/shellUrlState.js'
+import { pushContext, replaceHygiene } from './utils/navHistory.js'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
 const MorningBrief = lazyWithReload(() => import('./components/MorningBrief.jsx'))
@@ -332,7 +333,8 @@ export default function App() {
   ))
   const selectAppTab = useCallback((tab) => {
     setActiveTab(tab)
-    setSearchParams((prev) => buildAppTabSearchParams(prev, tab), { replace: true })
+    // Intentional tab change — Back should restore prior tab/Forge context.
+    pushContext(setSearchParams, (prev) => buildAppTabSearchParams(prev, tab))
   }, [setActiveTab, setSearchParams])
 
   // Clear sticky focus/hover left inside a [hidden] app-tab-panel after ANY
@@ -438,13 +440,35 @@ export default function App() {
     })
   }, [])
 
+  // Tracks the CVE id the drawer is showing so URL sync can close on Back
+  // without re-opening from a stale selectedCVE state tick.
+  const openDrawerCveIdRef = useRef(null)
+
   const handleOpenCVE = useCallback((cve) => {
+    const id = cve?.cve_id ? String(cve.cve_id).trim().toUpperCase() : null
+    if (id) openDrawerCveIdRef.current = id
     drawerControllerRef.current?.open(cve)
-  }, [])
+    // Sync open drawer to ?cve= so Back closes the drawer first.
+    if (!id) return
+    if (searchParams.get('cve')?.toUpperCase() === id) return
+    pushContext(setSearchParams, (prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('cve', id)
+      return next
+    })
+  }, [searchParams, setSearchParams])
 
   const handleCloseCVE = useCallback(() => {
+    openDrawerCveIdRef.current = null
     drawerControllerRef.current?.close()
-  }, [])
+    // Replace (not push) so Close does not leave a Back entry that re-opens.
+    if (!searchParams.get('cve')) return
+    replaceHygiene(setSearchParams, (prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('cve')
+      return next
+    })
+  }, [searchParams, setSearchParams])
 
   const handleReplaceCVE = useCallback((full) => {
     drawerControllerRef.current?.replace(full)
@@ -564,18 +588,34 @@ export default function App() {
     handleOpenCVE({ cve_id: cveId })
   }, [handleOpenCVE])
 
-  const deepLinkHandled = useRef(null)
-
+  // URL ↔ drawer: keep ?cve= while open; clear on close; Back closes drawer first.
   useEffect(() => {
     const cveParam = searchParams.get('cve')
-    if (!cveParam || deepLinkHandled.current === cveParam) return
+    if (!cveParam) {
+      if (openDrawerCveIdRef.current) {
+        openDrawerCveIdRef.current = null
+        drawerControllerRef.current?.close()
+      }
+      return
+    }
     if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
-    deepLinkHandled.current = cveParam.trim().toUpperCase()
-    // One setSearchParams only — RR v6 does not queue like useState.
-    setActiveTab('feed')
-    openCveById(deepLinkHandled.current)
-    setSearchParams((prev) => buildAppTabSearchParams(prev, 'feed'), { replace: true })
-  }, [searchParams, openCveById, setSearchParams, setActiveTab])
+    const id = cveParam.trim().toUpperCase()
+    if (openDrawerCveIdRef.current !== id) {
+      openDrawerCveIdRef.current = id
+      // Prefer staying on brief/feed if already there; else land on feed.
+      setActiveTab((prev) => (prev === 'brief' || prev === 'feed' ? prev : 'feed'))
+      drawerControllerRef.current?.open({ cve_id: id })
+    }
+    // Hygiene only: ensure visible tab= without stripping ?cve= (no history entry).
+    const tab = searchParams.get('tab')
+    if (tab === 'brief' || tab === 'feed') return
+    if (tab === 'forge' || tab === 'ioc' || tab === 'atlas') return
+    replaceHygiene(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'feed')
+      next.set('cve', id)
+      return next
+    })
+  }, [searchParams, setSearchParams, setActiveTab])
 
   const iocDeepLinkHandled = useRef(null)
   useEffect(() => {
@@ -594,11 +634,12 @@ export default function App() {
       indicators: [{ type: 'ip', value }],
       trigger: Date.now(),
     })
-    setSearchParams((prev) => {
+    // Strip one-shot ?ioc= without creating a Back entry.
+    replaceHygiene(setSearchParams, (prev) => {
       const next = buildAppTabSearchParams(prev, 'ioc')
       next.delete('ioc')
       return next
-    }, { replace: true })
+    })
   }, [searchParams, setSearchParams, setActiveTab])
 
   // Keep React tab state + visible `tab=` in sync with the URL (back/forward,
@@ -608,7 +649,7 @@ export default function App() {
     const resolved = resolveAppTab(searchParams)
     setActiveTab((prev) => (prev === resolved ? prev : resolved))
     if (searchParams.get('tab') === resolved) return
-    setSearchParams((prev) => buildAppTabSearchParams(prev, resolved), { replace: true })
+    replaceHygiene(setSearchParams, (prev) => buildAppTabSearchParams(prev, resolved))
   }, [searchParams, setSearchParams])
 
   const investigationNav = useMemo(() => ({
@@ -628,15 +669,24 @@ export default function App() {
     },
     setAtlasActorFilter,
     clearAtlasFilter: () => setAtlasActorFilter(null),
+    // Forge → CVE (and investigation pivots): one push so Back restores Forge.
     openCve: (cveId) => {
-      selectAppTab('brief')
-      openCveById(cveId)
+      if (!cveId) return
+      const id = String(cveId).trim().toUpperCase()
+      setActiveTab('brief')
+      openDrawerCveIdRef.current = id
+      drawerControllerRef.current?.open({ cve_id: id })
+      pushContext(setSearchParams, (prev) => {
+        const next = buildAppTabSearchParams(prev, 'brief')
+        next.set('cve', id)
+        return next
+      })
     },
     // PM-4e: drawer MITRE pills → Forge ATT&CK navigator
     openForgeTechnique: (techniqueId) => {
       if (!techniqueId) return
       setActiveTab('forge')
-      setSearchParams((prev) => {
+      pushContext(setSearchParams, (prev) => {
         const next = buildAppTabSearchParams(prev, 'forge')
         next.set('view', 'coverage')
         next.set('technique', String(techniqueId))
@@ -644,18 +694,18 @@ export default function App() {
         return next
       })
     },
-  }), [openCveById, setSearchParams, selectAppTab])
+  }), [setSearchParams, selectAppTab, setActiveTab])
 
   const openForgeCampaigns = useCallback(() => {
     setActiveTab('forge')
-    setSearchParams((prev) => {
+    pushContext(setSearchParams, (prev) => {
       const next = buildAppTabSearchParams(prev, 'forge')
       next.set('view', 'campaigns')
       next.delete('technique')
       next.delete('pack')
       return next
     })
-  }, [setSearchParams])
+  }, [setSearchParams, setActiveTab])
 
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()

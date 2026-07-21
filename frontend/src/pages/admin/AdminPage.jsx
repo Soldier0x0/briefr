@@ -38,6 +38,7 @@ import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from '.
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import AdminBreadcrumbs from './shared/AdminBreadcrumbs.jsx'
 import { buildAdminPageSearchParams } from '../../utils/shellUrlState.js'
+import { pushContext, replaceHygiene } from '../../utils/navHistory.js'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -62,10 +63,10 @@ function AdminPageBody({ toast }) {
     setPageRaw(id)
     setSidebarOpen(false)
   }, [])
-  // Sidebar / breadcrumbs / in-app jumps: always write visible `p=`.
+  // Sidebar / breadcrumbs / in-app jumps: always write visible `p=` (Back-able).
   const setPage = useCallback((id) => {
     applyPageState(id)
-    setSearchParams((prev) => buildAdminPageSearchParams(prev, id), { replace: true })
+    pushContext(setSearchParams, (prev) => buildAdminPageSearchParams(prev, id))
   }, [applyPageState, setSearchParams])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
@@ -127,9 +128,9 @@ function AdminPageBody({ toast }) {
       applyPageState(requested)
       return
     }
-    // First paint on /admin with no p= — make the active page visible in the URL.
+    // First paint on /admin with no p= — make the active page visible (hygiene).
     if (!requested) {
-      setSearchParams((prev) => buildAdminPageSearchParams(prev, page), { replace: true })
+      replaceHygiene(setSearchParams, (prev) => buildAdminPageSearchParams(prev, page))
     }
   }, [searchParams, applyPageState, page, setSearchParams])
 

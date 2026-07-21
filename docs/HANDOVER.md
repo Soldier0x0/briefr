@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Task 8: PR-E shell history SSOT (issue 21 / C13)
+
+**Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
+- Added `frontend/src/utils/navHistory.js` (+ tests): `pushContext` vs `replaceHygiene`.
+- **Push:** `selectAppTab`, `openCve` (Forge→CVE), `openForgeTechnique`, `openForgeCampaigns`, Forge `writeUrl`, Admin `setPage`, drawer `?cve=` on open.
+- **Replace (hygiene):** tab=/p= first-paint, stale Forge technique/pack scrub, `?ioc=` one-shot strip, drawer close clears `?cve=`.
+- `NotificationBell` + IntelTab Forge fallback: router `navigate` (no `location.assign`).
+- Optional: open drawer keeps `?cve=`; Back closes drawer first.
+
+**Verify:** `cd frontend && node --test src/utils/navHistory.test.js src/utils/forgeUrlTabClearGate.test.js src/utils/drawerForgeMitreLinksGate.test.js src/utils/forgeDeadControlsGate.test.js`
+
+**Next:** Task 9 (docs + verify-local) — do not start from this Task 8 agent.
+
+---
+
 ## 2026-07-21 — Task 7: PR-D Forge navigator + campaigns (issues 17–20)
 
 **Done** (branch `cursor/ux-rca-drawer-forge-shell-86fc`):
