@@ -513,6 +513,7 @@ def merge_circl_into_cve(cve: dict, circl: dict | None) -> dict:
 
 async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
     from database import get_cached_cve_exploits, read_cve_exploits_from_db, store_cve_exploits
+    from db.txn_boundaries import commit_before_source_io
 
     cached = await get_cached_cve_exploits(db, cve_id)
     if cached is not None:
@@ -525,6 +526,8 @@ async def load_sploitus_exploits_for_cve(db, cve_id: str) -> list[dict]:
         await set_feed_cache(db, f"sploitus:{cve_id.upper()}", {"exploits": table_rows})
         return table_rows
 
+    # Sploitus HTTP timeout ≠ shared Postgres command_timeout — flush first.
+    await commit_before_source_io(db)
     exploits = await fetch_sploitus_exploits(cve_id)
     if exploits is not None:
         await store_cve_exploits(db, cve_id, exploits)
@@ -566,6 +569,7 @@ async def load_public_exploits_for_cve(
 
 async def load_circl_for_cve(db, cve_id: str) -> dict | None:
     from database import get_feed_cache, set_feed_cache
+    from db.txn_boundaries import commit_before_source_io
 
     key = cve_id.upper()
     cached = await get_feed_cache(db, f"circl:{key}", max_age_hours=CIRCL_CACHE_HOURS)
@@ -581,6 +585,8 @@ async def load_circl_for_cve(db, cve_id: str) -> dict | None:
     if miss is not None:
         return None
 
+    # CIRCL DNS/HTTP (25s) must not share an open write txn with command_timeout.
+    await commit_before_source_io(db)
     result = await fetch_circl_cve(cve_id)
     if result is not None:
         await set_feed_cache(db, f"circl:{key}", result)
@@ -648,7 +654,8 @@ async def enrich_cves_extended(
         except Exception as exc:
             logger.warning("Scheduler Sploitus failed for %s: %s", cve_id, exc)
         # Commit after each outbound lookup so source HTTP/DNS latency cannot
-        # hold cves/feed_cache locks into the next CVE (shared command_timeout).
+        # hold cves/feed_cache locks into the next CVE. Shared Postgres
+        # command_timeout is SQL-only; per-source HTTP timeouts stay in feeds.
         try:
             await db.commit()
         except Exception as exc:
@@ -696,11 +703,13 @@ async def lookup_malwarebazaar(
     db, file_hash: str, abusech_auth_key: str | None = None
 ) -> dict | None:
     from database import get_feed_cache, set_feed_cache
+    from db.txn_boundaries import commit_before_source_io
 
     cache_key = f"malwarebazaar:{file_hash.lower()}"
     cached = await get_feed_cache(db, cache_key, max_age_hours=24)
     if cached is not None:
         return cached
+    await commit_before_source_io(db)
     result = await fetch_malwarebazaar_hash(file_hash, abusech_auth_key)
     if result is not None:
         await set_feed_cache(db, cache_key, result)
@@ -714,11 +723,13 @@ async def lookup_urlhaus(
     abusech_auth_key: str | None = None,
 ) -> dict | None:
     from database import get_feed_cache, set_feed_cache
+    from db.txn_boundaries import commit_before_source_io
 
     cache_key = f"urlhaus:{ioc_type}:{value.lower()}"
     cached = await get_feed_cache(db, cache_key, max_age_hours=6)
     if cached is not None:
         return cached
+    await commit_before_source_io(db)
     result = await fetch_urlhaus_indicator(value, ioc_type, abusech_auth_key)
     if result is not None:
         await set_feed_cache(db, cache_key, result)
@@ -731,6 +742,7 @@ async def lookup_greynoise(db, ip: str, api_key: str) -> dict | None:
 
 async def greynoise_for_ip(db, ip: str, api_key: str) -> dict | None:
     from database import get_feed_cache, set_feed_cache
+    from db.txn_boundaries import commit_before_source_io
     from tracking import has_quota
 
     cache_key = f"greynoise:{ip}"
@@ -741,6 +753,7 @@ async def greynoise_for_ip(db, ip: str, api_key: str) -> dict | None:
     if not await has_quota("greynoise"):
         return None
 
+    await commit_before_source_io(db)
     result = await fetch_greynoise_ip(ip, api_key)
     if result is not None:
         await set_feed_cache(db, cache_key, result)

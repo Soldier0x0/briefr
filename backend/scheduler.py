@@ -381,6 +381,7 @@ async def _run_nvd_incremental_sync() -> None:
         else:
             new_watermark = mod_end_iso
 
+        updated_ids: list[str] = []
         db = await get_db()
         try:
             _job_progress["nvd_incremental_sync"] = f"Writing {len(cves)} CVEs to database, purging {len(rejected_ids)} rejected IDs…"
@@ -409,10 +410,13 @@ async def _run_nvd_incremental_sync() -> None:
             else:
                 stripped = filled = poc_marked = 0
 
-            # Release cves row locks BEFORE outbound source HTTP (CIRCL/Sploitus)
-            # or embeddings. Source latency must not share the ingest transaction's
-            # command_timeout budget — concurrent VulnCheck/KEV/EPSS writers otherwise
-            # wait out CIRCL DNS hangs and fail with Database command timeout.
+            # Release cves row locks AND the pool connection before outbound
+            # source HTTP (CIRCL/Sploitus) or embeddings. Source latency must
+            # not share the ingest transaction's command_timeout budget —
+            # concurrent VulnCheck/KEV/EPSS writers otherwise wait out CIRCL
+            # DNS hangs and fail with Database command timeout. Per-source
+            # HTTP timeouts stay in feed modules; do not raise the global
+            # DATABASE_POOL_COMMAND_TIMEOUT_SECONDS for slow APIs.
             await db.commit()
             logger.info(
                 "NVD post-process: stripped %d summaries, %d display fields, %d PoC flags",
@@ -420,19 +424,23 @@ async def _run_nvd_incremental_sync() -> None:
                 filled,
                 poc_marked,
             )
+        finally:
+            await db.close()
 
-            if updated_ids:
-                enrich_cap = 40
-                enrich_batch = min(len(updated_ids), enrich_cap)
-                _job_progress["nvd_incremental_sync"] = (
-                    f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
-                    f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
-                )
-                from feeds.extended import enrich_cves_extended
+        if updated_ids:
+            enrich_cap = 40
+            enrich_batch = min(len(updated_ids), enrich_cap)
+            _job_progress["nvd_incremental_sync"] = (
+                f"Cross-enriching up to {enrich_batch} of {len(updated_ids)} CVEs "
+                f"(Sploitus/CIRCL, max {enrich_cap}/run)…"
+            )
+            from feeds.extended import enrich_cves_extended
 
-                def _enrich_progress(msg: str) -> None:
-                    _job_progress["nvd_incremental_sync"] = msg
+            def _enrich_progress(msg: str) -> None:
+                _job_progress["nvd_incremental_sync"] = msg
 
+            db = await get_db()
+            try:
                 ext_stats = await enrich_cves_extended(
                     db,
                     updated_ids,
@@ -444,10 +452,15 @@ async def _run_nvd_incremental_sync() -> None:
                     ext_stats.get("sploitus", 0),
                     ext_stats.get("circl", 0),
                 )
-            if updated_ids and embeddings_auto_on_ingest_enabled():
-                _job_progress["nvd_incremental_sync"] = (
-                    f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
-                )
+            finally:
+                await db.close()
+
+        if updated_ids and embeddings_auto_on_ingest_enabled():
+            _job_progress["nvd_incremental_sync"] = (
+                f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
+            )
+            db = await get_db()
+            try:
                 try:
                     emb_stats = await run_embeddings_backfill(
                         db,
@@ -505,8 +518,8 @@ async def _run_nvd_incremental_sync() -> None:
                         logger.exception(
                             "Failed to persist embeddings ingest-tail error state"
                         )
-        finally:
-            await db.close()
+            finally:
+                await db.close()
 
         mode = "incremental (lastMod)" if used_incremental else "full (published window)"
         logger.info("NVD sync complete (%s): %d CVEs upserted", mode, new_or_updated)

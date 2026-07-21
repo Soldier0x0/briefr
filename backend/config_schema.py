@@ -249,8 +249,13 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Seconds to wait for a free pool connection before HTTP 503."),
     ConfigField("DATABASE_POOL_COMMAND_TIMEOUT_SECONDS", "app", "int", min=1, max=600,
                 restart_required=True,
-                help_text="asyncpg per-query timeout (seconds) for pooled connections."),
-
+                help_text=(
+                    "asyncpg per-SQL-statement timeout (seconds) for pooled connections. "
+                    "Applies to database work only — not feed/API HTTP. Source timeouts "
+                    "live per feed (CIRCL, Sploitus, ThreatFox, …). Do not raise this to "
+                    "paper over slow APIs; commit/close before outbound source I/O instead."
+                ),
+    ),
     # ── Webhooks — Discord / Telegram / generic ─────────────────────────────
     ConfigField("DISCORD_WEBHOOK_URL", "webhooks", "secret",
                 help_text="Discord channel webhook URL for KEV/backup/health alerts."),

@@ -3,12 +3,12 @@
 RCA class: CIRCL/Sploitus latency (DNS hangs, 25s timeouts) inside the NVD
 upsert transaction caused concurrent VulnCheck/KEV UPDATEs to hit asyncpg
 command_timeout (60s). Commit boundaries separate DB work from source I/O.
+Per-source HTTP timeouts must not share the global SQL command_timeout.
 """
 
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -18,6 +18,7 @@ async def test_nvd_sync_commits_before_extended_enrich(monkeypatch):
     import scheduler as sched
 
     order: list[str] = []
+    connections: list[object] = []
 
     class FakeDb:
         async def commit(self):
@@ -29,10 +30,11 @@ async def test_nvd_sync_commits_before_extended_enrich(monkeypatch):
         async def close(self):
             order.append("close")
 
-    fake_db = FakeDb()
-
     async def fake_get_db():
-        return fake_db
+        db = FakeDb()
+        connections.append(db)
+        order.append("get_db")
+        return db
 
     async def fake_get_watermark(_db):
         return "2026-07-01T00:00:00"
@@ -47,13 +49,6 @@ async def test_nvd_sync_commits_before_extended_enrich(monkeypatch):
             True,
             [],
         )
-
-    async def tracked(name):
-        async def _fn(*_a, **_k):
-            order.append(name)
-            return 0 if name.startswith(("strip", "fill", "poc")) else None
-
-        return _fn
 
     async def fake_purge(*_a, **_k):
         order.append("purge")
@@ -98,23 +93,15 @@ async def test_nvd_sync_commits_before_extended_enrich(monkeypatch):
     monkeypatch.setattr(sched, "backfill_has_poc", fake_poc)
     monkeypatch.setattr(sched, "embeddings_auto_on_ingest_enabled", lambda: False)
 
-    import feeds.extended as ext
-
-    monkeypatch.setattr(ext, "enrich_cves_extended", fake_enrich)
-    # scheduler imports enrich lazily from feeds.extended inside the function
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "feeds.extended",
-        SimpleNamespace(enrich_cves_extended=fake_enrich),
-    )
-
-    # Direct patch where scheduler will import from
-    import importlib
-
     monkeypatch.setattr(
         "feeds.extended.enrich_cves_extended",
         fake_enrich,
         raising=False,
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "feeds.extended",
+        SimpleNamespace(enrich_cves_extended=fake_enrich),
     )
 
     await sched._run_nvd_incremental_sync()
@@ -125,6 +112,11 @@ async def test_nvd_sync_commits_before_extended_enrich(monkeypatch):
     assert order.index("commit") < order.index("enrich"), (
         f"ingest must commit before CIRCL/Sploitus enrich; order={order}"
     )
+    # Ingest connection must be closed before enrich re-acquires a pool slot.
+    assert order.index("close") < order.index("enrich"), (
+        f"ingest must release pool before enrich; order={order}"
+    )
+    assert len(connections) >= 2, "enrich must use a fresh connection after ingest close"
 
 
 @pytest.mark.asyncio
@@ -149,12 +141,6 @@ async def test_enrich_cves_extended_commits_after_each_source_lookup(monkeypatch
     async def fake_sploitus(_db, cve_id):
         return []
 
-    monkeypatch.setattr(
-        "database.get_cve_ids_missing_circl_capec",
-        fake_missing,
-        raising=False,
-    )
-    # enrich imports get_cve_ids_missing_circl_capec from database inside the fn
     import database as database_mod
 
     monkeypatch.setattr(database_mod, "get_cve_ids_missing_circl_capec", fake_missing)
@@ -167,3 +153,73 @@ async def test_enrich_cves_extended_commits_after_each_source_lookup(monkeypatch
     )
     assert stats["sploitus"] == 2
     assert commits["n"] >= 2, f"expected per-lookup commits, got {commits['n']}"
+
+
+@pytest.mark.asyncio
+async def test_load_circl_commits_before_outbound_http(monkeypatch):
+    """CIRCL HTTP timeout must not nest inside an open write transaction."""
+    import feeds.extended as ext
+
+    order: list[str] = []
+
+    class FakeDb:
+        async def commit(self):
+            order.append("commit")
+
+    async def fake_get_cache(*_a, **_k):
+        return None
+
+    async def fake_set_cache(*_a, **_k):
+        order.append("set_cache")
+
+    async def fake_fetch(cve_id):
+        order.append("http")
+        assert "commit" in order
+        return {"references": [], "capec": []}
+
+    import database as database_mod
+
+    monkeypatch.setattr(database_mod, "get_feed_cache", fake_get_cache)
+    monkeypatch.setattr(database_mod, "set_feed_cache", fake_set_cache)
+    monkeypatch.setattr(ext, "fetch_circl_cve", fake_fetch)
+
+    result = await ext.load_circl_for_cve(FakeDb(), "CVE-2026-99")
+    assert result is not None
+    assert order.index("commit") < order.index("http"), order
+    assert "set_cache" in order
+
+
+@pytest.mark.asyncio
+async def test_load_sploitus_commits_before_outbound_http(monkeypatch):
+    import feeds.extended as ext
+
+    order: list[str] = []
+
+    class FakeDb:
+        async def commit(self):
+            order.append("commit")
+
+    async def fake_cached(*_a, **_k):
+        return None
+
+    async def fake_table(*_a, **_k):
+        return None
+
+    async def fake_store(*_a, **_k):
+        order.append("store")
+
+    async def fake_fetch(cve_id, limit=25):
+        order.append("http")
+        assert "commit" in order
+        return [{"title": "x", "type": "poc", "source": "sploitus", "url": "https://x"}]
+
+    import database as database_mod
+
+    monkeypatch.setattr(database_mod, "get_cached_cve_exploits", fake_cached)
+    monkeypatch.setattr(database_mod, "read_cve_exploits_from_db", fake_table)
+    monkeypatch.setattr(database_mod, "store_cve_exploits", fake_store)
+    monkeypatch.setattr(ext, "fetch_sploitus_exploits", fake_fetch)
+
+    rows = await ext.load_sploitus_exploits_for_cve(FakeDb(), "CVE-2026-98")
+    assert len(rows) == 1
+    assert order.index("commit") < order.index("http"), order

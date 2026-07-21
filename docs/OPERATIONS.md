@@ -60,6 +60,7 @@ These env vars must remain supported across releases (defaults preserved):
 | `BRIEFR_SETTINGS_KEY` | Optional Fernet material for encrypted secret rows in `app_settings` (ADR-006) |
 | `BRIEFR_REQUIRE_POSTGRES` | Refuse startup without Postgres |
 | `DATABASE_POOL_SIZE` | asyncpg pool size |
+| `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | SQL statement timeout only (default 60); not feed HTTP — see `docs/POSTGRES.md` |
 | `BACKUP_DIR` | Archive directory |
 | `BACKUP_RETENTION_COUNT` | Max archives |
 | `BACKUP_AGE_KEY_FILE` | age identity for archive encryption (empty = plaintext) |

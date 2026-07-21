@@ -12,6 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-21 — Source HTTP vs shared DB command_timeout (class fix)
+
+**Problem:** Not every feed/API shares the same latency budget as Postgres
+`command_timeout` (60s). Nesting CIRCL/Sploitus (and similar) HTTP inside an open
+write txn made concurrent VulnCheck/KEV/EPSS writers hit `Database command timeout`.
+
+**Invariant:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is **SQL-only**. Per-source
+HTTP timeouts stay in `feeds/`. Commit or close before outbound source I/O —
+helper `db/txn_boundaries.commit_before_source_io`.
+
+**Done:** NVD closes the ingest connection before enrich/embeddings; CIRCL/
+Sploitus/GreyNoise/URLHaus/MalwareBazaar commit before HTTP; config + POSTGRES
+docs updated. Tests: `tests/test_nvd_txn_boundary.py`.
+
+**Next:** Deploy PR #732; confirm VulnCheck stays healthy during CIRCL blips.
+
+---
+
 ## 2026-07-21 — RCA fix: NVD must not hold cves locks across CIRCL/Sploitus HTTP
 
 **Observed:** VulnCheck KEV Tier Sync `Database command timeout` (~16:58 UTC) while
