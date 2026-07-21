@@ -1,14 +1,14 @@
 # Study guide file inventory
 
-_Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-run the script._
+_Regenerated 2026-07-21 by `scripts/audit_study_guide.py`. Do not hand-edit; re-run the script._
 
 | Status | Count |
 |--------|------:|
-| `covered` | 612 |
+| `covered` | 646 |
 | `weak` | 0 |
 | `gap` | 0 |
 | `orphan_mention` | 1 |
-| `out_of_scope` | 75 |
+| `out_of_scope` | 85 |
 
 | Path | Status | Chapters | Evidence / notes |
 |------|--------|----------|------------------|
@@ -75,6 +75,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/backup/postgres_util.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
 | `backend/brief/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/brief/service.py` | `covered` | `api-ops`, `ie-brief` | exact path mention in chapter body/chips |
+| `backend/catchup_mode.py` | `covered` | `in-scheduler` | exact path mention in chapter body/chips |
 | `backend/config_schema.py` | `covered` | `be-config` | exact path mention in chapter body/chips |
 | `backend/correlation/__init__.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/attribution.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
@@ -83,7 +84,6 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/correlation/confidence.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/config.py` | `covered` | `be-data`, `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/confirm.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
-| `backend/correlation/copy.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/engine.py` | `covered` | `api-webhooks`, `ie-correlation`, `system-design` | exact path mention in chapter body/chips |
 | `backend/correlation/feedback.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/freshness.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
@@ -93,6 +93,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/correlation/lifecycle.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/local.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/metrics.py` | `covered` | `be-data`, `ie-correlation` | exact path mention in chapter body/chips |
+| `backend/correlation/narrative.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/priority.py` | `covered` | `ie-correlation`, `ie-scoring` | exact path mention in chapter body/chips |
 | `backend/correlation/pulse_families.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
 | `backend/correlation/status.py` | `covered` | `ie-correlation` | exact path mention in chapter body/chips |
@@ -192,6 +193,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/jobs/__init__.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/jobs/app.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/jobs/context.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
+| `backend/jobs/retry_policy.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/jobs/tasks.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/jobs/worker.py` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `backend/main.py` | `covered` | `be-bootstrap` | exact path mention in chapter body/chips |
@@ -216,6 +218,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/preferences/validate.py` | `covered` | `api-usersettings` | exact path mention in chapter body/chips |
 | `backend/proof/__init__.py` | `out_of_scope` | — | ; Empty/docstring-only package __init__.py marker |
 | `backend/proof/bench.py` | `covered` | `api-proof` | exact path mention in chapter body/chips |
+| `backend/pyproject.toml` | `covered` | `be-bootstrap` | exact path mention in chapter body/chips |
 | `backend/pytest.ini` | `covered` | `devops-deploy` | exact path mention in chapter body/chips |
 | `backend/rate_limit.py` | `covered` | `arch-resources`, `be-ratelimit` | exact path mention in chapter body/chips |
 | `backend/rate_limit_store.py` | `covered` | `be-ratelimit` | exact path mention in chapter body/chips |
@@ -223,29 +226,50 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/redact.py` | `covered` | `be-logging` | exact path mention in chapter body/chips |
 | `backend/resilient_client.py` | `covered` | `in-queue` | exact path mention in chapter body/chips |
 | `backend/resource_collector.py` | `covered` | `api-ops` | exact path mention in chapter body/chips |
-| `backend/routers/__init__.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/_validators.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/admin.py` | `covered` | `api-routers`, `api-scripts`, `be-config`, `ie-retrieval-ops`, `in-scheduler`, `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/atlas.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/auth.py` | `covered` | `api-routers`, `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/brief.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/config.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/correlation.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/cves.py` | `covered` | `api-routers`, `api-secarch`, `arch-connectivity`, `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/detection_backlog.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/forge.py` | `covered` | `api-secarch`, `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/health.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/ioc.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/me.py` | `covered` | `fe-state`, `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/meta.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/notifications_me.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/proof.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/refresh.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/search.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/stack_catalog.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/threat_model.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/wallboard.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
-| `backend/routers/watchlist.py` | `covered` | `system-design` | exact path mention in chapter body/chips |
+| `backend/routers/__init__.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/_validators.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/__init__.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/ai_ops.py` | `covered` | `api-routers`, `ie-retrieval-ops` | exact path mention in chapter body/chips |
+| `backend/routers/admin/catchup.py` | `covered` | `api-routers`, `in-scheduler` | exact path mention in chapter body/chips |
+| `backend/routers/admin/config.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/data_ops.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/database.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/diagnostics.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/feeds.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/helpers.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/jobs.py` | `covered` | `api-routers`, `in-jobs`, `in-scheduler` | exact path mention in chapter body/chips |
+| `backend/routers/admin/router.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/storage.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/system.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/tokens.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/webhooks.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/admin/webhooks_logs.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/atlas.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/auth.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/brief.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/config.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/correlation.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/cves/__init__.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/cves/changes.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/cves/common.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/cves/detail.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/cves/intel.py` | `covered` | `api-routers`, `arch-connectivity` | exact path mention in chapter body/chips |
+| `backend/routers/cves/list.py` | `covered` | `api-routers`, `api-secarch` | exact path mention in chapter body/chips |
+| `backend/routers/cves/models.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/detection_backlog.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/forge.py` | `covered` | `api-routers`, `api-secarch` | exact path mention in chapter body/chips |
+| `backend/routers/health.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/ioc.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/me.py` | `covered` | `api-routers`, `fe-state` | exact path mention in chapter body/chips |
+| `backend/routers/meta.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/notifications_me.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/proof.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/refresh.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/search.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/stack_catalog.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/threat_model.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/wallboard.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
+| `backend/routers/watchlist.py` | `covered` | `api-routers` | exact path mention in chapter body/chips |
 | `backend/scheduler.py` | `covered` | `in-scheduler` | exact path mention in chapter body/chips |
 | `backend/scheduler_locks.py` | `covered` | `in-scheduler` | exact path mention in chapter body/chips |
 | `backend/scoring/__init__.py` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
@@ -253,6 +277,7 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/scoring/environment.py` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
 | `backend/scoring/priority.py` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
 | `backend/scoring/risk.py` | `covered` | `api-routers`, `arch-ai-restraint`, `ie-correlation`, `ie-scoring` | exact path mention in chapter body/chips |
+| `backend/scoring/ssvc.py` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
 | `backend/scoring/threat.py` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
 | `backend/scripts/backfill_poc.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
 | `backend/scripts/create_user.py` | `covered` | `api-scripts` | exact path mention in chapter body/chips |
@@ -310,6 +335,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/App.css` | `covered` | `fe-design` | exact path mention in chapter body/chips |
 | `frontend/src/App.jsx` | `covered` | `fe-analyst-shell` | exact path mention in chapter body/chips |
 | `frontend/src/api.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/api.outboundJobs.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/apiOutboundJobs.js` | `covered` | `in-jobs` | exact path mention in chapter body/chips |
 | `frontend/src/components/AboutModal.css` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/components/AboutModal.jsx` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/components/ApiQueueIndicator.css` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -407,6 +434,11 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/components/forge/ScenariosView.jsx` | `covered` | `fe-forge-wallboard`, `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/components/forge/mitreTacticOrder.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/components/forge/shared.jsx` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/components/ioc/IOCLookup.loc.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/components/ioc/IOCQuotaPanel.jsx` | `covered` | `fe-state` | exact path mention in chapter body/chips |
+| `frontend/src/components/ioc/IOCResultComponents.jsx` | `covered` | `fe-state` | exact path mention in chapter body/chips |
+| `frontend/src/components/ioc/iocUtils.js` | `covered` | `fe-state` | exact path mention in chapter body/chips |
+| `frontend/src/components/ioc/iocUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/components/timeWindowDateUtils.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/components/timeWindowDateUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/components/ui/AlertDialog.jsx` | `covered` | `fe-design` | exact path mention in chapter body/chips |
@@ -470,12 +502,14 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/ApiKeysPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/AuditLogPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/BackupsPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/CatchupCard.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/ComingSoonPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/DatabasePage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/DbExplorerPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/DisplayPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/FeedHealthPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/IngestLogPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/OutboundJobsPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/OverviewPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/RateLimitPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/ResourcesPage.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
@@ -497,6 +531,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/adminNav.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/adminUrlPageClearGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/catalog.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/catchupCopy.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/catchupCopy.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/circuitLabels.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/constants.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/formatters.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
@@ -507,11 +543,12 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/jobStatus.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/needsAttention.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/needsAttention.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/pages/admin/outboundJobsCopy.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/pages/admin/outboundJobsCopy.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/rateLimits.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/resourceChartUtils.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/resourceChartUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/resourcesChartsRecharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/shared/ActionProgress.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/AdminDataGrid.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/AdminSkeletons.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
@@ -527,14 +564,11 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/admin/shared/NeedsAttentionPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/NotificationCenter.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/OperationTracker.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/shared/OperatorSystemActions.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/OpsCharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/RestartBanner.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/shared/RunningJobsPanel.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/StatCard.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/StatusLegend.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/ToggleSwitch.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
-| `frontend/src/pages/admin/shared/adminListResponse.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/backupChartUtils.js` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/admin/shared/backupChartUtils.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/pages/admin/shared/opsChartsRecharts.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
@@ -559,10 +593,10 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/pages/security-architecture/sections/ThreatScenariosSection.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/security-architecture/sections/TrustBoundariesSection.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
 | `frontend/src/pages/security-architecture/shared/ArchDataGrid.jsx` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/scoring/fixtures/threat_parity.json` | `covered` | `ie-scoring` | exact path mention in chapter body/chips |
 | `frontend/src/scoring/riskScore.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/scoring/riskScore.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
-| `frontend/src/styles/tokens.css` | `covered` | `fe-design`, `fe-shared-utils` | exact path mention in chapter body/chips |
-| `frontend/src/theme/light-theme.css` | `covered` | `fe-admin-shell` | exact path mention in chapter body/chips |
+| `frontend/src/styles/tokens.css` | `covered` | `fe-admin-shell`, `fe-design`, `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/activeStateGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/adminLinks.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/adminMode.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -582,6 +616,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/campaignClusterOpen.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/caseStudyFeed.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/chartTheme.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/clearPointerState.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/clearPointerState.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/correlationPresentation.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/correlationPresentation.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/cveAge.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -612,6 +648,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/forgeDeadControlsGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/forgeMitreNavigatorGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/forgeUrlTabClearGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/formatIntelLabel.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/formatIntelLabel.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/heatmapGrid.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/huntPackPdf.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/hybridFeedSearch.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -637,6 +675,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/motion.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/nativeRangeGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/nativeSelectGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/navHistory.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/navHistory.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/notificationChime.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/notificationsApi.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/observableExtraction.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -647,6 +687,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/patchRemediation.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/pdfAiSummary.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/pdfReport.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/personalizationCopy.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/personalizationCopy.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/rechartsTheme.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/rechartsVersionGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/referenceRows.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
@@ -654,6 +696,8 @@ _Regenerated 2026-07-19 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/report.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/safeExternalUrl.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/safeExternalUrl.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
+| `frontend/src/utils/sectionHeading.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/sectionHeading.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/sectionLabels.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/securityArchitecturePdf.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/securityPostureGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
