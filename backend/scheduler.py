@@ -256,17 +256,9 @@ def get_ingest_intervals() -> dict:
     }
 
 
-def get_refresh_schedule() -> dict:
-    """Backward-compatible schedule hint (NVD hourly cadence)."""
-    intervals = get_ingest_intervals()
-    return {
-        "hour": int(os.environ.get("CACHE_REFRESH_HOUR", "6")),
-        "minute": int(os.environ.get("CACHE_REFRESH_MINUTE", "0")),
-        "timezone": intervals["timezone"],
-        "nvd_interval_hours": intervals["nvd_hours"],
-        "kev_interval_minutes": intervals["kev_minutes"],
-        "epss_interval_hours": intervals["epss_hours"],
-    }
+def get_refresh_schedule() -> dict | None:
+    """Deprecated orphaned CACHE_REFRESH_* — not bound to any APScheduler job."""
+    return None
 
 
 def _next_interval_fire_utc(hours: int = 0, minutes: int = 0) -> datetime:

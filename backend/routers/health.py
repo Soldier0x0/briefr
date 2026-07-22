@@ -30,6 +30,7 @@ from scheduler import (
     get_ingest_status,
     get_next_scheduled_refresh_utc,
     get_refresh_schedule,
+    get_scheduler_timezone,
     refresh_in_progress,
 )
 
@@ -92,6 +93,7 @@ async def health(
 
         next_refresh_utc = get_next_scheduled_refresh_utc()
         refresh_schedule = get_refresh_schedule()
+        scheduler_tz = get_scheduler_timezone()
         ingest = get_ingest_status()
         incidents_status = await get_incident_feed_status()
 
@@ -111,7 +113,7 @@ async def health(
             "next_refresh_at_utc": next_refresh_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "next_refresh_in_user_tz": format_time_in_tz(next_refresh_utc, display_tz),
             "next_refresh_in_scheduler_tz": format_time_in_tz(
-                next_refresh_utc, refresh_schedule["timezone"]
+                next_refresh_utc, scheduler_tz
             ),
             "refresh_schedule": refresh_schedule,
             "server_time_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),

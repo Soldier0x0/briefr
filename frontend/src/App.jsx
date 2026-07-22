@@ -27,7 +27,7 @@ import {
   getAiFrameworksForAlerts,
   hasDeclaredAiAssets,
 } from './utils/aiAssets.js'
-import { formatAbsolute, getTimezone, getTzAbbr } from './utils/timezone.js'
+import { formatAbsolute, getTimezone } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
@@ -116,14 +116,7 @@ function timeAgoMinutes(sqliteUtc) {
   return `${Math.floor(h / 24)} days ago`
 }
 
-function formatScheduleLabel(schedule) {
-  if (!schedule) return null
-  const hh = String(schedule.hour).padStart(2, '0')
-  const mm = String(schedule.minute).padStart(2, '0')
-  return `${hh}:${mm} ${getTzAbbr(schedule.timezone)}`
-}
-
-function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSchedule, feedHealth, tickEnabled = true }) {
+function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, feedHealth, tickEnabled = true }) {
   const [, tick] = useState(0)
   useVisibilityAwareInterval(() => tick(n => n + 1), 60000, { enabled: tickEnabled })
 
@@ -131,7 +124,6 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
   const nextUtcLabel = nextRefreshUtc ? formatAbsolute(nextRefreshUtc, 'UTC') : null
   const nextUserLabel =
     nextRefreshUtc && timezone ? formatAbsolute(nextRefreshUtc, timezone) : null
-  const scheduleLabel = formatScheduleLabel(refreshSchedule)
 
   if (!lastLabel && !nextUtcLabel) return null
 
@@ -143,7 +135,6 @@ function FeedRefreshStatus({ lastUpdated, nextRefreshUtc, timezone, refreshSched
         <span>
           Next refresh at {nextUtcLabel}
           {nextUserLabel && timezone !== 'UTC' && <> · {nextUserLabel}</>}
-          {scheduleLabel && <> (auto daily {scheduleLabel})</>}
         </span>
       )}
     </p>
@@ -164,7 +155,7 @@ function cycleFilter(filters) {
 }
 
 function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetryStats, filters, setFilters,
-                    timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
+                    timezone, lastUpdated, nextRefreshUtc,
                     showAiAlerts, onAiAlertsClick, onStatTileClick, onOpenFullFeed, onSelectCVE,
                     feedHealth }) {
 
@@ -245,7 +236,6 @@ function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetrySt
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
         timezone={timezone}
-        refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
         tickEnabled={isActive}
       />
@@ -257,7 +247,7 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
                    digestOpen, setDigestOpen, digestCVEs, setDigestCVEs,
                    searchFocusTrigger, setSearchFocusTrigger, aboutOpen, setAboutOpen,
                    tutorialOpen,
-                   timezone, lastUpdated, nextRefreshUtc, refreshSchedule,
+                   timezone, lastUpdated, nextRefreshUtc,
                    onDigestRequest, watchlist, onWatchlistChange, onSelectCVE,
                    onOpenForgeCampaigns, feedHealth }) {
 
@@ -281,7 +271,6 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
         lastUpdated={lastUpdated}
         nextRefreshUtc={nextRefreshUtc}
         timezone={timezone}
-        refreshSchedule={refreshSchedule}
         feedHealth={feedHealth}
         tickEnabled={isActive}
       />
@@ -348,7 +337,6 @@ export default function App() {
   const [lastUpdated, setLastUpdated]           = useState(null)
   const [feedHealth, setFeedHealth]             = useState(null)
   const [nextRefreshUtc, setNextRefreshUtc]     = useState(null)
-  const [refreshSchedule, setRefreshSchedule]   = useState(null)
   const [iocPrefill, setIocPrefill]             = useState(null)
   const [iocSessionKey, setIocSessionKey]       = useState(0)
   const [atlasActorFilter, setAtlasActorFilter] = useState(null)
@@ -414,7 +402,6 @@ export default function App() {
         setFeedHealth(h)
         setLastUpdated(h.last_updated ?? null)
         setNextRefreshUtc(h.next_refresh_at_utc ?? null)
-        setRefreshSchedule(h.refresh_schedule ?? null)
       })
       .catch(() => {})
   }, [timezone])
@@ -901,7 +888,6 @@ export default function App() {
               timezone={timezone}
               lastUpdated={lastUpdated}
               nextRefreshUtc={nextRefreshUtc}
-              refreshSchedule={refreshSchedule}
               feedHealth={feedHealth}
               onDigestRequest={registerDigestHandler}
               openCveById={openCveById}
@@ -960,7 +946,6 @@ function AppLayout({
   timezone,
   lastUpdated,
   nextRefreshUtc,
-  refreshSchedule,
   feedHealth,
   onDigestRequest,
   openCveById,
@@ -1042,7 +1027,6 @@ function AppLayout({
                 timezone={timezone}
                 lastUpdated={lastUpdated}
                 nextRefreshUtc={nextRefreshUtc}
-                refreshSchedule={refreshSchedule}
                 showAiAlerts={showAiAlerts}
                 onAiAlertsClick={onAiAlertsClick}
                 onStatTileClick={onStatTileClick}
@@ -1073,7 +1057,6 @@ function AppLayout({
                 timezone={timezone}
                 lastUpdated={lastUpdated}
                 nextRefreshUtc={nextRefreshUtc}
-                refreshSchedule={refreshSchedule}
                 onDigestRequest={onDigestRequest}
                 onSelectCVE={onSelectCVE}
                 onOpenForgeCampaigns={onOpenForgeCampaigns}
