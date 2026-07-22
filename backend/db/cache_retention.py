@@ -54,6 +54,7 @@ CVE_CHANGE_HISTORY_RETENTION_DAYS = 90
 # excluded: it is a (service, date_utc) aggregate (~1 row/service/day), effectively
 # bounded, and purging it would drop usage history for negligible space.
 AI_OPERATIONS_RETENTION_DAYS = 30
+AI_OPERATION_PAYLOADS_RETENTION_DAYS = 7
 WEBHOOK_DELIVERY_LOG_RETENTION_DAYS = 30
 AUDIT_LOG_RETENTION_DAYS = 365
 
@@ -137,6 +138,16 @@ WHERE started_at < ?
 _PURGE_AI_OPERATIONS_PG = """
 DELETE FROM ai_operations
 WHERE started_at < $1
+"""
+
+_PURGE_AI_OPERATION_PAYLOADS_SQLITE = """
+DELETE FROM ai_operation_payloads
+WHERE created_at < ?
+"""
+
+_PURGE_AI_OPERATION_PAYLOADS_PG = """
+DELETE FROM ai_operation_payloads
+WHERE created_at < $1
 """
 
 _PURGE_WEBHOOK_DELIVERY_LOG_SQLITE = """
@@ -337,6 +348,20 @@ async def purge_old_ai_operations(
     return await _rows_deleted(db, cursor)
 
 
+async def purge_old_ai_operation_payloads(
+    db: DbConnection,
+    retention_days: int = AI_OPERATION_PAYLOADS_RETENTION_DAYS,
+) -> int:
+    cutoff = _cutoff_datetime_hours_ago(retention_days * 24)
+    sql = (
+        _PURGE_AI_OPERATION_PAYLOADS_PG
+        if _is_postgres_connection(db)
+        else _PURGE_AI_OPERATION_PAYLOADS_SQLITE
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return await _rows_deleted(db, cursor)
+
+
 async def purge_old_webhook_delivery_log(
     db: DbConnection,
     retention_days: int = WEBHOOK_DELIVERY_LOG_RETENTION_DAYS,
@@ -400,6 +425,7 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "epss_history": await purge_old_epss_history(db),
         "cve_change_history": await purge_old_cve_change_history(db),
         "ai_operations": await purge_old_ai_operations(db),
+        "ai_operation_payloads": await purge_old_ai_operation_payloads(db),
         "webhook_delivery_log": await purge_old_webhook_delivery_log(db),
         "webhook_dedupe_stranded": await purge_stranded_webhook_dedupe(db),
         "audit_log": await purge_old_audit_log(db),

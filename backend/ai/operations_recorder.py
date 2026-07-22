@@ -61,14 +61,15 @@ async def record_llm_attempt(
     input_tokens: int | None = None,
     output_tokens: int | None = None,
     total_tokens: int | None = None,
-) -> None:
+) -> str | None:
     if not recording_enabled():
-        return
+        return None
+    operation_id = str(uuid.uuid4())
     db = await get_db()
     try:
         await insert_ai_operation(
             db,
-            operation_id=str(uuid.uuid4()),
+            operation_id=operation_id,
             request_id=request_id_var.get() or None,
             started_at=utcnow_str(),
             latency_ms=latency_ms,
@@ -88,8 +89,10 @@ async def record_llm_attempt(
             context_id=context_id,
         )
         await db.commit()
+        return operation_id
     except Exception:
         logger.warning("Failed to record ai_operations row", exc_info=True)
+        return None
     finally:
         await db.close()
 
