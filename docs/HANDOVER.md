@@ -23,7 +23,8 @@ phases as open, DOCUMENTATION_PLAN still said tokens “spec until wired”.
   `TROUBLESHOOTING` sticky Not authenticated + cloud SQLite; `ONBOARDING` empty DSN;
   `DOCUMENTATION_PLAN` tokens wired; `BACKLOG` reconciled (PM ✅, UI-M phases, Gemini sunset).
 - `STUDY_GUIDE.html` auth chapter → regenerate `study-guide/` + `learn/`.
-- Graphify refresh after this commit (counts recorded below / in PRODUCT_STATUS).
+- Graphify refresh after this commit: `10894` nodes / `23175` edges / `559` communities
+  (`graphify update . --force`; `graphify-out/` gitignored).
 
 **Next:** No open PRs; deploy/verify VulnCheck after #732 remains the ops follow-up.
 

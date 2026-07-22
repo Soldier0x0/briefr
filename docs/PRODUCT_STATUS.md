@@ -116,7 +116,7 @@ Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/ar
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
 | Living API / architecture docs | **Refreshed 2026-07-21** — full library pass (#687–#729), then post-merge pass for #731–#733 (auth refresh race, SQL vs source I/O already in #732 docs, AGENTS cloud/lint): `SYSTEM_DESIGN`, `API_REFERENCE`, reader guides, ONBOARDING/OPERATIONS/LEARNING_PATH/TROUBLESHOOTING, study-guide source + regenerated `study-guide/` + `learn/` |
 | Study guide + learn | Editable source `STUDY_GUIDE.html` → `scripts/build_study_guide_book.py` → `docs/study-guide/`; pathways via `scripts/build_learn_site.py` + `docs/learn/pathways.json`. Auth chapter matches #731 (`fetchMe` → shared `refreshAccessToken`). |
-| Graphify knowledge graph | **Refresh after this docs pass** — `graphify-out/` gitignored; regenerate on demand (`graphify update .`). Prior rebuild 2026-07-21 after library pass (`10875` nodes / `20801` edges). Hook auto-rebuilds on code commits; doc moves need manual update. |
+| Graphify knowledge graph | **Refreshed 2026-07-22** after docs truth pass (#731–#733) — `graphify update . --force` → `10894` nodes, `23175` edges, `559` communities (`graphify-out/` gitignored). Prior rebuild 2026-07-21 after library pass (`10875` / `20801` / `643`). Hook auto-rebuilds on code commits; doc moves need manual update. |
 | Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
 | MkDocs site | Pending |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
