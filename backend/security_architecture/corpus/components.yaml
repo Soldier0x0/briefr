@@ -2,11 +2,11 @@ version: 1
 components:
 - id: routers-admin-ai_ops
   title: routers.admin.ai_ops
-  summary: FastAPI router module with 5 endpoint(s).
+  summary: FastAPI router module with 7 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 5
+  endpoint_count: 7
   source_refs:
   - type: file
     ref: backend/routers/admin/ai_ops.py

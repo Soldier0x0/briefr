@@ -160,6 +160,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/retrieval/health"),
     ("GET", "/api/admin/ai/operations/providers"),
     ("GET", "/api/admin/ai/operations/activity"),
+    ("GET", "/api/admin/ai/operations/{operation_id}/payload"),
+    ("POST", "/api/admin/ai/operations/{operation_id}/retry"),
     ("GET", "/api/admin/logs"),
     ("GET", "/api/admin/security"),
     ("POST", "/api/admin/restart"),

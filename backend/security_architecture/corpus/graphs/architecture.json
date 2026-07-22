@@ -477,7 +477,7 @@
       "label": "routers.admin.ai_ops",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 5,
+      "endpoint_count": 7,
       "source_refs": [
         {
           "type": "file",
@@ -950,6 +950,18 @@
         {
           "type": "file",
           "ref": "backend/security_architecture/routers/security_architecture.py"
+        }
+      ]
+    },
+    {
+      "id": "table:ai_operation_payloads",
+      "label": "ai_operation_payloads",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "ai_operation_payloads"
         }
       ]
     },
@@ -3670,6 +3682,90 @@
     {
       "id": "job:weekly_mitre_refresh->table:sync_state",
       "source": "job:weekly_mitre_refresh",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:ai_operation_payloads",
+      "source": "routers-admin-ai_ops",
+      "target": "table:ai_operation_payloads",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:ai_operations",
+      "source": "routers-admin-ai_ops",
+      "target": "table:ai_operations",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:audit_log",
+      "source": "routers-admin-ai_ops",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:correlation_campaigns",
+      "source": "routers-admin-ai_ops",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:cve_change_history",
+      "source": "routers-admin-ai_ops",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:cve_embeddings",
+      "source": "routers-admin-ai_ops",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:cve_exploits",
+      "source": "routers-admin-ai_ops",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:cves",
+      "source": "routers-admin-ai_ops",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:embeddings",
+      "source": "routers-admin-ai_ops",
+      "target": "table:embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:epss_history",
+      "source": "routers-admin-ai_ops",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:feed_cache",
+      "source": "routers-admin-ai_ops",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:kev_deadlines",
+      "source": "routers-admin-ai_ops",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:mitre_techniques",
+      "source": "routers-admin-ai_ops",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:sync_state",
+      "source": "routers-admin-ai_ops",
       "target": "table:sync_state",
       "kind": "references_table"
     },

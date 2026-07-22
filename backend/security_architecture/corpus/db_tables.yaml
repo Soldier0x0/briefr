@@ -1,5 +1,14 @@
 version: 1
 tables:
+- id: ai_operation_payloads
+  title: ai_operation_payloads
+  summary: Database table defined in db/init.py (name=ai_operation_payloads).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: ai_operation_payloads
 - id: ai_operations
   title: ai_operations
   summary: Database table defined in db/init.py (name=ai_operations).
