@@ -1,9 +1,9 @@
 {
-  "generated": "2026-07-21",
+  "generated": "2026-07-22",
   "guide": "docs/STUDY_GUIDE.html",
   "counts": {
-    "covered": 646,
-    "out_of_scope": 85,
+    "covered": 647,
+    "out_of_scope": 86,
     "orphan_mention": 1
   },
   "chapters": [
@@ -15,7 +15,7 @@
     {
       "id": "system-design",
       "title": "System Design \u2014 4 diagrams",
-      "mention_count": 35
+      "mention_count": 36
     },
     {
       "id": "primer-mechanics",
@@ -90,7 +90,7 @@
     {
       "id": "fe-shared-utils",
       "title": "Ch 5E \u00b7 Hooks, utils & scoring helpers",
-      "mention_count": 226
+      "mention_count": 227
     },
     {
       "id": "be-bootstrap",
@@ -110,7 +110,7 @@
     {
       "id": "be-data",
       "title": "Ch 9 \u00b7 The data layer",
-      "mention_count": 39
+      "mention_count": 40
     },
     {
       "id": "be-alembic",
@@ -1452,6 +1452,16 @@
     },
     {
       "path": "backend/db/timeutil.py",
+      "status": "covered",
+      "chapters": [
+        "be-data",
+        "system-design"
+      ],
+      "evidence": "exact path mention in chapter body/chips",
+      "notes": ""
+    },
+    {
+      "path": "backend/db/txn_boundaries.py",
       "status": "covered",
       "chapters": [
         "be-data",
@@ -5768,6 +5778,13 @@
       ],
       "evidence": "exact path mention in chapter body/chips",
       "notes": ""
+    },
+    {
+      "path": "frontend/src/utils/authRefreshRaceGate.test.js",
+      "status": "out_of_scope",
+      "chapters": [],
+      "evidence": "",
+      "notes": "FE gate/unit test; aggregate into Testing strategy chapter"
     },
     {
       "path": "frontend/src/utils/backendRestart.js",

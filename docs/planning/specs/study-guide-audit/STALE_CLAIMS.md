@@ -1,6 +1,6 @@
 # Study guide — stale claims & orphan paths (RCA)
 
-_Verified against repo HEAD on 2026-07-21 (full docs-library refresh after Waves 1–7 / Phase 1 / UX RCA). Code / `PRODUCT_STATUS.md` win over guide prose._
+_Verified against repo HEAD on 2026-07-22 (post #731–#733 docs truth pass). Code / `PRODUCT_STATUS.md` win over guide prose._
 
 ## Mechanical orphan (path named, file missing)
 
@@ -12,15 +12,21 @@ No other `orphan_mention` rows remain after the 2026-07-21 source refresh (route
 
 ## Phase 0 / refresh inventory gates
 
-Latest audit: `covered=646 weak=0 gap=0 orphan=1 out_of_scope=86`.
+Latest audit: `covered=647 weak=0 gap=0 orphan=1 out_of_scope=…` (2026-07-22 after #731 auth chapter).
 
-| Gate | Status (2026-07-21) |
+| Gate | Status (2026-07-22) |
 |------|---------------------|
 | G1 `gap=0` | **Pass** |
 | G2 `weak=0` | **Pass** (FE `*.test.js` + empty `__init__.py` → `out_of_scope`) |
 | G3 orphans | **Pass** — only intentional `dialect.py` historical mention |
 
 Auditor: `scripts/audit_study_guide.py --strict`
+
+## Closed in 2026-07-22 truth pass
+
+| Topic | Disposition |
+|-------|-------------|
+| AuthContext bare `fetch('/api/auth/refresh')` in study guide | **Closed** — guide teaches `fetchMe()` + shared `api.js` `refreshAccessToken()` (#731) |
 
 ## Closed in 2026-07-21 refresh (was stale mid-July)
 

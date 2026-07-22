@@ -1,11 +1,11 @@
 # Interview coverage skeleton
 
-_Regenerated 2026-07-21. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this file only lists chapters._
+_Regenerated 2026-07-22. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this file only lists chapters._
 
 | Chapter id | Title | Mentions | Concept | Why | How | Self-check | Interview-ready? |
 |------------|-------|---------:|---------|-----|-----|------------|------------------|
 | `preface` | Preface — how to use this book | 1 |  |  |  |  |  |
-| `system-design` | System Design — 4 diagrams | 35 |  |  |  |  |  |
+| `system-design` | System Design — 4 diagrams | 36 |  |  |  |  |  |
 | `primer-mechanics` | Concepts primer | 0 |  |  |  |  |  |
 | `arch-monolith` | Monolith by design | 1 |  |  |  |  |  |
 | `arch-resources` | The resource-consciousness thread | 2 |  |  |  |  |  |
@@ -20,11 +20,11 @@ _Regenerated 2026-07-21. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `fe-analyst-shell` | Ch 5B · Analyst shell | 11 |  |  |  |  |  |
 | `fe-admin-shell` | Ch 5C · Admin shell | 109 |  |  |  |  |  |
 | `fe-forge-wallboard` | Ch 5D · Forge, ATLAS & wallboard | 10 |  |  |  |  |  |
-| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 226 |  |  |  |  |  |
+| `fe-shared-utils` | Ch 5E · Hooks, utils & scoring helpers | 227 |  |  |  |  |  |
 | `be-bootstrap` | Ch 6 · Bootstrap & lifespan | 4 |  |  |  |  |  |
 | `be-config` | Ch 7 · Config & encrypted secrets | 4 |  |  |  |  |  |
 | `be-shim` | Ch 8 · The database.py shim | 3 |  |  |  |  |  |
-| `be-data` | Ch 9 · The data layer | 39 |  |  |  |  |  |
+| `be-data` | Ch 9 · The data layer | 40 |  |  |  |  |  |
 | `be-alembic` | Ch 10 · Alembic migrations | 35 |  |  |  |  |  |
 | `be-auth` | Ch 11 · Authentication | 5 |  |  |  |  |  |
 | `be-ratelimit` | Ch 12 · Rate limiting | 2 |  |  |  |  |  |

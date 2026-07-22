@@ -17,7 +17,7 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-15 against `main`. Post–UI E2E UX observations master plan added
+**Last reconciled:** 2026-07-22 against `main` (post #731–#733). Post–UI E2E UX observations master plan added
 ([`specs/e2e-ux-observations-2026-07-15.md`](specs/e2e-ux-observations-2026-07-15.md)).
 
 ---
@@ -325,11 +325,11 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 
 | Item | Status |
 |------|--------|
-| ADR-003 / ADR-004 / ADR-005 maintainer acceptance | 💬 gate for Phase 0/1 |
-| Plan Phase 0 (E0: tokens, Radix spike, motion toggle, docs sync) | 📋 |
-| Plan Phase 1 (E1 correlation precompute, E2 standalone bugs incl. REL-7 PyJWT) | 📋 |
-| Plan Phase 2 (E3 primitives, E4 semantics, E6 a11y core) | 📋 after Phase 0 |
-| Plan Phase 3 (E5 ARCH re-skin, E7 polish incl. Recharts migration, E8/E9) | 📋 after Phase 2 |
+| ADR-003 / ADR-004 / ADR-005 maintainer acceptance | ✅ ACCEPTED (Sprint UI-M; Phase 0/1 entry gate satisfied) |
+| Plan Phase 0 (E0: tokens, Radix spike, motion toggle, docs sync) | ✅ E0-1…E0-4 (ui-modernization §13) |
+| Plan Phase 1 (E1 correlation precompute, E2 standalone bugs incl. REL-7 PyJWT) | ✅ E1/E2 shipped (see PRODUCT_STATUS UI design system + reliability) |
+| Plan Phase 2 (E3 primitives, E4 semantics, E6 a11y core) | ✅ E3 complete; E4/E6 core shipped (accent-selected, AA focus, etc.) |
+| Plan Phase 3 (E5 ARCH re-skin, E7 polish incl. Recharts migration, E8/E9) | 🔶 E7-5 Recharts + E8 IA shipped; remaining E5/E9 polish per ui-modernization §13 |
 
 ---
 
@@ -337,7 +337,7 @@ ADR-005 (UI library allow/deny). **Design SSOT:** [`../design/design-system.md`]
 
 | Item | Status |
 |------|--------|
-| Gemini Code Assist replacement (reviews cease **2026-07-17**) | 💬 decision needed — Sprint merge gate §4 |
+| Gemini Code Assist replacement (reviews ceased **2026-07-17**) | 🔶 sunset live — CodeRabbit free summarizes; local `./scripts/verify-local.sh` remains merge gate; pick a durable free reviewer or drop Gemini step explicitly (Sprint §4) |
 | F3-tail | SPDX header reconciliation · optional trufflehog | 📋 optional |
 
 ---
@@ -388,11 +388,11 @@ remediation queue. Supporting artifacts: [`e2e-click-map-2026-07-15.md`](specs/e
 
 | Phase | Scope | PRs | Status |
 |-------|--------|-----|--------|
-| **Accent** | Brand orange vs tan | PR #602 | 📋 open |
-| **0** | P0 bugs (EPSS severity, sticky tooltips, drawer overlap, admin 500, `detected_at`) | PM-0a…PM-0e | 📋 |
-| **1** | Charts + FEED filters + Forge Library toolbar | PM-1a…PM-1d | 📋 after Phase 0 |
-| **2** | Accent sweep, DataGrid standard, ARCH layout | PM-2a…PM-2d | 📋 after Phase 1 |
-| **3** | Architecture graph viewport/zoom/fit | PM-3a…PM-3d | 📋 after Phase 0 |
+| **Accent** | Brand orange vs tan | PR #602 / #603 | ✅ |
+| **0** | P0 bugs (EPSS severity, sticky tooltips, drawer overlap, admin 500, `detected_at`) | PM-0a…PM-0e #604–#608 | ✅ |
+| **1** | Charts + FEED filters + Forge Library toolbar | PM-1a…PM-1d #609–#612 | ✅ |
+| **2** | Accent sweep, DataGrid standard, ARCH layout | PM-2a…PM-2d #619–#622 | ✅ |
+| **3** | Architecture graph viewport/zoom/fit + corpus drift | PM-3a…PM-3d #632–#633 | ✅ |
 | **4** | IA: Admin Security posture, remove ARCH tab, Forge MITRE navigator | PM-4a–e ✅ #636–#640 | ✅ done |
 
 **E2E automation:** `scripts/e2e_audit_exhaustive.py` (276 steps, 2026-07-15 run).

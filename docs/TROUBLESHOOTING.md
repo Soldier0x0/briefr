@@ -19,7 +19,9 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
 | **Catch-up active but backlog not moving** | Catch-up only kicks eligible jobs and never raises provider limits. Check Admin → Scheduler for LOCKED jobs, source cooldowns, and outbound queue rows |
 | **Stack backfill deferred / partial** | FEED backfill respects rate limits and runtime caps. Use Resume from the banner; lower stack terms if the request is too broad |
 | **IOC providers empty** | Add keys in `.env` — see `backend/.env.example` |
+| **BRIEF / widgets: `Not authenticated` while header still shows user** | Access cookie expired and a bare `/auth/refresh` raced API 401 retries (reuse detection revoked sessions). Fixed in #731: shared `refreshAccessToken()` + AuthContext uses `fetchMe()` only. Retry / re-login recovers; multi-tab concurrent refresh can still hit reuse detection by design |
 | **Can't log in** | Complete first-run setup once. Fix `ALLOWED_ORIGINS` for CORS |
+| **Cloud / bare VM: `ConnectionRefusedError` on `:5432`** | No Docker/Postgres on the box; `.env` may still have a Postgres placeholder DSN. Run with `DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0` for SQLite (see `AGENTS.md`) |
 | **`/api` 404 in dev** | Start backend on `:8000` before frontend |
 | **Model download / HF warnings** | Optional: `HF_TOKEN`, `EMBEDDINGS_CACHE_DIR=/var/lib/briefr/models`; embeddings are optional |
 | **Wallboard asks for token** | Set `WALLBOARD_TOKEN`, restart backend, open `/wallboard`, enter the token once to create the read-only session cookie |

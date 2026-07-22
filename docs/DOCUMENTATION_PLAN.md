@@ -55,8 +55,8 @@ docs/                  # THE PRESENT — what is true today
 │   ├── snapshots/
 │   └── superseded/
 ├── decisions/         # ADRs (incl. TEMPLATE.md)
-├── design/            # UI single source of truth (design-system.md; tokens live in
-│                      #   frontend/src/styles/tokens.css — spec until wired, plan E0-1)
+├── design/            # UI single source of truth (design-system.md; runtime tokens in
+│                      #   frontend/src/styles/tokens.css — E0-1 shipped / wired)
 ├── diagrams/          # Mermaid sources
 └── assets/            # SVGs + committed screenshots (README embeds)
 
