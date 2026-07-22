@@ -30,5 +30,6 @@ def test_health_refresh_schedule_not_advertised_as_live_job(client):
     # Either absent, null, or explicitly not a live cron claim
     sched = body.get("refresh_schedule")
     assert sched in (None, {}) or sched.get("live") is False
-    # Must still expose next NVD-style refresh when available
-    assert "next_refresh_utc" in body or body.get("next_refresh_utc") is None
+    # Must still expose next NVD-style refresh (interval fallback when scheduler idle)
+    assert "next_refresh_at_utc" in body
+    assert "next_nvd_sync_at_utc" in body
