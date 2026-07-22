@@ -203,9 +203,10 @@ export default function DataGrid({
 
   const cellStyle = (col) => ({
     textAlign: col.align || 'center',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
+    whiteSpace: col.wrap ? 'normal' : 'nowrap',
+    overflow: col.wrap ? 'visible' : 'hidden',
+    textOverflow: col.wrap ? 'clip' : 'ellipsis',
+    overflowWrap: col.wrap ? 'anywhere' : undefined,
     verticalAlign: 'top',
   })
 
