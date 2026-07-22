@@ -569,8 +569,13 @@
   cursor: not-allowed;
 }
 
+/* Label wrapper owns disabled dimming — do not stack with .ui-switch:disabled */
+.ui-switch-label--disabled .ui-switch:disabled {
+  opacity: 1;
+}
+
 .ui-switch-label-text {
-  font-size: 0.8125rem;
+  font-size: var(--type-secondary);
   color: var(--text-secondary);
   line-height: 1.25;
 }
