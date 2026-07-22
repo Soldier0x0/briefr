@@ -32,6 +32,7 @@ _FALSY = {"0", "false", "no", "off"}
 # disclaimer all compute the same answer from one place -- three independent
 # staleness calculations is how the PDF and the screen end up disagreeing.
 STALE_WINDOW_DAYS = 90
+SELF_STACK_LIVE_CAP = 50
 
 
 def _as_date(value: Any) -> date | None:
@@ -193,16 +194,38 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
     CVE hits on the generated self-stack (spec §4.5, §5.12). These rows
     cannot be closed by hand -- they exist only while the underlying query
     still matches, so there is nothing to store; recomputed at read time."""
+    rows, _ = await self_stack_risk_rows_with_stats(db, corpus)
+    return rows
+
+
+def empty_self_stack_risk_stats() -> dict[str, int]:
+    return {
+        "candidate_rows": 0,
+        "scored_matches": 0,
+        "admitted": 0,
+        "cap": SELF_STACK_LIVE_CAP,
+    }
+
+
+async def self_stack_risk_rows_with_stats(
+    db: Any, corpus: dict[str, Any]
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Live risk rows with additive cap-honesty stats.
+
+    Companion API for callers that need admission visibility while preserving
+    `self_stack_risk_rows()` as the list-return contract for existing users.
+    """
+    stats = empty_self_stack_risk_stats()
     assets = _self_stack_assets(corpus)
     if not assets:
-        return []
+        return [], stats
     product_tokens = sorted({
         product
         for asset in assets
         if (product := (asset.get("product") or "").strip().lower())
     })
     if not product_tokens:
-        return []
+        return [], stats
 
     product_clauses = " OR ".join(
         "(LOWER(COALESCE(c.cpe_matches, '')) LIKE ? OR "
@@ -231,6 +254,7 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
         """,
         product_params,
     )
+    stats["candidate_rows"] = len(rows)
 
     live_rows = []
     for r in rows:
@@ -239,6 +263,7 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
         score = score_cve_for_assets(cpe_matches, assets)
         if score not in (55, 100):
             continue
+        stats["scored_matches"] += 1
         matched_asset = _matched_asset(cpe_matches, assets, score) or {}
         matched = matched_asset.get("product") or "unknown"
         matched_version = matched_asset.get("version") or ""
@@ -276,7 +301,9 @@ async def self_stack_risk_rows(db: Any, corpus: dict[str, Any]) -> list[dict[str
         row.get("match_score") or 0,
         str(row.get("published") or ""),
     ), reverse=True)
-    return live_rows[:50]
+    admitted = live_rows[:SELF_STACK_LIVE_CAP]
+    stats["admitted"] = len(admitted)
+    return admitted, stats
 
 
 async def self_cve_exposure_summary(db: Any, corpus: dict[str, Any]) -> dict[str, Any]:

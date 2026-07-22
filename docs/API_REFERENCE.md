@@ -1702,6 +1702,9 @@ typed table/timeline/card layout instead of a plain list.
   `cve_id`, `is_kev`, and the CVE's real `severity` (never synthesized). These rows
   can't be closed by hand; they disappear when the underlying query stops matching.
   `?stale=true` never includes them (only curated rows carry a `review_date`).
+  Risks responses also include additive `live_self_stack` stats:
+  `candidate_rows` (query candidates before score filter), `scored_matches` (rows scoring
+  55/100), `admitted` (rows returned after cap), and `cap` (`50`).
 
 **TM-5 live enrichment:**
 
@@ -1716,7 +1719,9 @@ typed table/timeline/card layout instead of a plain list.
   `redact.mask_audit_log_target` — the same table and masking rule as the Admin Audit
   Log view (`routers/admin/diagnostics.py::get_audit_log`), not a duplicate.
 
-**Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
+**Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...], "live_self_stack": { "candidate_rows": 0, "scored_matches": 0, "admitted": 0, "cap": 50 } }`
+
+`live_self_stack` is present on `section_id=risks` only.
 
 404 when `section_id` isn't a manifest section.
 

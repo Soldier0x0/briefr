@@ -12,6 +12,42 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Program D Task 2: Risk Register live self-stack cap honesty
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42`
+
+**Symptom:** Risk Register exposed only admitted live self-stack rows (`<=50`) and gave no
+signal when additional scored matches were truncated, so operators could misread "all rows
+shown" as "all matches."
+
+**RCA:** `merge.self_stack_risk_rows()` returned only a capped list (`[:50]`) with no
+companion stats. `/api/security-architecture/section/risks` surfaced `count/items` only, so
+the UI had no source-of-truth counters for candidates vs scored vs admitted.
+
+**Fix:**
+- Added `merge.self_stack_risk_rows_with_stats()` and `empty_self_stack_risk_stats()` while
+  keeping `self_stack_risk_rows()` list-return compatible for existing callers
+  (`self_cve_exposure_summary` unchanged).
+- Added additive `live_self_stack` on risks section payload:
+  `{candidate_rows, scored_matches, admitted, cap=50}`.
+- Risk Register UI count line now shows
+  `live self-stack showing X of Y matches (cap 50)` when `scored_matches > admitted` and the
+  origin view is `all`/`live`.
+- No scoring policy change: only 55/100 admission remains; no dismiss/mute controls and no
+  auto-patch behavior added.
+
+**Verify:**
+- `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python -m pytest tests/test_security_architecture_self_stack_risk.py tests/test_security_architecture_live.py -q` ✅
+- `cd frontend && npm run build` ✅
+- `./scripts/verify-local.sh` ❌ blocked by pre-existing `tests/test_nvd_txn_boundary.py`
+  async-plugin environment issue (`Unknown pytest.mark.asyncio`), same known cloud failure
+  noted in prior handovers.
+
+**Operator note:** live self-stack rows remain read-time derived and non-curated; remediation /
+patching remains operator-owned outside this register view.
+
+---
+
 ## 2026-07-22 — Program C (S5/S6): Background Sync portal + Forge ATT&CK black band
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42` — Program C Tasks 1–3 complete; plan SSOT

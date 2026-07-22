@@ -65,6 +65,26 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
 
   const rows = data?.items || []
   const staleCount = rows.filter(r => r.stale).length
+  const liveSelfStack = data?.live_self_stack
+  const originFilter = filters.origin || ''
+  const showLiveSelfStackCapHonesty = Boolean(
+    liveSelfStack &&
+    (originFilter === '' || originFilter === 'live') &&
+    liveSelfStack.scored_matches > liveSelfStack.admitted
+  )
+
+  const countSegments = []
+  if (data) {
+    countSegments.push(`${data.count} row${data.count === 1 ? '' : 's'}`)
+    if (showLiveSelfStackCapHonesty) {
+      countSegments.push(
+        `live self-stack showing ${liveSelfStack.admitted} of ${liveSelfStack.scored_matches} matches (cap ${liveSelfStack.cap})`
+      )
+    }
+    if (staleCount > 0) {
+      countSegments.push(`${staleCount} stale`)
+    }
+  }
 
   const columns = useMemo(() => [
     {
@@ -106,7 +126,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
         <h2 className="sa-section-title mono">RISK REGISTER</h2>
         {data && (
           <p className="sa-mitre-counts mono">
-            {data.count} row{data.count === 1 ? '' : 's'}{staleCount > 0 ? ` · ${staleCount} stale` : ''}
+            {countSegments.join(' · ')}
           </p>
         )}
       </div>
