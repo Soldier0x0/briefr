@@ -194,6 +194,13 @@ def test_set_config_accepts_in_range_int(admin_client, tmp_path, monkeypatch):
     assert resp.status_code == 200
 
 
+def test_cache_refresh_help_does_not_claim_live_job():
+    fields = {f.key: f for f in CONFIG_SCHEMA}
+    help_h = fields["CACHE_REFRESH_HOUR"].help_text.lower()
+    assert "not scheduled" in help_h or "unused" in help_h or "no job" in help_h
+    assert "extended-data-source cache refresh runs" not in help_h
+
+
 def test_apply_all_rejects_out_of_range_int(admin_client, tmp_path, monkeypatch):
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text("")

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api.js'
-import { Select } from '../../components/ui/index.js'
+import { AlertDialog, Button, Modal, Select } from '../../components/ui/index.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
 import { CIRCUIT_UI, LLM_ERROR_LABELS } from './circuitLabels.js'
+import { activityRowHasPayload } from './aiOperationsActivityActions.js'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -23,6 +24,25 @@ const TASK_LABELS = {
 }
 
 const ERROR_CLASS_LABELS = LLM_ERROR_LABELS
+const PAYLOAD_PRE_STYLE = {
+  margin: 0,
+  border: '1px solid var(--border)',
+  background: 'var(--surface-sunken)',
+  borderRadius: 'var(--radius-md)',
+  padding: 'var(--space-3)',
+  maxHeight: '18rem',
+  overflow: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  fontFamily: 'var(--admin-mono)',
+  fontSize: 'var(--type-meta, 0.75rem)',
+  lineHeight: 1.45,
+}
+
+function formatErrorWithRef(error) {
+  const message = String(error?.message || error || 'Request failed')
+  return error?.requestId ? `${message} (ref: ${error.requestId})` : message
+}
 
 function pct(rate) {
   if (rate == null || Number.isNaN(rate)) return '—'
@@ -471,6 +491,12 @@ function ActivityTab({ toast, providerOptions }) {
   const [providerFilter, setProviderFilter] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [payloadOpen, setPayloadOpen] = useState(false)
+  const [payloadLoading, setPayloadLoading] = useState(false)
+  const [payloadError, setPayloadError] = useState(null)
+  const [payloadData, setPayloadData] = useState(null)
+  const [retryTarget, setRetryTarget] = useState(null)
+  const [retryingOperationId, setRetryingOperationId] = useState('')
   const limit = 50
 
   const load = useCallback(async () => {
@@ -485,13 +511,62 @@ function ActivityTab({ toast, providerOptions }) {
       setError(null)
     } catch (e) {
       setError(e)
-      toast?.(String(e.message || e), false)
+      toast?.(formatErrorWithRef(e), false)
     } finally {
       setLoading(false)
     }
   }, [offset, taskFilter, providerFilter, toast])
 
   useEffect(() => { load() }, [load])
+
+  async function openPayloadFor(operationId) {
+    setPayloadOpen(true)
+    setPayloadLoading(true)
+    setPayloadError(null)
+    setPayloadData(null)
+    try {
+      const { data } = await adminApi.getJson(`/ai/operations/${encodeURIComponent(operationId)}/payload`)
+      setPayloadData(data)
+    } catch (e) {
+      setPayloadError(e)
+      toast?.(formatErrorWithRef(e), false)
+    } finally {
+      setPayloadLoading(false)
+    }
+  }
+
+  function closePayload() {
+    setPayloadOpen(false)
+    setPayloadLoading(false)
+    setPayloadError(null)
+    setPayloadData(null)
+  }
+
+  function openRetryDialog(row) {
+    setRetryTarget({
+      operationId: row.operation_id,
+      taskClass: row.task_class,
+    })
+  }
+
+  async function confirmRetryOperation() {
+    if (!retryTarget) return
+    const operationId = retryTarget.operationId
+    setRetryingOperationId(operationId)
+    setRetryTarget(null)
+    try {
+      const { data } = await adminApi.postJson(`/ai/operations/${encodeURIComponent(operationId)}/retry`, {})
+      const message = data.success
+        ? `Retry completed via ${data.provider} (${data.model})`
+        : `Retry failed via ${data.provider} (${data.model})`
+      toast?.(message, Boolean(data.success))
+      await load()
+    } catch (e) {
+      toast?.(formatErrorWithRef(e), false)
+    } finally {
+      setRetryingOperationId('')
+    }
+  }
 
   // Reset to the first page whenever a filter narrows the result set.
   function changeFilter(setter, value) {
@@ -503,7 +578,7 @@ function ActivityTab({ toast, providerOptions }) {
     <div className="admin-card">
       <div className="admin-card-title">
         Recent operations
-        <HelpTip text="Redacted attempt log — no prompts or completions. Newest first." />
+        <HelpTip text="Metadata always; failure bodies only when AI_OPERATIONS_STORE_FAILURE_PAYLOADS is on." />
       </div>
       <div className="admin-filter-bar admin-filter-bar--fields" style={{ marginBottom: '0.75rem' }}>
         <label className="admin-field">
@@ -561,6 +636,7 @@ function ActivityTab({ toast, providerOptions }) {
                     <th>Latency</th>
                     <th>Tokens</th>
                     <th>Context</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -580,6 +656,29 @@ function ActivityTab({ toast, providerOptions }) {
                       <td className="admin-cell-mono admin-text-dim">
                         {row.context_id || '—'}
                       </td>
+                      <td className="admin-cell-nowrap">
+                        {activityRowHasPayload(row) ? (
+                          <div style={{ display: 'inline-flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-ghost"
+                              onClick={() => openPayloadFor(row.operation_id)}
+                            >
+                              View payload
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-ghost"
+                              disabled={retryingOperationId === row.operation_id}
+                              onClick={() => openRetryDialog(row)}
+                            >
+                              {retryingOperationId === row.operation_id ? 'Retrying…' : 'Retry'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="admin-text-dim">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -596,6 +695,62 @@ function ActivityTab({ toast, providerOptions }) {
                 {offset + 1}–{Math.min(offset + limit, total)} of {total}
               </span>
             </div>
+            <Modal
+              open={payloadOpen}
+              onClose={closePayload}
+              title={payloadData ? `Payload: ${payloadData.operation_id}` : 'Payload'}
+              size="lg"
+              footer={(
+                <Button variant="ghost" onClick={closePayload}>
+                  Close
+                </Button>
+              )}
+            >
+              {payloadLoading && (
+                <p className="admin-text-dim">Loading payload…</p>
+              )}
+              {!payloadLoading && payloadError && (
+                <p className="admin-text-dim">{formatErrorWithRef(payloadError)}</p>
+              )}
+              {!payloadLoading && !payloadError && payloadData && (
+                <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+                  <p className="admin-text-dim admin-cell-mono" style={{ margin: 0 }}>
+                    Task: {TASK_LABELS[payloadData.task_class] || payloadData.task_class}
+                    {' · '}
+                    Provider: {payloadData.provider}
+                    {' · '}
+                    Model: {payloadData.model}
+                    {' · '}
+                    Captured: {fmtIso(payloadData.created_at)}
+                  </p>
+                  <div>
+                    <p className="admin-text-dim admin-cell-mono" style={{ margin: '0 0 var(--space-2)' }}>Messages JSON</p>
+                    <pre style={PAYLOAD_PRE_STYLE}>
+                      {JSON.stringify(payloadData.messages || [], null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="admin-text-dim admin-cell-mono" style={{ margin: '0 0 var(--space-2)' }}>Response excerpt</p>
+                    <pre style={PAYLOAD_PRE_STYLE}>
+                      {payloadData.response_excerpt || '(none captured)'}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </Modal>
+            <AlertDialog
+              open={Boolean(retryTarget)}
+              onOpenChange={(next) => { if (!next) setRetryTarget(null) }}
+              title="Retry this operation?"
+              description={
+                retryTarget
+                  ? `Replays stored payload for ${TASK_LABELS[retryTarget.taskClass] || retryTarget.taskClass}.`
+                  : ''
+              }
+              cancelLabel="Cancel"
+              confirmLabel="Retry now"
+              onConfirm={confirmRetryOperation}
+            />
           </>
         )}
       </AsyncSection>

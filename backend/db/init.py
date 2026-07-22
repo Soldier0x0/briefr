@@ -809,6 +809,8 @@ async def init_db() -> None:
             "CREATE TABLE IF NOT EXISTS ai_operations (id INTEGER PRIMARY KEY AUTOINCREMENT, operation_id TEXT NOT NULL, request_id TEXT, started_at TEXT DEFAULT (datetime('now')), latency_ms INTEGER, feature TEXT NOT NULL, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL, success INTEGER NOT NULL DEFAULT 0, error_class TEXT, input_tokens INTEGER, output_tokens INTEGER, total_tokens INTEGER, estimated_cost_usd REAL, fallback_from_provider TEXT, fallback_from_model TEXT, retry_index INTEGER NOT NULL DEFAULT 0, context_type TEXT, context_id TEXT)",
             "CREATE INDEX IF NOT EXISTS idx_ai_operations_started ON ai_operations(started_at)",
             "CREATE INDEX IF NOT EXISTS idx_ai_operations_task_provider ON ai_operations(task_class, provider)",
+            "CREATE TABLE IF NOT EXISTS ai_operation_payloads (operation_id TEXT PRIMARY KEY, created_at TEXT DEFAULT (datetime('now')), messages_json TEXT NOT NULL, response_excerpt TEXT, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL)",
+            "CREATE INDEX IF NOT EXISTS idx_ai_operation_payloads_created ON ai_operation_payloads(created_at)",
             # Correlation v2 Phase 1
             """
             CREATE TABLE IF NOT EXISTS otx_pulses (

@@ -12,6 +12,141 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42`
+
+**Symptom:** AI Operations Activity tab had no row-level signal for whether retry payloads existed, so operators had to probe payload/retry endpoints manually and could not inspect/retry directly from the list.
+
+**RCA:** `/api/admin/ai/operations/activity` rows came only from `ai_operations` and did not project payload-table existence. `AiOperationsPage` Activity tab rendered telemetry-only columns, with no per-row Dialog/AlertDialog action path.
+
+**Fix:**
+- Backend `list_ai_operations_page()` now projects `has_payload` via `EXISTS` against `ai_operation_payloads`, normalized to boolean in returned rows.
+- Added backend coverage for `has_payload` at DB and admin endpoint levels (`test_usage_aggregates_and_activity_pagination`, `test_activity_endpoint_includes_has_payload_boolean`).
+- AI Operations Activity tab now:
+  - shows **View payload** + **Retry** only when `has_payload=true`,
+  - opens payload inspector via `Modal` (messages JSON + response excerpt),
+  - confirms retry via `AlertDialog` then calls `POST /api/admin/ai/operations/{operation_id}/retry`,
+  - toasts success/failure and refreshes the list after retry.
+- HelpTip copy updated to: “Metadata always; failure bodies only when `AI_OPERATIONS_STORE_FAILURE_PAYLOADS` is on.”
+- Feed Health cards now add a factual one-liner when `last_error` is `empty LLM response content`: **See Admin → AI operations (error: empty)**.
+- Added small unit gate for action visibility helper: `activityRowHasPayload`.
+
+**Verify:**
+- `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python -m pytest tests/test_ai_operations_admin.py -q` ✅ (8 passed)
+- `cd frontend && npm run test:unit -- src/pages/admin/aiOperationsActivityActions.test.js` ✅ (301 pass / 0 fail in current unit suite run)
+- `cd frontend && npm run build` ✅
+
+**Notes:**
+- This task intentionally keeps payload body visibility opt-in and does not alter default recording behavior.
+- `graphify` CLI was unavailable in this cloud run (`command not found`), so file exploration used direct reads/searches.
+
+---
+
+## 2026-07-22 — Program D Task 2: Risk Register live self-stack cap honesty
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42`
+
+**Symptom:** Risk Register exposed only admitted live self-stack rows (`<=50`) and gave no
+signal when additional scored matches were truncated, so operators could misread "all rows
+shown" as "all matches."
+
+**RCA:** `merge.self_stack_risk_rows()` returned only a capped list (`[:50]`) with no
+companion stats. `/api/security-architecture/section/risks` surfaced `count/items` only, so
+the UI had no source-of-truth counters for candidates vs scored vs admitted.
+
+**Fix:**
+- Added `merge.self_stack_risk_rows_with_stats()` and `empty_self_stack_risk_stats()` while
+  keeping `self_stack_risk_rows()` list-return compatible for existing callers
+  (`self_cve_exposure_summary` unchanged).
+- Added additive `live_self_stack` on risks section payload:
+  `{candidate_rows, scored_matches, admitted, cap=50}`.
+- Risk Register UI count line now shows
+  `live self-stack showing X of Y matches (cap 50)` when `scored_matches > admitted` and the
+  origin view is `all`/`live`.
+- No scoring policy change: only 55/100 admission remains; no dismiss/mute controls and no
+  auto-patch behavior added.
+
+**Verify:**
+- `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python -m pytest tests/test_security_architecture_self_stack_risk.py tests/test_security_architecture_live.py -q` ✅
+- `cd frontend && npm run build` ✅
+- `./scripts/verify-local.sh` ❌ blocked by pre-existing `tests/test_nvd_txn_boundary.py`
+  async-plugin environment issue (`Unknown pytest.mark.asyncio`), same known cloud failure
+  noted in prior handovers.
+
+**Operator note:** live self-stack rows remain read-time derived and non-curated; remediation /
+patching remains operator-owned outside this register view.
+
+---
+
+## 2026-07-22 — Program C (S5/S6): Background Sync portal + Forge ATT&CK black band
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42` — Program C Tasks 1–3 complete; plan SSOT
+[`docs/superpowers/plans/2026-07-22-overlays-forge-navigator.md`](superpowers/plans/2026-07-22-overlays-forge-navigator.md).
+
+### S5 — Background Sync dropdown clipped
+
+**Symptom:** Header **Background sync** queue panel (`ApiQueueIndicator`) was cut off or
+hidden behind shell chrome (admin status bar, feed header) when the queue had pending
+NVD/OTX/etc. work.
+
+**RCA:** Panel used a hand-rolled `position: absolute` dropdown (`top: calc(100% + 6px)`)
+with hardcoded `z-index: 400` (350 in admin status bar). It was not portaled, so ancestor
+`overflow` / stacking contexts clipped it — violating design-system §23 (collision-aware
+portaled overlays).
+
+**Fix:** Rebuilt on shared Radix `DropdownMenu` (`DropdownMenuTrigger` /
+`DropdownMenuContent` with `align="end"`, `sideOffset={6}`, `collisionPadding={8}`).
+Removed absolute positioning and raw z-index from CSS; portal uses token stack
+(`--z-dropdown` / `--z-popover`). Gate: `frontend/src/components/ApiQueueIndicator.test.js`.
+
+### S6 — Forge ATT&CK navigator “black band”
+
+**Symptom:** Forge **Coverage** ATT&CK navigator showed a tall solid dark slab when
+coverage was sparse or empty — reads as a broken “black band” instead of an empty matrix.
+
+**RCA:** `.fg-tactic-col-wrap` forced `min-height: min(70vh, 640px)` even with no
+techniques; columns used `--bg2` with low contrast vs technique tiles; global empty copy
+used `//` mono panel instead of shared `EmptyState`; sticky `.fg-nav` sat at `top: 0` and
+competed with the app header.
+
+**Fix:** Content-driven column height (`min-height: auto`; `max-height: min(70vh, 640px)`
+only on `.fg-navigator-scroll--populated`); `--surface-sunken` / `--surface-raised` /
+`--surface-hover` for column and technique contrast; global empty → `EmptyState`; Forge
+subnav `top: 52px` under header. Gate extended:
+`frontend/src/utils/forgeMitreNavigatorGate.test.js`.
+
+**Verify:** `./scripts/verify-local.sh` — **blocked at SQLite pytest** by 6 pre-existing
+failures in `tests/test_nvd_txn_boundary.py` (`async def functions are not natively
+supported` / unknown `@pytest.mark.asyncio` in cloud venv — Program A / #732 txn tests,
+not Program C). Remaining gates green when run separately: design-token lint, ruff F/E9,
+`npm run build`, eslint, `npm run test:unit` (incl. new overlay/Forge gate tests),
+pip-audit, npm audit. Details: `.superpowers/sdd/C-task-3-report.md`.
+
+**Next:** Merge Program C branch after human review; optional sibling: portaled
+`NotificationBell` / clock tz menus (out of scope unless cheap).
+
+---
+
+## 2026-07-22 — Program A Task 2: honest CACHE_REFRESH_* operator copy
+
+**Symptom:** Admin config schema and ONBOARDING described `CACHE_REFRESH_HOUR` /
+`CACHE_REFRESH_MINUTE` as a live “extended-data-source cache refresh” / “Feed cache
+maintenance” schedule; FEED footer previously showed `(auto daily …)` from the same
+orphaned env (Task 1 removed UI consumption).
+
+**RCA:** `CACHE_REFRESH_*` vars and `get_refresh_schedule()` were legacy leftovers with
+**no APScheduler job** bound — operators were misled into tuning a non-existent daily job.
+
+**Fix:** `config_schema` help_text marks both keys unused (env compatibility only);
+`.env.example` comment; ONBOARDING table row; `PRODUCT_STATUS` FEED refresh honesty row;
+`test_config_schema.test_cache_refresh_help_does_not_claim_live_job` guards regression.
+Did **not** add a scheduler job.
+
+**Next:** Program A merge gate (`./scripts/verify-local.sh`); continue Program B+.
+
+---
+
 ## 2026-07-22 — Docs truth pass after #731–#733 (then graphify)
 
 **Why:** Post-merge audit — living docs lagged #731 (auth refresh race), study-guide still

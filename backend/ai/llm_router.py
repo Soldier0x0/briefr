@@ -6,6 +6,7 @@ never parallel-call the same CVE on multiple providers.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from dataclasses import dataclass
@@ -24,6 +25,11 @@ from ai.model_catalog import gemini_model as gemini_model  # re-export for tests
 from ai.openai_chat import openai_chat_completion
 from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
 from api_queue_operations import LLM_TASK_OPERATIONS
+from database import get_db
+from db.ai_operation_payloads import (
+    insert_ai_operation_payload,
+    store_failure_payloads_enabled,
+)
 from resilient_client import CircuitOpenError, record_source_success
 
 logger = logging.getLogger(__name__)
@@ -179,9 +185,9 @@ async def _record_attempt(
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
     usage: dict | None = None,
-) -> None:
+) -> str | None:
     usage = usage or {}
-    await record_llm_attempt(
+    return await record_llm_attempt(
         task=task,
         provider=step.provider,
         model=step.model,
@@ -199,6 +205,34 @@ async def _record_attempt(
     )
 
 
+async def _store_failure_payload(
+    *,
+    operation_id: str | None,
+    messages: list[dict[str, str]],
+    response_excerpt: str | None,
+    task: LLMTask,
+    step: ProviderStep,
+) -> None:
+    if not operation_id or not store_failure_payloads_enabled():
+        return
+    db = await get_db()
+    try:
+        await insert_ai_operation_payload(
+            db,
+            operation_id=operation_id,
+            messages_json=json.dumps(messages, ensure_ascii=True),
+            response_excerpt=response_excerpt,
+            task_class=task,
+            provider=step.provider,
+            model=step.model,
+        )
+        await db.commit()
+    except Exception:
+        logger.warning("Failed to record ai_operation_payloads row", exc_info=True)
+    finally:
+        await db.close()
+
+
 async def chat_completion_task(
     task: LLMTask,
     *,
@@ -208,6 +242,9 @@ async def chat_completion_task(
     timeout: float | None = None,
     cve_id: str | None = None,
     on_provider_attempt: Callable[[str], None] | None = None,
+    context_type: str | None = None,
+    context_id: str | None = None,
+    ignore_provider_circuit: bool = False,
 ) -> LLMCompletion | None:
     """Try providers in failover order; return first non-empty completion."""
     if timeout is None:
@@ -221,8 +258,8 @@ async def chat_completion_task(
         return None
 
     queue_operation = LLM_TASK_OPERATIONS.get(task, "outbound_request")
-    queue_context_type = "cve" if cve_id else "task"
-    queue_context_id = cve_id if cve_id else task
+    queue_context_type = context_type if context_type is not None else ("cve" if cve_id else "task")
+    queue_context_id = context_id if context_id is not None else (cve_id if cve_id else task)
 
     attempt_index = 0
     last_failed_provider: str | None = None
@@ -254,7 +291,7 @@ async def chat_completion_task(
             last_failed_model = step.model
             attempt_index += 1
             continue
-        if provider_circuit_open(step.provider):
+        if (not ignore_provider_circuit) and provider_circuit_open(step.provider):
             logger.info(
                 "Skipping LLM provider %s for task %s — circuit open",
                 step.provider,
@@ -306,7 +343,7 @@ async def chat_completion_task(
                 )
             logger.warning("LLM %s returned empty content for task %s", step.provider, task)
             mark_provider_empty_response(step.provider)
-            await _record_attempt(
+            operation_id = await _record_attempt(
                 task=task,
                 step=step,
                 timer=timer,
@@ -315,6 +352,13 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class=classify_llm_error(None, empty=True),
+            )
+            await _store_failure_payload(
+                operation_id=operation_id,
+                messages=messages,
+                response_excerpt="",
+                task=task,
+                step=step,
             )
             last_failed_provider = step.provider
             last_failed_model = step.model
@@ -326,7 +370,7 @@ async def chat_completion_task(
                 task,
                 exc,
             )
-            await _record_attempt(
+            operation_id = await _record_attempt(
                 task=task,
                 step=step,
                 timer=timer,
@@ -335,6 +379,13 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class=classify_llm_error(exc),
+            )
+            await _store_failure_payload(
+                operation_id=operation_id,
+                messages=messages,
+                response_excerpt=str(exc),
+                task=task,
+                step=step,
             )
             last_failed_provider = step.provider
             last_failed_model = step.model
@@ -346,7 +397,7 @@ async def chat_completion_task(
                 task,
                 exc,
             )
-            await _record_attempt(
+            operation_id = await _record_attempt(
                 task=task,
                 step=step,
                 timer=timer,
@@ -355,6 +406,13 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class=classify_llm_error(exc),
+            )
+            await _store_failure_payload(
+                operation_id=operation_id,
+                messages=messages,
+                response_excerpt=str(exc),
+                task=task,
+                step=step,
             )
             last_failed_provider = step.provider
             last_failed_model = step.model

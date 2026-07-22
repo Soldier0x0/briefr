@@ -96,6 +96,7 @@ def test_run_retention_cleanup_returns_counts(tmp_path, monkeypatch):
                 "otx_cve_pulses",
                 "otx_pulse_iocs",
                 "ai_operations",
+                "ai_operation_payloads",
                 "webhook_delivery_log",
                 "webhook_dedupe_stranded",
                 "audit_log",

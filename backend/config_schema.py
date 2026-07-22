@@ -106,9 +106,9 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("OTX_CORRELATION_TIMEZONE", "scheduler_cron", "str", restart_required=True,
                 help_text="IANA timezone the OTX correlation job is scheduled in."),
     ConfigField("CACHE_REFRESH_HOUR", "scheduler_cron", "int", min=0, max=23,
-                help_text="Hour (0-23) the extended-data-source cache refresh runs."),
+                help_text="Unused — no APScheduler job reads CACHE_REFRESH_HOUR (kept for env compatibility)."),
     ConfigField("CACHE_REFRESH_MINUTE", "scheduler_cron", "int", min=0, max=59,
-                help_text="Minute (0-59) the extended-data-source cache refresh runs."),
+                help_text="Unused — no APScheduler job reads CACHE_REFRESH_MINUTE (kept for env compatibility)."),
 
     # ── Ingest tuning ────────────────────────────────────────────────────────
     ConfigField("MAX_CVES_PER_FETCH", "ingest", "int", min=1,

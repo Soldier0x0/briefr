@@ -4,6 +4,7 @@ import { AUDIT_PREFIXES } from './constants.js'
 import { fmtIsoMono } from './formatters.js'
 import { auditActionLabel } from './catalog.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
+import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 
 function hasAuditDetail(row) {
   if (!row) return false
@@ -84,7 +85,14 @@ export default function AuditLogPage({ toast, urlFilters = {} }) {
         <div className="admin-filter-chips">
           <button className={`filter-chip ${activePrefix === '' ? 'active' : ''}`} onClick={() => load('', 0, search)}>All</button>
           {AUDIT_PREFIXES.map(p => (
-            <button key={p} className={`filter-chip ${activePrefix === p + '.' ? 'active' : ''}`} onClick={() => load(p + '.', 0, search)}>
+            <button
+              key={p}
+              className={`filter-chip ${activePrefix === p + '.' ? 'active' : ''}`}
+              onClick={() => {
+                const prefix = `${p}.`
+                load(toggleChipSelection(activePrefix, prefix, ''), 0, search)
+              }}
+            >
               {p}.*
             </button>
           ))}

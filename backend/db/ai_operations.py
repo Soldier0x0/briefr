@@ -242,7 +242,12 @@ async def list_ai_operations_page(
         SELECT operation_id, task_class, provider, model, success, error_class,
                latency_ms, retry_index, started_at, context_type, context_id,
                input_tokens, output_tokens, total_tokens,
-               fallback_from_provider, fallback_from_model
+               fallback_from_provider, fallback_from_model,
+               EXISTS (
+                   SELECT 1
+                   FROM ai_operation_payloads payload
+                   WHERE payload.operation_id = ai_operations.operation_id
+               ) AS has_payload
         FROM ai_operations
         {where}
         ORDER BY id DESC
@@ -250,7 +255,36 @@ async def list_ai_operations_page(
         """,
         tuple(params),
     )
-    return [dict(row) for row in rows], total
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        item["has_payload"] = bool(item.get("has_payload"))
+        normalized_rows.append(item)
+    return normalized_rows, total
+
+
+async def get_latest_ai_operation_for_context(
+    db: DbConnection,
+    *,
+    context_type: str,
+    context_id: str,
+) -> dict[str, Any] | None:
+    pg = _is_postgres_connection(db)
+    ct_ph = "$1" if pg else "?"
+    cid_ph = "$2" if pg else "?"
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT id, operation_id, success, error_class, provider, model, context_type, context_id
+        FROM ai_operations
+        WHERE context_type = {ct_ph} AND context_id = {cid_ph}
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (context_type, context_id),
+    )
+    if not rows:
+        return None
+    return dict(rows[0])
 
 
 async def count_cve_embeddings(db: DbConnection) -> int:

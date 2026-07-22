@@ -65,10 +65,31 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
 
   const rows = data?.items || []
   const staleCount = rows.filter(r => r.stale).length
+  const liveVisible = rows.filter(r => r.origin === 'live').length
+  const liveSelfStack = data?.live_self_stack
+  const originFilter = filters.origin || ''
+  const showLiveSelfStackCapHonesty = Boolean(
+    liveSelfStack &&
+    originFilter !== 'curated' &&
+    liveSelfStack.scored_matches > liveVisible
+  )
+
+  const countSegments = []
+  if (data) {
+    countSegments.push(`${data.count} row${data.count === 1 ? '' : 's'}`)
+    if (showLiveSelfStackCapHonesty) {
+      countSegments.push(
+        `live self-stack showing ${liveVisible} of ${liveSelfStack.scored_matches} matches (cap ${liveSelfStack.cap})`
+      )
+    }
+    if (staleCount > 0) {
+      countSegments.push(`${staleCount} stale`)
+    }
+  }
 
   const columns = useMemo(() => [
     {
-      id: 'title', label: 'Risk', minWidth: 220,
+      id: 'title', label: 'Risk', minWidth: 220, wrap: true, align: 'left',
       render: (r) => (
         <span>
           {r.title}
@@ -95,7 +116,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
     { id: 'owner', label: 'Owner', width: 110, render: (r) => r.owner || '—' },
     { id: 'matched_term', label: 'Matched Term', width: 130, render: (r) => r.matched_term || '—' },
     { id: 'match_basis', label: 'Match Basis', width: 220, render: (r) => <span className="mono">{matchBasisLabel(r)}</span> },
-    { id: 'summary', label: 'Mitigation / Summary', minWidth: 260, render: (r) => r.summary || '—' },
+    { id: 'summary', label: 'Mitigation / Summary', minWidth: 260, wrap: true, align: 'left', render: (r) => r.summary || '—' },
   ], [])
 
   const activeFilters = ['status', 'severity', 'origin'].filter(k => filters[k])
@@ -106,7 +127,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
         <h2 className="sa-section-title mono">RISK REGISTER</h2>
         {data && (
           <p className="sa-mitre-counts mono">
-            {data.count} row{data.count === 1 ? '' : 's'}{staleCount > 0 ? ` · ${staleCount} stale` : ''}
+            {countSegments.join(' · ')}
           </p>
         )}
       </div>

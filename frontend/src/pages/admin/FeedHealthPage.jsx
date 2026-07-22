@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel, fmtAge } from './formatters.js'
@@ -17,6 +18,8 @@ function FeedSourceCard({
   onReset,
 }) {
   const hasError = Boolean(s.last_error)
+  const lastErrorText = String(s.last_error || '').trim().toLowerCase()
+  const showAiOpsEmptyHint = !isAnalyst && lastErrorText === 'empty llm response content'
   const isDegraded = !s.circuit_open && (s.consecutive_failures || 0) > 0
   let borderColor = 'var(--border)'
   let StatusIcon = CheckCircle2
@@ -56,6 +59,13 @@ function FeedSourceCard({
       {!isAnalyst && s.last_error && (
         <div style={{ fontSize: '0.7rem', color: 'var(--amber)', marginTop: '0.2rem', wordBreak: 'break-all' }} title={s.last_error}>
           {s.last_error.slice(0, 120)}
+        </div>
+      )}
+      {showAiOpsEmptyHint && (
+        <div style={{ fontSize: 'var(--type-meta, 0.75rem)', marginTop: 'var(--space-2)' }}>
+          <Link to="/admin?p=aiops" style={{ color: 'var(--accent)' }}>
+            See Admin → AI operations (error: empty)
+          </Link>
         </div>
       )}
       <button

@@ -1,5 +1,4 @@
 .api-queue-indicator {
-  position: relative;
   flex-shrink: 0;
 }
 
@@ -53,10 +52,6 @@
 }
 
 .api-queue-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 400;
   min-width: 280px;
   max-width: 360px;
   padding: 0.75rem;
@@ -228,10 +223,6 @@
 
 .admin-statusbar .api-queue-indicator {
   margin-right: 0.25rem;
-}
-
-.admin-statusbar .api-queue-dropdown {
-  z-index: 350;
 }
 
 @media (prefers-reduced-motion: reduce) {

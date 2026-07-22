@@ -5,6 +5,7 @@ import DangerZone from './shared/DangerZone.jsx'
 import GuardedPurgePanel from './shared/GuardedPurgePanel.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
+import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 import { fmtAge, fmtIso } from './formatters.js'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
@@ -129,7 +130,17 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
           <div className="admin-action-bar">
             <div className="admin-filter-chips">
               {['all', 'pin', 'snooze'].map(s => (
-                <button key={s} className={`filter-chip ${watchlistState === s ? 'active' : ''}`} onClick={() => setWatchlistState(s)}>
+                <button
+                  key={s}
+                  className={`filter-chip ${watchlistState === s ? 'active' : ''}`}
+                  onClick={() => {
+                    if (s === 'all') {
+                      setWatchlistState('all')
+                      return
+                    }
+                    setWatchlistState((prev) => toggleChipSelection(prev, s, 'all'))
+                  }}
+                >
                   {s === 'snooze' ? 'Snoozed' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}

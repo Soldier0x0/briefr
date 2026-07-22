@@ -4,13 +4,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const CSS_PATH = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'components',
-  'ui',
-  'DataGrid.css',
-)
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const CSS_PATH = path.join(ROOT, 'src', 'components', 'ui', 'DataGrid.css')
+const JSX_PATH = path.join(ROOT, 'src', 'components', 'ui', 'DataGrid.jsx')
 
 function readCss() {
   return fs.readFileSync(CSS_PATH, 'utf8')
@@ -52,5 +48,11 @@ describe('PM-2b DataGrid standard gate', () => {
       /\.data-grid-scroll\s*\{[^}]*overflow-x:\s*auto/,
       'missing horizontal scroll on .data-grid-scroll',
     )
+  })
+
+  it('DataGrid cellStyle honors column.wrap', () => {
+    const src = fs.readFileSync(JSX_PATH, 'utf8')
+    assert.match(src, /col\.wrap/)
+    assert.match(src, /whiteSpace:\s*col\.wrap\s*\?\s*['"]normal['"]/)
   })
 })

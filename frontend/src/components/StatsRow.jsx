@@ -1,6 +1,9 @@
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import ControlTooltip from './ControlTooltip.jsx'
+import { deltaToneClass } from './statsRowDelta.js'
 import './StatsRow.css'
+
+export { deltaToneClass } from './statsRowDelta.js'
 
 function formatDelta(delta) {
   if (delta == null || Number.isNaN(delta)) return null
@@ -17,6 +20,7 @@ function StatCell({
   interactive,
   explain,
   delta,
+  deltaPolarity = 'worse-up',
 }) {
   const Tag = onClick ? 'button' : 'div'
   const deltaText = formatDelta(delta)
@@ -37,7 +41,7 @@ function StatCell({
             to say. Nonzero deltas are unaffected. */}
         {!loading && deltaText != null && delta !== 0 && (
           <span
-            className={`stat-delta mono stat-delta--${delta > 0 ? 'up' : 'down'}`}
+            className={`stat-delta mono ${deltaToneClass(delta, deltaPolarity)}`}
             title="Change in publications vs prior 24h"
           >
             {deltaText}
@@ -130,6 +134,7 @@ export default function StatsRow({
         variant="green"
         loading={loading}
         delta={stats?.patched_delta}
+        deltaPolarity="better-up"
         interactive
         onClick={() => onStatTileClick?.('patched')}
       />

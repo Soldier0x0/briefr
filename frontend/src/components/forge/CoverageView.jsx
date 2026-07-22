@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EmptyState } from '../ui/index.js'
 import { SkeletonRows } from './shared.jsx'
 import { groupCoverageByTactic } from './mitreTacticOrder.js'
 
@@ -127,13 +128,19 @@ export default function CoverageView({ coverage, loading, stackOnly, selectedTec
       {loading ? (
         <SkeletonRows count={10} />
       ) : columns.length === 0 ? (
-        <p className="fg-panel-empty mono">
-          {stackOnly
-            ? '// No techniques linked to CVEs matching your stack'
-            : '// No techniques mapped yet — wait for the MITRE feed to populate'}
-        </p>
+        <EmptyState
+          title={
+            stackOnly
+              ? 'No techniques linked to CVEs matching your stack'
+              : 'No techniques mapped yet — wait for the MITRE feed to populate'
+          }
+        />
       ) : (
-        <div className="fg-navigator-scroll" role="list" aria-label="ATT&CK tactics">
+        <div
+          className="fg-navigator-scroll fg-navigator-scroll--populated"
+          role="list"
+          aria-label="ATT&CK tactics"
+        >
           {columns.map(({ tactic, techniques, trees }) => (
             <div key={tactic} role="listitem" className="fg-tactic-col-wrap">
               <TacticColumn

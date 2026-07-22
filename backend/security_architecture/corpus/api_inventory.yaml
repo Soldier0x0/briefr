@@ -13,6 +13,12 @@ endpoints:
   path: /api/admin/ai/operations/providers
   component_id: routers-admin-ai_ops
 - method: GET
+  path: /api/admin/ai/operations/{operation_id}/payload
+  component_id: routers-admin-ai_ops
+- method: POST
+  path: /api/admin/ai/operations/{operation_id}/retry
+  component_id: routers-admin-ai_ops
+- method: GET
   path: /api/admin/api-keys/health
   component_id: routers-admin-tokens
 - method: POST

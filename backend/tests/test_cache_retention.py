@@ -192,7 +192,12 @@ def test_run_retention_cleanup_includes_operator_tables(tmp_path, monkeypatch):
         try:
             stats = await db_module.run_retention_cleanup(db)
             await db.commit()
-            for key in ("ai_operations", "webhook_delivery_log", "audit_log"):
+            for key in (
+                "ai_operations",
+                "ai_operation_payloads",
+                "webhook_delivery_log",
+                "audit_log",
+            ):
                 assert key in stats
         finally:
             await db.close()

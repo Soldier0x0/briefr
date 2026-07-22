@@ -1,54 +1,41 @@
-import { useState, useRef, useEffect, useId } from 'react'
 import { Clock } from 'lucide-react'
 import {
-  handleApiQueueDropdownKeyDown,
-  summarizeQueue,
-} from '../utils/apiQueuePresentation.js'
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+} from './ui/index.js'
+import { summarizeQueue } from '../utils/apiQueuePresentation.js'
 import './ApiQueueIndicator.css'
 
 export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen)
-  const ref = useRef(null)
-  const panelId = useId()
-
   const summary = summarizeQueue(apiQueue)
   const { queued, active, count, tone, ariaLabel, groups, summaryStats } = summary
   const pending = Boolean(apiQueue?.has_pending || queued > 0 || active > 0)
 
-  useEffect(() => {
-    if (!open) return undefined
-    function onDown(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    function onKey(e) {
-      handleApiQueueDropdownKeyDown(e, setOpen)
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   if (!pending) return null
 
   return (
-    <div className={`api-queue-indicator ${className}`.trim()} ref={ref}>
-      <button
-        type="button"
-        className={`api-queue-btn api-queue-btn--${tone}`}
-        onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label={ariaLabel}
-        title="Background enrichment queue — external API calls wait for provider limits"
-      >
-        <Clock size={14} strokeWidth={2} aria-hidden="true" />
-        <span className="api-queue-count mono">{count}</span>
-      </button>
-      {open && (
-        <div className="api-queue-dropdown" id={panelId} role="region" aria-label="API queue details">
+    <div className={`api-queue-indicator ${className}`.trim()}>
+      <DropdownMenu defaultOpen={defaultOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={`api-queue-btn api-queue-btn--${tone}`}
+            aria-label={ariaLabel}
+            title="Background enrichment queue — external API calls wait for provider limits"
+          >
+            <Clock size={14} strokeWidth={2} aria-hidden="true" />
+            <span className="api-queue-count mono">{count}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          className="api-queue-dropdown"
+          align="end"
+          sideOffset={6}
+          collisionPadding={8}
+          role="region"
+          aria-label="API queue details"
+        >
           <div className="api-queue-dropdown-title">Background sync</div>
           <p className="api-queue-dropdown-sub">
             External API calls are queued so nothing is dropped when providers throttle.
@@ -98,8 +85,8 @@ export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpe
               ))}
             </div>
           )}
-        </div>
-      )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

@@ -54,6 +54,18 @@ describe('PM-4d Forge MITRE navigator gate', () => {
     assert.doesNotMatch(css, /\.fg-tactic-expand\b/)
   })
 
+  it('avoids forcing huge empty tactic columns', () => {
+    const css = read(CSS)
+    assert.doesNotMatch(css, /\.fg-tactic-col-wrap\s*\{[^}]*min-height:\s*min\(70vh,\s*640px\)/)
+    assert.doesNotMatch(css, /\.fg-tactic-col\s*\{[^}]*min-height:\s*min\(70vh,\s*640px\)/)
+  })
+
+  it('shows EmptyState when coverage has no techniques', () => {
+    const view = read(COVERAGE)
+    assert.match(view, /EmptyState/)
+    assert.doesNotMatch(view, /fg-panel-empty/)
+  })
+
   it('Forge.css brace-balanced (guards lightningcss @keyframes minify crash)', () => {
     const css = read(CSS)
     const cleanCss = css

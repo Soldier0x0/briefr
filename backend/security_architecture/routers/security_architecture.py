@@ -431,6 +431,7 @@ async def get_section(
         raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
 
     rows = _rows(corpus, corpus_key, list_key)
+    live_self_stack = None
 
     if section_id == "controls":
         rows = merge.enrich_controls(rows)
@@ -438,13 +439,15 @@ async def get_section(
     # Skip the query entirely when the requested filters can't include live
     # rows anyway: origin=curated excludes them by definition, and stale=true
     # only ever matches curated rows (live rows carry no review_date).
-    if section_id == "risks" and origin != "curated" and not stale:
-        db = await get_db()
-        try:
-            live_rows = await merge.self_stack_risk_rows(db, corpus)
-        finally:
-            await db.close()
-        rows = [*rows, *live_rows]
+    if section_id == "risks":
+        live_self_stack = merge.empty_self_stack_risk_stats()
+        if origin != "curated" and not stale:
+            db = await get_db()
+            try:
+                live_rows, live_self_stack = await merge.self_stack_risk_rows_with_stats(db, corpus)
+            finally:
+                await db.close()
+            rows = [*rows, *live_rows]
 
     # TM-5 (spec §5.14): Review History merges curated reviews.yaml with
     # live audit_log security events -- reuses the audit_log table + the
@@ -472,13 +475,16 @@ async def get_section(
     if stale:
         rows = [r for r in rows if isinstance(r, dict) and r.get("stale")]
 
-    return {
+    payload = {
         "section": section_id,
         "type": resolved_type,
         "available_types": list(sources.keys()),
         "count": len(rows),
         "items": rows,
     }
+    if section_id == "risks":
+        payload["live_self_stack"] = live_self_stack
+    return payload
 
 
 def _all_curated_rows_by_section(corpus: dict[str, Any]) -> list[dict[str, Any]]:

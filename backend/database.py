@@ -25,6 +25,7 @@ from db.embeddings_store import (
 from db.enrichment import *
 from db.cache import *
 from db.cache_retention import (
+    purge_old_ai_operation_payloads,
     purge_old_ai_operations,
     purge_old_audit_log,
     purge_old_cve_change_history,
@@ -42,6 +43,7 @@ from db.app_settings import *
 from db.metadata import *
 from db.webhooks import *
 from db.ai_operations import *
+from db.ai_operation_payloads import *
 
 # Re-export constants (also covered by the star-imports above; explicit here
 # for discoverability, per docs/archive/superseded/REFACTOR_PLAN.md shim template).

@@ -16,6 +16,7 @@ import {
   schedulerJobResumed,
   schedulerJobRetry,
 } from './toastCopy.js'
+import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 const PAGE_SIZE = 10
@@ -212,9 +213,21 @@ export default function SchedulerPage({ toast, system }) {
           <HelpTip text="ACTIVE = running on schedule. PAUSED = won't run until you resume it (operator pause). RUNNING = currently executing (can't be triggered again until done). DISABLED = registered but turned off in configuration — enable the matching setting under API keys & config. Sources paused separately means an upstream API is cooling down after failures." />
         </div>
         <div className="admin-filter-chips" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-          <button className={`filter-chip ${statusFilter === '' ? 'active' : ''}`} onClick={() => { setStatusFilter(''); setPage(0) }}>All</button>
+          <button
+            className={`filter-chip ${statusFilter === '' ? 'active' : ''}`}
+            onClick={() => { setStatusFilter(''); setPage(0) }}
+          >
+            All
+          </button>
           {STATUS_FILTERS.map(s => (
-            <button key={s} className={`filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => { setStatusFilter(s); setPage(0) }}>
+            <button
+              key={s}
+              className={`filter-chip ${statusFilter === s ? 'active' : ''}`}
+              onClick={() => {
+                setStatusFilter((prev) => toggleChipSelection(prev, s, ''))
+                setPage(0)
+              }}
+            >
               {s}
             </button>
           ))}

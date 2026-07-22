@@ -43,7 +43,9 @@ DB_DIR = BACKEND / "db"
 
 # Baseline same-file _PG/_SQLITE pair count at W8 land (2026-07-20).
 # May only stay equal or decrease unless intentionally raised in review.
-ALLOWED_MAX = 133
+# Raised 133→136 for Program E (2026-07-22): ai_operation_payloads INSERT +
+# SELECT_BY_OPERATION_ID + cache_retention purge pair (SQLite parity required).
+ALLOWED_MAX = 136
 
 _ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*=")
 _PG_ONLY_RE = re.compile(r"#\s*pg-only\b", re.IGNORECASE)

@@ -6,6 +6,7 @@ import { scrollBehavior } from '../utils/motion.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import ExplainTip from './ExplainTip.jsx'
 import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
+import { toggleChipSelection } from '../utils/toggleChipSelection.js'
 import './WhatChangedPanel.css'
 
 const FIELD_CHIPS = [
@@ -167,7 +168,13 @@ export default function WhatChangedPanel({ onSelectCVE, fetchEnabled = true }) {
                   type="button"
                   className={`what-changed-chip${fieldFilter === chip.id ? ' active' : ''}`}
                   aria-pressed={fieldFilter === chip.id}
-                  onClick={() => setFieldFilter(chip.id)}
+                  onClick={() => {
+                    if (chip.id == null) {
+                      setFieldFilter(null)
+                      return
+                    }
+                    setFieldFilter((prev) => toggleChipSelection(prev, chip.id, null))
+                  }}
                 >
                   {chip.label}
                 </button>
@@ -181,7 +188,7 @@ export default function WhatChangedPanel({ onSelectCVE, fetchEnabled = true }) {
                 type="button"
                 className={`what-changed-chip what-changed-chip-window${sinceHours === chip.hours ? ' active' : ''}`}
                 aria-pressed={sinceHours === chip.hours}
-                onClick={() => setSinceHours(chip.hours)}
+                onClick={() => setSinceHours((prev) => toggleChipSelection(prev, chip.hours, null))}
               >
                 {chip.label}
               </button>
