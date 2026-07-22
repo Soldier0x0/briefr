@@ -162,8 +162,8 @@ All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebra
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit for a zero-config local SQLite dev/test fallback |
-| `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production) |
+| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit **or** set empty (`DATABASE_URL=""`) for zero-config local SQLite. If `.env` has a placeholder Postgres DSN and nothing listens on `:5432`, startup fails with `ConnectionRefusedError` — clear the URL and set `BRIEFR_REQUIRE_POSTGRES=0` (cloud/bare VM; see `AGENTS.md`) |
+| `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production). Use `0` with empty `DATABASE_URL` for SQLite-only cloud/dev boxes without Docker |
 | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
 | `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | `60` | SQL statement timeout only — not feed HTTP; see [POSTGRES.md](POSTGRES.md) |
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |

@@ -1,14 +1,14 @@
 # Study guide file inventory
 
-_Regenerated 2026-07-21 by `scripts/audit_study_guide.py`. Do not hand-edit; re-run the script._
+_Regenerated 2026-07-22 by `scripts/audit_study_guide.py`. Do not hand-edit; re-run the script._
 
 | Status | Count |
 |--------|------:|
-| `covered` | 646 |
+| `covered` | 647 |
 | `weak` | 0 |
 | `gap` | 0 |
 | `orphan_mention` | 1 |
-| `out_of_scope` | 85 |
+| `out_of_scope` | 86 |
 
 | Path | Status | Chapters | Evidence / notes |
 |------|--------|----------|------------------|
@@ -130,6 +130,7 @@ _Regenerated 2026-07-21 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `backend/db/sync_state.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/threatfox.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/timeutil.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
+| `backend/db/txn_boundaries.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/types.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/user_notifications.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
 | `backend/db/watchlist.py` | `covered` | `be-data`, `system-design` | exact path mention in chapter body/chips |
@@ -612,6 +613,7 @@ _Regenerated 2026-07-21 by `scripts/audit_study_guide.py`. Do not hand-edit; re-
 | `frontend/src/utils/architectureGraphView.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/architectureGraphView.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/assetProfileIo.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
+| `frontend/src/utils/authRefreshRaceGate.test.js` | `out_of_scope` | — | ; FE gate/unit test; aggregate into Testing strategy chapter |
 | `frontend/src/utils/backendRestart.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/campaignClusterOpen.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |
 | `frontend/src/utils/caseStudyFeed.js` | `covered` | `fe-shared-utils` | exact path mention in chapter body/chips |

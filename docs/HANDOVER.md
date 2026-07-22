@@ -12,6 +12,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Docs truth pass after #731–#733 (then graphify)
+
+**Why:** Post-merge audit — living docs lagged #731 (auth refresh race), study-guide still
+showed AuthContext bare `/auth/refresh`, BACKLOG §9b/§12 still marked shipped UI-M/PM
+phases as open, DOCUMENTATION_PLAN still said tokens “spec until wired”.
+
+**Done:**
+- `PRODUCT_STATUS` Auth + documentation rollout; `SYSTEM_DESIGN` FE refresh dedupe;
+  `TROUBLESHOOTING` sticky Not authenticated + cloud SQLite; `ONBOARDING` empty DSN;
+  `DOCUMENTATION_PLAN` tokens wired; `BACKLOG` reconciled (PM ✅, UI-M phases, Gemini sunset).
+- `STUDY_GUIDE.html` auth chapter → regenerate `study-guide/` + `learn/`.
+- Graphify refresh after this commit: `10894` nodes / `23175` edges / `559` communities
+  (`graphify update . --force`; `graphify-out/` gitignored).
+
+**Next:** No open PRs; deploy/verify VulnCheck after #732 remains the ops follow-up.
+
+---
+
 ## 2026-07-21 — RCA: intermittent BRIEF "Not authenticated" while header shows user
 
 **Symptom:** BRIEF hero stats strip shows `Not authenticated (ref: …)` + Retry while
@@ -29,8 +47,8 @@ widgets with a sticky 401 while React auth state briefly still had the user.
 no bare `/auth/refresh` and no redundant second refresh in the catch (Gemini review).
 Gate: `frontend/src/utils/authRefreshRaceGate.test.js`.
 
-**Next:** Merge after review; multi-tab refresh races remain a residual edge (same
-reuse detector by design).
+**Next:** Merged via PR #731; multi-tab refresh races remain a residual edge (same
+reuse detector by design). Docs truth pass 2026-07-22.
 
 ---
 

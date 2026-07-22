@@ -1,6 +1,6 @@
 # Study guide coverage gaps
 
-_Regenerated 2026-07-21 by `scripts/audit_study_guide.py`._
+_Regenerated 2026-07-22 by `scripts/audit_study_guide.py`._
 
 Every in-scope file with status `gap` or `orphan_mention`, plus a heuristic chapter home.
 

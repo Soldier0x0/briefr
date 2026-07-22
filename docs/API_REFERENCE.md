@@ -73,6 +73,8 @@ Built-in app login (Sprint A0). Sessions use HttpOnly cookies:
 
 **Error responses:** `401` when cookie missing, session revoked, user inactive, **`sessions.expires_at` in the past**, or refresh-token reuse detected (reuse revokes all sessions for the user).
 
+**Client note (#731):** The SPA must share one in-flight refresh (`frontend/src/api.js` `refreshAccessToken`). Concurrent bare `POST /api/auth/refresh` calls after rotation trip reuse detection and revoke every session for the user.
+
 ### GET /api/auth/me
 
 **Auth:** Required (`briefr_at`)

@@ -150,6 +150,8 @@
 
       <pre class="code"><code><span class="kw">const</span> refreshAuthState = useCallback(<span class="kw">async</span> () => {
   <span class="kw">try</span> {
+    <span class="cmt">// fetchMe → request() already refreshes once on 401 via shared</span>
+    <span class="cmt">// refreshAccessToken(); never bare-fetch /auth/refresh (reuse race).</span>
     <span class="kw">const</span> me = <span class="kw">await</span> fetchMe()
     setUser(me)
     setStatus(<span class="str">'authed'</span>)
@@ -157,14 +159,16 @@
     <span class="kw">await</span> loadUserPreferences()
     <span class="kw">return</span> me
   } <span class="kw">catch</span> {
-    <span class="cmt">// Access cookie may have expired while a persistent refresh cookie remains.</span>
-    <span class="kw">try</span> {
-      <span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">'/api/auth/refresh'</span>, { method: <span class="str">'POST'</span>, credentials: <span class="str">'include'</span> })
-      <span class="cmt">/* ...on success, re-fetch /me and retry */</span></code></pre>
-      <p class="code-caption">context/AuthContext.jsx — the silent-refresh fallback baked directly into the auth state hook</p>
+    setUser(<span class="kw">null</span>)
+    setStatus(<span class="str">'anon'</span>)
+    <span class="cmt">/* clear stack + prefs */</span>
+    <span class="kw">return</span> <span class="kw">null</span>
+  }
+}, [])</code></pre>
+      <p class="code-caption">context/AuthContext.jsx — bootstrap via <code>fetchMe()</code>; silent refresh lives in shared <code>api.js</code> <code>request()</code></p>
 
       <div class="prose">
-        <p>That snippet is worth pausing on, because it's a small piece of frontend code that only makes sense once you already understand Chapter 11's two-token auth design: the frontend never has to know explicitly "my access token just expired" — <code>refreshAuthState</code> just tries <code>/api/auth/me</code>, and if that fails, transparently attempts a silent refresh via the httpOnly refresh cookie before giving up and treating the user as logged out. The frontend's Context layer and the backend's token design were built to fit each other; you can't fully explain either one in isolation.</p>
+        <p>That snippet is worth pausing on once you understand Chapter 11's two-token auth design. <code>refreshAuthState</code> only calls <code>fetchMe()</code> (<code>GET /api/auth/me</code>). On a 401, <code>api.js</code> <code>request()</code> already runs a <strong>shared in-flight</strong> <code>refreshAccessToken()</code> (one <code>POST /api/auth/refresh</code> for concurrent callers) and retries once — so AuthContext must <em>not</em> bare-fetch <code>/auth/refresh</code>. A parallel bare refresh used to race API retries, trip backend reuse detection, revoke every session, and leave BRIEF sticky "Not authenticated" while the header still showed the user (#731). The Context layer and the token design fit each other; you can't fully explain either in isolation.</p>
       </div>
 
       <h4 class="subhead how">How preferences escape the "just this browser tab" trap</h4>
@@ -176,7 +180,7 @@
         <h4>Self-check</h4>
         <ol>
           <li>At what point would three Context providers stop being enough? Name a concrete symptom (not a rule of thumb) that would tell you it's time to introduce a real state-management library.</li>
-          <li>Why does <code>refreshAuthState</code> attempt a silent token refresh inside its <code>catch</code> block instead of just logging the user out on the first failed <code>/me</code> call?</li>
+          <li>Why must AuthContext avoid a bare <code>fetch('/api/auth/refresh')</code> even though silent refresh still exists — and where does that refresh actually run?</li>
           <li>What would break for a user if their asset stack were stored in <code>localStorage</code> instead of synced through <code>routers/me.py</code>?</li>
         </ol>
       </div>
