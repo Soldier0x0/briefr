@@ -12,6 +12,7 @@ import {
 } from '../utils/kevDeadline.js'
 import { formatSinceHoursLabel } from '../utils/morningBriefFormat.js'
 import { formatSectionHeading } from '../utils/sectionHeading.js'
+import { toggleChipSelection } from '../utils/toggleChipSelection.js'
 import './MorningBrief.css'
 
 const REASON_LABELS = {
@@ -224,7 +225,13 @@ export default function MorningBrief({
                 key={f.id}
                 type="button"
                 className={`morning-brief-filter-chip mono${reasonFilter === f.id ? ' morning-brief-filter-chip--active' : ''}`}
-                onClick={() => onReasonFilterChange?.(f.id)}
+                onClick={() => {
+                  if (f.id === 'all') {
+                    onReasonFilterChange?.('all')
+                    return
+                  }
+                  onReasonFilterChange?.(toggleChipSelection(reasonFilter, f.id, 'all'))
+                }}
                 aria-pressed={reasonFilter === f.id}
               >
                 {f.label}

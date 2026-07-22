@@ -15,6 +15,7 @@ import { formatSectionHeading } from '../utils/sectionHeading.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import FeedVisibleRange from './FeedVisibleRange.jsx'
 import { nextLocalStack } from '../utils/stackLocalSync.js'
+import { toggleChipSelection } from '../utils/toggleChipSelection.js'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
@@ -202,13 +203,14 @@ export default function FilterBar({
       poc_only: false,
       watchlist_only: false,
     }
-    if (id === 'watchlist')     onFiltersChange({ ...base, watchlist_only: true })
-    else if (id === 'kev')           onFiltersChange({ ...base, kev_only: true })
-    else if (id === 'kev_overdue')   onFiltersChange({ ...base, kev_overdue_only: true })
-    else if (id === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
-    else if (id === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
-    else if (id === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })
-    else if (id === 'poc')      onFiltersChange({ ...base, poc_only: true })
+    const next = toggleChipSelection(active, id, 'all')
+    if (next === 'watchlist')     onFiltersChange({ ...base, watchlist_only: true })
+    else if (next === 'kev')           onFiltersChange({ ...base, kev_only: true })
+    else if (next === 'kev_overdue')   onFiltersChange({ ...base, kev_overdue_only: true })
+    else if (next === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
+    else if (next === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
+    else if (next === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })
+    else if (next === 'poc')      onFiltersChange({ ...base, poc_only: true })
     else                        onFiltersChange(base)
   }
 

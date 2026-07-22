@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { adminApi, getAdminRequestId } from '../../api.js'
 import { DateTimePicker } from '../../components/ui/index.js'
+import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 import { AdminFormSkeleton } from './shared/AdminSkeletons.jsx'
 import {
   CATCHUP_DESCRIPTION,
@@ -131,7 +132,7 @@ export default function CatchupCard({ toast }) {
   }
 
   function selectPreset(hours) {
-    setSelectedHours(hours)
+    setSelectedHours((prev) => toggleChipSelection(prev, hours, null))
     setCustomEnd('')
   }
 
@@ -241,7 +242,12 @@ export default function CatchupCard({ toast }) {
                 ariaLabel="Select custom Catch-up end time"
               />
             </div>
-            <button type="button" className="admin-btn admin-btn-primary" onClick={startCatchup} disabled={busy}>
+            <button
+              type="button"
+              className="admin-btn admin-btn-primary"
+              onClick={startCatchup}
+              disabled={busy || (!customEnd && selectedHours == null)}
+            >
               {busy ? 'Starting…' : 'Start Catch-up'}
             </button>
           </div>
