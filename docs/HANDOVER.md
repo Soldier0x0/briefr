@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Program A Task 2: honest CACHE_REFRESH_* operator copy
+
+**Symptom:** Admin config schema and ONBOARDING described `CACHE_REFRESH_HOUR` /
+`CACHE_REFRESH_MINUTE` as a live “extended-data-source cache refresh” / “Feed cache
+maintenance” schedule; FEED footer previously showed `(auto daily …)` from the same
+orphaned env (Task 1 removed UI consumption).
+
+**RCA:** `CACHE_REFRESH_*` vars and `get_refresh_schedule()` were legacy leftovers with
+**no APScheduler job** bound — operators were misled into tuning a non-existent daily job.
+
+**Fix:** `config_schema` help_text marks both keys unused (env compatibility only);
+`.env.example` comment; ONBOARDING table row; `PRODUCT_STATUS` FEED refresh honesty row;
+`test_config_schema.test_cache_refresh_help_does_not_claim_live_job` guards regression.
+Did **not** add a scheduler job.
+
+**Next:** Program A merge gate (`./scripts/verify-local.sh`); continue Program B+.
+
+---
+
 ## 2026-07-22 — Docs truth pass after #731–#733 (then graphify)
 
 **Why:** Post-merge audit — living docs lagged #731 (auth refresh race), study-guide still
