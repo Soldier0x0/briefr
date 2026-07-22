@@ -12,6 +12,55 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Program C (S5/S6): Background Sync portal + Forge ATT&CK black band
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42` — Program C Tasks 1–3 complete; plan SSOT
+[`docs/superpowers/plans/2026-07-22-overlays-forge-navigator.md`](superpowers/plans/2026-07-22-overlays-forge-navigator.md).
+
+### S5 — Background Sync dropdown clipped
+
+**Symptom:** Header **Background sync** queue panel (`ApiQueueIndicator`) was cut off or
+hidden behind shell chrome (admin status bar, feed header) when the queue had pending
+NVD/OTX/etc. work.
+
+**RCA:** Panel used a hand-rolled `position: absolute` dropdown (`top: calc(100% + 6px)`)
+with hardcoded `z-index: 400` (350 in admin status bar). It was not portaled, so ancestor
+`overflow` / stacking contexts clipped it — violating design-system §23 (collision-aware
+portaled overlays).
+
+**Fix:** Rebuilt on shared Radix `DropdownMenu` (`DropdownMenuTrigger` /
+`DropdownMenuContent` with `align="end"`, `sideOffset={6}`, `collisionPadding={8}`).
+Removed absolute positioning and raw z-index from CSS; portal uses token stack
+(`--z-dropdown` / `--z-popover`). Gate: `frontend/src/components/ApiQueueIndicator.test.js`.
+
+### S6 — Forge ATT&CK navigator “black band”
+
+**Symptom:** Forge **Coverage** ATT&CK navigator showed a tall solid dark slab when
+coverage was sparse or empty — reads as a broken “black band” instead of an empty matrix.
+
+**RCA:** `.fg-tactic-col-wrap` forced `min-height: min(70vh, 640px)` even with no
+techniques; columns used `--bg2` with low contrast vs technique tiles; global empty copy
+used `//` mono panel instead of shared `EmptyState`; sticky `.fg-nav` sat at `top: 0` and
+competed with the app header.
+
+**Fix:** Content-driven column height (`min-height: auto`; `max-height: min(70vh, 640px)`
+only on `.fg-navigator-scroll--populated`); `--surface-sunken` / `--surface-raised` /
+`--surface-hover` for column and technique contrast; global empty → `EmptyState`; Forge
+subnav `top: 52px` under header. Gate extended:
+`frontend/src/utils/forgeMitreNavigatorGate.test.js`.
+
+**Verify:** `./scripts/verify-local.sh` — **blocked at SQLite pytest** by 6 pre-existing
+failures in `tests/test_nvd_txn_boundary.py` (`async def functions are not natively
+supported` / unknown `@pytest.mark.asyncio` in cloud venv — Program A / #732 txn tests,
+not Program C). Remaining gates green when run separately: design-token lint, ruff F/E9,
+`npm run build`, eslint, `npm run test:unit` (incl. new overlay/Forge gate tests),
+pip-audit, npm audit. Details: `.superpowers/sdd/C-task-3-report.md`.
+
+**Next:** Merge Program C branch after human review; optional sibling: portaled
+`NotificationBell` / clock tz menus (out of scope unless cheap).
+
+---
+
 ## 2026-07-22 — Program A Task 2: honest CACHE_REFRESH_* operator copy
 
 **Symptom:** Admin config schema and ONBOARDING described `CACHE_REFRESH_HOUR` /
