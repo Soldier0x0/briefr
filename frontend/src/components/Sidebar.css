@@ -59,7 +59,7 @@
   color: var(--text3);
 }
 
-/* ── Toggles ── */
+/* ── Your Filters ── */
 .sidebar-filter-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -68,95 +68,9 @@
   margin-bottom: 4px;
 }
 
-.toggle-cell {
-  position: relative;
+.sidebar-filter-cell {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
   min-height: 2.75rem;
-}
-
-.toggle-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: var(--hit-target-min);
-}
-
-.toggle-row:last-of-type {
-  margin-bottom: 0;
-}
-
-.toggle-hover-info {
-  display: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 20;
-  margin: 0;
-  padding: 8px 10px;
-  font-size: 0.6875rem;
-  line-height: 1.45;
-  color: var(--text2);
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-}
-
-.toggle-cell:hover .toggle-hover-info,
-.toggle-cell:focus-within .toggle-hover-info {
-  display: block;
-}
-
-.toggle {
-  width: 36px;
-  min-height: var(--hit-target-min);
-  height: 24px;
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: 0;
-  cursor: pointer;
-  position: relative;
-  flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.toggle:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.toggle-on {
-  background: var(--surface-selected);
-  border-color: var(--border-active);
-}
-
-.toggle-thumb {
-  display: block;
-  width: 10px;
-  height: 10px;
-  background: var(--text3);
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.15s, background 0.15s;
-}
-
-.toggle-on .toggle-thumb {
-  background: var(--accent-primary);
-  transform: translateX(20px);
-}
-
-.toggle-label {
-  font-size: 0.8125rem;
-  color: var(--text2);
-  cursor: pointer;
-  user-select: none;
-  line-height: 1.25;
-  padding-top: 2px;
 }
 
 .sidebar-filter-hint {

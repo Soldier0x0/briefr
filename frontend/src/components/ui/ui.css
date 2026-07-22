@@ -542,17 +542,17 @@
 
 .ui-switch-thumb {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--text);
-  transform: translateX(2px);
+  transform: translateX(3px);
   transition: transform var(--transition-fast);
   will-change: transform;
 }
 
 .ui-switch[data-state='checked'] .ui-switch-thumb {
-  transform: translateX(18px);
+  transform: translateX(17px);
   background: var(--text-on-accent);
 }
 
@@ -567,6 +567,12 @@
 .ui-switch-label--disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.ui-switch-label-text {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
 }
 
 /* Chart data table fallback (E6-5) */

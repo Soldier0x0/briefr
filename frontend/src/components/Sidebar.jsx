@@ -5,12 +5,13 @@ import { ingestLogUrl } from '../utils/adminLinks.js'
 import { getSavedStack } from '../utils/cveFilters.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import ExplainTip from './ExplainTip.jsx'
+import Switch from './ui/Switch.jsx'
 import { DOMAIN_TERM_TIPS } from '../utils/domainTermTips.js'
 import './Sidebar.css'
 
 const SIDEBAR_FILTERS = [
   {
-    id: 'toggle-kev',
+    id: 'filter-kev',
     field: 'kev_only',
     label: 'KEV only',
     hint: 'Only CVEs on CISA\'s Known Exploited Vulnerabilities catalog.',
@@ -18,7 +19,7 @@ const SIDEBAR_FILTERS = [
     isChecked: (filters) => !!filters.kev_only,
   },
   {
-    id: 'toggle-poc',
+    id: 'filter-poc',
     field: 'poc_only',
     label: 'PoC public',
     hint: 'Only CVEs with a public proof-of-concept exploit available.',
@@ -26,7 +27,7 @@ const SIDEBAR_FILTERS = [
     isChecked: (filters) => !!filters.poc_only,
   },
   {
-    id: 'toggle-epss',
+    id: 'filter-epss',
     field: 'epss_min',
     label: 'EPSS > 50%',
     hint: DOMAIN_TERM_TIPS.epss + ' This toggle keeps CVEs at or above 50%.',
@@ -34,7 +35,7 @@ const SIDEBAR_FILTERS = [
     isChecked: (filters) => filters.epss_min === 0.5,
   },
   {
-    id: 'toggle-my-stack',
+    id: 'filter-my-stack',
     field: 'my_stack_only',
     label: 'My stack only',
     hint: 'Limit results to CVEs matching your saved stack terms from the feed bar.',
@@ -42,32 +43,6 @@ const SIDEBAR_FILTERS = [
     isChecked: (filters) => !!filters.my_stack_only,
   },
 ]
-
-function Toggle({ label, hint, checked, onChange, id }) {
-  return (
-    <div className="toggle-cell">
-      <div className="toggle-row">
-        <button
-          id={id}
-          role="switch"
-          aria-checked={checked}
-          aria-label={label}
-          aria-describedby={`${id}-hint`}
-          className={`toggle${checked ? ' toggle-on' : ''}`}
-          onClick={() => onChange(!checked)}
-        >
-          <span className="toggle-thumb" aria-hidden="true" />
-        </button>
-        <label htmlFor={id} className="toggle-label">
-          {label}
-        </label>
-      </div>
-      <p id={`${id}-hint`} className="toggle-hover-info" role="note">
-        {hint}
-      </p>
-    </div>
-  )
-}
 
 const SPARKLINE_DAYS = 14
 const TOP_TECHNIQUES_LIMIT = 5
@@ -284,14 +259,17 @@ export default function Sidebar({ filters, onFiltersChange }) {
 
         <div className="sidebar-filter-grid">
           {SIDEBAR_FILTERS.map(def => (
-            <Toggle
-              key={def.id}
-              id={def.id}
-              label={def.label}
-              hint={def.hint}
-              checked={def.isChecked(filters)}
-              onChange={(val) => handleFilterChange(def, val)}
-            />
+            <div key={def.id} className="sidebar-filter-cell">
+              <ControlTooltip text={def.hint} trigger="hover-focus">
+                <Switch
+                  id={def.id}
+                  checked={def.isChecked(filters)}
+                  onCheckedChange={(val) => handleFilterChange(def, val)}
+                  label={def.label}
+                  disabled={def.field === 'my_stack_only' && !savedStack}
+                />
+              </ControlTooltip>
+            </div>
           ))}
         </div>
 
