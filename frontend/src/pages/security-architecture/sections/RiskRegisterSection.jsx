@@ -65,12 +65,13 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
 
   const rows = data?.items || []
   const staleCount = rows.filter(r => r.stale).length
+  const liveVisible = rows.filter(r => r.origin === 'live').length
   const liveSelfStack = data?.live_self_stack
   const originFilter = filters.origin || ''
   const showLiveSelfStackCapHonesty = Boolean(
     liveSelfStack &&
-    (originFilter === '' || originFilter === 'live') &&
-    liveSelfStack.scored_matches > liveSelfStack.admitted
+    originFilter !== 'curated' &&
+    liveSelfStack.scored_matches > liveVisible
   )
 
   const countSegments = []
@@ -78,7 +79,7 @@ export default function RiskRegisterSection({ filters, onFilterChange, corpusVer
     countSegments.push(`${data.count} row${data.count === 1 ? '' : 's'}`)
     if (showLiveSelfStackCapHonesty) {
       countSegments.push(
-        `live self-stack showing ${liveSelfStack.admitted} of ${liveSelfStack.scored_matches} matches (cap ${liveSelfStack.cap})`
+        `live self-stack showing ${liveVisible} of ${liveSelfStack.scored_matches} matches (cap ${liveSelfStack.cap})`
       )
     }
     if (staleCount > 0) {
