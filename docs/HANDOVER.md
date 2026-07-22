@@ -12,6 +12,37 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
+
+**Branch:** `cursor/ux-ops-rca-plans-3f42`
+
+**Symptom:** AI Operations Activity tab had no row-level signal for whether retry payloads existed, so operators had to probe payload/retry endpoints manually and could not inspect/retry directly from the list.
+
+**RCA:** `/api/admin/ai/operations/activity` rows came only from `ai_operations` and did not project payload-table existence. `AiOperationsPage` Activity tab rendered telemetry-only columns, with no per-row Dialog/AlertDialog action path.
+
+**Fix:**
+- Backend `list_ai_operations_page()` now projects `has_payload` via `EXISTS` against `ai_operation_payloads`, normalized to boolean in returned rows.
+- Added backend coverage for `has_payload` at DB and admin endpoint levels (`test_usage_aggregates_and_activity_pagination`, `test_activity_endpoint_includes_has_payload_boolean`).
+- AI Operations Activity tab now:
+  - shows **View payload** + **Retry** only when `has_payload=true`,
+  - opens payload inspector via `Modal` (messages JSON + response excerpt),
+  - confirms retry via `AlertDialog` then calls `POST /api/admin/ai/operations/{operation_id}/retry`,
+  - toasts success/failure and refreshes the list after retry.
+- HelpTip copy updated to: “Metadata always; failure bodies only when `AI_OPERATIONS_STORE_FAILURE_PAYLOADS` is on.”
+- Feed Health cards now add a factual one-liner when `last_error` is `empty LLM response content`: **See Admin → AI operations (error: empty)**.
+- Added small unit gate for action visibility helper: `activityRowHasPayload`.
+
+**Verify:**
+- `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python -m pytest tests/test_ai_operations_admin.py -q` ✅ (8 passed)
+- `cd frontend && npm run test:unit -- src/pages/admin/aiOperationsActivityActions.test.js` ✅ (301 pass / 0 fail in current unit suite run)
+- `cd frontend && npm run build` ✅
+
+**Notes:**
+- This task intentionally keeps payload body visibility opt-in and does not alter default recording behavior.
+- `graphify` CLI was unavailable in this cloud run (`command not found`), so file exploration used direct reads/searches.
+
+---
+
 ## 2026-07-22 — Program D Task 2: Risk Register live self-stack cap honesty
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42`

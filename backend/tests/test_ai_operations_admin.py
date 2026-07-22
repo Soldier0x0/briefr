@@ -83,6 +83,15 @@ def test_usage_aggregates_and_activity_pagination(tmp_path, monkeypatch):
                 fallback_from_provider="groq",
                 fallback_from_model="m1",
             )
+            await insert_ai_operation_payload(
+                db,
+                operation_id="u1",
+                messages_json=json.dumps([{"role": "user", "content": "hello"}]),
+                response_excerpt="timeout",
+                task_class="pdf_summary",
+                provider="groq",
+                model="m1",
+            )
             await db.commit()
             usage = await ai_operations_usage_since(db, hours=24 * 365)
             assert usage["total"] == 2
@@ -90,6 +99,10 @@ def test_usage_aggregates_and_activity_pagination(tmp_path, monkeypatch):
             rows, total = await list_ai_operations_page(db, limit=1, offset=0)
             assert total == 2
             assert len(rows) == 1
+            all_rows, _ = await list_ai_operations_page(db, limit=10, offset=0)
+            by_operation_id = {row["operation_id"]: row for row in all_rows}
+            assert by_operation_id["u1"]["has_payload"] is True
+            assert by_operation_id["u2"]["has_payload"] is False
             rows2, _ = await list_ai_operations_page(
                 db, limit=10, offset=0, provider="gemini"
             )
@@ -148,9 +161,55 @@ def _seed_failure_payload(operation_id: str) -> None:
     run_db_test(_seed())
 
 
+def _seed_activity_operation_with_payload(operation_id: str) -> None:
+    async def _seed():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation(
+                db,
+                operation_id=operation_id,
+                request_id=None,
+                started_at="2099-01-01T00:00:00Z",
+                latency_ms=15,
+                feature="pdf_summary",
+                task_class="pdf_summary",
+                provider="groq",
+                model="m1",
+                success=False,
+                error_class="empty",
+            )
+            await insert_ai_operation_payload(
+                db,
+                operation_id=operation_id,
+                messages_json=json.dumps([{"role": "user", "content": "test payload"}]),
+                response_excerpt="empty response",
+                task_class="pdf_summary",
+                provider="groq",
+                model="m1",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+
+
 def test_get_payload_404_when_missing(admin_client):
     r = admin_client.get("/api/admin/ai/operations/nope/payload")
     assert r.status_code == 404
+
+
+def test_activity_endpoint_includes_has_payload_boolean(admin_client):
+    operation_id = "op-activity-payload-1"
+    _seed_activity_operation_with_payload(operation_id)
+
+    r = admin_client.get("/api/admin/ai/operations/activity?limit=10&offset=0")
+    assert r.status_code == 200
+    rows = r.json()["rows"]
+    matching = [row for row in rows if row["operation_id"] == operation_id]
+    assert matching
+    assert matching[0]["has_payload"] is True
 
 
 def test_get_payload_returns_stored_payload(admin_client):

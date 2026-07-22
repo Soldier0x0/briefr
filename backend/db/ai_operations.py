@@ -242,7 +242,12 @@ async def list_ai_operations_page(
         SELECT operation_id, task_class, provider, model, success, error_class,
                latency_ms, retry_index, started_at, context_type, context_id,
                input_tokens, output_tokens, total_tokens,
-               fallback_from_provider, fallback_from_model
+               fallback_from_provider, fallback_from_model,
+               EXISTS (
+                   SELECT 1
+                   FROM ai_operation_payloads payload
+                   WHERE payload.operation_id = ai_operations.operation_id
+               ) AS has_payload
         FROM ai_operations
         {where}
         ORDER BY id DESC
@@ -250,7 +255,12 @@ async def list_ai_operations_page(
         """,
         tuple(params),
     )
-    return [dict(row) for row in rows], total
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        item["has_payload"] = bool(item.get("has_payload"))
+        normalized_rows.append(item)
+    return normalized_rows, total
 
 
 async def get_latest_ai_operation_for_context(
