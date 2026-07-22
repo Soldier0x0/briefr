@@ -2126,6 +2126,19 @@ Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `l
 ### GET /api/admin/ai/operations/activity
 Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. Each row includes `input_tokens`/`output_tokens`/`total_tokens` (null for providers that don't report usage). No prompt text.
 
+### GET /api/admin/ai/operations/{operation_id}/payload
+Returns the stored failure payload for a recorded LLM attempt (Program E Task 2): `{operation_id, messages, response_excerpt, task_class, provider, model, created_at}`. `messages` is the redacted parsed message array from `ai_operation_payloads.messages_json`. `404` when no payload row exists for the operation id.
+
+### POST /api/admin/ai/operations/{operation_id}/retry
+Manual replay of a stored failure payload through the normal LLM router/recording path. Optional JSON body: `{force?: boolean}` (`false` default).
+
+Response: `{replay_operation_id, success, provider, model, error_class}` from the newly recorded replay row in `ai_operations`.
+
+Behavior:
+- Replays use `context_type="replay"` and `context_id=<original operation_id>` for traceability in Activity.
+- If the original payload provider circuit is open and `force` is not true, returns `409` with operator guidance (`force=true` bypass).
+- Records audit action `ai.operations.retry` (target = original `operation_id`) with replay metadata.
+
 ### POST /api/admin/config/webhook-test
 Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. **Works on disabled destinations** (connectivity check before enable). Audit: `webhook.test.{destination_id}`.
 

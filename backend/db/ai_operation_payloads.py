@@ -46,6 +46,20 @@ INSERT INTO ai_operation_payloads (
 ) VALUES ($1, $2, $3, $4, $5, $6)
 """
 
+_SELECT_BY_OPERATION_ID_SQLITE = """
+SELECT operation_id, created_at, messages_json, response_excerpt, task_class, provider, model
+FROM ai_operation_payloads
+WHERE operation_id = ?
+LIMIT 1
+"""
+
+_SELECT_BY_OPERATION_ID_PG = """
+SELECT operation_id, created_at, messages_json, response_excerpt, task_class, provider, model
+FROM ai_operation_payloads
+WHERE operation_id = $1
+LIMIT 1
+"""
+
 
 def _is_postgres_connection(db: DbConnection) -> bool:
     return type(db).__name__ == "PostgresConnection"
@@ -109,3 +123,16 @@ async def insert_ai_operation_payload(
     )
     sql = _INSERT_PG if pg else _INSERT_SQLITE
     await db.execute(sql, params)
+
+
+async def get_ai_operation_payload(
+    db: DbConnection,
+    *,
+    operation_id: str,
+) -> dict[str, Any] | None:
+    pg = _is_postgres_connection(db)
+    sql = _SELECT_BY_OPERATION_ID_PG if pg else _SELECT_BY_OPERATION_ID_SQLITE
+    rows = await db.execute_fetchall(sql, (operation_id,))
+    if not rows:
+        return None
+    return dict(rows[0])

@@ -253,6 +253,30 @@ async def list_ai_operations_page(
     return [dict(row) for row in rows], total
 
 
+async def get_latest_ai_operation_for_context(
+    db: DbConnection,
+    *,
+    context_type: str,
+    context_id: str,
+) -> dict[str, Any] | None:
+    pg = _is_postgres_connection(db)
+    ct_ph = "$1" if pg else "?"
+    cid_ph = "$2" if pg else "?"
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT id, operation_id, success, error_class, provider, model, context_type, context_id
+        FROM ai_operations
+        WHERE context_type = {ct_ph} AND context_id = {cid_ph}
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (context_type, context_id),
+    )
+    if not rows:
+        return None
+    return dict(rows[0])
+
+
 async def count_cve_embeddings(db: DbConnection) -> int:
     rows = await db.execute_fetchall("SELECT COUNT(*) AS cnt FROM cve_embeddings")
     return int(dict(rows[0])["cnt"]) if rows else 0

@@ -242,6 +242,9 @@ async def chat_completion_task(
     timeout: float | None = None,
     cve_id: str | None = None,
     on_provider_attempt: Callable[[str], None] | None = None,
+    context_type: str | None = None,
+    context_id: str | None = None,
+    ignore_provider_circuit: bool = False,
 ) -> LLMCompletion | None:
     """Try providers in failover order; return first non-empty completion."""
     if timeout is None:
@@ -255,8 +258,8 @@ async def chat_completion_task(
         return None
 
     queue_operation = LLM_TASK_OPERATIONS.get(task, "outbound_request")
-    queue_context_type = "cve" if cve_id else "task"
-    queue_context_id = cve_id if cve_id else task
+    queue_context_type = context_type if context_type is not None else ("cve" if cve_id else "task")
+    queue_context_id = context_id if context_id is not None else (cve_id if cve_id else task)
 
     attempt_index = 0
     last_failed_provider: str | None = None
@@ -288,7 +291,7 @@ async def chat_completion_task(
             last_failed_model = step.model
             attempt_index += 1
             continue
-        if provider_circuit_open(step.provider):
+        if (not ignore_provider_circuit) and provider_circuit_open(step.provider):
             logger.info(
                 "Skipping LLM provider %s for task %s — circuit open",
                 step.provider,

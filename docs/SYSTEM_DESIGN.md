@@ -3,7 +3,7 @@
 Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
 **Version:** 1.5
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22
 **Source of truth:** `/workspace` codebase and [`docs/PRODUCT_STATUS.md`](PRODUCT_STATUS.md). Archive snapshots are historical context only.
 
 ---
@@ -589,7 +589,7 @@ row here with their idempotency key before merge.
 | URLhaus | `feeds/extended.py` | Domain malware URLs | `ABUSECH_AUTH_KEY` | Fair use | `None` |
 | ThreatFox | `feeds/threatfox.py`, scheduler | IOC mirror for retro-match | `ABUSECH_AUTH_KEY` | Fair use | Skip sync; prior rows retained |
 | VulnCheck KEV | `feeds/vulncheck_kev.py`, scheduler | Exploited-in-the-wild tier | `VULNCHECK_API_KEY` | API key required | Job no-op; flags unchanged |
-| Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
+| Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts; Program E Task 2 adds admin replay flows backed by stored failure payloads (`GET /api/admin/ai/operations/{operation_id}/payload`, `POST .../{operation_id}/retry`) with replay provenance (`context_type="replay"`, `context_id=<original operation_id>`) and circuit-open guard (`409` unless `force=true`) | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
 | GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
 | RSS (5 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
 | CISA Vulnrichment | `feeds/vulnrichment.py` | CISA ADP CVSS / CWE / CPE gap-fill | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; skip run |

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from database import (
     get_db,
     init_db,
     insert_ai_operation,
+    insert_ai_operation_payload,
     list_ai_operations_page,
 )
 from tests.conftest import run_db_test
@@ -118,3 +120,114 @@ def test_admin_ai_operations_endpoints(admin_client, monkeypatch):
     assert activity.status_code == 200
     assert "rows" in activity.json()
     assert "total" in activity.json()
+
+
+def _seed_failure_payload(operation_id: str) -> None:
+    async def _seed():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation_payload(
+                db,
+                operation_id=operation_id,
+                messages_json=json.dumps(
+                    [
+                        {"role": "system", "content": "You are a helper"},
+                        {"role": "user", "content": "Summarize this CVE"},
+                    ]
+                ),
+                response_excerpt="provider timeout",
+                task_class="pdf_summary",
+                provider="groq",
+                model="llama-3.1-8b-instant",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+
+
+def test_get_payload_404_when_missing(admin_client):
+    r = admin_client.get("/api/admin/ai/operations/nope/payload")
+    assert r.status_code == 404
+
+
+def test_get_payload_returns_stored_payload(admin_client):
+    operation_id = "op-payload-1"
+    _seed_failure_payload(operation_id)
+
+    r = admin_client.get(f"/api/admin/ai/operations/{operation_id}/payload")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["operation_id"] == operation_id
+    assert body["task_class"] == "pdf_summary"
+    assert body["provider"] == "groq"
+    assert body["model"] == "llama-3.1-8b-instant"
+    assert body["response_excerpt"] == "provider timeout"
+    assert isinstance(body["messages"], list)
+    assert body["messages"][0]["role"] == "system"
+    assert body["created_at"]
+
+
+def test_retry_replays_stored_messages(admin_client, monkeypatch):
+    operation_id = "op-retry-1"
+    _seed_failure_payload(operation_id)
+
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test_key_12345")
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    async def _fake_call_provider(_step, **_kwargs):
+        return "Replay successful"
+
+    monkeypatch.setattr("ai.llm_router._call_provider", _fake_call_provider)
+
+    r = admin_client.post(f"/api/admin/ai/operations/{operation_id}/retry")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["success"] is True
+    replay_operation_id = body["replay_operation_id"]
+    assert replay_operation_id
+    assert body["provider"] == "groq"
+    assert body["error_class"] is None
+
+    activity = admin_client.get("/api/admin/ai/operations/activity?limit=25&offset=0")
+    assert activity.status_code == 200
+    rows = activity.json()["rows"]
+    replay_rows = [row for row in rows if row["operation_id"] == replay_operation_id]
+    assert replay_rows
+    assert replay_rows[0]["context_type"] == "replay"
+    assert replay_rows[0]["context_id"] == operation_id
+
+    audit = admin_client.get("/api/admin/audit-log?limit=20&action=ai.operations.retry")
+    assert audit.status_code == 200
+    audit_rows = audit.json()["rows"]
+    assert any(row.get("target") == operation_id for row in audit_rows)
+
+
+def test_retry_returns_409_when_circuit_open_unless_forced(admin_client, monkeypatch):
+    operation_id = "op-retry-force-1"
+    _seed_failure_payload(operation_id)
+
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test_key_12345")
+
+    async def _fake_call_provider(_step, **_kwargs):
+        return "forced replay successful"
+
+    monkeypatch.setattr("ai.llm_router._call_provider", _fake_call_provider)
+    monkeypatch.setattr("routers.admin.ai_ops.provider_circuit_open", lambda _provider: True)
+
+    blocked = admin_client.post(f"/api/admin/ai/operations/{operation_id}/retry")
+    assert blocked.status_code == 409
+    assert "force=true" in blocked.json().get("detail", "")
+
+    forced = admin_client.post(
+        f"/api/admin/ai/operations/{operation_id}/retry",
+        json={"force": True},
+    )
+    assert forced.status_code == 200
+    assert forced.json()["success"] is True
