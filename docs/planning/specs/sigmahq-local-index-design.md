@@ -260,19 +260,65 @@ SigmaHQ rules use **Detection Rule License 1.1** ([SigmaHQ/Detection-Rule-Licens
 
 ---
 
-## 7. Scheduler & config
+## 7. Scheduler, config & Admin surfaces (mandatory)
+
+Manual control must land in the **same places other feed jobs do** — not a one-off button. Mirror EPSS / `detection_context_sync` / `exploit_sources_sync`.
+
+### 7.1 Job identity
 
 | Item | Value |
 |------|--------|
-| Job id | `sigmahq_index_sync` |
-| Default interval | 7 days (env `SIGMAHQ_INDEX_SYNC_SECONDS` or weekly cron-style like other jobs) |
+| Job id | `sigmahq_index_sync` (must match `add_job(id=…)`, lock map, catalog) |
+| Default interval | **7 days** — `SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS` default `168` (or weekly cron equivalent already used in scheduler) |
 | Enable flag | `SIGMAHQ_INDEX_SYNC_ENABLED` default `1` |
-| Lock | Same scheduler lock pattern as other feed jobs |
-| Progress | `progress_message` while download/parse/upsert (LOCKED UI pattern) |
-| Manual | `POST /api/admin/feeds/sigmahq/sync` (admin) + Scheduler “Run now” |
-| Force | `POST …/force` clears identity watermark then runs (like EPSS force-resync) |
+| Lock | `scheduler_locks.py` entry for `sigmahq_index_sync` |
+| Progress | `_job_progress["sigmahq_index_sync"]` while download/parse/upsert (Scheduler LOCKED + message) |
+| Last-run history | `scheduler.last_run.sigmahq_index_sync` via existing `_write_job_last_run` |
 
-Wire job id into `routers/admin` `_JOB_RUN_MAP` (danger zone 3).
+### 7.2 Backend wiring checklist (all required in SH-2)
+
+| Surface | What to add |
+|---------|-------------|
+| `scheduler.py` | `run_sigmahq_index_sync()` + `add_job(id="sigmahq_index_sync", …)`; honor enable flag; interval from env; `INTERVAL_JOB_ENV_MAP` / reschedule keys if used |
+| `scheduler_locks.py` | `"sigmahq_index_sync": asyncio.Lock()` |
+| `routers/admin/jobs.py` `_JOB_RUN_MAP` | `"sigmahq_index_sync": "run_sigmahq_index_sync"` — **danger zone: keep in sync with job id** |
+| `routers/admin/helpers.py` `_OPT_IN_DISABLED_JOBS` | Gate: `("SIGMAHQ_INDEX_SYNC_ENABLED", "1")` so Scheduler Run now returns 400 with clear copy when disabled |
+| `routers/admin/feeds.py` | `POST /api/admin/feeds/sigmahq/force-resync` — clear `sigmahq_archive_identity` watermark (like EPSS); audit `feed.sigmahq.force_resync`; optionally kick job via background spawn **or** document “then Run now” (prefer: clear + spawn job once, same as operator expectation) |
+| `POST /api/admin/scheduler/run` | Works automatically once `_JOB_RUN_MAP` + lock + coroutine exist |
+| `config_schema.py` | Fields: `SIGMAHQ_INDEX_SYNC_ENABLED` (bool, section feeds/ml/scheduler), `SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS` (int); `apply_strategy`: enable = `immediate` or `scheduler_reschedule`; interval = `scheduler_reschedule` |
+| Audit | `scheduler.run.sigmahq_index_sync`, `feed.sigmahq.force_resync` |
+| Route snapshot / split tests | Register new admin routes in `test_router_split` allowlist if required |
+
+**Force vs Run now (lock the UX):**
+
+1. **Scheduler → Run now** — normal sync (respects watermark; no-op if tip+sha unchanged).  
+2. **Force re-sync** — clears watermark, then runs apply even if tip unchanged (re-parse/upsert). Admin copy: “Clears SigmaHQ archive identity and re-applies the index.”
+
+Do **not** invent a third ad-hoc sync API without wiring it into Scheduler; one job function, multiple entry points.
+
+### 7.3 Frontend Admin wiring checklist (all required in SH-2)
+
+| Surface | What to add |
+|---------|-------------|
+| `frontend/src/pages/admin/catalog.js` `JOB_CATALOG` | Entry for `sigmahq_index_sync`: label, short, operatorName, analystDescription, `refreshButton: 'Sync SigmaHQ index'` |
+| Scheduler page | Appears automatically via catalog + `/scheduler/run`; ensure job shows ACTIVE/PAUSED/LOCKED/DISABLED, progress while LOCKED, “View in application log” |
+| API keys & config | Auto from `config_schema` — enable toggle + interval; help text: DRL mirror, weekly default, disk use |
+| Feed Health / System health | Status card or panel row: commit, sha256 short, `synced_at`, `rules_active`, `cve_links`, stale age; actions: **Run sync** (scheduler run) + **Force re-sync** (feeds force endpoint) |
+| Overview / Needs attention (optional but recommended) | If index never synced or age > 14d → attention item “SigmaHQ index stale or empty” deep-link to Scheduler/Feed Health |
+| Onboarding checklist | Item: “SigmaHQ detection index synced at least once” (`rules_active > 0` or successful last_run) |
+| `formatters.js` / queue labels | If outbound queue uses source id `sigmahq` / `github` for download, human label “SigmaHQ index” |
+| Selective refresh constants | Add to any admin “refresh these feeds” chip lists that include EPSS/NVD if present (`constants.js` / Overview refresh presets) |
+| Toast copy tests | Human label in `schedulerJobStarted('sigmahq_index_sync', …)` style tests if catalog-driven |
+
+### 7.4 Operator flows (acceptance)
+
+| Operator action | Expected |
+|-----------------|----------|
+| Enable/disable in Config | Job DISABLED in Scheduler when off; Run now explains enable path |
+| Change interval + Save | Scheduler reschedules without full process restart (`scheduler_reschedule`) |
+| Scheduler **Sync SigmaHQ index** | Spawns job; LOCKED + progress; last_run history updates |
+| Feed Health **Force re-sync** | Clears watermark, runs apply, audit row; Detect gets updated CVE links after success |
+| Job fails | Existing job-error notification path; watermark not advanced |
 
 ---
 
@@ -287,18 +333,19 @@ Wire job id into `routers/admin` `_JOB_RUN_MAP` (danger zone 3).
 | Huge repo growth | Stream extract; optional max file count safety |
 | First boot empty index | Detect empty community + optional search fallback; Admin onboarding checklist item “SigmaHQ index synced” |
 | Command timeout | Job-specific longer timeout; batch commits |
+| Manual run while disabled | `400` from `/scheduler/run` via `_job_is_disabled` (same as detection_context) |
+| Manual run while LOCKED | `409` lock held |
 
 ---
 
 ## 9. Observability
 
-Expose on Admin (Feed health or Scheduler detail):
-
-- `commit_sha`, `archive_sha256`, `synced_at`
-- `rules_active`, `rules_retired`, `cve_links`, `parse_errors_last_run`
-- Last run duration / error (job log context)
-
-Health payload optional: `sigmahq_index: { ok, age_hours, rule_count }`.
+| Place | Fields |
+|-------|--------|
+| Scheduler job row | status, last 5 runs, `progress_message`, link to app log |
+| Feed Health / System health card | `commit_sha`, `archive_sha256`, `synced_at`, `rules_active`, `rules_retired`, `cve_links`, `parse_errors_last_run`, age |
+| `GET /api/health` (optional additive) | `sigmahq_index: { ok, age_hours, rule_count, commit_sha }` |
+| Support pack | Include identity + counts (no rule bodies) |
 
 ---
 
@@ -312,6 +359,8 @@ Health payload optional: `sigmahq_index: { ok, age_hours, rule_count }`.
 | Read | `find_sigma_rules` returns attribution + `cve_exact` only from index |
 | License fields | Every returned rule has `license_id`, `license_url`, `author`/`attribution` |
 | Migration | Alembic upgrade on Postgres CI |
+| Admin run map | `_JOB_RUN_MAP` contains `sigmahq_index_sync`; force-resync clears identity |
+| Admin UI catalog | `JOB_CATALOG.sigmahq_index_sync` present (unit gate) |
 | No SQLite requirement | Default SQLite pytest suite **skips** or does not import PG-only tests; document in test module |
 
 ---
@@ -321,12 +370,13 @@ Health payload optional: `sigmahq_index: { ok, age_hours, rule_count }`.
 | PR | Scope |
 |----|--------|
 | **SH-1** | Alembic tables + parser module + sync function + watermark identity + unit tests with fixtures |
-| **SH-2** | Scheduler job + admin run/force + Feed Health / progress |
+| **SH-2** | **Full Admin + scheduler surface:** job + locks + `_JOB_RUN_MAP` + config_schema + `JOB_CATALOG` + force-resync API + Feed Health/System health card (Run + Force) + disabled-gate + progress; optional onboarding/needs-attention |
 | **SH-3** | `find_sigma_rules` prefers index; fallback only if empty; Detect unchanged UX already community-first |
 | **SH-4** | Forge hunt-pack generate uses index (`include_community` via DB) |
-| **SH-5** | Docs: OPERATIONS, PRODUCT_STATUS, API_REFERENCE, HANDOVER; onboarding checklist bit |
+| **SH-5** | Docs: OPERATIONS, PRODUCT_STATUS, API_REFERENCE, HANDOVER; onboarding checklist copy |
 
 pySigma compile validation = **separate** program (STRATEGY Level 3), not blocking SH-1…5.
+
 
 ---
 
