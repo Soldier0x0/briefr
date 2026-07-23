@@ -114,6 +114,13 @@ fi
 
 if [ "$pulse_count" -lt 1 ]; then
   echo "FAIL: expected otx_pulses > 0 for ${CVE_ID}"
+  if journalctl -u briefr-backend -n 30 --no-pager 2>/dev/null | grep -qiE 'OTX HTTP [45]'; then
+    echo "HINT: AlienVault OTX returned an upstream error (HTTP 4xx/5xx)."
+    echo "      Deploy itself succeeded — retry smoke later:"
+    echo "        bash ${INSTALL_DIR}/deploy/smoke-intel.sh"
+    echo "      Or complete this update with warn-only:"
+    echo "        BRIEFR_STRICT_SMOKE=0 bash ${INSTALL_DIR}/deploy/briefr-update.sh"
+  fi
   journalctl -u briefr-backend -n 30 --no-pager 2>/dev/null | grep -iE 'otx|pulse' || true
   exit 1
 fi
