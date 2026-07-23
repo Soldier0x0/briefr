@@ -37,7 +37,8 @@ def upgrade() -> None:
             level           TEXT,
             rule_family     TEXT NOT NULL DEFAULT 'rules',
             tags            JSONB NOT NULL DEFAULT '[]'::jsonb,
-            references      JSONB NOT NULL DEFAULT '[]'::jsonb,
+            -- "references" is a Postgres reserved word (FK syntax); must be quoted.
+            "references"    JSONB NOT NULL DEFAULT '[]'::jsonb,
             logsource       JSONB,
             content_yaml    TEXT NOT NULL,
             content_sha256  TEXT NOT NULL,
