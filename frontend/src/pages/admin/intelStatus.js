@@ -11,7 +11,11 @@ export const ANALYST_SCHEDULE_TABLE_JOB_IDS = [
   'weekly_mitre_refresh',
   'incident_feed_refresh',
   'nightly_correlation',
+  'sigmahq_index_sync',
 ]
+
+/** Match Feed Health SigmaHQ card stale threshold (14 days). */
+export const SIGMAHQ_STALE_SECONDS = 14 * 24 * 3600
 
 const NVD_AMBER_SECONDS = 7200
 const NVD_RED_SECONDS = 14400
@@ -55,6 +59,17 @@ export function collectHealthIssues(system) {
   }
   if (system.feeds?.incidents?.stale) {
     issues.push('Incident news feed — snapshot is stale')
+  }
+  const sigmahq = system.feeds?.sigmahq_index
+  if (sigmahq && sigmahq.enabled !== false) {
+    if (!(sigmahq.rules_active > 0)) {
+      issues.push('SigmaHQ index — empty (no active rules; Detect has no local CVE-exact Sigma)')
+    } else if (
+      sigmahq.age_seconds != null &&
+      sigmahq.age_seconds > SIGMAHQ_STALE_SECONDS
+    ) {
+      issues.push(`SigmaHQ index — stale (${fmtAge(sigmahq.age_seconds)} since last sync)`)
+    }
   }
   for (const err of system.recent_errors || []) {
     issues.push(`Scheduler job failed — ${jobLabel(err.job_id, 'analyst')}`)

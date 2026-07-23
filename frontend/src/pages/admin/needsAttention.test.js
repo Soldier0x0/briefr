@@ -54,4 +54,37 @@ describe('collectNeedsAttentionItems (E8-3)', () => {
     assert.ok(items.some(i => i.id === 'nvd-stale' && i.severity === 'error' && i.pageId === 'scheduler'))
     assert.ok(items.some(i => i.id === 'backup-stale'))
   })
+
+  it('flags empty and stale SigmaHQ index', () => {
+    const emptyItems = collectNeedsAttentionItems({
+      ...BASE_SYSTEM,
+      feeds: {
+        ...BASE_SYSTEM.feeds,
+        sigmahq_index: { enabled: true, rules_active: 0, age_seconds: null },
+      },
+    })
+    assert.ok(emptyItems.some(i => i.id === 'sigmahq-empty' && i.pageId === 'feedhealth'))
+
+    const staleItems = collectNeedsAttentionItems({
+      ...BASE_SYSTEM,
+      feeds: {
+        ...BASE_SYSTEM.feeds,
+        sigmahq_index: {
+          enabled: true,
+          rules_active: 1200,
+          age_seconds: 15 * 24 * 3600,
+        },
+      },
+    })
+    assert.ok(staleItems.some(i => i.id === 'sigmahq-stale' && i.pageId === 'feedhealth'))
+
+    const healthy = collectNeedsAttentionItems({
+      ...BASE_SYSTEM,
+      feeds: {
+        ...BASE_SYSTEM.feeds,
+        sigmahq_index: { enabled: true, rules_active: 100, age_seconds: 3600 },
+      },
+    })
+    assert.equal(healthy.filter(i => i.id.startsWith('sigmahq')).length, 0)
+  })
 })

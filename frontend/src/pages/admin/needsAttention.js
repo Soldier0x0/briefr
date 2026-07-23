@@ -137,6 +137,29 @@ export function collectNeedsAttentionItems(
     })
   }
 
+  // Match Feed Health SigmaHQ card: empty or older than 14 days.
+  const SIGMAHQ_STALE_SECONDS = 14 * 24 * 3600
+  const sigmahq = system.feeds?.sigmahq_index
+  if (sigmahq && sigmahq.enabled !== false) {
+    const empty = !(sigmahq.rules_active > 0)
+    const stale =
+      !empty &&
+      sigmahq.age_seconds != null &&
+      sigmahq.age_seconds > SIGMAHQ_STALE_SECONDS
+    if (empty || stale) {
+      items.push({
+        id: empty ? 'sigmahq-empty' : 'sigmahq-stale',
+        severity: 'warning',
+        title: empty ? 'SigmaHQ index is empty' : 'SigmaHQ index is stale',
+        detail: empty
+          ? 'No active Sigma rules indexed yet — Detect has no local CVE-exact community rules until Sync succeeds (Admin → Feed health).'
+          : `Last sync ${fmtAge(sigmahq.age_seconds)} ago (expected weekly). Re-sync from Feed health if Detect coverage looks thin.`,
+        pageId: 'feedhealth',
+        actionLabel: 'View feed health',
+      })
+    }
+  }
+
   const severityRank = { error: 0, warning: 1 }
   return items.sort(
     (a, b) => (severityRank[a.severity] ?? 2) - (severityRank[b.severity] ?? 2),

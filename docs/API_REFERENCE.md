@@ -1148,7 +1148,13 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
       "primary_source": "none"
     }
   },
-  "provenance": { }
+  "provenance": { },
+  "sigmahq_index": {
+    "rules_active": 0,
+    "synced_at": "",
+    "ok": false,
+    "commit_sha": ""
+  }
 }
 ```
 
@@ -1156,12 +1162,14 @@ Sigma community rules: **local SigmaHQ index first** (Postgres `detection_rules`
 `detection_rule_cves`, CVE-exact only, DRL-1.1 fields `author` / `license` /
 `license_url` / `attribution` / `match_basis=cve_exact`). Index hits cache 1h.
 Live GitHub SigmaHQ search runs only when the index has zero active rows
-(then caches 24h). Elastic search remains GitHub-backed. `generated_sigma` is
+(then caches 24h). Elastic search remains GitHub-backed. Additive
+`sigmahq_index` reports local index freshness so the UI can be honest when
+there is no CVE-exact hit vs never-synced/empty index. `generated_sigma` is
 returned as a labeled class/template hunt starter. Additive `evidence` (DC-1)
 is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via
 `emit_composed_detection` — artifact paths/keywords are injected into Sigma and
 SIEM queries; `generated_sigma_meta.compose_basis` is
-`community|nuclei_artifacts|yara|template_fallback`. No LLM.
+`community|sigmahq_index|nuclei_artifacts|yara|template_fallback`. No LLM.
 
 ---
 

@@ -12,6 +12,21 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — SigmaHQ production polish (honesty + Admin attention)
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**What shipped (follow-on to U1–U5):**
+- Needs Attention + analyst intel issues when SigmaHQ index is empty or stale (>14d); `sigmahq_index_sync` on analyst schedule table.
+- Detect: DRL attribution + Show YAML on community cards; honest empty copy (never synced / empty / no CVE-exact); `sigmahq_index` snapshot on `GET /api/cves/{id}/detection`.
+- `compose_basis` label for `sigmahq_index`; shared `SIGMAHQ_STALE_SECONDS`.
+
+**Honest product note:** Until Sync succeeds on Postgres, Detect correctly reports **no local Sigma rules**. Many CVEs also have **no** upstream SigmaHQ CVE-exact rule even after a healthy sync — empty community section is expected, not a bug.
+
+**Next:** Merge #738; first prod sync; optional merge of community-first template demotion (#736).
+
+---
+
 ## 2026-07-23 — SigmaHQ local Postgres rule index (SH-1…SH-5 / U1–U5)
 
 **Branch:** `cursor/feat-sigmahq-local-index-b275`

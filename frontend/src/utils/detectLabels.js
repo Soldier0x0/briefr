@@ -11,6 +11,7 @@ export function confidenceMatchLabel(raw) {
 
 const COMPOSE_BASIS_LABELS = {
   community: 'Community rules',
+  sigmahq_index: 'SigmaHQ index',
   nuclei_artifacts: 'Nuclei / artifacts',
   yara: 'YARA hashes',
   template_fallback: 'Template fallback',
@@ -20,6 +21,8 @@ const COMPOSE_BASIS_LABELS = {
 const COMPOSE_BASIS_TOOLTIPS = {
   community:
     'Community Sigma/Elastic rules were found for this CVE — they remain the primary deployable detections. Generated templates below are supplements.',
+  sigmahq_index:
+    'CVE-exact Sigma rule from the local SigmaHQ Postgres index (DRL-1.1). Prefer this YAML over BRIEFR hunt starters.',
   nuclei_artifacts:
     'Composed from Nuclei templates and/or cached detection artifacts (paths, params, keywords). No LLM on this request path.',
   yara:
@@ -61,4 +64,25 @@ export function formatEvidenceSummary(evidence) {
   const artifacts = Number(summary.artifact_count) || 0
   const nuclei = Number(summary.nuclei_count) || 0
   return `Primary: ${primary} · community ${community} · artifacts ${artifacts} · nuclei ${nuclei}`
+}
+
+/**
+ * Honest empty copy when Detect has no Sigma/Elastic community rules.
+ * Distinguishes index-never-synced / empty index / CVE-exact miss.
+ * @param {object | null | undefined} detection
+ * @returns {string}
+ */
+export function communityRulesEmptyMessage(detection) {
+  const idx = detection?.sigmahq_index
+  const active = Number(idx?.rules_active) || 0
+  if (active > 0) {
+    return '// No CVE-exact SigmaHQ rule in the local index for this CVE (and no Elastic community hit)'
+  }
+  if (idx && !idx.synced_at) {
+    return '// SigmaHQ index not synced yet — run Sync from Admin → Feed health. Until then there are no local community Sigma rules; many CVEs also have none upstream.'
+  }
+  if (idx && active === 0) {
+    return '// SigmaHQ index is empty (0 active rules) — check Admin → Feed health / Force re-sync. No community Sigma/Elastic rules for this CVE.'
+  }
+  return '// No community Sigma/Elastic rules found for this CVE'
 }

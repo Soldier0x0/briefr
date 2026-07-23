@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel, fmtAge } from './formatters.js'
-import { nvdCadenceLabel, nvdStaleDetail } from './intelStatus.js'
+import { nvdCadenceLabel, nvdStaleDetail, SIGMAHQ_STALE_SECONDS } from './intelStatus.js'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
@@ -100,7 +100,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
   const incidentSources = incidents?.sources || []
   const nvdAge = system?.last_nvd_sync_age_seconds
   const nvdSyncStale = nvdAge != null && nvdAge > 7200
-  const sigmahqStale = sigmahq?.age_seconds != null && sigmahq.age_seconds > 14 * 24 * 3600
+  const sigmahqStale = sigmahq?.age_seconds != null && sigmahq.age_seconds > SIGMAHQ_STALE_SECONDS
   const sigmahqEmpty = !sigmahq?.rules_active
 
   async function runSigmahqSync({ force = false } = {}) {

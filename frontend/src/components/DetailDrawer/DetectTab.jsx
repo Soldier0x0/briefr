@@ -3,6 +3,7 @@ import { copyToClipboard } from '../../utils/report.js'
 import { notifyCopyFailure, notifyCopySuccess } from '../Toast.jsx'
 
 import {
+  communityRulesEmptyMessage,
   confidenceMatchLabel,
   composeBasisLabel,
   composeBasisTooltip,
@@ -101,37 +102,96 @@ function downloadFile(content, filename) {
   URL.revokeObjectURL(url)
 }
 
+function MatchBasisBadge({ basis }) {
+  const key = (basis || '').toLowerCase()
+  if (!key) return null
+  const labels = {
+    cve_exact: 'CVE-tagged',
+    cve_search: 'CVE search hit',
+    technique_related: 'Technique-related',
+  }
+  const tips = {
+    cve_exact:
+      'Rule path or body explicitly references this CVE (tags, references, or filename). Strongest community match.',
+    cve_search:
+      'Found via SigmaHQ search for this CVE ID; confirm the rule body before deploying.',
+    technique_related:
+      'Matched via a shared ATT&CK technique — related hunt content, not CVE-specific. Validate before use.',
+  }
+  return (
+    <ControlTooltip text={tips[key] || 'How this rule was linked to the CVE'} trigger="hover-focus">
+      <span className="det-match-basis-badge mono">{labels[key] || key}</span>
+    </ControlTooltip>
+  )
+}
+
 function SigmaRuleCard({ rule }) {
+  const [open, setOpen] = useState(false)
+  const hasContent = Boolean(rule.content)
   return (
     <div className="det-rule-card">
       <div className="det-rule-head">
         <div className="det-rule-meta">
           <StatusBadge status={rule.status} />
           <span className="det-rule-source mono">{rule.source}</span>
+          <MatchBasisBadge basis={rule.match_basis} />
         </div>
         <div className="det-rule-actions">
-          {rule.content && (
+          {hasContent && (
             <CopyButton text={rule.content} label="Copy" />
           )}
-          <a
-            className="det-rule-link mono"
-            href={rule.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View ↗
-          </a>
-          <a
-            className="det-rule-download mono"
-            href={rule.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Download
-          </a>
+          {hasContent && (
+            <button
+              type="button"
+              className="det-copy-btn mono"
+              onClick={() => setOpen(o => !o)}
+              aria-expanded={open}
+            >
+              {open ? 'Hide YAML' : 'Show YAML'}
+            </button>
+          )}
+          {rule.html_url && (
+            <a
+              className="det-rule-link mono"
+              href={rule.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View ↗
+            </a>
+          )}
+          {rule.download_url && (
+            <a
+              className="det-rule-download mono"
+              href={rule.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download
+            </a>
+          )}
         </div>
       </div>
       <p className="det-rule-title">{rule.title || rule.name || rule.path?.split('/').pop()}</p>
+      {(rule.attribution || rule.license || rule.author) && (
+        <p className="det-rule-attribution mono">
+          {rule.attribution || (rule.author ? `SigmaHQ · ${rule.author}` : 'SigmaHQ')}
+          {rule.license ? ` · ${rule.license}` : ''}
+          {rule.license_url && (
+            <>
+              {' · '}
+              <a href={rule.license_url} target="_blank" rel="noopener noreferrer">
+                license
+              </a>
+            </>
+          )}
+        </p>
+      )}
+      {open && hasContent && (
+        <div className="det-code-wrap">
+          <pre className="det-code-block">{rule.content}</pre>
+        </div>
+      )}
     </div>
   )
 }
@@ -209,9 +269,12 @@ function GeneratedSigmaSection({
   const heading = formatSectionHeading(
     hasCommunity ? '// BRIEFR HUNT STARTER · SUPPLEMENT' : '// BRIEFR HUNT STARTER'
   )
+  const indexActive = (Number(detection?.sigmahq_index?.rules_active) || 0) > 0
   const supplementNote = hasCommunity
     ? 'Community rules above are primary — this generated template is an additional class-aware starting point.'
-    : 'No community Sigma/Elastic rules were found — use this generated template as a starting point.'
+    : indexActive
+      ? 'No CVE-exact SigmaHQ (or Elastic) community rule for this CVE — use this class-mapped template as a starting point only, not a substitute for community detections.'
+      : 'No community Sigma/Elastic rules were found — use this generated template as a starting point only.'
 
   return (
     <section className="drawer-section det-generated-section" aria-labelledby="det-generated-heading">
@@ -311,6 +374,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
     siemQueries.qradar_aql,
   ].some(entry => entry?.query)
   const showFraming = Boolean(evidenceSummary || hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0)
+  const emptyCommunityMsg = communityRulesEmptyMessage(detection)
 
   return (
     <>
@@ -320,8 +384,8 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
         <section className="drawer-section det-framing-section" aria-label="Detection framing">
           {(hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0) && (
             <p className="det-framing-note mono">
-              Class-aware hunt starters — SIEM queries, log patterns, and a generated Sigma template
-              keyed to this CVE&apos;s weakness class. Community rules stay primary when present.
+              Community Sigma/Elastic rules are primary when present (DRL-1.1 for SigmaHQ).
+              Class-aware SIEM queries and BRIEFR hunt starters fill gaps — they are not a claim of community coverage.
             </p>
           )}
           {evidenceSummary && (
@@ -342,8 +406,8 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
           {formatSectionHeading('// EXISTING COMMUNITY RULES')}
         </h3>
         {!hasCommunity && (
-          <p className="drawer-intel-empty mono">
-            // No community Sigma/Elastic rules found for this CVE
+          <p className="drawer-intel-empty mono" data-testid="det-community-empty">
+            {emptyCommunityMsg}
           </p>
         )}
         {sigmaRules.map((r, i) => <SigmaRuleCard key={r.path || i} rule={r} />)}
