@@ -66,7 +66,7 @@ if [[ -d "${INSTALL_DIR}/backend" ]]; then
   echo "=== import test (${APP_USER}) ==="
   if [[ "$(id -u)" -eq 0 ]]; then
     runuser -u "${APP_USER}" -- "${INSTALL_DIR}/venv/bin/python" -c "import sys; sys.path.insert(0, '${INSTALL_DIR}/backend'); import main; print('OK: main imported')" || {
-      echo "FAILED — run: bash ${INSTALL_DIR}/deploy/briefr-update.sh" >&2
+      echo "FAILED — run: bash ${INSTALL_DIR}/deploy/briefr-deploy.sh" >&2
       FAIL=1
     }
   else

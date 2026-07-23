@@ -2,6 +2,10 @@
 # BRIEFR production update — pull main, build frontend, reload nginx, restart backend
 # Run as root: bash /opt/briefr/deploy/briefr-update.sh
 #
+# Legacy / internet-connected path: git pull from GitHub, optional rollback on failure.
+# Production zones without outbound git: use briefr-deploy.sh (local tree) and
+# briefr-service.sh (start/stop/restart) instead.
+#
 # Serves the UI from /opt/briefr/frontend/dist via nginx (not Vite on 5173).
 # Optional: USE_TLS=1 to force HTTPS nginx config (default: auto if certbot cert exists).
 # Optional env:
@@ -22,10 +26,7 @@ SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 # shellcheck source=lib.sh
 source "${INSTALL_DIR}/deploy/lib.sh"
 
-if [ "$(id -u)" -ne 0 ]; then
-  echo "Run as root: bash ${SCRIPT_PATH}"
-  exit 1
-fi
+require_root "${SCRIPT_PATH}" || exit 1
 
 # Pull first, then re-exec so we always run the latest script body (bash does not
 # re-read the file after git pull while a run is in progress).
@@ -57,85 +58,24 @@ fi
 ensure_app_home
 run_pre_update_backup
 
-echo "==> Stopping services"
-systemctl stop briefr.target briefr-backend 2>/dev/null || true
-# Legacy Vite dev unit (removed from repo; may still exist on older hosts).
-systemctl stop briefr-frontend 2>/dev/null || true
+stop_briefr_services
 
-fix_tree_permissions
-
-echo "==> Stamping build info"
-GIT_COMMIT="$(git -C "${INSTALL_DIR}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-printf '{"commit": "%s", "built_at": "%s"}\n' \
-  "${GIT_COMMIT}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  > "${INSTALL_DIR}/backend/.build-info.json"
-chown "${APP_USER}:${APP_USER}" "${INSTALL_DIR}/backend/.build-info.json"
-
-echo "==> Updating Python dependencies"
-as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
-if [ "${BRIEFR_INSTALL_DEV_DEPS:-}" = "1" ]; then
-  echo "==> Updating Python dev/test dependencies"
-  as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements-dev.txt"
-fi
-
-echo "==> Verifying backend imports"
-as_app_user bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -c 'import main; print(\"import ok\")'"
-
-if ! run_alembic_upgrade; then
-  echo "FAIL: Alembic upgrade failed before backend restart."
-  if [ "${BRIEFR_SKIP_ROLLBACK:-0}" != "1" ]; then
-    rollback_failed_update "Alembic upgrade failed" || true
-  fi
-  exit 1
-fi
-
-build_frontend
-install_systemd_units
-install_nginx_site
-disable_vite_dev
-
-echo "==> Starting backend and nginx"
-systemctl enable briefr-backend
-systemctl restart briefr-backend
-nginx -t
-systemctl reload nginx
-
-echo ""
-echo "==> Service status"
-systemctl status briefr-backend --no-pager -l | head -15 || true
-systemctl status nginx --no-pager -l | head -10 || true
-if systemctl is-active --quiet briefr-frontend 2>/dev/null; then
-  echo "WARNING: legacy briefr-frontend (Vite :5173) is still running"
-  echo "         Run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
-fi
-
-if ! verify_backend_health_gate; then
+if ! deploy_apply_release; then
   echo ""
-  echo "FAIL: Health gate failed — new release did not become healthy."
+  echo "FAIL: Deploy failed before or during health gate."
   if [ "${BRIEFR_SKIP_ROLLBACK:-0}" = "1" ]; then
-    echo "       BRIEFR_SKIP_ROLLBACK=1 — leaving tree at ${GIT_COMMIT}; backend may be down."
-    echo "       Diagnose: journalctl -u briefr-backend -n 50 --no-pager"
+    echo "       BRIEFR_SKIP_ROLLBACK=1 — leaving tree as-is; diagnose manually."
+    echo "       journalctl -u briefr-backend -n 50 --no-pager"
     exit 1
   fi
-  rollback_failed_update "Health gate failed after restart"
+  rollback_failed_update "Deploy apply failed"
   exit 1
 fi
 
-SMOKE_SCRIPT="${INSTALL_DIR}/deploy/smoke-intel.sh"
-if [ "${BRIEFR_SKIP_SMOKE:-0}" = "1" ]; then
-  echo "    Intel smoke    skipped (BRIEFR_SKIP_SMOKE=1)"
-elif [ ! -f "${SMOKE_SCRIPT}" ]; then
-  echo "    Intel smoke    skipped (smoke-intel.sh not found)"
-else
-  if bash "${SMOKE_SCRIPT}"; then
-    echo "    Intel smoke    OK"
-  elif [ "${BRIEFR_STRICT_SMOKE:-1}" = "0" ]; then
-    echo "    Intel smoke    WARN (failed; BRIEFR_STRICT_SMOKE=0 — deploy completed anyway)"
-  else
-    echo "FAIL: Intel smoke check failed (strict by default)"
-    echo "       Opt out: BRIEFR_SKIP_SMOKE=1 (skip) or BRIEFR_STRICT_SMOKE=0 (warn only)"
-    exit 1
-  fi
+print_service_status_summary
+
+if ! run_post_deploy_smoke; then
+  exit 1
 fi
 
 SERVER_IP="$(hostname -I | awk '{print $1}')"

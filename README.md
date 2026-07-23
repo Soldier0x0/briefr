@@ -229,11 +229,11 @@ On first start with fewer than 10 CVEs, the backend automatically runs a full in
 ### Production deploy
 
 ```bash
-bash deploy/setup.sh          # initial Debian/systemd + nginx setup (run once as root)
-bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
+bash deploy/setup.sh          # initial install (git clone) — internet-connected only
+bash deploy/briefr-update.sh  # git pull + build + restart (legacy / dev boxes)
 ```
 
-Checklist, `.env` shape, post-install SigmaHQ sync, and smoke tests: [`docs/SELF_HOST.md` §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx). Ongoing ops: [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+**Production zone** (no git pull — artifact/rsync): `briefr-install.sh` (first time) → `briefr-deploy.sh` (releases) → `briefr-service.sh` (restart). See [`docs/SELF_HOST.md` §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx).
 
 **Maintainer note (not a BRIEFR requirement):** For my own public demo I put edge access control in front of the host using [Cloudflare Zero Trust](https://www.cloudflare.com/products/zero-trust/) (free tier) with DNS on Cloudflare. That is a personal security choice for domain-fronted access — not part of the app, not required to run BRIEFR, and not the only way to expose a self-hosted instance. If your domain’s DNS is already on Cloudflare, it is one convenient option among many.
 

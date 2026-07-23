@@ -397,3 +397,160 @@ verify_backend_health_gate() {
 
   return 0
 }
+
+stamp_build_info() {
+  local commit at
+  if git -C "${INSTALL_DIR}" rev-parse --short HEAD &>/dev/null; then
+    commit="$(git -C "${INSTALL_DIR}" rev-parse --short HEAD)"
+  else
+    commit="${BRIEFR_BUILD_COMMIT:-unknown}"
+  fi
+  at="${BRIEFR_BUILD_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+  echo "==> Stamping build info (commit=${commit})"
+  printf '{"commit": "%s", "built_at": "%s"}\n' "${commit}" "${at}" \
+    > "${INSTALL_DIR}/backend/.build-info.json"
+  chown "${APP_USER}:${APP_USER}" "${INSTALL_DIR}/backend/.build-info.json"
+}
+
+stop_briefr_services() {
+  echo "==> Stopping services"
+  systemctl stop briefr.target briefr-backend 2>/dev/null || true
+  systemctl stop briefr-frontend 2>/dev/null || true
+}
+
+start_briefr_services() {
+  echo "==> Starting backend and nginx"
+  systemctl enable briefr-backend
+  systemctl restart briefr-backend
+  nginx -t
+  systemctl reload nginx
+}
+
+ensure_python_venv() {
+  if [ -x "${INSTALL_DIR}/venv/bin/python" ]; then
+    return 0
+  fi
+  echo "==> Creating Python virtual environment"
+  local py=""
+  for bin in python3.13 python3.12 python3.11 python3; do
+    if command -v "${bin}" &>/dev/null; then
+      py="${bin}"
+      break
+    fi
+  done
+  if [ -z "${py}" ]; then
+    echo "ERROR: python3 not found — install Python 3.11+ and re-run"
+    return 1
+  fi
+  "${py}" -m venv "${INSTALL_DIR}/venv"
+  as_app_user "${INSTALL_DIR}/venv/bin/pip" install --quiet --upgrade pip
+}
+
+install_python_dependencies() {
+  echo "==> Updating Python dependencies"
+  as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements.txt"
+  if [ "${BRIEFR_INSTALL_DEV_DEPS:-}" = "1" ]; then
+    echo "==> Updating Python dev/test dependencies"
+    as_app_user "${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/backend/requirements-dev.txt"
+  fi
+}
+
+verify_backend_imports() {
+  echo "==> Verifying backend imports"
+  as_app_user bash -c "cd '${INSTALL_DIR}/backend' && '${INSTALL_DIR}/venv/bin/python' -c 'import main; print(\"import ok\")'"
+}
+
+# Apply a release from the local install tree (no git pull).
+# Optional env: BRIEFR_SKIP_MIGRATE=1 BRIEFR_SKIP_BUILD=1 BRIEFR_SKIP_HEALTH=1
+deploy_apply_release() {
+  fix_tree_permissions
+  stamp_build_info
+  install_python_dependencies
+  verify_backend_imports
+
+  if [ "${BRIEFR_SKIP_MIGRATE:-0}" != "1" ]; then
+    if ! run_alembic_upgrade; then
+      return 1
+    fi
+  else
+    echo "==> Skipping Alembic (BRIEFR_SKIP_MIGRATE=1)"
+  fi
+
+  if [ "${BRIEFR_SKIP_BUILD:-0}" != "1" ]; then
+    build_frontend
+  else
+    echo "==> Skipping frontend build (BRIEFR_SKIP_BUILD=1)"
+    if [ ! -f "${INSTALL_DIR}/frontend/dist/index.html" ]; then
+      echo "ERROR: BRIEFR_SKIP_BUILD=1 but ${INSTALL_DIR}/frontend/dist/index.html is missing"
+      return 1
+    fi
+  fi
+
+  install_systemd_units
+  install_nginx_site
+  disable_vite_dev
+  start_briefr_services
+
+  if [ "${BRIEFR_SKIP_HEALTH:-0}" != "1" ]; then
+    verify_backend_health_gate || return 1
+  else
+    echo "==> Skipping health gate (BRIEFR_SKIP_HEALTH=1)"
+  fi
+  return 0
+}
+
+print_service_status_summary() {
+  echo ""
+  echo "==> Service status"
+  systemctl status briefr-backend --no-pager -l | head -15 || true
+  systemctl status nginx --no-pager -l | head -10 || true
+  if systemctl is-active --quiet briefr-frontend 2>/dev/null; then
+    echo "WARNING: legacy briefr-frontend (Vite :5173) is still running"
+    echo "         Run: systemctl stop briefr-frontend && systemctl mask briefr-frontend"
+  fi
+}
+
+run_post_deploy_smoke() {
+  local smoke_script="${INSTALL_DIR}/deploy/smoke-intel.sh"
+  if [ "${BRIEFR_SKIP_SMOKE:-0}" = "1" ]; then
+    echo "    Intel smoke    skipped (BRIEFR_SKIP_SMOKE=1)"
+    return 0
+  fi
+  if [ ! -f "${smoke_script}" ]; then
+    echo "    Intel smoke    skipped (smoke-intel.sh not found)"
+    return 0
+  fi
+  if bash "${smoke_script}"; then
+    echo "    Intel smoke    OK"
+    return 0
+  fi
+  if [ "${BRIEFR_STRICT_SMOKE:-1}" = "0" ]; then
+    echo "    Intel smoke    WARN (failed; BRIEFR_STRICT_SMOKE=0 — deploy completed anyway)"
+    return 0
+  fi
+  echo "FAIL: Intel smoke check failed (strict by default)"
+  echo "       Opt out: BRIEFR_SKIP_SMOKE=1 (skip) or BRIEFR_STRICT_SMOKE=0 (warn only)"
+  return 1
+}
+
+require_install_tree() {
+  if [ ! -f "${INSTALL_DIR}/backend/main.py" ]; then
+    echo "ERROR: BRIEFR install tree not found at ${INSTALL_DIR}"
+    echo "       Expected ${INSTALL_DIR}/backend/main.py"
+    echo "       Copy or extract a release artifact to ${INSTALL_DIR} first."
+    return 1
+  fi
+  if [ ! -f "${INSTALL_DIR}/backend/requirements.txt" ]; then
+    echo "ERROR: ${INSTALL_DIR}/backend/requirements.txt missing"
+    return 1
+  fi
+  return 0
+}
+
+require_root() {
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Run as root: sudo bash $1"
+    return 1
+  fi
+  return 0
+}
