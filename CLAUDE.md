@@ -80,7 +80,13 @@ fixing.** Reproduce/verify → trace the failing path → fix the underlying cla
 2. **Scheduler locks:** job `id=` strings in `scheduler.py` must stay in sync
    with the lock mapping used by `routers/admin/ (jobs.py `_JOB_RUN_MAP`)`.
 3. **Migrations are forward-only** (Alembic). Never edit an applied migration;
-   add a new one.
+   add a new one. Exception: a revision that **never stamped** on any environment
+   (failed mid-upgrade under transactional DDL) may be corrected in place — as with
+   quoting `"references"` in `035` (Postgres reserved word). Raw SQL column names
+   must not use unquoted reserved identifiers; `test_alembic_revisions.py` scans
+   for that class of bug. Prefer rename (`rule_references`) over quoting for new
+   columns. Postgres-native tables still need a real Postgres apply path before
+   merge (`verify-local --full` / CI) — SQLite skips cannot catch DDL syntax.
 4. **Secrets in logs:** structured logging redacts extra fields matching
    `*_KEY/_TOKEN/_SECRET/_PASSWORD`. Never interpolate secrets into log
    message strings — redaction only covers `extra` fields.
