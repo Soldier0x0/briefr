@@ -195,13 +195,25 @@ Embeddings are scheduler-side. With `EMBEDDINGS_ENABLED=1`, the backfill job run
 
 Job id: `sigmahq_index_sync` (default enabled, interval **168h** / weekly).
 
+**First deploy / empty index:** Alembic `035` only creates empty tables. Rules are
+**not** loaded until the sync job runs. After a successful update, run **one** of:
+
+- Admin → **Feed health** → SigmaHQ card → **Sync** (respects watermark), or
+- Admin → **Scheduler** → **Sync SigmaHQ index** / Run now, or
+- Wait for the weekly scheduled tick (up to ~168h if you do nothing).
+
+Expect Feed health to move from **EMPTY** → **INDEXED** with `rules_active` > 0.
+Optional `GITHUB_TOKEN` raises GitHub rate limits for tip-commit resolve + archive
+download; unauthenticated usually works for weekly cadence. Force re-sync clears
+the watermark **and** spawns a forced apply (unlike EPSS clear-only).
+
 1. Resolves tip commit on `SigmaHQ/sigma`, downloads one codeload tarball, upserts YAML into Postgres (`detection_rules*`), soft-retires missing paths.
 2. Watermark key `sigmahq_archive_identity` stores `{commit_sha, sha256, synced_at}` — skip when unchanged. Watermark advances only after full successful apply.
 3. **Scheduler → Sync SigmaHQ index** respects the watermark.
 4. **Feed Health → Force re-sync** clears the watermark **and** spawns `run_sigmahq_index_sync(force=True)` (unlike EPSS force-resync, which is clear-only). Documented divergence: operators should not need a second click.
 5. License: rules are **DRL-1.1** — retain author, license link, and unmodified YAML. Do not claim SigmaHQ content as BRIEFR IP.
 6. Detect/Forge read the local index (CVE-exact). GitHub Sigma search is fallback only when the index is empty.
-7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). SQLite test suite skips PG-gated index tests.
+7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). Column `"references"` is quoted (Postgres reserved word). SQLite test suite skips PG-gated index tests. Raw SQL migrations are scanned for unquoted reserved column names in `test_alembic_revisions.py`.
 
 Disable with `SIGMAHQ_INDEX_SYNC_ENABLED=0`. Config + Scheduler disabled gate returns 400 with enable guidance on Run now / Force.
 

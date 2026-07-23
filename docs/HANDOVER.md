@@ -12,6 +12,39 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — RCA: Alembic reserved-word column + SigmaHQ first sync
+
+### Incident
+
+`briefr-update.sh` failed at `035_detection_rules_sigmahq` with
+`syntax error at or near "references"`. Deploy rolled git back to prior
+commit. Hotfix #739 quoted `"references"`.
+
+### Root cause (class)
+
+1. **Symptom:** Postgres reserved word used as bare column identifier in raw SQL DDL.
+2. **Why it shipped:** Migration was author-reviewed for shape, but never executed
+   against Postgres in the merge path (CI spending-limit red; SQLite suite skips
+   PG-native DDL). Upsert SQL already quoted `"references"` — CREATE TABLE did not.
+3. **Why rollback looked scary:** 034 had already stamped; 035 rolled back inside
+   its transaction. Git reset ≠ Alembic downgrade (orphan `ai_operation_payloads`
+   table is harmless).
+
+### Structural guard (this change)
+
+- `test_alembic_revisions.test_no_unquoted_postgres_reserved_column_names_in_migrations`
+  scans **all** Alembic version files for `indent + reserved + SQL type` without
+  a preceding `"`. Prefer renaming (`rule_references`) over quoting for new columns.
+- OPERATIONS documents first-boot: tables empty until Sync / weekly job.
+
+### Operator after #739 + this RCA PR
+
+1. Re-run `sudo bash /opt/briefr/deploy/briefr-update.sh`.
+2. Admin → Feed health → SigmaHQ → **Sync** (do not wait a week for first fill).
+3. Confirm badge **INDEXED** and `rules_active` > 0.
+
+---
+
 ## 2026-07-23 — Hotfix: SigmaHQ migration `references` reserved word
 
 **RCA:** Alembic `035_detection_rules_sigmahq` used unquoted column name `references`,
