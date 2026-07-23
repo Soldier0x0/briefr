@@ -173,8 +173,12 @@ def _normalize_pulse(raw: dict) -> dict:
     }
 
 
-async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
-    """Fetch OTX pulses referencing a CVE."""
+async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict] | None:
+    """Fetch OTX pulses referencing a CVE.
+
+    Returns None when the upstream request fails (HTTP 5xx, circuit open, etc.)
+    so callers can distinguish outage from a legitimate empty pulse list.
+    """
     if not api_key or not cve_id:
         return []
 
@@ -187,7 +191,7 @@ async def fetch_cve_pulses(cve_id: str, api_key: str) -> list[dict]:
         context_id=cve_id.upper(),
     )
     if data is None:
-        return []
+        return None
 
     pulse_info = data.get("pulse_info") or {}
     raw_pulses = pulse_info.get("pulses") or []
@@ -337,6 +341,17 @@ async def load_otx_pulses_for_cve(
         return db_rows
 
     pulses = await fetch_cve_pulses(key, api_key)
+    if pulses is None:
+        stale = await read_otx_cve_pulses(db, key, max_age_hours=None)
+        if stale:
+            logger.warning(
+                "OTX upstream unavailable for %s — serving %s stale pulse(s)",
+                key,
+                len(stale),
+            )
+            return stale
+        return []
+
     await store_otx_cve_pulses(db, key, pulses)
     return pulses
 
@@ -428,7 +443,7 @@ async def run_otx_nightly_correlation(db, api_key: str, progress_cb=None) -> dic
             progress_cb(f"Fetching OTX threat intelligence pulses: {cve_id} ({index + 1}/{len(cve_ids)})…")
         try:
             pulses = await fetch_cve_pulses(cve_id, api_key)
-            if not pulses:
+            if pulses is None or not pulses:
                 continue
             write_db = await get_db() if own_db else passed_db
             try:

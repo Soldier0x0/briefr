@@ -74,7 +74,7 @@ async def run_otx_continuous_sync(api_key: str) -> dict:
             try:
                 pulses = await fetch_cve_pulses(cve_id, api_key)
                 stats["api_calls"] += 1
-                if not pulses:
+                if pulses is None or not pulses:
                     continue
                 await store_otx_cve_pulses(db, cve_id, pulses)
                 await db.commit()

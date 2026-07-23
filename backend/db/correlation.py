@@ -87,6 +87,22 @@ WHERE cve_id = $1
 ORDER BY created_date DESC
 """
 
+_READ_OTX_CVE_PULSES_ANY_AGE_SQLITE = """
+SELECT pulse_id, pulse_name, author, created_date, adversary,
+       malware_families, ioc_count, tags, targeted_countries
+FROM otx_cve_pulses
+WHERE cve_id = ?
+ORDER BY created_date DESC
+"""
+
+_READ_OTX_CVE_PULSES_ANY_AGE_PG = """
+SELECT pulse_id, pulse_name, author, created_date, adversary,
+       malware_families, ioc_count, tags, targeted_countries
+FROM otx_cve_pulses
+WHERE cve_id = $1
+ORDER BY created_date DESC
+"""
+
 _DELETE_OTX_PULSE_IOCS_SQLITE = "DELETE FROM otx_pulse_iocs WHERE pulse_id = ?"
 _DELETE_OTX_PULSE_IOCS_PG = "DELETE FROM otx_pulse_iocs WHERE pulse_id = $1"
 
@@ -384,11 +400,16 @@ async def store_otx_cve_pulses(
 
 
 async def read_otx_cve_pulses(
-    db: DbConnection, cve_id: str, max_age_hours: float = 6
+    db: DbConnection, cve_id: str, max_age_hours: float | None = 6
 ) -> list[dict] | None:
-    cutoff = _cutoff_datetime_hours_ago(max_age_hours)
-    sql = _READ_OTX_CVE_PULSES_PG if _is_postgres_connection(db) else _READ_OTX_CVE_PULSES_SQLITE
-    rows = await db.execute_fetchall(sql, (cve_id.upper(), cutoff))
+    pg = _is_postgres_connection(db)
+    if max_age_hours is None:
+        sql = _READ_OTX_CVE_PULSES_ANY_AGE_PG if pg else _READ_OTX_CVE_PULSES_ANY_AGE_SQLITE
+        rows = await db.execute_fetchall(sql, (cve_id.upper(),))
+    else:
+        cutoff = _cutoff_datetime_hours_ago(max_age_hours)
+        sql = _READ_OTX_CVE_PULSES_PG if pg else _READ_OTX_CVE_PULSES_SQLITE
+        rows = await db.execute_fetchall(sql, (cve_id.upper(), cutoff))
     if not rows:
         return None
     return [

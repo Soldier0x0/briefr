@@ -12,6 +12,42 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
+## 2026-07-23 — OTX smoke failure after successful SigmaHQ deploy
+
+### Incident
+
+Post-hotfix `briefr-update.sh` applied migrations 034→035 successfully,
+health gate passed, but Intel smoke failed:
+`expected otx_pulses > 0 for CVE-2021-44228` with
+`OTX HTTP 500` from `otx.alienvault.com`.
+
+### Root cause
+
+1. **Deploy succeeded** — Alembic, frontend build, and services are healthy.
+2. **Smoke failed on upstream OTX**, not SigmaHQ or migration regressions.
+3. **Secondary bug:** `load_otx_pulses_for_cve` treated upstream failure (`[]`)
+   like a legitimate empty response and called `store_otx_cve_pulses`, which
+   deletes existing `otx_cve_pulses` rows before insert — wiping cached pulses
+   during transient OTX outages.
+
+### Fix
+
+- `fetch_cve_pulses` returns `None` on upstream failure (distinct from `[]`).
+- `load_otx_pulses_for_cve` serves stale DB rows on failure; never overwrites
+  cache when upstream is unavailable.
+- `smoke-intel.sh` prints a hint when journal shows OTX HTTP 4xx/5xx.
+
+### Operator actions
+
+- **Deploy is fine** — no rollback needed.
+- Re-run smoke when OTX recovers: `bash /opt/briefr/deploy/smoke-intel.sh`
+- Or warn-only for this run: `BRIEFR_STRICT_SMOKE=0 bash .../briefr-update.sh`
+- **SigmaHQ:** Admin → Feed health → Force re-sync (or wait for weekly job).
+
+---
+
 ## 2026-07-23 — RCA: Alembic reserved-word column + SigmaHQ first sync
 
 ### Incident
