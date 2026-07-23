@@ -1,0 +1,22 @@
+title: Suspicious PowerShell Encoded Command
+id: b2222222-2222-4222-8222-222222222222
+status: experimental
+description: Detects PowerShell encoded command execution (no CVE)
+author: Another Author
+date: 2020/01/01
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+tags:
+    - attack.execution
+    - attack.t1059.001
+logsource:
+    product: windows
+    service: powershell
+detection:
+    selection:
+        EventID: 4104
+        ScriptBlockText|contains: '-enc'
+    condition: selection
+falsepositives:
+    - Admin scripts
+level: medium
