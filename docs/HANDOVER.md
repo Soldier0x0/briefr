@@ -21,7 +21,9 @@ into Postgres (no SQLite dialect for these tables), watermark with
 `commit_sha` + archive `sha256` (EPSS/PoC pattern). Detect/Forge read local
 CVE-exact links. **YARA out of scope.** DRL-1.1 attribution mandatory on
 rows/API/UI. Spec: `docs/planning/specs/sigmahq-local-index-design.md`.
-BACKLOG row added (SH-1…SH-5).
+BACKLOG row added (SH-1…SH-5). **SH-2 must wire Admin in multiple places**
+(Scheduler Run now, config_schema, JOB_CATALOG, force-resync, Feed Health,
+locks, `_JOB_RUN_MAP`) — not a single manual endpoint.
 
 **Next:** Activate SH-1 (Alembic + parser + sync + fixtures) when maintainer
 queues it on the sprint.
