@@ -45,8 +45,10 @@ job counts, external-deps table), `PRODUCT_STATUS.md`, `OPERATIONS.md`, `API_REF
 `README.md`, `HOW_IT_WORKS.md`, `DATA_SNAPSHOT.md`, `BACKLOG.md` (SigmaHQ → shipped),
 `ONBOARDING.md` (troubleshooting + subsystem pointers). `export_intel_snapshot.py`
 allowlist extended with `detection_rules*` + `sigmahq_archive_identity`.
+**Study guide:** `STUDY_GUIDE.html` Ch 14/15/21/32 truth pass → regenerated
+`docs/study-guide/` + `docs/learn/` (`build_study_guide_book.py` G5 green).
 
-**Next:** Operator runs SigmaHQ Force re-sync on production; study guide refresh in follow-up commit.
+**Next:** Operator runs SigmaHQ Force re-sync on production.
 
 ---
 
