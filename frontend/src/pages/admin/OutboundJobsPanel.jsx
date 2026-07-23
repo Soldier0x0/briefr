@@ -8,16 +8,9 @@ import { outboundJobsEmptyMessage } from './outboundJobsCopy.js'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
+import OutboundJobStatusBadge from './shared/OutboundJobStatusBadge.jsx'
 
 const POLL_MS = 15000
-
-function statusBadge(status) {
-  const normalized = String(status || '').toLowerCase()
-  if (normalized === 'succeeded' || normalized === 'success') return 'badge-ok'
-  if (normalized === 'failed' || normalized === 'aborted') return 'badge-error'
-  if (normalized === 'doing' || normalized === 'todo') return 'badge-warn'
-  return 'badge-muted'
-}
 
 export default function OutboundJobsPanel() {
   const [payload, setPayload] = useState(null)
@@ -95,9 +88,7 @@ export default function OutboundJobsPanel() {
         id: 'status',
         label: 'Status',
         defaultVisible: true,
-        render: (row) => (
-          <span className={`badge ${statusBadge(row.status)}`}>{row.status || '—'}</span>
-        ),
+        render: (row) => <OutboundJobStatusBadge status={row.status} />,
       },
       {
         id: 'attempts',
