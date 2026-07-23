@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Hotfix: SigmaHQ migration `references` reserved word
+
+**RCA:** Alembic `035_detection_rules_sigmahq` used unquoted column name `references`,
+which is a Postgres reserved word (FK syntax). `CREATE TABLE` failed with
+`syntax error at or near "references"`. Deploy rollback restored git to prior
+commit; Alembic likely stamped **034** only (035 transactional DDL rolled back).
+
+**Fix:** Quote `"references"` in migration 035 (matches existing upsert SQL in
+`sigmahq_index.py`). Gate: `test_035_revision_file_and_chain` asserts quoted form.
+
+**Operator:** Re-run `sudo bash /opt/briefr/deploy/briefr-update.sh` after this
+lands on `main`. Expected: upgrade `034 → 035` succeeds; then Sync SigmaHQ from
+Feed health.
+
+---
+
 ## 2026-07-23 — About / Privacy / Terms refresh + About dialog layout
 
 **Branch:** `cursor/feat-sigmahq-local-index-b275`

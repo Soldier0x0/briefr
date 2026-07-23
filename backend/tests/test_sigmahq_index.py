@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -48,6 +49,9 @@ def test_035_revision_file_and_chain():
     assert "detection_rule_cves" in source
     assert "detection_rule_techniques" in source
     assert "DRL-1.1" in source
+    # Postgres reserved word — must be quoted (prod deploy failure 2026-07-23).
+    assert '"references"' in source
+    assert not re.search(r"(?m)^\s+references\s+JSONB", source)
 
 
 def test_rule_path_and_family():
