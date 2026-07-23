@@ -1152,7 +1152,16 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 }
 ```
 
-Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact paths/keywords are injected into Sigma and SIEM queries; `generated_sigma_meta.compose_basis` is `community|nuclei_artifacts|yara|template_fallback`. No LLM.
+Sigma community rules: **local SigmaHQ index first** (Postgres `detection_rules` /
+`detection_rule_cves`, CVE-exact only, DRL-1.1 fields `author` / `license` /
+`license_url` / `attribution` / `match_basis=cve_exact`). Index hits cache 1h.
+Live GitHub SigmaHQ search runs only when the index has zero active rows
+(then caches 24h). Elastic search remains GitHub-backed. `generated_sigma` is
+returned as a labeled class/template hunt starter. Additive `evidence` (DC-1)
+is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via
+`emit_composed_detection` — artifact paths/keywords are injected into Sigma and
+SIEM queries; `generated_sigma_meta.compose_basis` is
+`community|nuclei_artifacts|yara|template_fallback`. No LLM.
 
 ---
 
@@ -1281,9 +1290,11 @@ is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
 ```
 
 Content is emitted via the detection composer (`include_community=False` — no
-GitHub Sigma/Elastic search on this path). Artifact evidence injects into Sigma
-and SIEM; `compose_basis` is `nuclei_artifacts|yara|template_fallback` (community
-basis appears on Detect, not Forge generate).
+live GitHub Sigma/Elastic search on this path). When the local SigmaHQ index
+has a CVE-exact rule, that YAML is stored as `sigma_yaml` and
+`compose_basis` is `sigmahq_index`; otherwise artifact/template emit is used
+(`nuclei_artifacts|yara|template_fallback`). Artifact evidence injects into
+SIEM when present.
 
 Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
 EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
@@ -2192,6 +2203,14 @@ Clears stored EPSS CSV file identity (`sync_state.epss_csv_file_identity`) so th
 next scheduled or triggered EPSS sync re-parses and applies scores even if the
 remote FIRST CSV.GZ bytes are unchanged. Admin session required.
 Returns `{ok, cleared, message}`.
+
+### `POST /api/admin/feeds/sigmahq/force-resync`
+
+Clears SigmaHQ archive identity (`sync_state.sigmahq_archive_identity`) **and**
+spawns `run_sigmahq_index_sync(force=True)` once. Unlike EPSS force-resync
+(clear-only), operators do not need a second Scheduler click. Returns 400 when
+`SIGMAHQ_INDEX_SYNC_ENABLED=0`. Admin session required.
+Returns `{ok, cleared, started, message}`.
 
 **All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
 

@@ -24,6 +24,7 @@ ELASTIC_REPO = "elastic/detection-rules"
 GITHUB_SEARCH_URL = "https://api.github.com/search/code"
 GITHUB_RAW = "https://raw.githubusercontent.com"
 CACHE_HOURS = 24
+INDEX_CACHE_HOURS = 1  # local Postgres index is cheap; short TTL after sync
 MAX_CONTENT_FETCHES = 5  # limit raw content fetches to respect rate limits
 
 
@@ -170,14 +171,38 @@ async def find_sigma_rules(
     cve_id: str,
     technique_ids: list[str],
     github_token: str = "",
+    *,
+    allow_github_fallback: bool = True,
 ) -> list[dict]:
     """
-    Search SigmaHQ for Sigma rules matching a CVE ID or ATT&CK technique IDs.
-    Results cached for 24 hours.
+    Prefer local SigmaHQ Postgres index (CVE-exact). Fall back to live GitHub
+    search only when the index is empty / never synced.
+    Results cached (1h for index hits, 24h for GitHub).
     """
     from database import get_feed_cache, set_feed_cache
 
     cache_key = f"sigma:{cve_id.upper()}"
+
+    # Index-first: when any active SigmaHQ rows exist, serve CVE-exact only
+    # (no technique dump, no GitHub). Empty list for this CVE is intentional.
+    try:
+        from detection.sigmahq_index import find_index_rules_for_cve, index_active_count
+
+        if await index_active_count(db) > 0:
+            cached = await get_feed_cache(db, cache_key, INDEX_CACHE_HOURS)
+            if cached is not None and cached.get("source") == "index":
+                return cached.get("rules", [])
+            rules = await find_index_rules_for_cve(db, cve_id)
+            await set_feed_cache(
+                db, cache_key, {"rules": rules, "source": "index"}
+            )
+            return rules
+    except Exception as exc:
+        logger.debug("SigmaHQ index read unavailable: %s", exc)
+
+    if not allow_github_fallback:
+        return []
+
     cached = await get_feed_cache(db, cache_key, CACHE_HOURS)
     if cached is not None:
         return cached.get("rules", [])
@@ -201,6 +226,7 @@ async def find_sigma_rules(
             "download_url": raw_url,
             "html_url": html_url,
             "path": path,
+            "match_basis": "cve_search",
         })
 
     # If no CVE match, search by technique IDs (up to 3)
@@ -227,6 +253,7 @@ async def find_sigma_rules(
                     "download_url": raw_url,
                     "html_url": html_url,
                     "path": path,
+                    "match_basis": "technique_related",
                 })
             if rules:
                 break
@@ -246,7 +273,7 @@ async def find_sigma_rules(
                 rule["status"] = meta["status"] or rule["status"]
         enriched.append(rule)
 
-    await set_feed_cache(db, cache_key, {"rules": enriched})
+    await set_feed_cache(db, cache_key, {"rules": enriched, "source": "github"})
     return enriched
 
 

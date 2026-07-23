@@ -289,6 +289,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "llm_product_extraction": "run_llm_extraction_sync",
     "detection_context_sync": "run_detection_context_sync_job",
     "detection_context_llm": "run_detection_context_llm_job",
+    "sigmahq_index_sync": "run_sigmahq_index_sync",
     "exploit_sources_sync": "run_exploit_sources_sync",
     "backup_deadman_check": "run_backup_deadman_check",
     "watchlist_monitor_alerts": "run_watchlist_monitor_alerts",

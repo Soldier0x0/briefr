@@ -177,6 +177,14 @@ export const JOB_CATALOG = {
     analystDescription: 'Uses an LLM pass for detection context when DETECTION_CONTEXT_LLM_ENABLED is on.',
     refreshButton: 'Run detection LLM pass',
   },
+  sigmahq_index_sync: {
+    label: 'SigmaHQ index sync',
+    short: 'SigmaHQ index',
+    operatorName: 'SigmaHQ Detection Rule Index Sync',
+    analystDescription:
+      'Downloads the SigmaHQ rule archive into Postgres (DRL-1.1). Detect uses CVE-exact matches from this local index.',
+    refreshButton: 'Sync SigmaHQ index',
+  },
   watchlist_monitor_alerts: {
     label: 'Watchlist monitor alerts',
     short: 'Watchlist alerts',

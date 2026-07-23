@@ -711,6 +711,76 @@ async def clear_sigmahq_identity(db: DbConnection) -> None:
     await clear_file_identity(db, SIGMAHQ_ARCHIVE_IDENTITY_KEY)
 
 
+async def get_sigmahq_index_status(db: DbConnection) -> dict[str, Any]:
+    """Admin / system snapshot for Feed Health."""
+    identity = await get_file_identity(db, SIGMAHQ_ARCHIVE_IDENTITY_KEY)
+    rules_active = 0
+    rules_retired = 0
+    cve_links = 0
+    try:
+        active = await db.execute_fetchall(
+            """
+            SELECT COUNT(*) AS n FROM detection_rules
+            WHERE source = $1 AND retired_at IS NULL
+            """,
+            (SOURCE,),
+        )
+        rules_active = int(active[0]["n"]) if active else 0
+        retired = await db.execute_fetchall(
+            """
+            SELECT COUNT(*) AS n FROM detection_rules
+            WHERE source = $1 AND retired_at IS NOT NULL
+            """,
+            (SOURCE,),
+        )
+        rules_retired = int(retired[0]["n"]) if retired else 0
+        links = await db.execute_fetchall(
+            """
+            SELECT COUNT(*) AS n FROM detection_rule_cves c
+            JOIN detection_rules r ON r.id = c.rule_id
+            WHERE r.source = $1 AND r.retired_at IS NULL
+            """,
+            (SOURCE,),
+        )
+        cve_links = int(links[0]["n"]) if links else 0
+    except Exception:
+        pass
+
+    synced_at = (identity or {}).get("synced_at") or ""
+    age_seconds = None
+    if synced_at:
+        try:
+            # Accept Z or naive UTC
+            ts = synced_at.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            age_seconds = max(0, int((datetime.now(timezone.utc) - dt).total_seconds()))
+        except ValueError:
+            age_seconds = None
+
+    return {
+        "enabled": sigmahq_index_sync_enabled(),
+        "commit_sha": (identity or {}).get("commit_sha") or "",
+        "archive_sha256": (identity or {}).get("sha256") or "",
+        "synced_at": synced_at,
+        "age_seconds": age_seconds,
+        "rules_active": rules_active,
+        "rules_retired": rules_retired,
+        "cve_links": cve_links,
+        "ok": rules_active > 0,
+    }
+
+
+def sigmahq_index_sync_enabled() -> bool:
+    return os.environ.get("SIGMAHQ_INDEX_SYNC_ENABLED", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
 async def index_active_count(db: DbConnection) -> int:
     try:
         rows = await db.execute_fetchall(

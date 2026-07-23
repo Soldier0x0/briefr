@@ -327,6 +327,28 @@ def test_generate_pack_uses_composer_when_artifacts_exist(forge_client):
     assert "/api/log4j" in body["pack"]["siem_queries"]["elastic_kql"]["query"]
 
 
+def test_generate_pack_prefers_sigmahq_index(forge_client, monkeypatch):
+    """U4: CVE-exact index YAML wins over template emit; no GitHub."""
+    client, _ = forge_client
+
+    async def fake_index(db, cve_id, *, limit=25):
+        return [
+            {
+                "title": "Indexed Rule",
+                "content": "title: Indexed SigmaHQ Rule\ndetection:\n  condition: selection\n",
+                "match_basis": "cve_exact",
+                "license": "DRL-1.1",
+            }
+        ]
+
+    monkeypatch.setattr("routers.forge.find_index_rules_for_cve", fake_index)
+    res = client.post("/api/hunt-packs/generate", json={"cve_id": "CVE-2021-44228"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["compose_basis"] == "sigmahq_index"
+    assert "Indexed SigmaHQ Rule" in body["pack"]["sigma_yaml"]
+
+
 def test_generate_pack_validation(forge_client):
     client, _ = forge_client
 

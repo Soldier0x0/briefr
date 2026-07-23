@@ -49,6 +49,7 @@ export const MANUAL_PIPELINES = [
   { id: 'nvd_incremental_sync', label: 'NVD only' },
   { id: 'kev_metadata_sync', label: 'KEV only' },
   { id: 'epss_score_sync', label: 'EPSS only' },
+  { id: 'sigmahq_index_sync', label: 'SigmaHQ index' },
   { id: 'weekly_mitre_refresh', label: 'MITRE + ATLAS' },
   { id: 'incident_feed_refresh', label: 'Incident RSS' },
   { id: 'nightly_correlation', label: 'Correlation' },

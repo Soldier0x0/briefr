@@ -23,6 +23,12 @@ describe('toastCopy', () => {
     assert.match(schedulerJobManualRun('epss_score_sync'), /^Manual run started —/)
   })
 
+  it('SigmaHQ catalog label is used in started toast', () => {
+    const msg = schedulerJobStarted('sigmahq_index_sync', 'operator')
+    assert.match(msg, /SigmaHQ Detection Rule Index Sync/)
+    assert.doesNotMatch(msg, /sigmahq_index_sync/)
+  })
+
   it('pause copy uses human name', () => {
     assert.match(schedulerJobPaused('epss_score_sync'), /paused$/)
   })

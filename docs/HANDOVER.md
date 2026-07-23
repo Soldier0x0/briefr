@@ -12,6 +12,27 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — SigmaHQ local Postgres rule index (SH-1…SH-5 / U1–U5)
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**Plan:** `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md`  
+**Design:** `docs/planning/specs/sigmahq-local-index-design.md`
+
+**What shipped:**
+- Alembic `035_detection_rules_sigmahq` — Postgres-native `detection_rules` / CVE / technique link tables (DRL defaults).
+- `detection/sigmahq_index.py` — tip resolve, tarball download, parse, batch upsert, soft-retire, dual watermark (`sigmahq_archive_identity`).
+- Scheduler job `sigmahq_index_sync` + locks + `_JOB_RUN_MAP` + disabled gate + config schema + catalog + Feed Health card (Sync + Force) + onboarding checklist item.
+- Force-resync clears watermark **and** spawns forced sync (KTD7; diverges from EPSS clear-only).
+- Detect `find_sigma_rules` index-first (CVE-exact); GitHub only when index empty.
+- Forge generate attaches index YAML when present (`compose_basis=sigmahq_index`).
+
+**Verify:** SQLite unit tests for parser/admin/forge/read-fallback; PG apply/watermark/read tests gated on `DATABASE_URL=postgresql…` (`verify-local --full`).
+
+**Next:** Merge after review; run first sync on Postgres prod; community-first Detect UI polish may still land via PR #736 separately.
+
+---
+
 ## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42`

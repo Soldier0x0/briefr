@@ -26,6 +26,7 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "llm_product_extraction": asyncio.Lock(),
     "detection_context_sync": asyncio.Lock(),
     "detection_context_llm": asyncio.Lock(),
+    "sigmahq_index_sync": asyncio.Lock(),
     "exploit_sources_sync": asyncio.Lock(),
     "scheduled_backup": asyncio.Lock(),
     "resource_metrics_sample": asyncio.Lock(),
