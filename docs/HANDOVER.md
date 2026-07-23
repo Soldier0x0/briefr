@@ -25,8 +25,9 @@ BACKLOG row added (SH-1…SH-5). **SH-2 must wire Admin in multiple places**
 (Scheduler Run now, config_schema, JOB_CATALOG, force-resync, Feed Health,
 locks, `_JOB_RUN_MAP`) — not a single manual endpoint.
 
-**Next:** Activate SH-1 (Alembic + parser + sync + fixtures) when maintainer
-queues it on the sprint.
+**Also:** Implementation-ready plan written: `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md` (U1–U5; Admin multi-surface in U2).
+
+**Next:** Run `/ce-work` (or activate U1 on sprint) to implement SH-1/U1.
 
 ---
 
