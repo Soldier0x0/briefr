@@ -26,10 +26,11 @@ Same shape as existing bulk intel syncs (PoC-in-GitHub commit watermark, EPSS fi
 | Ingest method | **Codeload / archive tarball of a resolved git commit SHA** (not per-file GitHub API; not recursive code search) |
 | Apply model | **Upsert by rule identity** + soft-retire missing paths — never wipe-and-replace the whole table mid-sync |
 | Watermark | Store **commit SHA + archive sha256** in `sync_state` / file-identity helper; skip parse/apply when both match |
-| Cadence | Default **weekly** scheduler job; Admin **Sync now**; env to disable |
+| Cadence | Default **weekly** scheduler job; Admin **Run now** + **Force re-sync** in the same places as other feeds (Scheduler, config, Feed Health) |
 | Request path | Read **index first**; GitHub code search becomes **optional degraded fallback** (token required), off when index healthy |
 | LLM | **Never** on sync or Detect read |
 | License | **DRL-1.1** compliance baked into schema + API + UI (see §6) |
+| Admin | **Full multi-surface wiring** required in SH-2 (§7) — not a lone API endpoint |
 
 ---
 
@@ -399,7 +400,8 @@ pySigma compile validation = **separate** program (STRATEGY Level 3), not blocki
 3. No GitHub code search on Detect when index is non-empty.  
 4. Upsert updates changed rules; removed upstream paths soft-retire; watermark only advances on full success.  
 5. Docs and UI state license obligations; exports that include community Sigma keep attribution.  
-6. Postgres-native only for this feature; CI covers migration + fixture sync on Postgres.
+6. Postgres-native only for this feature; CI covers migration + fixture sync on Postgres.  
+7. **Admin parity:** Scheduler Run now, config enable/interval, `_JOB_RUN_MAP` + lock, force-resync, Feed Health/System status with Run+Force, catalog label, disabled-gate — same pattern as EPSS / detection_context jobs.
 
 ---
 
