@@ -12,6 +12,22 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Design: SigmaHQ local Postgres index (Sigma only)
+
+**Branch:** `cursor/sigmahq-local-index-plan-b275`
+
+**Decision:** Mirror SigmaHQ via **one tarball download per tip commit**, upsert
+into Postgres (no SQLite dialect for these tables), watermark with
+`commit_sha` + archive `sha256` (EPSS/PoC pattern). Detect/Forge read local
+CVE-exact links. **YARA out of scope.** DRL-1.1 attribution mandatory on
+rows/API/UI. Spec: `docs/planning/specs/sigmahq-local-index-design.md`.
+BACKLOG row added (SH-1…SH-5).
+
+**Next:** Activate SH-1 (Alembic + parser + sync + fixtures) when maintainer
+queues it on the sprint.
+
+---
+
 ## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42`
