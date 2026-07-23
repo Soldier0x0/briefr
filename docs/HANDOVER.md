@@ -12,6 +12,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Design: SigmaHQ local Postgres index (Sigma only)
+
+**Branch:** `cursor/sigmahq-local-index-plan-b275`
+
+**Decision:** Mirror SigmaHQ via **one tarball download per tip commit**, upsert
+into Postgres (no SQLite dialect for these tables), watermark with
+`commit_sha` + archive `sha256` (EPSS/PoC pattern). Detect/Forge read local
+CVE-exact links. **YARA out of scope.** DRL-1.1 attribution mandatory on
+rows/API/UI. Spec: `docs/planning/specs/sigmahq-local-index-design.md`.
+BACKLOG row added (SH-1…SH-5). **SH-2 must wire Admin in multiple places**
+(Scheduler Run now, config_schema, JOB_CATALOG, force-resync, Feed Health,
+locks, `_JOB_RUN_MAP`) — not a single manual endpoint.
+
+**Also:** Implementation-ready plan written: `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md` (U1–U5; Admin multi-surface in U2).
+
+**Next:** Run `/ce-work` (or activate U1 on sprint) to implement SH-1/U1.
+
+---
+
 ## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42`
