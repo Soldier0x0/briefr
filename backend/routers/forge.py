@@ -369,7 +369,7 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             description=description,
             cwe_ids=cwe_ids,
         )
-        sigma_yaml = composed["generated_sigma"]
+        sigma_yaml = composed["generated_sigma"] or ""
         siem = dict(composed["siem_queries"] or {})
         log_patterns = siem.pop("log_patterns", [])
         compose_basis = composed["compose_basis"]

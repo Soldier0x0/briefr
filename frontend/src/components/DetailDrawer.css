@@ -2602,6 +2602,33 @@ a.drawer-related-news-title:focus-visible {
   line-height: 1.4;
 }
 
+.det-match-basis-badge {
+  font-size: var(--font-size-2xs, 8px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary, var(--text2));
+  border: 1px solid var(--border-subtle, var(--border2));
+  background: var(--surface-raised, var(--bg3));
+  padding: var(--space-1, 2px) var(--space-2, 6px);
+  cursor: help;
+}
+
+.det-rule-attribution {
+  font-size: var(--font-size-2xs, 9px);
+  letter-spacing: 0.04em;
+  color: var(--text-muted, var(--text3));
+  margin: var(--space-1, 4px) 0 0;
+}
+
+.det-rule-attribution a {
+  color: var(--accent-primary, var(--accent));
+  text-decoration: none;
+}
+
+.det-rule-attribution a:hover {
+  color: var(--text-primary, var(--text));
+}
+
 .det-rule-link,
 .det-rule-download {
   font-size: 9px;

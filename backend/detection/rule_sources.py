@@ -1,10 +1,14 @@
 """
 Detection rule source discovery.
 
-Priority: SigmaHQ community rules → Elastic detection-rules → BRIEFR generated.
+Priority: SigmaHQ community rules → Elastic detection-rules → optional BRIEFR
+template (only when no community hit and not generic — see composer).
 All results cached 24 hours per CVE via feed_cache table.
 GitHub token is optional but recommended (env: GITHUB_TOKEN).
 Gracefully returns empty lists if the API is unavailable or rate-limited.
+
+SigmaHQ rules are under Detection Rule License (DRL) 1.1 — commercial use is
+allowed with author attribution retained on the rule and on match output.
 """
 
 from __future__ import annotations
@@ -25,6 +29,20 @@ GITHUB_SEARCH_URL = "https://api.github.com/search/code"
 GITHUB_RAW = "https://raw.githubusercontent.com"
 CACHE_HOURS = 24
 MAX_CONTENT_FETCHES = 5  # limit raw content fetches to respect rate limits
+
+SIGMA_LICENSE_ID = "DRL-1.1"
+SIGMA_LICENSE_URL = (
+    "https://github.com/SigmaHQ/Detection-Rule-License/blob/main/"
+    "LICENSE.Detection.Rules.md"
+)
+
+_CVE_ID_RE = re.compile(r"CVE-(\d{4})-(\d{4,})", re.IGNORECASE)
+_CVE_TAG_RE = re.compile(r"cve\.(\d{4})\.(\d{4,})", re.IGNORECASE)
+_MATCH_RANK = {
+    "cve_exact": 0,
+    "cve_search": 1,
+    "technique_related": 2,
+}
 
 
 # ── GitHub helpers ────────────────────────────────────────
@@ -112,19 +130,57 @@ def _raw_url(repo: str, path: str, branch: str = "main") -> str:
 
 # ── Sigma (SigmaHQ) metadata extraction ──────────────────
 
+def _normalize_cve_id(value: str) -> str:
+    text = (value or "").strip().upper()
+    match = _CVE_ID_RE.search(text)
+    if not match:
+        return ""
+    return f"CVE-{match.group(1)}-{match.group(2)}"
+
+
+def _cve_ids_in_text(text: str) -> set[str]:
+    found: set[str] = set()
+    for match in _CVE_ID_RE.finditer(text or ""):
+        found.add(f"CVE-{match.group(1)}-{match.group(2)}")
+    for match in _CVE_TAG_RE.finditer(text or ""):
+        found.add(f"CVE-{match.group(1)}-{match.group(2)}")
+    return found
+
+
+def _sigma_mentions_cve(cve_id: str, path: str, content: str | None) -> bool:
+    """True when path or rule body explicitly references this CVE."""
+    target = _normalize_cve_id(cve_id)
+    if not target:
+        return False
+    haystacks = [path or ""]
+    if content:
+        haystacks.append(content)
+    for hay in haystacks:
+        if target in _cve_ids_in_text(hay):
+            return True
+        # Path slugs often use cve_2021_44228 / CVE-2021-44228
+        slug = target.lower().replace("-", "_")
+        if slug in hay.lower().replace("-", "_"):
+            return True
+    return False
+
+
 def _sigma_meta(content: str) -> dict[str, str]:
-    """Quick regex extraction of title and status from Sigma YAML without full parse."""
+    """Quick regex extraction of title, status, and author from Sigma YAML."""
     title = ""
     status = "experimental"
+    author = ""
     for line in content.splitlines():
-        if not title and line.startswith("title:"):
-            title = line[6:].strip().strip("'\"")
-        if not status or status == "experimental":
-            if line.startswith("status:"):
-                status = line[7:].strip().strip("'\"")
-        if title and status not in ("experimental",):
+        stripped = line.strip()
+        if not title and stripped.startswith("title:"):
+            title = stripped[6:].strip().strip("'\"")
+        if stripped.startswith("status:"):
+            status = stripped[7:].strip().strip("'\"") or status
+        if not author and stripped.startswith("author:"):
+            author = stripped[7:].strip().strip("'\"")
+        if title and author and status not in ("experimental",):
             break
-    return {"title": title, "status": status}
+    return {"title": title, "status": status, "author": author}
 
 
 def _sigma_status_from_path(path: str) -> str:
@@ -135,6 +191,67 @@ def _sigma_status_from_path(path: str) -> str:
     if "/test/" in p:
         return "test"
     return "experimental"
+
+
+def _classify_sigma_match(
+    cve_id: str,
+    path: str,
+    content: str | None,
+    *,
+    search_mode: str,
+) -> str:
+    """
+    Label how strongly a SigmaHQ hit relates to the CVE.
+
+    - cve_exact: path or rule body references this CVE
+    - cve_search: found via CVE GitHub search but body not yet confirming
+    - technique_related: ATT&CK technique fallback (related class, not CVE-specific)
+    """
+    if search_mode == "technique":
+        if content is not None and _sigma_mentions_cve(cve_id, path, content):
+            return "cve_exact"
+        return "technique_related"
+    if _sigma_mentions_cve(cve_id, path, content):
+        return "cve_exact"
+    return "cve_search"
+
+
+def _apply_sigma_provenance(
+    rule: dict,
+    *,
+    cve_id: str,
+    search_mode: str,
+    content: str | None = None,
+) -> None:
+    """Attach match basis + DRL attribution fields (mutates rule)."""
+    path = str(rule.get("path") or "")
+    body = content if content is not None else rule.get("content")
+    body_str = body if isinstance(body, str) else None
+    match_basis = _classify_sigma_match(
+        cve_id, path, body_str, search_mode=search_mode
+    )
+    rule["match_basis"] = match_basis
+    rule["license"] = SIGMA_LICENSE_ID
+    rule["license_url"] = SIGMA_LICENSE_URL
+    if body_str:
+        meta = _sigma_meta(body_str)
+        if meta.get("author"):
+            rule["author"] = meta["author"]
+    author = str(rule.get("author") or "").strip()
+    rule["attribution"] = (
+        f"SigmaHQ · {author}" if author else "SigmaHQ (DRL-1.1 — retain author credit)"
+    )
+
+
+def _rank_sigma_rules(rules: list[dict]) -> list[dict]:
+    """Prefer CVE-exact hits over search/technique-related."""
+    return sorted(
+        rules,
+        key=lambda r: (
+            _MATCH_RANK.get(str(r.get("match_basis") or ""), 9),
+            str(r.get("title") or r.get("path") or ""),
+        ),
+    )
 
 
 # ── Elastic metadata extraction ───────────────────────────
@@ -174,6 +291,9 @@ async def find_sigma_rules(
     """
     Search SigmaHQ for Sigma rules matching a CVE ID or ATT&CK technique IDs.
     Results cached for 24 hours.
+
+    Each rule includes ``match_basis`` (cve_exact | cve_search | technique_related)
+    and DRL-1.1 attribution fields. CVE-exact hits are ranked first.
     """
     from database import get_feed_cache, set_feed_cache
 
@@ -184,6 +304,7 @@ async def find_sigma_rules(
 
     rules: list[dict] = []
     seen_paths: set[str] = set()
+    search_mode_by_path: dict[str, str] = {}
 
     # Search by CVE ID first
     items = await _github_search(f"{cve_id}+repo:{SIGMA_REPO}", github_token, cve_id=cve_id)
@@ -192,16 +313,19 @@ async def find_sigma_rules(
         if not path.endswith(".yml") or path in seen_paths:
             continue
         seen_paths.add(path)
+        search_mode_by_path[path] = "cve"
         raw_url = _raw_url(SIGMA_REPO, path)
         html_url = item.get("html_url", f"https://github.com/{SIGMA_REPO}/blob/main/{path}")
-        rules.append({
+        rule = {
             "title": item.get("name", path).replace(".yml", "").replace("_", " ").title(),
             "status": _sigma_status_from_path(path),
             "source": "SigmaHQ",
             "download_url": raw_url,
             "html_url": html_url,
             "path": path,
-        })
+        }
+        _apply_sigma_provenance(rule, cve_id=cve_id, search_mode="cve", content=None)
+        rules.append(rule)
 
     # If no CVE match, search by technique IDs (up to 3)
     if not rules:
@@ -218,23 +342,29 @@ async def find_sigma_rules(
                 if not path.endswith(".yml") or path in seen_paths:
                     continue
                 seen_paths.add(path)
+                search_mode_by_path[path] = "technique"
                 raw_url = _raw_url(SIGMA_REPO, path)
                 html_url = item.get("html_url", f"https://github.com/{SIGMA_REPO}/blob/main/{path}")
-                rules.append({
+                rule = {
                     "title": item.get("name", path).replace(".yml", "").replace("_", " ").title(),
                     "status": _sigma_status_from_path(path),
                     "source": "SigmaHQ",
                     "download_url": raw_url,
                     "html_url": html_url,
                     "path": path,
-                })
+                }
+                _apply_sigma_provenance(
+                    rule, cve_id=cve_id, search_mode="technique", content=None
+                )
+                rules.append(rule)
             if rules:
                 break
 
-    # Enrich first N rules with parsed title/status from actual content
+    # Enrich first N rules with parsed title/status/author from actual content
     enriched: list[dict] = []
     fetched = 0
     for rule in rules:
+        mode = search_mode_by_path.get(str(rule.get("path") or ""), "cve")
         if fetched < MAX_CONTENT_FETCHES:
             content = await _fetch_raw(rule["download_url"], github_token, cve_id=cve_id)
             fetched += 1
@@ -244,10 +374,22 @@ async def find_sigma_rules(
                 if meta["title"]:
                     rule["title"] = meta["title"]
                 rule["status"] = meta["status"] or rule["status"]
+                if meta.get("author"):
+                    rule["author"] = meta["author"]
+                _apply_sigma_provenance(
+                    rule, cve_id=cve_id, search_mode=mode, content=content
+                )
+            else:
+                _apply_sigma_provenance(
+                    rule, cve_id=cve_id, search_mode=mode, content=None
+                )
+        else:
+            _apply_sigma_provenance(rule, cve_id=cve_id, search_mode=mode, content=None)
         enriched.append(rule)
 
-    await set_feed_cache(db, cache_key, {"rules": enriched})
-    return enriched
+    ranked = _rank_sigma_rules(enriched)
+    await set_feed_cache(db, cache_key, {"rules": ranked})
+    return ranked
 
 
 # ── Level 2 — Elastic detection-rules search ─────────────

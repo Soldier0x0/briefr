@@ -12,6 +12,27 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Detect: community SigmaHQ-first (demote BRIEFR templates)
+
+**Branch:** `cursor/sigmahq-community-first-b275`
+
+**Decision:** Prefer real SigmaHQ/Elastic rules over BRIEFR template generation
+at this stage. No AI/LLM required.
+
+**What:**
+- `rule_sources.py`: `match_basis` (`cve_exact` / `cve_search` / `technique_related`),
+  rank CVE-exact first; DRL-1.1 `license` / `license_url` / `author` / `attribution`.
+- `composer.emit_composed_detection`: suppress `generated_sigma` when community
+  rules exist (`community_primary`) or template basis is `generic` (`generic_refused`).
+- Detect tab: community section primary; Show YAML + attribution; template only
+  when API still returns one.
+- Docs: `PRODUCT_STATUS` D5, `API_REFERENCE` detection contract, this entry.
+
+**Next:** Optional follow-ups — local SigmaHQ index (offline CVE-tag map),
+Forge `include_community=True`, pySigma compile gate. Not started here.
+
+---
+
 ## 2026-07-22 — Program E Task 3: AI Operations inspect payload + manual retry UI
 
 **Branch:** `cursor/ux-ops-rca-plans-3f42`
