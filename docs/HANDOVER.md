@@ -12,6 +12,17 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — About / Privacy / Terms refresh + About dialog layout
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**What changed:**
+- About modal: SigmaHQ + current sources; sign-in required (removed “No account required”); DRL note; Scope adds community detection honesty; landscape layout (920px wide / 72vh / 2-col scope).
+- Privacy & Terms: July 2026 effective date; accurate feed cadences; SigmaHQ/OTX/MITRE/Elastic; Terms login-gated + community-rule accuracy disclaimer.
+- `docs/PRODUCT.md` Scope & Limits SSOT gains community detection rules bullet.
+
+---
+
 ## 2026-07-23 — SigmaHQ production polish (honesty + Admin attention)
 
 **Branch:** `cursor/feat-sigmahq-local-index-b275`

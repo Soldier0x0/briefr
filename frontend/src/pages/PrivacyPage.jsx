@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      subtitle="Effective June 2026 — projectjupiter.in"
+      subtitle="Effective July 2026 — projectjupiter.in"
     >
       <h2 className="legal-section-heading">1. What we do not collect</h2>
       <ul className="legal-ul">
@@ -18,7 +18,8 @@ export default function PrivacyPage() {
 
       <h3 className="legal-sub-heading">Login &amp; session cookies</h3>
       <p className="legal-p">
-        BRIEFR requires sign-in for operator accounts. When you log in, the
+        BRIEFR requires sign-in for operator and analyst accounts. Analyst
+        API routes reject unauthenticated requests. When you log in, the
         backend issues two httpOnly, Secure, SameSite=Strict cookies: a
         short-lived access token and a longer-lived session (refresh) token
         used to keep you signed in without re-entering your password. Neither
@@ -52,9 +53,11 @@ export default function PrivacyPage() {
       <p className="legal-p">
         To prevent abuse, requests to a few endpoints (IOC lookup, refresh,
         wallboard) are throttled per requesting IP address using short-lived,
-        in-memory counters. The IP is held only long enough to enforce the
-        limit and is never written to a log file or database — it is
-        discarded once the counter goes idle.
+        in-memory counters (optionally shared via the database when
+        multi-worker rate-limit store is enabled). The IP is held only long
+        enough to enforce the limit and is never written to an application
+        log line as a tracked identifier — it is discarded once the counter
+        goes idle.
       </p>
 
       <h3 className="legal-sub-heading">Application logs</h3>
@@ -62,6 +65,7 @@ export default function PrivacyPage() {
         The backend logs HTTP method, path, status code, and response time
         for each request, for operational debugging. These log lines do not
         contain your IP address, User-Agent string, or query parameters.
+        Structured log extras matching secret patterns are redacted.
       </p>
 
       <h2 className="legal-section-heading">3. Your stack profile (server)</h2>
@@ -92,16 +96,20 @@ export default function PrivacyPage() {
 
       <h2 className="legal-section-heading">5. Third-party services</h2>
       <ul className="legal-ul">
-        <li>NVD/NIST — CVE data — server-side, once daily</li>
-        <li>CISA — exploited vuln list — server-side, once daily</li>
-        <li>FIRST.org — EPSS scores — server-side, once daily</li>
-        <li>OSV.dev — open-source vulnerability data — server-side, once daily</li>
+        <li>NVD/NIST — CVE catalog — server-side rolling sync (default hourly; configurable)</li>
+        <li>CISA — Known Exploited Vulnerabilities (KEV) — server-side (default every 15 minutes)</li>
+        <li>FIRST.org — EPSS scores — server-side (default every 6 hours)</li>
+        <li>OSV.dev — open-source vulnerability data — server-side enrichment</li>
+        <li>MITRE ATT&amp;CK / ATLAS — technique and AI-threat frameworks — server-side refresh</li>
+        <li>AlienVault OTX — community pulse / campaign intel — server-side sync</li>
+        <li>SigmaHQ — community Sigma detection rules mirrored into a local Postgres index (default weekly tarball sync; DRL-1.1 license retained). Detect may fall back to live GitHub search only when that index is empty</li>
+        <li>Elastic detection-rules (GitHub) — on-demand community rule search when you open Detect</li>
+        <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
+        <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
         <li>VirusTotal — IOC enrichment — only when you use IOC Lookup</li>
         <li>AbuseIPDB — IP reputation — only when you use IOC Lookup</li>
         <li>GreyNoise — internet scanning context for IPs — only when you use IOC Lookup (requires server API key)</li>
         <li>abuse.ch (MalwareBazaar + URLhaus) — one Auth-Key — IOC Lookup for hashes and domains</li>
-        <li>Sploitus — public exploit search per CVE — server-side when you open CVE detail (Intel tab)</li>
-        <li>CIRCL CVE-Search — supplemental CVE references — server-side on CVE detail load</li>
         <li>Groq, Cerebras, OpenRouter, Gemini (LLM providers, tried in that failover order) — receive CVE findings, IOC values you looked up, and threat-actor names as part of a prompt — only when you click "Export PDF" (executive summary) or during scheduled product/detection-artifact extraction on newly published CVEs. If no provider is configured, these features fall back to a template with no data sent anywhere.</li>
       </ul>
       <p className="legal-p">

@@ -7,9 +7,13 @@ const SOURCES = [
   'NVD',
   'CISA KEV',
   'FIRST EPSS',
+  'OSV.dev',
   'MITRE ATT&CK',
   'MITRE ATLAS',
+  'SigmaHQ',
   'OTX',
+  'CIRCL',
+  'Sploitus',
   'VirusTotal',
   'AbuseIPDB',
   'GreyNoise',
@@ -26,7 +30,11 @@ const SCOPE_LIMITS = [
   },
   {
     term: 'Community-source intelligence',
-    detail: 'Correlation derives from OTX community pulses with ThreatFox corroboration. One community source is not vendor-grade attribution, and the product labels it as such in-line. Breadth of sources is bounded by what\u2019s free and self-hostable.',
+    detail: 'Correlation derives from OTX community pulses (ThreatFox corroboration planned). One community source is not vendor-grade attribution, and the product labels it as such in-line. Breadth of sources is bounded by what\u2019s free and self-hostable.',
+  },
+  {
+    term: 'Community detection rules',
+    detail: 'Detect prefers a local SigmaHQ index (CVE-exact, DRL-1.1). Empty means no CVE-tagged rule — not a claim of coverage. BRIEFR-generated Sigma is an experimental hunt starter only.',
   },
   {
     term: 'Term-based stack matching',
@@ -77,18 +85,21 @@ export default function AboutModal({ onClose }) {
           &#x2715;
         </button>
 
-        <div className="about-logo" id="about-title">BRIEFR</div>
-        <div className="about-subtitle">CVE Intelligence &amp; Threat Investigation</div>
+        <div className="about-header">
+          <div>
+            <div className="about-logo" id="about-title">BRIEFR</div>
+            <div className="about-subtitle">CVE Intelligence &amp; Threat Investigation</div>
+          </div>
+          <p className="about-description">
+            Self-hosted CVE intelligence on PostgreSQL 16+. Aggregates public
+            government and open-source feeds on a rolling schedule (defaults:
+            NVD hourly, KEV every 15 minutes, EPSS every 6 hours; SigmaHQ
+            weekly). Analyst routes require sign-in. Session cookies only —
+            no analytics, no tracking.
+          </p>
+        </div>
 
         <hr className="about-divider" />
-
-        <p className="about-description">
-          BRIEFR aggregates vulnerability data from public government and
-          open-source sources on a rolling schedule (NVD hourly, KEV every
-          15 minutes, EPSS every 6 hours). Runs on PostgreSQL (production: version 16+).
-          No account required.
-          No cookies. No tracking.
-        </p>
 
         <div className="about-sources-section">
           <span className="about-sources-label mono">// DATA SOURCES</span>
@@ -99,6 +110,7 @@ export default function AboutModal({ onClose }) {
           </div>
           <p className="about-sources-note">
             All trademarks, service marks, logos, and data rights remain the property of their respective owners.
+            SigmaHQ rules retain DRL-1.1 attribution — BRIEFR does not claim them as its own IP.
           </p>
         </div>
 
@@ -124,30 +136,32 @@ export default function AboutModal({ onClose }) {
 
         <hr className="about-divider" />
 
-        <p className="about-copyright mono">
-          &copy; 2026 BRIEFR &middot; Licensed under the Business Source License 1.1
-        </p>
-
-        <p className="about-built-by">
-          Built by{' '}
-          <a
-            href="https://www.linkedin.com/in/sai-harsha-vardhan/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="about-author-link"
-          >
-            Sai Harsha Vardhan
-          </a>
-        </p>
-
-        <div className="about-legal-links">
-          <Link to="/privacy" onClick={onClose} className="about-legal-link mono">
-            Privacy Policy
-          </Link>
-          <span className="about-dot" aria-hidden="true">&middot;</span>
-          <Link to="/terms" onClick={onClose} className="about-legal-link mono">
-            Terms of Use
-          </Link>
+        <div className="about-footer">
+          <div className="about-footer-meta">
+            <p className="about-copyright mono">
+              &copy; 2026 BRIEFR &middot; Licensed under the Business Source License 1.1
+            </p>
+            <p className="about-built-by">
+              Built by{' '}
+              <a
+                href="https://www.linkedin.com/in/sai-harsha-vardhan/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="about-author-link"
+              >
+                Sai Harsha Vardhan
+              </a>
+            </p>
+          </div>
+          <div className="about-legal-links">
+            <Link to="/privacy" onClick={onClose} className="about-legal-link mono">
+              Privacy Policy
+            </Link>
+            <span className="about-dot" aria-hidden="true">&middot;</span>
+            <Link to="/terms" onClick={onClose} className="about-legal-link mono">
+              Terms of Use
+            </Link>
+          </div>
         </div>
       </div>
     </div>
