@@ -2,7 +2,13 @@
 
 Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
 
-**Purpose:** Entry point for developers changing the code. If you only want to **use** or **self-host** BRIEFR, start at [`index.md`](index.md) instead.
+**Purpose:** Entry point for developers changing the code.
+
+| If you want to… | Start here |
+|-----------------|------------|
+| **Install** BRIEFR (any path) | [`SELF_HOST.md`](SELF_HOST.md) — authoritative step-by-step |
+| **Use** or **self-host** without changing code | [`index.md`](index.md) → SELF_HOST or USE |
+| **Change the code** | Continue below |
 
 ---
 
@@ -27,6 +33,8 @@ Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License
 
 ## 2. Local development
 
+**Install paths (SQLite vs Postgres+pgvector vs production):** [`SELF_HOST.md`](SELF_HOST.md). This section assumes you are developing against the repo.
+
 ### Prerequisites
 
 - Python 3.11+
@@ -46,7 +54,7 @@ cp .env.example .env    # add keys as needed
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-- PostgreSQL via `DATABASE_URL` in `backend/.env` (local: `docker compose -f deploy/docker-compose.postgres.yml up -d` on **:5432**, or disposable `./scripts/postgres-dev.sh start` on **:5433** for dual-DB pytest — see `docs/POSTGRES.md`)
+- PostgreSQL via `DATABASE_URL` in `backend/.env` — full steps: [`SELF_HOST.md` §2](SELF_HOST.md#2-local-development-with-postgresql--pgvector) (`docker compose -f deploy/docker-compose.postgres.yml up -d` on **:5432**, or disposable `./scripts/postgres-dev.sh start` on **:5433** — see `docs/POSTGRES.md`)
 - Interactive API docs: http://localhost:8000/api/docs
 - Health check: http://localhost:8000/api/health
 
@@ -267,6 +275,8 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
 ---
 
 ## 5. Production deploy (overview)
+
+**Full production install checklist:** [`SELF_HOST.md` §3](SELF_HOST.md#3-production-debian--systemd--nginx). This section is a developer-oriented summary; operators should use SELF_HOST + OPERATIONS.
 
 BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/opt/briefr`.
 

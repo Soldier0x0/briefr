@@ -4,7 +4,8 @@ Pick **one** guide — you do not need to read anything else unless something br
 
 | I want to… | Read | Authority |
 |------------|------|-----------|
-| **Install on my server** | [Self-host guide](SELF_HOST.md) | **Authoritative** (operator install) |
+| **Install BRIEFR** (SQLite, Postgres+pgvector, production) | [Self-host guide](SELF_HOST.md) | **Authoritative** — step-by-step install + verify checklist |
+| **Postgres / pgvector / backups** (after choosing install path) | [PostgreSQL guide](POSTGRES.md) | **Authoritative** — database ops |
 | **Use BRIEFR** | [User guide](USE.md) | **Authoritative** (analyst UX) |
 | **Fix something** | [Troubleshooting](TROUBLESHOOTING.md) | **Authoritative** (symptom → fix) |
 | **Understand how it works** | [How it works](HOW_IT_WORKS.md) *(optional)* | Overview (defers to SYSTEM_DESIGN / PRODUCT_STATUS) |

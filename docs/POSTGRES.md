@@ -1,5 +1,7 @@
 # PostgreSQL database (production)
 
+**Install steps (Postgres + pgvector + linking `DATABASE_URL`):** start at [`SELF_HOST.md`](SELF_HOST.md) §2 (dev) or §3 (production). This document is the **deep reference** for DSN shape, backups, restore, dual-dialect tests, external Postgres, and pgvector cutover.
+
 BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **16** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
 
 Use a host `postgresql-client` whose **major version matches** the server (16 in production). The deploy scripts install `postgresql-client` and fall back across supported majors.

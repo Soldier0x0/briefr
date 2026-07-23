@@ -12,14 +12,17 @@ BRIEFR, consistent with this file.
 
 ## Before you start
 
-1. Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) and [`CLAUDE.md`](CLAUDE.md)
+1. **Install BRIEFR locally:** [`docs/SELF_HOST.md`](docs/SELF_HOST.md) — §1 (SQLite) or §2 (Postgres+pgvector).
+2. Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) and [`CLAUDE.md`](CLAUDE.md)
    (danger zones, SQL conventions, UI rules).
-2. Production uses **PostgreSQL** (`DATABASE_URL`). The default test suite runs
+3. Production uses **PostgreSQL** (`DATABASE_URL`). The default test suite runs
    on SQLite; any `db/` change should also be validated against Postgres when
    possible (`DATABASE_URL=postgresql://… pytest tests/ -q`).
-3. Do not commit secrets, real API keys, or production `.env` files.
+4. Do not commit secrets, real API keys, or production `.env` files.
 
 ## Development setup
+
+Full install paths and verification: [`docs/SELF_HOST.md`](docs/SELF_HOST.md).
 
 ```bash
 # Backend (from backend/)

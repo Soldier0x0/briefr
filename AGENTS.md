@@ -37,6 +37,8 @@ full developer guide; this section only captures non-obvious cloud-environment c
 
 ### Database (PostgreSQL)
 
+**Install guide:** [`docs/SELF_HOST.md`](docs/SELF_HOST.md) (§2 dev, §3 production). **Deep ops:** [`docs/POSTGRES.md`](docs/POSTGRES.md).
+
 Production uses **PostgreSQL 16** in Docker at `/opt/infra/postgres`. BRIEFR connects via
 `DATABASE_URL` in `backend/.env` (host port `127.0.0.1:5432`).
 
