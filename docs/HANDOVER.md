@@ -12,7 +12,53 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
-<<<<<<< HEAD
+## 2026-07-23 — About / Privacy / Terms refresh + About dialog layout
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**What changed:**
+- About modal: SigmaHQ + current sources; sign-in required (removed “No account required”); DRL note; Scope adds community detection honesty; landscape layout (920px wide / 72vh / 2-col scope).
+- Privacy & Terms: July 2026 effective date; accurate feed cadences; SigmaHQ/OTX/MITRE/Elastic; Terms login-gated + community-rule accuracy disclaimer.
+- `docs/PRODUCT.md` Scope & Limits SSOT gains community detection rules bullet.
+
+---
+
+## 2026-07-23 — SigmaHQ production polish (honesty + Admin attention)
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**What shipped (follow-on to U1–U5):**
+- Needs Attention + analyst intel issues when SigmaHQ index is empty or stale (>14d); `sigmahq_index_sync` on analyst schedule table.
+- Detect: DRL attribution + Show YAML on community cards; honest empty copy (never synced / empty / no CVE-exact); `sigmahq_index` snapshot on `GET /api/cves/{id}/detection`.
+- `compose_basis` label for `sigmahq_index`; shared `SIGMAHQ_STALE_SECONDS`.
+
+**Honest product note:** Until Sync succeeds on Postgres, Detect correctly reports **no local Sigma rules**. Many CVEs also have **no** upstream SigmaHQ CVE-exact rule even after a healthy sync — empty community section is expected, not a bug.
+
+**Next:** Merge #738; first prod sync.
+
+---
+
+## 2026-07-23 — SigmaHQ local Postgres rule index (SH-1…SH-5 / U1–U5)
+
+**Branch:** `cursor/feat-sigmahq-local-index-b275`
+
+**Plan:** `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md`  
+**Design:** `docs/planning/specs/sigmahq-local-index-design.md`
+
+**What shipped:**
+- Alembic `035_detection_rules_sigmahq` — Postgres-native `detection_rules` / CVE / technique link tables (DRL defaults).
+- `detection/sigmahq_index.py` — tip resolve, tarball download, parse, batch upsert, soft-retire, dual watermark (`sigmahq_archive_identity`).
+- Scheduler job `sigmahq_index_sync` + locks + `_JOB_RUN_MAP` + disabled gate + config schema + catalog + Feed Health card (Sync + Force) + onboarding checklist item.
+- Force-resync clears watermark **and** spawns forced sync (KTD7; diverges from EPSS clear-only).
+- Detect `find_sigma_rules` index-first (CVE-exact); GitHub only when index empty.
+- Forge generate attaches index YAML when present (`compose_basis=sigmahq_index`).
+
+**Verify:** SQLite unit tests for parser/admin/forge/read-fallback; PG apply/watermark/read tests gated on `DATABASE_URL=postgresql…` (`verify-local --full`).
+
+**Next:** Merge after review; run first sync on Postgres prod.
+
+---
+
 ## 2026-07-23 — Detect: community SigmaHQ-first (demote BRIEFR templates)
 
 **Branch:** `cursor/sigmahq-community-first-b275`
@@ -29,9 +75,10 @@ at this stage. No AI/LLM required.
   when API still returns one.
 - Docs: `PRODUCT_STATUS` D5, `API_REFERENCE` detection contract, this entry.
 
-**Next:** Optional follow-ups — local SigmaHQ index (offline CVE-tag map),
-Forge `include_community=True`, pySigma compile gate. Not started here.
-=======
+**Next:** Local SigmaHQ index (PR #738) — merged atop this.
+
+---
+
 ## 2026-07-23 — Design: SigmaHQ local Postgres index (Sigma only)
 
 **Branch:** `cursor/sigmahq-local-index-plan-b275`
@@ -47,8 +94,7 @@ locks, `_JOB_RUN_MAP`) — not a single manual endpoint.
 
 **Also:** Implementation-ready plan written: `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md` (U1–U5; Admin multi-surface in U2).
 
-**Next:** Run `/ce-work` (or activate U1 on sprint) to implement SH-1/U1.
->>>>>>> origin/main
+**Next:** Implement SH-1/U1 (done on #738).
 
 ---
 

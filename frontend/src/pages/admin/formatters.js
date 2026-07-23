@@ -158,6 +158,7 @@ export const SOURCE_DISPLAY = {
   exploitdb: 'ExploitDB', metasploit: 'Metasploit',
   nuclei: 'Nuclei Templates', poc_github: 'PoC-in-GitHub',
   threatfox: 'ThreatFox', vulncheck: 'VulnCheck',
+  sigmahq: 'SigmaHQ index',
   'webhook.discord': 'Discord Webhook', 'webhook.telegram': 'Telegram Webhook',
 }
 

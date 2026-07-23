@@ -180,6 +180,7 @@ _OPT_IN_DISABLED_JOBS = {
     "llm_product_extraction": ("LLM_PRODUCT_EXTRACTION_ENABLED", "0"),
     "detection_context_sync": ("DETECTION_CONTEXT_SYNC_ENABLED", "0"),
     "detection_context_llm": ("DETECTION_CONTEXT_LLM_ENABLED", "0"),
+    "sigmahq_index_sync": ("SIGMAHQ_INDEX_SYNC_ENABLED", "1"),  # default on
     "exploit_sources_sync": ("EXPLOIT_SOURCES_SYNC_ENABLED", "1"),  # enabled=1 means NOT disabled
 }
 

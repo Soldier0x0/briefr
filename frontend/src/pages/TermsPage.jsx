@@ -4,14 +4,17 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Use"
-      subtitle="Effective June 2026 — projectjupiter.in"
+      subtitle="Effective July 2026 — projectjupiter.in"
     >
       <h2 className="legal-section-heading">1. What BRIEFR is</h2>
       <p className="legal-p">
-        BRIEFR is a free, publicly accessible CVE intelligence aggregation tool.
-        It fetches data from public government and open-source sources and
-        presents it in a searchable interface. It is provided as-is, at no cost,
-        for informational and research purposes.
+        BRIEFR is a self-hosted CVE intelligence and detection-engineering
+        platform. The hosted instance at projectjupiter.in requires operator
+        or analyst sign-in. It aggregates vulnerability and threat data from
+        public government and open-source sources and presents it for triage,
+        investigation, and hunt-pack workflows. It is provided as-is for
+        informational and research purposes. Commercial use of the software
+        is governed by Section 8 (License).
       </p>
 
       <h2 className="legal-section-heading">2. Permitted use</h2>
@@ -29,13 +32,22 @@ export default function TermsPage() {
         <li>Attempting to tamper with or disrupt the service</li>
         <li>Using IOC Lookup to investigate individuals without legal authority</li>
         <li>Reselling BRIEFR data as a commercial product without attribution</li>
+        <li>Removing or misrepresenting SigmaHQ / third-party rule attribution or license notices (including DRL-1.1)</li>
       </ul>
 
       <h2 className="legal-section-heading">4. Data accuracy</h2>
       <p className="legal-p">
-        BRIEFR aggregates from NVD, CISA, EPSS, and OSV.dev. We do not guarantee
-        accuracy or timeliness. Do not make critical security decisions based
-        solely on BRIEFR without cross-referencing primary sources.
+        BRIEFR aggregates from sources including NVD, CISA KEV, FIRST EPSS,
+        OSV.dev, MITRE ATT&amp;CK/ATLAS, AlienVault OTX, CIRCL, Sploitus, and
+        community detection content such as SigmaHQ (local index) and Elastic
+        detection-rules search. We do not guarantee accuracy or timeliness.
+        Community Sigma rules are third-party content under their own licenses
+        (typically DRL-1.1 for SigmaHQ); an empty Detect community section
+        means no CVE-exact match was found — not that a rule does not exist
+        elsewhere. Do not make critical security decisions based solely on
+        BRIEFR without cross-referencing primary sources. BRIEFR-generated
+        Sigma templates are experimental hunt starters, not production-ready
+        detections.
       </p>
 
       <h2 className="legal-section-heading">5. Disclaimer</h2>

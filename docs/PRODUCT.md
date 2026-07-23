@@ -41,6 +41,10 @@ user-facing "Scope & limits" panel (About modal — BACKLOG UX-L1).
   (ThreatFox corroboration planned). One community source is not vendor-grade
   attribution, and the product labels it as such in-line ("unverified attribution",
   `why_not_higher`). Breadth of sources is bounded by what's free and self-hostable.
+- **Community detection rules.** Detect prefers a local SigmaHQ Postgres index
+  (CVE-exact, DRL-1.1 attribution). Empty community section means no CVE-tagged
+  rule for that CVE — not a claim of coverage. BRIEFR-generated Sigma is an
+  experimental hunt starter only.
 - **Term-based stack matching.** Fuzzy by design — vendor/product strings, not
   SBOM/PURL precision. Matches are labeled with the matched term so you can judge
   them. Precise SBOM matching is a known, deliberate non-goal at current scope.

@@ -413,6 +413,18 @@
       ]
     },
     {
+      "id": "job:sigmahq_index_sync",
+      "label": "SigmaHQ Detection Rule Index Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "sigmahq_index_sync"
+        }
+      ]
+    },
+    {
       "id": "job:threatfox_sync",
       "label": "ThreatFox IOC Mirror Sync",
       "kind": "job",
@@ -555,7 +567,7 @@
       "label": "routers.admin.feeds",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 3,
+      "endpoint_count": 4,
       "source_refs": [
         {
           "type": "file",
@@ -3299,6 +3311,66 @@
       "id": "job:session_cleanup->table:cves",
       "source": "job:session_cleanup",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:atlas_case_studies",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:atlas_techniques",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:cve_atlas_map",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:cve_exploits",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:cve_technique_map",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:cves",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:group_technique_map",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:mitre_groups",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:mitre_techniques",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:sync_state",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:sync_state",
       "kind": "references_table"
     },
     {

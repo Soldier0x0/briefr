@@ -216,6 +216,15 @@ jobs:
   source_refs:
   - type: job
     ref: session_cleanup
+- id: sigmahq_index_sync
+  title: SigmaHQ Detection Rule Index Sync
+  summary: Scheduled job registered in scheduler.py (id=sigmahq_index_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: sigmahq_index_sync
 - id: threatfox_sync
   title: ThreatFox IOC Mirror Sync
   summary: Scheduled job registered in scheduler.py (id=threatfox_sync).

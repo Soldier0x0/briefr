@@ -191,6 +191,20 @@ When Procrastinate is disabled or unavailable, those paths fall back to existing
 
 Embeddings are scheduler-side. With `EMBEDDINGS_ENABLED=1`, the backfill job runs on `EMBEDDINGS_SYNC_INTERVAL_HOURS`; `EMBEDDINGS_AUTO_ON_INGEST=1` (default when embeddings are enabled) also warms vectors for newly ingested/updated CVEs after NVD ingest, capped by `EMBEDDINGS_INGEST_MAX_PER_RUN`. Production Postgres must use `pgvector/pgvector:pg16` before enabling embeddings.
 
+### SigmaHQ detection index
+
+Job id: `sigmahq_index_sync` (default enabled, interval **168h** / weekly).
+
+1. Resolves tip commit on `SigmaHQ/sigma`, downloads one codeload tarball, upserts YAML into Postgres (`detection_rules*`), soft-retires missing paths.
+2. Watermark key `sigmahq_archive_identity` stores `{commit_sha, sha256, synced_at}` — skip when unchanged. Watermark advances only after full successful apply.
+3. **Scheduler → Sync SigmaHQ index** respects the watermark.
+4. **Feed Health → Force re-sync** clears the watermark **and** spawns `run_sigmahq_index_sync(force=True)` (unlike EPSS force-resync, which is clear-only). Documented divergence: operators should not need a second click.
+5. License: rules are **DRL-1.1** — retain author, license link, and unmodified YAML. Do not claim SigmaHQ content as BRIEFR IP.
+6. Detect/Forge read the local index (CVE-exact). GitHub Sigma search is fallback only when the index is empty.
+7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). SQLite test suite skips PG-gated index tests.
+
+Disable with `SIGMAHQ_INDEX_SYNC_ENABLED=0`. Config + Scheduler disabled gate returns 400 with enable guidance on Run now / Force.
+
 ---
 
 ## Container readiness (design now, ship V2.0)

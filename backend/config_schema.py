@@ -37,6 +37,7 @@ _SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = frozenset({
     "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS",
     "EMBEDDINGS_SYNC_INTERVAL_HOURS",
     "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS",
+    "SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS",
     "BACKUP_INTERVAL_HOURS",
 })
 
@@ -197,6 +198,26 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("DETECTION_CONTEXT_NUCLEI_ENABLED", "ml", "bool",
                 help_text="Enable deterministic Nuclei YAML artifact enrichment during exploit sync.",
                 display_label="Detection context Nuclei"),
+    ConfigField(
+        "SIGMAHQ_INDEX_SYNC_ENABLED",
+        "ml",
+        "bool",
+        help_text=(
+            "Mirror SigmaHQ community Sigma rules into Postgres (DRL-1.1 attribution). "
+            "Detect serves CVE-exact rules from this local index."
+        ),
+        display_label="SigmaHQ index sync",
+    ),
+    ConfigField(
+        "SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS",
+        "ml",
+        "int",
+        min=1,
+        max=720,
+        help_text="How often the SigmaHQ tarball index sync runs (default 168 = weekly).",
+        display_label="SigmaHQ index sync interval",
+        unit="h",
+    ),
 
     # ── Backup ───────────────────────────────────────────────────────────────
     ConfigField("BACKUP_ENABLED", "backup", "bool",

@@ -9,9 +9,11 @@ Endpoints:
 
 Everything is local and deterministic: hunt-pack generate uses the detection
 composer (`compose_detection_evidence` + `emit_composed_detection`) with
-``include_community=False`` so SigmaHQ/Elastic GitHub search stays on
-GET /api/cves/{cve_id}/detection. Evidence still comes from DB/cache
-(detection_context artifacts, Nuclei URLs, YARA).
+``include_community=False`` so live SigmaHQ/Elastic GitHub search stays off
+this path. When the local SigmaHQ Postgres index has a CVE-exact rule, that
+YAML is attached as ``sigma_yaml``; otherwise the class/template emit is used.
+Evidence still comes from DB/cache (detection_context artifacts, Nuclei URLs,
+YARA, SigmaHQ index).
 
 Coverage status semantics (MVP):
 - "yours":     at least one saved hunt pack exists for the technique
@@ -42,6 +44,7 @@ from database import (
 )
 from detection.composer import compose_detection_evidence, emit_composed_detection
 from detection.sigma_generator import TECHNIQUE_TEMPLATES
+from detection.sigmahq_index import find_index_rules_for_cve
 from detection.siem_queries import TECHNIQUE_QUERIES, get_siem_queries
 from routers.cves import _stack_match_clause
 
@@ -355,7 +358,8 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             except (json.JSONDecodeError, TypeError):
                 cwe_ids = []
 
-        # DC-4: same composer as Detect. No community GitHub fetch on this path.
+        # DC-4: composer without GitHub community fetch. Attach SigmaHQ from
+        # local Postgres index when CVE-exact rules exist (U4) — never GitHub.
         evidence = await compose_detection_evidence(
             db,
             cve_id=cve_id,
@@ -369,10 +373,15 @@ async def generate_hunt_pack(payload: HuntPackGenerateRequest):
             description=description,
             cwe_ids=cwe_ids,
         )
-        sigma_yaml = composed["generated_sigma"] or ""
+        index_sigma = await find_index_rules_for_cve(db, cve_id, limit=1)
+        if index_sigma and (index_sigma[0].get("content") or "").strip():
+            sigma_yaml = index_sigma[0]["content"]
+            compose_basis = "sigmahq_index"
+        else:
+            sigma_yaml = composed["generated_sigma"] or ""
+            compose_basis = composed["compose_basis"]
         siem = dict(composed["siem_queries"] or {})
         log_patterns = siem.pop("log_patterns", [])
-        compose_basis = composed["compose_basis"]
         evidence_summary = evidence.get("evidence_summary") or {}
         title = f"{cve_id} — {technique_name} hunt pack"
 

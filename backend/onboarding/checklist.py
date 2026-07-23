@@ -72,6 +72,16 @@ async def build_onboarding_checklist(db: Any) -> dict[str, Any]:
     posture = production_posture_warnings()
     posture_ok = len(posture) == 0
 
+    sigmahq_ok = False
+    sigmahq_status: dict[str, Any] = {}
+    try:
+        from detection.sigmahq_index import get_sigmahq_index_status
+
+        sigmahq_status = await get_sigmahq_index_status(db)
+        sigmahq_ok = int(sigmahq_status.get("rules_active") or 0) > 0
+    except Exception:
+        sigmahq_ok = False
+
     ingest_ok = cve_count >= 10 or bool(watermark)
     feeds_ok = open_circuits == 0 or cve_count > 0
 
@@ -113,6 +123,17 @@ async def build_onboarding_checklist(db: Any) -> dict[str, Any]:
             else f"{len(posture)} warning(s): {posture[0]['flag']}",
             "done": posture_ok or settings.briefr_env != "production",
             "hint": "Resolve warnings in Admin → Security before exposing production.",
+        },
+        {
+            "id": "sigmahq_index",
+            "title": "SigmaHQ detection index synced",
+            "detail": (
+                f"{sigmahq_status.get('rules_active', 0)} active rules"
+                if sigmahq_ok
+                else "Index empty — run Admin → Scheduler → Sync SigmaHQ index"
+            ),
+            "done": sigmahq_ok,
+            "hint": "Enable SIGMAHQ_INDEX_SYNC_ENABLED and run Sync SigmaHQ index (or Force re-sync on Feed health).",
         },
     ]
 

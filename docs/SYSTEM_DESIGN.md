@@ -315,8 +315,11 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
    the template library, derives priority from KEV/CVSS/EPSS, and upserts into
    `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
    The UI refetches coverage so the technique flips to `yours`.
-5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
-   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). **V1.5 rule proof
+5. **Boundary:** SigmaHQ community rules are mirrored into Postgres by
+   `sigmahq_index_sync` and served CVE-exact from the local index on Detect
+   (`find_sigma_rules`) and Forge generate (index YAML when present). Live
+   GitHub Sigma search is fallback only when the index is empty; Elastic
+   search remains GitHub-backed on Detect. **V1.5 rule proof
    bench** (`POST /api/proof/run`, Forge hunt pack panel) validates saved Sigma
    rules against pasted log lines — file-based, no live SIEM. **V1.5 KEV detection
    backlog** (`GET /api/detection-backlog`, Forge Backlog tab) surfaces stack-matched

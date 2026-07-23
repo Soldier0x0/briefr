@@ -44,8 +44,8 @@ def test_onboarding_returns_checklist_items(admin_client):
     resp = admin_client.get("/api/admin/onboarding")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["total_count"] == 5
-    assert len(data["items"]) == 5
+    assert data["total_count"] == 6
+    assert len(data["items"]) == 6
     assert "done_count" in data
     assert data["dismissed"] is False
     ids = {item["id"] for item in data["items"]}
@@ -55,6 +55,7 @@ def test_onboarding_returns_checklist_items(admin_client):
         "backup_ready",
         "feeds_healthy",
         "production_posture",
+        "sigmahq_index",
     }
 
 

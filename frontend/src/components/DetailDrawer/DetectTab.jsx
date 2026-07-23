@@ -3,6 +3,7 @@ import { copyToClipboard } from '../../utils/report.js'
 import { notifyCopyFailure, notifyCopySuccess } from '../Toast.jsx'
 
 import {
+  communityRulesEmptyMessage,
   confidenceMatchLabel,
   composeBasisLabel,
   composeBasisTooltip,
@@ -149,28 +150,32 @@ function SigmaRuleCard({ rule }) {
               {open ? 'Hide YAML' : 'Show YAML'}
             </button>
           )}
-          <a
-            className="det-rule-link mono"
-            href={rule.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View ↗
-          </a>
-          <a
-            className="det-rule-download mono"
-            href={rule.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Download
-          </a>
+          {rule.html_url && (
+            <a
+              className="det-rule-link mono"
+              href={rule.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View ↗
+            </a>
+          )}
+          {rule.download_url && (
+            <a
+              className="det-rule-download mono"
+              href={rule.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download
+            </a>
+          )}
         </div>
       </div>
       <p className="det-rule-title">{rule.title || rule.name || rule.path?.split('/').pop()}</p>
-      {(rule.attribution || rule.license) && (
+      {(rule.attribution || rule.license || rule.author) && (
         <p className="det-rule-attribution mono">
-          {rule.attribution || 'SigmaHQ'}
+          {rule.attribution || (rule.author ? `SigmaHQ · ${rule.author}` : 'SigmaHQ')}
           {rule.license ? ` · ${rule.license}` : ''}
           {rule.license_url && (
             <>
@@ -261,8 +266,10 @@ function GeneratedSigmaSection({
   const confidence = (meta?.briefr_confidence || 'MEDIUM').toUpperCase()
   const confidenceCls = confidence === 'LOW' ? 'det-confidence-low' : 'det-confidence-badge'
   const heading = formatSectionHeading('// BRIEFR HUNT STARTER')
-  const supplementNote =
-    'No SigmaHQ/Elastic community rule matched — class-mapped BRIEFR template only (not a substitute for community detections).'
+  const indexActive = (Number(detection?.sigmahq_index?.rules_active) || 0) > 0
+  const supplementNote = indexActive
+    ? 'No CVE-exact SigmaHQ (or Elastic) community rule for this CVE — use this class-mapped template as a starting point only, not a substitute for community detections.'
+    : 'No SigmaHQ/Elastic community rule matched — class-mapped BRIEFR template only (not a substitute for community detections).'
 
   return (
     <section className="drawer-section det-generated-section" aria-labelledby="det-generated-heading">
@@ -362,6 +369,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
     siemQueries.qradar_aql,
   ].some(entry => entry?.query)
   const showFraming = Boolean(evidenceSummary || hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0)
+  const emptyCommunityMsg = communityRulesEmptyMessage(detection)
 
   return (
     <>
@@ -371,9 +379,10 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
         <section className="drawer-section det-framing-section" aria-label="Detection framing">
           {(hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0) && (
             <p className="det-framing-note mono">
-              SigmaHQ/Elastic community rules are the primary detections when present (DRL-1.1 —
-              keep author credit). SIEM quick searches stay available; BRIEFR templates only appear
-              when no community hit and a CWE/ATT&amp;CK class maps.
+              SigmaHQ/Elastic community rules are primary when present (DRL-1.1 —
+              keep author credit). Class-aware SIEM queries stay available; BRIEFR
+              templates only appear when no community hit and a CWE/ATT&amp;CK class
+              maps — they are not a claim of community coverage.
             </p>
           )}
           {evidenceSummary && (
@@ -394,8 +403,8 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
           {formatSectionHeading('// COMMUNITY SIGMA / ELASTIC')}
         </h3>
         {!hasCommunity && (
-          <p className="drawer-intel-empty mono">
-            // No SigmaHQ/Elastic rules found for this CVE (needs GITHUB_TOKEN for search; many CVEs have no community rule)
+          <p className="drawer-intel-empty mono" data-testid="det-community-empty">
+            {emptyCommunityMsg}
           </p>
         )}
         {sigmaRules.map((r, i) => <SigmaRuleCard key={r.path || i} rule={r} />)}

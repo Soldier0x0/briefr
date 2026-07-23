@@ -201,6 +201,7 @@ async def cve_detection(
     - generated_sigma: optional BRIEFR class template YAML — omitted when community
       rules exist or the template would be generic
     - generated_sigma_meta: briefr_basis, briefr_class, confidence, status, optional suppressed
+    - sigmahq_index: local index freshness (rules_active, synced_at) for honest empty UI
     - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
     - log_patterns: plain-English detection patterns from ATT&CK guidance
     """
@@ -220,6 +221,11 @@ async def cve_detection(
     yara_rules: list = []
     evidence: dict | None = None
     detection_provenance = None
+    sigmahq_index_status: dict = {
+        "rules_active": 0,
+        "synced_at": "",
+        "ok": False,
+    }
     db = await get_db()
     try:
         # Get CVE metadata for context
@@ -285,6 +291,19 @@ async def cve_detection(
             technique_ids=technique_ids,
         )
 
+        try:
+            from detection.sigmahq_index import get_sigmahq_index_status
+
+            full = await get_sigmahq_index_status(db)
+            sigmahq_index_status = {
+                "rules_active": int(full.get("rules_active") or 0),
+                "synced_at": full.get("synced_at") or "",
+                "ok": bool(full.get("ok")),
+                "commit_sha": full.get("commit_sha") or "",
+            }
+        except Exception:
+            pass
+
     except Exception as exc:
         logger.exception("Detection lookup failed for %s", cve_upper)
         raise HTTPException(
@@ -307,6 +326,7 @@ async def cve_detection(
         "yara_rules": yara_rules,
         "evidence": evidence,
         "provenance": detection_provenance,
+        "sigmahq_index": sigmahq_index_status,
     }
 
 

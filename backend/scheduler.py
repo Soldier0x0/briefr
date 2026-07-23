@@ -101,6 +101,10 @@ from detection.context_llm_sync import (
     detection_context_llm_enabled,
     run_detection_context_llm_sync,
 )
+from detection.sigmahq_index import (
+    sigmahq_index_sync_enabled,
+    sync_sigmahq_index,
+)
 from webhooks.alerts import (
     check_backup_deadman,
     get_backup_interval_hours,
@@ -1872,6 +1876,67 @@ async def run_detection_context_sync_job() -> bool:
     return True
 
 
+async def run_sigmahq_index_sync(*, force: bool = False) -> bool:
+    """Mirror SigmaHQ rules into Postgres (watermarked tarball sync).
+
+    Honors ``SIGMAHQ_INDEX_SYNC_ENABLED`` (default on). Scheduler-side only.
+    ``force=True`` skips tip/sha short-circuit (used by Admin force-resync).
+    """
+    if not sigmahq_index_sync_enabled():
+        return False
+    if get_lock("sigmahq_index_sync").locked():
+        logger.info("SigmaHQ index sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    _records = 0
+    async with get_lock("sigmahq_index_sync"):
+        logger.info("SigmaHQ index sync started at %s (force=%s)", _start.isoformat(), force)
+        result = None
+        try:
+            db = await get_db()
+            try:
+
+                def _progress(msg: str) -> None:
+                    _job_progress["sigmahq_index_sync"] = msg
+
+                result = await sync_sigmahq_index(
+                    db, force=force, progress_callback=_progress
+                )
+                if result.status == "failed":
+                    _had_error = True
+                    _error_msg = (result.message or "SigmaHQ sync failed")[:500]
+                else:
+                    _records = int(result.stats.upserted) + int(result.stats.seen)
+                await db.commit()
+            finally:
+                await db.close()
+                _job_progress.pop("sigmahq_index_sync", None)
+            if result is not None:
+                logger.info(
+                    "SigmaHQ index sync finished status=%s commit=%s upserted=%s retired=%s",
+                    result.status,
+                    (result.commit_sha or "")[:12],
+                    result.stats.upserted,
+                    result.stats.retired,
+                )
+        except Exception as exc:
+            logger.error("SigmaHQ index sync failed: %s", exc)
+            _had_error = True
+            _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+            _job_progress.pop("sigmahq_index_sync", None)
+    await _write_job_last_run(
+        "sigmahq_index_sync",
+        _start,
+        records=_records,
+        had_error=_had_error,
+        error_message=_error_msg,
+    )
+    return True
+
+
 async def run_detection_context_llm_job() -> bool:
     """LLM artifact extraction into DetectionContext cache (Track K4).
 
@@ -2349,6 +2414,18 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
     )
 
+    sigmahq_hours = int(os.environ.get("SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS", "168"))
+    scheduler.add_job(
+        run_sigmahq_index_sync,
+        trigger=IntervalTrigger(hours=max(1, sigmahq_hours), timezone=sched_tz),
+        id="sigmahq_index_sync",
+        name="SigmaHQ Detection Rule Index Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=210),
+    )
+
     detection_ctx_llm_hours = int(
         os.environ.get("DETECTION_CONTEXT_LLM_INTERVAL_HOURS", "12")
     )
@@ -2547,6 +2624,7 @@ _CONFIG_KEY_TO_JOBS: dict[str, tuple[str, ...]] = {
     "EXPLOIT_SOURCES_SYNC_INTERVAL_HOURS": ("exploit_sources_sync",),
     "EMBEDDINGS_SYNC_INTERVAL_HOURS": ("embeddings_backfill",),
     "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS": ("llm_product_extraction",),
+    "SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS": ("sigmahq_index_sync",),
     "BACKUP_INTERVAL_HOURS": ("scheduled_backup", "backup_deadman_check"),
 }
 
@@ -2612,6 +2690,9 @@ def _trigger_for_job(job_id: str) -> IntervalTrigger | CronTrigger | None:
     if job_id == "llm_product_extraction":
         hours = int(os.environ.get("LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS", "6"))
         return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "sigmahq_index_sync":
+        hours = int(os.environ.get("SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS", "168"))
+        return IntervalTrigger(hours=max(1, hours), timezone=sched_tz)
     if job_id == "scheduled_backup":
         hours = max(1, get_backup_interval_hours())
         return IntervalTrigger(hours=hours, timezone=sched_tz)

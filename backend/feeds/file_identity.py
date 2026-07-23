@@ -18,6 +18,7 @@ from db.types import DbConnection
 logger = logging.getLogger(__name__)
 
 EPSS_FILE_IDENTITY_KEY = "epss_csv_file_identity"
+SIGMAHQ_ARCHIVE_IDENTITY_KEY = "sigmahq_archive_identity"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -60,10 +61,28 @@ async def get_file_identity(db: DbConnection, key: str) -> dict[str, Any] | None
 
 
 async def set_file_identity(
-    db: DbConnection, key: str, *, sha256: str, score_date: str | None
+    db: DbConnection,
+    key: str,
+    *,
+    sha256: str,
+    score_date: str | None = None,
+    commit_sha: str | None = None,
+    synced_at: str | None = None,
 ) -> None:
-    payload = json.dumps({"sha256": sha256, "score_date": score_date or ""})
-    await set_sync_state_value(db, key, payload)
+    """Persist feed identity JSON.
+
+    EPSS uses ``sha256`` + ``score_date``. SigmaHQ uses ``sha256`` +
+    ``commit_sha`` + ``synced_at``. Extra keys are omitted when ``None``.
+    """
+    payload: dict[str, Any] = {"sha256": sha256}
+    if score_date is not None or (commit_sha is None and synced_at is None):
+        # Preserve EPSS shape when callers only pass sha256/score_date.
+        payload["score_date"] = score_date or ""
+    if commit_sha is not None:
+        payload["commit_sha"] = commit_sha
+    if synced_at is not None:
+        payload["synced_at"] = synced_at
+    await set_sync_state_value(db, key, json.dumps(payload))
 
 
 async def clear_file_identity(db: DbConnection, key: str) -> None:
@@ -75,3 +94,9 @@ def identity_matches(stored: dict | None, *, sha256: str) -> bool:
     if not stored:
         return False
     return (stored.get("sha256") or "") == sha256
+
+
+def commit_identity_matches(stored: dict | None, *, commit_sha: str) -> bool:
+    if not stored:
+        return False
+    return (stored.get("commit_sha") or "") == commit_sha

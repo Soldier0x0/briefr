@@ -13,9 +13,15 @@ from fastapi import BackgroundTasks, HTTPException, Request
 
 from database import get_db
 from dependencies import audit
-from feeds.file_identity import EPSS_FILE_IDENTITY_KEY, clear_file_identity
+from feeds.file_identity import (
+    EPSS_FILE_IDENTITY_KEY,
+    SIGMAHQ_ARCHIVE_IDENTITY_KEY,
+    clear_file_identity,
+)
 from resilient_client import reset_circuit
+from task_registry import spawn_background_task
 
+from .helpers import _job_is_disabled
 from .router import router
 
 # ── Feed circuit breaker ───────────────────────────────────────────────────
@@ -45,6 +51,40 @@ async def force_epss_resync(request: Request):
         "ok": True,
         "cleared": EPSS_FILE_IDENTITY_KEY,
         "message": "EPSS file identity cleared — next epss_score_sync will re-apply",
+    }
+
+
+@router.post("/feeds/sigmahq/force-resync")
+async def force_sigmahq_resync(request: Request):
+    """Clear SigmaHQ archive identity and spawn a forced index re-apply (KTD7).
+
+    Unlike EPSS (clear-only), this also starts ``run_sigmahq_index_sync(force=True)``
+    so operators do not need a second Scheduler click.
+    """
+    if _job_is_disabled("sigmahq_index_sync"):
+        raise HTTPException(
+            400,
+            "SigmaHQ index sync is disabled — set SIGMAHQ_INDEX_SYNC_ENABLED=1 in Admin → Config",
+        )
+    db = await get_db()
+    try:
+        await clear_file_identity(db, SIGMAHQ_ARCHIVE_IDENTITY_KEY)
+        await db.commit()
+    finally:
+        await db.close()
+
+    from scheduler import run_sigmahq_index_sync
+
+    spawn_background_task(run_sigmahq_index_sync(force=True))
+    await audit(request, "feed.sigmahq.force_resync", SIGMAHQ_ARCHIVE_IDENTITY_KEY)
+    return {
+        "ok": True,
+        "cleared": SIGMAHQ_ARCHIVE_IDENTITY_KEY,
+        "started": True,
+        "message": (
+            "SigmaHQ archive identity cleared and index sync started "
+            "(force re-apply)"
+        ),
     }
 
 

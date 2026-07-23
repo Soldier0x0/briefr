@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  communityRulesEmptyMessage,
   confidenceMatchLabel,
   composeBasisLabel,
   composeBasisTooltip,
@@ -22,11 +23,13 @@ describe('detectLabels', () => {
 
   it('labels compose_basis for Detect provenance', () => {
     assert.equal(composeBasisLabel('community'), 'Community rules')
+    assert.equal(composeBasisLabel('sigmahq_index'), 'SigmaHQ index')
     assert.equal(composeBasisLabel('nuclei_artifacts'), 'Nuclei / artifacts')
     assert.equal(composeBasisLabel('yara'), 'YARA hashes')
     assert.equal(composeBasisLabel('template_fallback'), 'Template fallback')
     assert.equal(composeBasisLabel('none'), 'Template fallback')
     assert.match(composeBasisTooltip('community'), /community/i)
+    assert.match(composeBasisTooltip('sigmahq_index'), /SigmaHQ/i)
     assert.match(composeBasisTooltip('template_fallback'), /template/i)
   })
 
@@ -44,6 +47,22 @@ describe('detectLabels', () => {
       'Primary: Nuclei / artifacts · community 0 · artifacts 2 · nuclei 1',
     )
   })
+
+  it('states honestly when community rules are absent', () => {
+    assert.match(
+      communityRulesEmptyMessage({ sigmahq_index: { rules_active: 40, synced_at: '2026-07-01' } }),
+      /No CVE-exact SigmaHQ/,
+    )
+    assert.match(
+      communityRulesEmptyMessage({ sigmahq_index: { rules_active: 0, synced_at: '' } }),
+      /not synced yet/,
+    )
+    assert.match(
+      communityRulesEmptyMessage({ sigmahq_index: { rules_active: 0, synced_at: '2026-07-01' } }),
+      /empty/,
+    )
+    assert.match(communityRulesEmptyMessage({}), /No community Sigma\/Elastic/)
+  })
 })
 
 describe('DC-3 Detect tab evidence pack', () => {
@@ -54,8 +73,11 @@ describe('DC-3 Detect tab evidence pack', () => {
     )
     assert.match(src, /formatEvidenceSummary/)
     assert.match(src, /composeBasisLabel/)
+    assert.match(src, /communityRulesEmptyMessage/)
     assert.match(src, /detection\.evidence/)
     assert.match(src, /compose_basis/)
     assert.match(src, /det-evidence-summary/)
+    assert.match(src, /Show YAML/)
+    assert.match(src, /det-rule-attribution/)
   })
 })

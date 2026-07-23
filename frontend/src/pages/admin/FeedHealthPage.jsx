@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { fmtIso, sourceLabel, fmtAge } from './formatters.js'
-import { nvdCadenceLabel, nvdStaleDetail } from './intelStatus.js'
+import { nvdCadenceLabel, nvdStaleDetail, SIGMAHQ_STALE_SECONDS } from './intelStatus.js'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { useOperations } from './shared/OperationTracker.jsx'
@@ -93,11 +93,54 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
   const [refreshing, setRefreshing] = useState({})
   const [rebuilding, setRebuilding] = useState(false)
   const [resetting, setResetting] = useState({})
+  const [sigmahqBusy, setSigmahqBusy] = useState(false)
   const sources = system?.feeds?.sources || {}
   const incidents = system?.feeds?.incidents
+  const sigmahq = system?.feeds?.sigmahq_index
   const incidentSources = incidents?.sources || []
   const nvdAge = system?.last_nvd_sync_age_seconds
   const nvdSyncStale = nvdAge != null && nvdAge > 7200
+  const sigmahqStale = sigmahq?.age_seconds != null && sigmahq.age_seconds > SIGMAHQ_STALE_SECONDS
+  const sigmahqEmpty = !sigmahq?.rules_active
+
+  async function runSigmahqSync({ force = false } = {}) {
+    setSigmahqBusy(true)
+    try {
+      await runAction({
+        id: force ? 'sigmahq-force' : 'sigmahq-sync',
+        label: force ? 'Force re-syncing SigmaHQ index' : 'Syncing SigmaHQ index',
+        kind: 'feed',
+        successMessage: force
+          ? 'SigmaHQ force re-sync started'
+          : 'SigmaHQ index sync started',
+        execute: async () => {
+          if (force) {
+            const { data, requestId } = await adminApi.postJson('/feeds/sigmahq/force-resync', {})
+            if (data?.ok === false) {
+              const err = new Error(data.detail || 'Force re-sync failed')
+              err.requestId = requestId
+              throw err
+            }
+            return { requestId }
+          }
+          const { data, requestId } = await adminApi.postJson('/scheduler/run', {
+            job_id: 'sigmahq_index_sync',
+          })
+          if (!data.ok) {
+            const err = new Error(data.detail || 'Failed')
+            err.requestId = requestId
+            throw err
+          }
+          return { requestId }
+        },
+      })
+      onReload?.()
+    } catch {
+      // toast handled by runAction
+    } finally {
+      setSigmahqBusy(false)
+    }
+  }
 
   async function resetCircuit(sourceId) {
     setResetting(prev => ({ ...prev, [sourceId]: true }))
@@ -271,6 +314,55 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
             </div>
           )}
         </>
+      )}
+
+      {sigmahq && (
+        <div className="admin-card" style={{ marginTop: '1rem' }}>
+          <div className="admin-card-title">SigmaHQ detection index</div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0 0 0.6rem' }}>
+            Local mirror of SigmaHQ rules (DRL-1.1). Detect serves CVE-exact matches from this index — not live GitHub search when populated.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span className={`badge ${sigmahqEmpty || sigmahqStale ? 'badge-warn' : 'badge-ok'}`}>
+              {sigmahqEmpty ? 'EMPTY' : sigmahqStale ? 'STALE' : 'INDEXED'}
+            </span>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text2)' }}>
+              {sigmahq.rules_active ?? 0} active · {sigmahq.cve_links ?? 0} CVE links
+              {sigmahq.commit_sha ? ` · ${(sigmahq.commit_sha || '').slice(0, 12)}` : ''}
+              {sigmahq.archive_sha256 ? ` · sha ${(sigmahq.archive_sha256 || '').slice(0, 8)}` : ''}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+              {sigmahq.synced_at
+                ? `Synced ${fmtIso(sigmahq.synced_at)}${sigmahq.age_seconds != null ? ` (${fmtAge(sigmahq.age_seconds)})` : ''}`
+                : 'Never synced'}
+            </div>
+            {!isAnalyst && (
+              <>
+                <button
+                  className="admin-btn admin-btn-ghost"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => runSigmahqSync({ force: false })}
+                  disabled={sigmahqBusy || sigmahq.enabled === false}
+                  title="Run sigmahq_index_sync (respects watermark)"
+                >
+                  {sigmahqBusy
+                    ? <><span className="admin-spinner" /> Working…</>
+                    : <><RefreshCw size={13} strokeWidth={2} /> Sync SigmaHQ index</>}
+                </button>
+                <button
+                  className="admin-btn admin-btn-ghost"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => runSigmahqSync({ force: true })}
+                  disabled={sigmahqBusy || sigmahq.enabled === false}
+                  title="Clears archive identity and re-applies the index"
+                >
+                  Force re-sync
+                </button>
+                <HelpTip text="Run sync respects the commit/sha watermark. Force re-sync clears the watermark and re-downloads/applies (unlike EPSS force, which only clears)." />
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {incidents && (

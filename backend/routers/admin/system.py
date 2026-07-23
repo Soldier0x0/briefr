@@ -42,6 +42,17 @@ async def get_system(request: Request):
     from feeds.case_study_feed import get_incident_feed_status
 
     db = await get_db()
+    sigmahq_index: dict = {
+        "enabled": True,
+        "ok": False,
+        "rules_active": 0,
+        "rules_retired": 0,
+        "cve_links": 0,
+        "commit_sha": "",
+        "archive_sha256": "",
+        "synced_at": "",
+        "age_seconds": None,
+    }
     try:
         # CVE count
         row = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM cves")
@@ -73,6 +84,13 @@ async def get_system(request: Request):
             (auth_cutoff,),
         )
         failed_auth = auth_row[0]["cnt"] if auth_row else 0
+
+        from detection.sigmahq_index import get_sigmahq_index_status
+
+        try:
+            sigmahq_index = await get_sigmahq_index_status(db)
+        except Exception:
+            pass
 
         from database import build_webhook_destination_health, list_webhook_destinations
 
@@ -159,6 +177,7 @@ async def get_system(request: Request):
         "feeds": {
             "sources": feed_sources,
             "incidents": incidents,
+            "sigmahq_index": sigmahq_index,
         },
         "open_circuit_count": open_circuit_count,
         "api_queue": get_api_queue_status(),

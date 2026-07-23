@@ -20,6 +20,7 @@ const INGEST_JOB_IDS = [
   'nvd_incremental_sync',
   'kev_metadata_sync',
   'epss_score_sync',
+  'sigmahq_index_sync',
   'cvelistv5_incremental_sync',
   'otx_nightly_correlation',
   'exploit_sources_sync',

@@ -151,6 +151,7 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/catchup/stop"),
     ("POST", "/api/admin/feeds/{source_id}/reset-circuit"),
     ("POST", "/api/admin/feeds/epss/force-resync"),
+    ("POST", "/api/admin/feeds/sigmahq/force-resync"),
     ("POST", "/api/admin/incidents/refresh"),
     ("GET", "/api/admin/webhooks/log"),
     ("GET", "/api/admin/webhooks/delivery-log"),

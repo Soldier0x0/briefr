@@ -99,3 +99,7 @@ def test_detection_includes_evidence_pack(client):
     assert "artifacts" in evidence
     assert "observables" in evidence
     assert body["generated_sigma_meta"]["compose_basis"] == "community"
+    assert "sigmahq_index" in body
+    assert "rules_active" in body["sigmahq_index"]
+    assert "synced_at" in body["sigmahq_index"]
+    assert "ok" in body["sigmahq_index"]
