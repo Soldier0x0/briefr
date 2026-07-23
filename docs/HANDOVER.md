@@ -34,7 +34,7 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **Honest product note:** Until Sync succeeds on Postgres, Detect correctly reports **no local Sigma rules**. Many CVEs also have **no** upstream SigmaHQ CVE-exact rule even after a healthy sync — empty community section is expected, not a bug.
 
-**Next:** Merge #738; first prod sync; optional merge of community-first template demotion (#736).
+**Next:** Merge #738; first prod sync.
 
 ---
 
@@ -55,7 +55,46 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 **Verify:** SQLite unit tests for parser/admin/forge/read-fallback; PG apply/watermark/read tests gated on `DATABASE_URL=postgresql…` (`verify-local --full`).
 
-**Next:** Merge after review; run first sync on Postgres prod; community-first Detect UI polish may still land via PR #736 separately.
+**Next:** Merge after review; run first sync on Postgres prod.
+
+---
+
+## 2026-07-23 — Detect: community SigmaHQ-first (demote BRIEFR templates)
+
+**Branch:** `cursor/sigmahq-community-first-b275`
+
+**Decision:** Prefer real SigmaHQ/Elastic rules over BRIEFR template generation
+at this stage. No AI/LLM required.
+
+**What:**
+- `rule_sources.py`: `match_basis` (`cve_exact` / `cve_search` / `technique_related`),
+  rank CVE-exact first; DRL-1.1 `license` / `license_url` / `author` / `attribution`.
+- `composer.emit_composed_detection`: suppress `generated_sigma` when community
+  rules exist (`community_primary`) or template basis is `generic` (`generic_refused`).
+- Detect tab: community section primary; Show YAML + attribution; template only
+  when API still returns one.
+- Docs: `PRODUCT_STATUS` D5, `API_REFERENCE` detection contract, this entry.
+
+**Next:** Local SigmaHQ index (PR #738) — merged atop this.
+
+---
+
+## 2026-07-23 — Design: SigmaHQ local Postgres index (Sigma only)
+
+**Branch:** `cursor/sigmahq-local-index-plan-b275`
+
+**Decision:** Mirror SigmaHQ via **one tarball download per tip commit**, upsert
+into Postgres (no SQLite dialect for these tables), watermark with
+`commit_sha` + archive `sha256` (EPSS/PoC pattern). Detect/Forge read local
+CVE-exact links. **YARA out of scope.** DRL-1.1 attribution mandatory on
+rows/API/UI. Spec: `docs/planning/specs/sigmahq-local-index-design.md`.
+BACKLOG row added (SH-1…SH-5). **SH-2 must wire Admin in multiple places**
+(Scheduler Run now, config_schema, JOB_CATALOG, force-resync, Feed Health,
+locks, `_JOB_RUN_MAP`) — not a single manual endpoint.
+
+**Also:** Implementation-ready plan written: `docs/plans/2026-07-23-001-feat-sigmahq-local-index-plan.md` (U1–U5; Admin multi-surface in U2).
+
+**Next:** Implement SH-1/U1 (done on #738).
 
 ---
 

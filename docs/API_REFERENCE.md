@@ -1120,11 +1120,12 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
   "sigma_rules": [],
   "elastic_rules": [],
   "has_community_rules": false,
-  "generated_sigma": "...",
+  "generated_sigma": null,
   "generated_sigma_meta": {
     "briefr_basis": "cwe",
     "status": "experimental",
-    "compose_basis": "template_fallback"
+    "compose_basis": "community",
+    "suppressed": "community_primary"
   },
   "detection_context": null,
   "siem_queries": { },
@@ -1162,15 +1163,18 @@ Sigma community rules: **local SigmaHQ index first** (Postgres `detection_rules`
 `detection_rule_cves`, CVE-exact only, DRL-1.1 fields `author` / `license` /
 `license_url` / `attribution` / `match_basis=cve_exact`). Index hits cache 1h.
 Live GitHub SigmaHQ search runs only when the index has zero active rows
-(then caches 24h). Elastic search remains GitHub-backed. Additive
+(then caches 24h; hits include `match_basis` `cve_exact` \| `cve_search` \|
+`technique_related`). Elastic search remains GitHub-backed. Additive
 `sigmahq_index` reports local index freshness so the UI can be honest when
 there is no CVE-exact hit vs never-synced/empty index. `generated_sigma` is
-returned as a labeled class/template hunt starter. Additive `evidence` (DC-1)
-is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via
-`emit_composed_detection` — artifact paths/keywords are injected into Sigma and
-SIEM queries; `generated_sigma_meta.compose_basis` is
+**optional**: omitted (`null`) when community rules are present
+(`suppressed: community_primary`) or the BRIEFR template would be generic
+(`suppressed: generic_refused`); otherwise a class-mapped CWE/ATT&CK template
+may be returned. Additive `evidence` (DC-1) is the shared evidence pack. DC-2
+emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact
+paths/keywords are injected into Sigma and SIEM queries;
+`generated_sigma_meta.compose_basis` is
 `community|sigmahq_index|nuclei_artifacts|yara|template_fallback`. No LLM.
-
 ---
 
 ## Forge (V1.3 MVP)

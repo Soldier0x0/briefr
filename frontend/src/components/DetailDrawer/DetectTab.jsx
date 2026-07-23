@@ -261,20 +261,15 @@ function GeneratedSigmaSection({
   detection,
   generatedSigma,
   meta,
-  hasCommunity,
   detectionClass,
 }) {
   const confidence = (meta?.briefr_confidence || 'MEDIUM').toUpperCase()
   const confidenceCls = confidence === 'LOW' ? 'det-confidence-low' : 'det-confidence-badge'
-  const heading = formatSectionHeading(
-    hasCommunity ? '// BRIEFR HUNT STARTER · SUPPLEMENT' : '// BRIEFR HUNT STARTER'
-  )
+  const heading = formatSectionHeading('// BRIEFR HUNT STARTER')
   const indexActive = (Number(detection?.sigmahq_index?.rules_active) || 0) > 0
-  const supplementNote = hasCommunity
-    ? 'Community rules above are primary — this generated template is an additional class-aware starting point.'
-    : indexActive
-      ? 'No CVE-exact SigmaHQ (or Elastic) community rule for this CVE — use this class-mapped template as a starting point only, not a substitute for community detections.'
-      : 'No community Sigma/Elastic rules were found — use this generated template as a starting point only.'
+  const supplementNote = indexActive
+    ? 'No CVE-exact SigmaHQ (or Elastic) community rule for this CVE — use this class-mapped template as a starting point only, not a substitute for community detections.'
+    : 'No SigmaHQ/Elastic community rule matched — class-mapped BRIEFR template only (not a substitute for community detections).'
 
   return (
     <section className="drawer-section det-generated-section" aria-labelledby="det-generated-heading">
@@ -384,8 +379,10 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
         <section className="drawer-section det-framing-section" aria-label="Detection framing">
           {(hasCommunity || generatedSigma || hasSiemQueries || logPatterns.length > 0) && (
             <p className="det-framing-note mono">
-              Community Sigma/Elastic rules are primary when present (DRL-1.1 for SigmaHQ).
-              Class-aware SIEM queries and BRIEFR hunt starters fill gaps — they are not a claim of community coverage.
+              SigmaHQ/Elastic community rules are primary when present (DRL-1.1 —
+              keep author credit). Class-aware SIEM queries stay available; BRIEFR
+              templates only appear when no community hit and a CWE/ATT&amp;CK class
+              maps — they are not a claim of community coverage.
             </p>
           )}
           {evidenceSummary && (
@@ -403,7 +400,7 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
 
       <section className="drawer-section" aria-labelledby="det-community-heading">
         <h3 id="det-community-heading" className="drawer-human-label drawer-tab-anchor mono">
-          {formatSectionHeading('// EXISTING COMMUNITY RULES')}
+          {formatSectionHeading('// COMMUNITY SIGMA / ELASTIC')}
         </h3>
         {!hasCommunity && (
           <p className="drawer-intel-empty mono" data-testid="det-community-empty">
@@ -419,7 +416,6 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
           detection={detection}
           generatedSigma={generatedSigma}
           meta={generatedMeta}
-          hasCommunity={hasCommunity}
           detectionClass={detectionClass}
         />
       )}

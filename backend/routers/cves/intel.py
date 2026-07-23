@@ -196,10 +196,11 @@ async def cve_detection(
     """
     Detection engineering resource for a CVE.
     Returns:
-    - sigma_rules: community Sigma rules from SigmaHQ (cached 24h)
+    - sigma_rules: community Sigma rules from SigmaHQ (cached 24h; match_basis + DRL attribution)
     - elastic_rules: community Elastic detection rules (cached 24h)
-    - generated_sigma: template-based Sigma YAML (supplement; always generated)
-    - generated_sigma_meta: briefr_basis, briefr_class, confidence, status
+    - generated_sigma: optional BRIEFR class template YAML — omitted when community
+      rules exist or the template would be generic
+    - generated_sigma_meta: briefr_basis, briefr_class, confidence, status, optional suppressed
     - sigmahq_index: local index freshness (rules_active, synced_at) for honest empty UI
     - siem_queries: 4-platform quick-search queries (Elastic/Splunk/Sentinel/QRadar)
     - log_patterns: plain-English detection patterns from ATT&CK guidance

@@ -64,7 +64,34 @@ def test_emit_empty_evidence_uses_template_fallback():
     assert out["compose_basis"] == "template_fallback"
     assert out["generated_sigma_meta"]["compose_basis"] == "template_fallback"
     assert out["generated_sigma"]
+    assert out["generated_sigma_meta"]["briefr_basis"] == "cwe"
     assert "detection_class" in out["siem_queries"]
+    assert out["yara_rules"] == []
+
+
+def test_emit_refuses_generic_template_without_community():
+    from detection.composer import emit_composed_detection
+
+    out = emit_composed_detection(
+        _evidence(primary_source="none", detection_class="generic"),
+        description="Unknown issue",
+        cwe_ids=["CWE-9999"],
+    )
+    assert out["generated_sigma"] is None
+    assert out["generated_sigma_meta"]["suppressed"] == "generic_refused"
+    assert out["generated_sigma_meta"]["briefr_basis"] == "generic"
+
+
+def test_emit_suppresses_template_when_community_present():
+    from detection.composer import emit_composed_detection
+
+    out = emit_composed_detection(
+        _evidence(primary_source="community", community_count=1),
+        cwe_ids=["CWE-22"],
+    )
+    assert out["compose_basis"] == "community"
+    assert out["generated_sigma"] is None
+    assert out["generated_sigma_meta"]["suppressed"] == "community_primary"
     assert out["yara_rules"] == []
 
 
@@ -123,4 +150,5 @@ def test_emit_community_basis_passes_yara_through():
         cwe_ids=["CWE-22"],
     )
     assert out["compose_basis"] == "community"
+    assert out["generated_sigma"] is None
     assert out["yara_rules"] == yara

@@ -74,14 +74,14 @@ def client(tmp_path, monkeypatch):
         yield test_client
 
 
-def test_detection_always_returns_generated_sigma_supplement(client):
+def test_detection_community_suppresses_generated_sigma(client):
     res = client.get("/api/cves/CVE-2024-DET5/detection")
     assert res.status_code == 200
     body = res.json()
     assert body["has_community_rules"] is True
-    assert body["generated_sigma"]
-    assert "briefr_basis" in body["generated_sigma"]
+    assert body["generated_sigma"] is None
     meta = body["generated_sigma_meta"]
+    assert meta["suppressed"] == "community_primary"
     assert meta["briefr_basis"] == "cwe"
     assert meta["briefr_class"] == "path_traversal"
     assert meta["status"] == "experimental"
