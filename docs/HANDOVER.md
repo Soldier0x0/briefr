@@ -14,6 +14,24 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Install documentation clarity (SELF_HOST canonical guide)
+
+### What changed
+
+- **`docs/SELF_HOST.md`** — expanded into the authoritative step-by-step install guide: three paths (SQLite dev, Postgres+pgvector dev, production), verification checklist, and "where to look for what" table.
+- **`README.md`** — Getting Started restructured with install-path table, Postgres+pgvector linking block, and verify checklist; points to SELF_HOST.
+- **Cross-links:** `docs/index.md`, `POSTGRES.md`, `ONBOARDING.md`, `OPERATIONS.md`, `TROUBLESHOOTING.md`, `CONTRIBUTING.md`, `AGENTS.md`, `DOCUMENTATION_PLAN.md`, `backend/.env.example`, `deploy/docker-compose.postgres.yml`, `deploy/setup.sh`.
+
+### Why
+
+Operators asked whether README alone covered Postgres+pgvector install and linking — it did not; steps were scattered. SELF_HOST is now the single install entry; POSTGRES remains deep reference.
+
+### Next
+
+- None required for install docs; merge PR when green.
+
+---
+
 ## 2026-07-23 — OTX smoke failure after successful SigmaHQ deploy
 
 ### Incident

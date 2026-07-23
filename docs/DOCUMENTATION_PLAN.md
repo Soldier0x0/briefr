@@ -22,7 +22,7 @@
 | File | Audience | Length goal |
 |------|----------|-------------|
 | [`index.md`](index.md) | Everyone | 1 screen — pick a path |
-| [`SELF_HOST.md`](SELF_HOST.md) | Self-hosters | 1 scroll — install, prod, backups |
+| [`SELF_HOST.md`](SELF_HOST.md) | Self-hosters | Install paths (SQLite / Postgres+pgvector / production) + verify checklist |
 | [`USE.md`](USE.md) | Analysts / enthusiasts | 1 scroll — tabs, drawer, IOC |
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Anyone stuck | 1 table — symptom → fix |
 | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Curious readers | Optional — diagrams + short sections |

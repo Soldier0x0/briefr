@@ -5,6 +5,8 @@ Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License
 **Last updated:** 2026-07-21
 **Status:** Current production ops contract — Postgres-first systemd/nginx deploy with opt-in durable queue, embeddings, and catch-up controls.
 
+**First-time install:** [`SELF_HOST.md`](SELF_HOST.md) §3 (production checklist, `.env`, verify). **This document** covers ongoing operations after BRIEFR is installed.
+
 ---
 
 ## Purpose

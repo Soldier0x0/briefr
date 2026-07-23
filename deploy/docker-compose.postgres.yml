@@ -1,5 +1,8 @@
 # PostgreSQL + pgvector dev stack (Postgres 16 + vector extension — E1)
 #
+# Install guide (step-by-step): docs/SELF_HOST.md §2
+# Deep Postgres ops: docs/POSTGRES.md
+#
 # Bundled dev Postgres (local container, port 5432):
 #   docker compose -f deploy/docker-compose.postgres.yml up -d
 #

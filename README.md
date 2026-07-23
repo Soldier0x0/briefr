@@ -157,21 +157,34 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 
 ## Getting Started
 
+**Full step-by-step install (all paths):** [`docs/SELF_HOST.md`](docs/SELF_HOST.md) — authoritative; includes Postgres + pgvector linking, verification checklist, and where to look.
+
+### Choose your install path
+
+| Goal | Guide | Summary |
+|------|-------|---------|
+| **Try locally** (fastest) | [SELF_HOST §1](docs/SELF_HOST.md#1-quick-local-development-sqlite) | SQLite fallback — no Docker |
+| **Develop with Postgres + pgvector** | [SELF_HOST §2](docs/SELF_HOST.md#2-local-development-with-postgresql--pgvector) | `docker compose -f deploy/docker-compose.postgres.yml up -d` + `DATABASE_URL` in `.env` |
+| **Production server** | [SELF_HOST §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx) | `deploy/setup.sh` + Postgres 16 (`pgvector/pgvector:pg16`) |
+| **Postgres / backups / pgvector cutover** | [`docs/POSTGRES.md`](docs/POSTGRES.md) | Deep database ops |
+| **Change the code** | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | Tests, env vars, subsystems |
+
 ### Prerequisites
 
 - Python 3.11+
 - Node.js 18+
+- **Production / serious dev:** PostgreSQL 16 with **pgvector** (`pgvector/pgvector:pg16` — plain `postgres:16` lacks the `vector` extension)
 - Recommended API keys: [NVD](https://nvd.nist.gov/developers/request-an-api-key), [VirusTotal](https://www.virustotal.com/gui/join-us), [AbuseIPDB](https://www.abuseipdb.com/register)
 - Optional: GreyNoise, OTX, Abuse.ch, Groq/Cerebras/OpenRouter/Gemini, GitHub token — see `backend/.env.example`
 
-### Development install
+### Quick local install (SQLite)
 
 ```bash
 git clone https://github.com/Soldier0x0/briefr.git
 cd briefr/backend
-python3 -m venv .venv && source .venv/bin/activate   # or use system Python 3.11+
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env   # add your API keys
+cp .env.example .env   # optional API keys
 
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
@@ -182,18 +195,44 @@ npm install
 npm run dev    # http://localhost:5173 — proxies /api → :8000
 ```
 
-No `DATABASE_URL` set? The backend falls back to a zero-config local SQLite file — fine for trying it out. Set `DATABASE_URL` (and `BRIEFR_REQUIRE_POSTGRES=1` for production) to run against PostgreSQL — see [`docs/POSTGRES.md`](docs/POSTGRES.md).
+Open http://localhost:5173 → complete **first-run setup** to create the admin user.
 
-On first start with fewer than 10 CVEs, the backend automatically runs a full ingest (NVD → KEV → EPSS). With 10+ CVEs, incremental schedulers maintain freshness.
+### Postgres + pgvector (dev or production)
+
+1. Start Postgres: `docker compose -f deploy/docker-compose.postgres.yml up -d` (image: `pgvector/pgvector:pg16`)
+2. Link in `backend/.env`:
+
+```bash
+DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr
+BRIEFR_REQUIRE_POSTGRES=1
+```
+
+3. Start backend — **Alembic migrations run automatically** on startup (`alembic upgrade head`)
+
+Full linking steps, port `:5433` disposable Postgres, external DB, and embeddings flags: [`docs/SELF_HOST.md` §2](docs/SELF_HOST.md#2-local-development-with-postgresql--pgvector) and [`docs/POSTGRES.md`](docs/POSTGRES.md).
+
+### Verify install
+
+```bash
+curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
+```
+
+| Check | Dev (SQLite) | Dev / prod (Postgres) |
+|-------|--------------|------------------------|
+| `"backend"` | `"sqlite"` | `"postgresql"` |
+| UI | `:5173` loads, setup or login | same |
+| pgvector (optional) | n/a | `psql "$DATABASE_URL" -c "SELECT extname FROM pg_extension WHERE extname='vector';"` |
+
+On first start with fewer than 10 CVEs, the backend automatically runs a full ingest (NVD → KEV → EPSS). Optional seed: `python scripts/seed_screenshot_data.py`.
 
 ### Production deploy
 
 ```bash
-bash deploy/setup.sh          # initial Debian/systemd + nginx setup
+bash deploy/setup.sh          # initial Debian/systemd + nginx setup (run once as root)
 bash deploy/briefr-update.sh  # pull, build frontend, restart backend + nginx
 ```
 
-Full ops notes: [`docs/OPERATIONS.md`](docs/OPERATIONS.md) and [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
+Checklist, `.env` shape, post-install SigmaHQ sync, and smoke tests: [`docs/SELF_HOST.md` §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx). Ongoing ops: [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 **Maintainer note (not a BRIEFR requirement):** For my own public demo I put edge access control in front of the host using [Cloudflare Zero Trust](https://www.cloudflare.com/products/zero-trust/) (free tier) with DNS on Cloudflare. That is a personal security choice for domain-fronted access — not part of the app, not required to run BRIEFR, and not the only way to expose a self-hosted instance. If your domain’s DNS is already on Cloudflare, it is one convenient option among many.
 
@@ -349,7 +388,8 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 
 | I want to… | Doc |
 |------------|-----|
-| Self-host | [`docs/SELF_HOST.md`](docs/SELF_HOST.md) |
+| **Install** (SQLite, Postgres+pgvector, production) | [`docs/SELF_HOST.md`](docs/SELF_HOST.md) |
+| Postgres / pgvector / backups | [`docs/POSTGRES.md`](docs/POSTGRES.md) |
 | Use the product | [`docs/USE.md`](docs/USE.md) |
 | Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Understand internals (short version) | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
