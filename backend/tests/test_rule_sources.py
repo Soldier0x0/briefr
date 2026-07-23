@@ -103,3 +103,62 @@ def test_github_search_handles_none_token_without_crashing(monkeypatch):
 
     headers = rule_sources._gh_headers(token=None)
     assert "Authorization" not in headers
+
+
+def test_sigma_mentions_cve_from_path_and_tags():
+    path = "rules-emerging-threats/2021/Exploits/CVE-2021-44228/web_cve_2021_44228.yml"
+    assert rule_sources._sigma_mentions_cve("CVE-2021-44228", path, None) is True
+    content = "tags:\n    - cve.2021.44228\nauthor: Alice\n"
+    assert rule_sources._sigma_mentions_cve(
+        "CVE-2021-44228", "rules/web/other.yml", content
+    ) is True
+    assert rule_sources._sigma_mentions_cve(
+        "CVE-2021-44228", "rules/web/other.yml", "title: Unrelated\n"
+    ) is False
+
+
+def test_classify_and_rank_prefer_cve_exact():
+    exact = {"title": "B", "match_basis": "cve_exact", "path": "a.yml"}
+    search = {"title": "A", "match_basis": "cve_search", "path": "b.yml"}
+    tech = {"title": "C", "match_basis": "technique_related", "path": "c.yml"}
+    ranked = rule_sources._rank_sigma_rules([tech, search, exact])
+    assert [r["match_basis"] for r in ranked] == [
+        "cve_exact",
+        "cve_search",
+        "technique_related",
+    ]
+
+    assert (
+        rule_sources._classify_sigma_match(
+            "CVE-2021-44228",
+            "rules/web/log4j.yml",
+            "tags:\n  - cve.2021.44228\n",
+            search_mode="cve",
+        )
+        == "cve_exact"
+    )
+    assert (
+        rule_sources._classify_sigma_match(
+            "CVE-2021-44228",
+            "rules/windows/proc_creation_powershell.yml",
+            "title: PowerShell\n",
+            search_mode="technique",
+        )
+        == "technique_related"
+    )
+
+
+def test_apply_sigma_provenance_sets_drl_attribution():
+    rule = {
+        "path": "rules-emerging-threats/2021/Exploits/CVE-2021-44228/x.yml",
+        "title": "Log4Shell",
+    }
+    content = "title: Log4Shell\nauthor: Neo23x0\nstatus: test\ntags:\n  - cve.2021.44228\n"
+    rule_sources._apply_sigma_provenance(
+        rule, cve_id="CVE-2021-44228", search_mode="cve", content=content
+    )
+    assert rule["match_basis"] == "cve_exact"
+    assert rule["license"] == "DRL-1.1"
+    assert "Detection-Rule-License" in rule["license_url"]
+    assert rule["author"] == "Neo23x0"
+    assert "Neo23x0" in rule["attribution"]

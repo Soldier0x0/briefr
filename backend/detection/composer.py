@@ -257,7 +257,12 @@ def emit_composed_detection(
     description: str = "",
     cwe_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Emit Sigma + SIEM + YARA from a DC-1 evidence pack (no LLM)."""
+    """Emit Sigma + SIEM + YARA from a DC-1 evidence pack (no LLM).
+
+    Community SigmaHQ/Elastic rules are primary. BRIEFR template YAML is only
+    emitted when there is no community hit *and* the template is class-mapped
+    (CWE / ATT&CK) — never the generic keyword dump.
+    """
     cve_id = str(evidence.get("cve_id") or "").strip().upper()
     techniques = [
         str(t).strip()
@@ -269,6 +274,9 @@ def emit_composed_detection(
     detection_context = _context_for_emit(evidence)
     artifacts = evidence.get("artifacts") or []
     compose_basis = _compose_basis(evidence)
+    has_community = bool(
+        (evidence.get("community") or {}).get("has_community_rules")
+    )
 
     generated_sigma, generated_sigma_meta = generate_sigma_rule_bundle(
         cve_id=cve_id or "CVE-UNKNOWN",
@@ -280,6 +288,16 @@ def emit_composed_detection(
     )
     meta = dict(generated_sigma_meta or {})
     meta["compose_basis"] = compose_basis
+
+    briefr_basis = str(meta.get("briefr_basis") or "generic").lower()
+    # Community-first: real SigmaHQ/Elastic beats BRIEFR templates.
+    # Generic keyword dumps are refused — empty is more honest than noisy YAML.
+    if has_community:
+        generated_sigma = None
+        meta["suppressed"] = "community_primary"
+    elif briefr_basis == "generic":
+        generated_sigma = None
+        meta["suppressed"] = "generic_refused"
 
     siem_queries = get_siem_queries(
         technique_id=first_technique,

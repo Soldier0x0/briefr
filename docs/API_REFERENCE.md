@@ -1120,11 +1120,12 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
   "sigma_rules": [],
   "elastic_rules": [],
   "has_community_rules": false,
-  "generated_sigma": "...",
+  "generated_sigma": null,
   "generated_sigma_meta": {
     "briefr_basis": "cwe",
     "status": "experimental",
-    "compose_basis": "template_fallback"
+    "compose_basis": "community",
+    "suppressed": "community_primary"
   },
   "detection_context": null,
   "siem_queries": { },
@@ -1152,7 +1153,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 }
 ```
 
-Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact paths/keywords are injected into Sigma and SIEM queries; `generated_sigma_meta.compose_basis` is `community|nuclei_artifacts|yara|template_fallback`. No LLM.
+Sigma/Elastic rules cached 24h. Each SigmaHQ hit includes `match_basis` (`cve_exact` \| `cve_search` \| `technique_related`) plus DRL-1.1 `license` / `attribution` fields. `generated_sigma` is **optional**: omitted (`null`) when community rules are present (`suppressed: community_primary`) or the BRIEFR template would be generic (`suppressed: generic_refused`); otherwise a class-mapped CWE/ATT&CK template may be returned. Additive `evidence` (DC-1) is the shared evidence pack. DC-2 emits SIEM/YARA from that pack via `emit_composed_detection`; artifact paths/keywords inject into SIEM (and into template Sigma when emitted). `generated_sigma_meta.compose_basis` is `community|nuclei_artifacts|yara|template_fallback`. No LLM.
 
 ---
 
