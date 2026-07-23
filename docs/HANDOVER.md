@@ -16,6 +16,25 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-23 — Production-zone deploy scripts (no git pull)
+
+### What changed
+
+- **`deploy/briefr-install.sh`** — first install from a local artifact at `/opt/briefr` (venv, `.env`, ufw optional, then deploy).
+- **`deploy/briefr-deploy.sh`** — apply release from local tree: pip, Alembic, frontend build, systemd/nginx, health gate, smoke — **no GitHub**.
+- **`deploy/briefr-service.sh`** — `start|stop|restart|status|health` via systemd (day-to-day ops).
+- **`deploy/lib.sh`** — shared `deploy_apply_release`, `stamp_build_info`, service helpers; `briefr-update.sh` refactored to use them (git pull path unchanged).
+
+### Why
+
+Production-zone hosts should not rely on `briefr-update.sh` git pull. Operators stage releases out-of-band and need explicit install/deploy/restart scripts.
+
+### Docs
+
+`SELF_HOST.md` §3 path table, `OPERATIONS.md` production-zone section, `ONBOARDING.md` script table.
+
+---
+
 ## 2026-07-23 — Install documentation clarity (SELF_HOST canonical guide)
 
 ### What changed

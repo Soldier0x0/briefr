@@ -282,8 +282,11 @@ BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/
 
 | Script | Purpose |
 |--------|---------|
-| [`deploy/setup.sh`](../deploy/setup.sh) | Initial install: Python, clone repo, venv, then production deploy |
-| [`deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Pull, build frontend, restart backend + nginx |
+| [`deploy/setup.sh`](../deploy/setup.sh) | Initial install (git clone) + production deploy |
+| [`deploy/briefr-install.sh`](../deploy/briefr-install.sh) | First install from local artifact (production zone, no git) |
+| [`deploy/briefr-deploy.sh`](../deploy/briefr-deploy.sh) | Apply release from local tree (pip, migrate, build, restart) |
+| [`deploy/briefr-service.sh`](../deploy/briefr-service.sh) | Start / stop / restart / status / health (no build) |
+| [`deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Pull `main`, build frontend, restart (git + rollback) |
 | [`deploy/briefr-backup.sh`](../deploy/briefr-backup.sh) | Manual or scheduled PostgreSQL backup (`pg_dump`) |
 | [`deploy/briefr-pg-backup.sh`](../deploy/briefr-pg-backup.sh) | systemd entry point (`briefr-pg-backup.timer`) |
 | [`deploy/briefr-restore.sh`](../deploy/briefr-restore.sh) | List or restore archives |

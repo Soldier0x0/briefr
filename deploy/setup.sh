@@ -3,7 +3,8 @@
 # Run as root: bash deploy/setup.sh
 #
 # Full production install checklist: docs/SELF_HOST.md §3
-# Bootstraps Python, clones the repo, creates the venv, then delegates to
+# Internet-connected bootstrap: clones repo, then briefr-update.sh
+# Production zone (artifact on disk, no git): briefr-install.sh
 # briefr-update.sh for nginx, frontend build, and systemd units.
 set -euo pipefail
 

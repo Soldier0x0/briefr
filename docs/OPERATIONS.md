@@ -245,10 +245,39 @@ Same env vars as systemd. See [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20
 
 ---
 
+---
+
+## Production zone deploy (no git pull)
+
+Use when the app host **cannot** or **should not** pull from GitHub (air-gapped,
+DMZ, change-controlled artifact drops). `briefr-update.sh` remains for
+internet-connected hosts that pull `main` directly.
+
+| Script | When | What it does |
+|--------|------|----------------|
+| [`briefr-install.sh`](../deploy/briefr-install.sh) | First install | User/dirs, venv, `.env` template, ufw (optional), then `briefr-deploy.sh` |
+| [`briefr-deploy.sh`](../deploy/briefr-deploy.sh) | New release on disk | pip, Alembic, frontend build, systemd/nginx, health gate, optional smoke — **no git** |
+| [`briefr-service.sh`](../deploy/briefr-service.sh) | Day-to-day ops | `start` \| `stop` \| `restart` \| `status` \| `health` — systemd only |
+
+**Typical flow:**
+
+1. Stage release at `/opt/briefr` (rsync, tarball, CI artifact).
+2. First time: `bash /opt/briefr/deploy/briefr-install.sh` → edit `backend/.env`.
+3. Later versions: replace tree → `bash /opt/briefr/deploy/briefr-deploy.sh`.
+4. After `.env` edits: `bash /opt/briefr/deploy/briefr-service.sh restart`.
+
+**Optional env (deploy):** `BRIEFR_SKIP_BACKUP=1`, `BRIEFR_SKIP_BUILD=1` (pre-built
+`frontend/dist`), `BRIEFR_SKIP_MIGRATE=1`, `BRIEFR_SKIP_SMOKE=1`,
+`BRIEFR_BUILD_COMMIT` / `BRIEFR_BUILD_AT` when the tree is not a git checkout.
+
+**Install:** `BRIEFR_SKIP_UFW=1` when host firewall is managed elsewhere.
+
+---
+
 ## Production update path (`briefr-update.sh`)
 
-The update script is **atomic-or-recoverable**: a failed deploy should not leave the
-box wedged on a broken release without a defined recovery path.
+**Legacy / internet-connected:** git pull from `main`, optional automatic rollback on
+health-gate failure. Production zones should prefer **`briefr-deploy.sh`** above.
 
 **Sequence (Postgres production):**
 
@@ -615,4 +644,8 @@ To scale API concurrency:
 | [`archive/THREAT_MODEL.md`](archive/THREAT_MODEL.md) | Security |
 | [`POSTGRES.md`](POSTGRES.md) | PostgreSQL production guide |
 | [`ONBOARDING.md`](ONBOARDING.md) | Deploy scripts |
-| [`../deploy/setup.sh`](../deploy/setup.sh) | Initial install |
+| [`../deploy/setup.sh`](../deploy/setup.sh) | Initial install (git) |
+| [`../deploy/briefr-install.sh`](../deploy/briefr-install.sh) | First install (production zone artifact) |
+| [`../deploy/briefr-deploy.sh`](../deploy/briefr-deploy.sh) | Local-tree production deploy |
+| [`../deploy/briefr-service.sh`](../deploy/briefr-service.sh) | Service start/stop/restart |
+| [`../deploy/briefr-update.sh`](../deploy/briefr-update.sh) | Git pull update |

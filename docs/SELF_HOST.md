@@ -164,6 +164,15 @@ Full list: `backend/.env.example` and [README environment table](../README.md).
 
 **Use when:** installing BRIEFR on a server you operate.
 
+### Choose your production path
+
+| Environment | First install | Apply new release | Start / stop / restart |
+|-------------|---------------|-------------------|-------------------------|
+| **Production zone** (no outbound git; artifact/rsync) | `bash deploy/briefr-install.sh` | `bash deploy/briefr-deploy.sh` | `bash deploy/briefr-service.sh restart` |
+| **Internet-connected** (git pull OK) | `bash deploy/setup.sh` | `bash deploy/briefr-update.sh` *(legacy)* | `bash deploy/briefr-service.sh restart` |
+
+**Production zone workflow:** copy or extract the release to `/opt/briefr`, edit `backend/.env`, then `briefr-install.sh` once. Later releases: replace the tree (or rsync delta), then `briefr-deploy.sh`. Day-to-day restarts after `.env` changes: `briefr-service.sh` — no build, no git.
+
 ### Prerequisites
 
 | Requirement | Notes |
@@ -189,15 +198,22 @@ Create the database/user to match your DSN, or use the defaults from your infra 
 
 Detail: [`POSTGRES.md` § Infrastructure](POSTGRES.md#infrastructure-optinfrapostgres) and [§ pgvector cutover](POSTGRES.md#pgvector-cutover-embeddings-e1).
 
-### Step 2 — Run initial app install
+### Step 2 — Install the application
 
-As **root** on the server:
+**Production zone** (artifact already on disk at `/opt/briefr` — no `git pull`):
+
+```bash
+# As root — creates venv, .env template, builds frontend, systemd + nginx
+bash /opt/briefr/deploy/briefr-install.sh
+```
+
+**Internet-connected** (clone from GitHub):
 
 ```bash
 bash deploy/setup.sh
 ```
 
-This installs Python, clones to `/opt/briefr`, creates the venv, then runs `briefr-update.sh` (frontend build, nginx, systemd).
+`setup.sh` installs Python, clones to `/opt/briefr`, creates the venv, then runs `briefr-update.sh`.
 
 ### Step 3 — Configure `backend/.env`
 
@@ -229,11 +245,24 @@ Template: `backend/.env.example` · encrypted admin secrets: [`OPERATIONS.md` §
 
 ### Step 4 — Deploy / restart
 
+**New release** (production zone — local tree, no git):
+
+```bash
+bash /opt/briefr/deploy/briefr-deploy.sh
+```
+
+**New release** (internet-connected — git pull + rollback):
+
 ```bash
 bash /opt/briefr/deploy/briefr-update.sh
 ```
 
-This pulls code, builds `frontend/dist`, runs migrations via backend startup, restarts `briefr-backend` and nginx.
+**Restart only** (after `.env` or config change — no pip/build/migrate):
+
+```bash
+bash /opt/briefr/deploy/briefr-service.sh restart
+# or: start | stop | status | health
+```
 
 ### Step 5 — Verify production install
 
@@ -297,7 +326,10 @@ Use this table regardless of path:
 | Compose Postgres (dev) | `deploy/docker-compose.postgres.yml` | `docker compose -f deploy/docker-compose.postgres.yml up -d` |
 | Disposable Postgres (CI / :5433) | `scripts/postgres-dev.sh` | `./scripts/postgres-dev.sh start` |
 | External Postgres env stub | `deploy/external-postgres.env.example` | — |
-| Production install script | `deploy/setup.sh` | run once as root |
+| Production install script | `deploy/setup.sh` (git) or `deploy/briefr-install.sh` (artifact) |
+| Production deploy (local tree) | `deploy/briefr-deploy.sh` |
+| Production deploy (git pull) | `deploy/briefr-update.sh` |
+| Service control | `deploy/briefr-service.sh` | run once as root |
 | Health / logs (production) | `journalctl -u briefr-backend` | `deploy/check-backend.sh` |
 
 ---
