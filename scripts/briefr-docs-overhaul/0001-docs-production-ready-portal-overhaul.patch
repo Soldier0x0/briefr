@@ -1,0 +1,1743 @@
+From 0f57558d88ced18868aaf9b3b1689f2c61e22229 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Thu, 23 Jul 2026 04:42:46 +0000
+Subject: [PATCH] docs: production-ready portal overhaul
+
+- Promote Pathways to top-level nav and sidebar section (peer to User/Admin/Developer)
+- Correct license to BUSL-1.1 across homepage, footer, FAQ, and release notes
+- Re-migrate operator guides from briefr main with public-portal scrubbing
+- Emphasize briefr-install/deploy/service over legacy git-pull update path
+- Fix auth-layers SVG cramped text; remove maintainer placeholder diagrams
+- Stop mirroring internal study-guide/learn trees into public docs
+- Tidy homepage typography and add Pathways as primary learner entry
+---
+ README.md                                     |  21 +-
+ docs/admin-guide/assets/auth-layers.svg       |  10 +-
+ .../assets/placeholder-diagram.svg            |  10 -
+ docs/admin-guide/operations.md                |  76 +++-
+ docs/admin-guide/postgres.md                  |   4 +-
+ docs/admin-guide/self-host.md                 | 330 ++++++++++++++++--
+ docs/api-reference.md                         |  71 +++-
+ docs/developer-guide/_category_.json          |   2 +-
+ docs/developer-guide/index.md                 |   2 +-
+ docs/developer-guide/onboarding.md            |  31 +-
+ docs/developer-guide/system-design.md         |  45 ++-
+ docs/faq.md                                   |  19 +-
+ docs/how-briefr-works/_category_.json         |   2 +-
+ docs/how-briefr-works/index.mdx               |  10 +-
+ .../intel-lifecycle/index.mdx                 |   2 +-
+ docs/how-briefr-works/synced/.gitkeep         |   0
+ docs/integrations.md                          |   2 +-
+ docs/pathways/_category_.json                 |   6 +
+ .../pathways.mdx => pathways/index.mdx}       |  39 ++-
+ docs/release-notes.md                         |   4 +-
+ docs/roadmap.md                               |   9 +-
+ docs/security-guide.md                        |   2 +-
+ docs/user-guide/assets/auth-layers.svg        |  10 +-
+ .../user-guide/assets/placeholder-diagram.svg |  10 -
+ docs/user-guide/how-it-works.md               |   4 +-
+ docs/user-guide/troubleshooting.md            |  12 +-
+ docs/user-guide/using-briefr.md               |   2 -
+ docusaurus.config.ts                          |   8 +-
+ scripts/migrate.cjs                           | 104 ++++--
+ src/pages/index.module.css                    |   2 +-
+ src/pages/index.tsx                           |  18 +-
+ 31 files changed, 671 insertions(+), 196 deletions(-)
+ delete mode 100644 docs/admin-guide/assets/placeholder-diagram.svg
+ delete mode 100644 docs/how-briefr-works/synced/.gitkeep
+ create mode 100644 docs/pathways/_category_.json
+ rename docs/{how-briefr-works/pathways.mdx => pathways/index.mdx} (64%)
+ delete mode 100644 docs/user-guide/assets/placeholder-diagram.svg
+
+diff --git a/README.md b/README.md
+index a98a37d..3543908 100644
+--- a/README.md
++++ b/README.md
+@@ -10,15 +10,14 @@ Every page is a Markdown file under `docs/`. Edit, commit, push — that's the
+ whole workflow. Folder = sidebar section; `sidebar_position` in the front
+ matter controls ordering.
+ 
+-- Portal-native pages (Security Guide, Integrations, FAQ, Release Notes,
+-  guide landing pages) live only here — edit them directly.
+-- Migrated pages (User/Admin/Developer chapters, API Reference, Roadmap) are
+-  pulled from `../briefr-main/docs`, which stays canonical. Re-sync with:
+-  `node scripts/migrate.cjs`
+-- Learning section (`docs/how-briefr-works/`) is portal-native. Optional
+-  mirrors of `briefr` `docs/study-guide/` and `docs/learn/` land under
+-  `docs/how-briefr-works/synced/` via `migrate.cjs` (excluded from the
+-  docs plugin routes/sidebar).
++- Portal-native pages (Pathways, Security Guide, Integrations, FAQ, Release
++  Notes, guide landing pages, How BRIEFR Works) live only here — edit them
++  directly.
++- Migrated pages (User/Admin/Developer chapters, API Reference) are pulled
++  from the main `briefr` repo `docs/`, which stays canonical. Re-sync with:
++  `BRIEFR_MAIN_DOCS=/path/to/briefr/docs node scripts/migrate.cjs`
++- Internal maintainer notes live in `docs-internal/` — never published to the
++  docs site.
+ 
+ ## Develop
+ 
+@@ -32,5 +31,5 @@ Production is served at `https://docs.projectjupiter.in` (Cloudflare). `baseUrl`
+ 
+ ## License
+ 
+-Documentation content © Sai Harsha Vardhan, AGPL-3.0-or-later (same as
+-BRIEFR itself).
++Documentation content © Sai Harsha Vardhan. BRIEFR source is licensed under
++BUSL-1.1 — see the [product LICENSE](https://github.com/Soldier0x0/briefr/blob/main/LICENSE).
+diff --git a/docs/admin-guide/assets/auth-layers.svg b/docs/admin-guide/assets/auth-layers.svg
+index 31a0cb0..af27810 100644
+--- a/docs/admin-guide/assets/auth-layers.svg
++++ b/docs/admin-guide/assets/auth-layers.svg
+@@ -1,4 +1,4 @@
+-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" role="img" aria-label="BRIEFR auth layers">
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" role="img" aria-label="BRIEFR auth layers">
+   <defs>
+     <style>
+       .bg { fill: #0a0a08; }
+@@ -13,20 +13,20 @@
+       <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
+     </marker>
+   </defs>
+-  <rect class="bg" width="880" height="360"/>
++  <rect class="bg" width="880" height="380"/>
+   <text x="24" y="32" class="title">Two independent auth layers</text>
+   <text x="24" y="52" class="sub">Edge policy and app sessions are separate — demoting admin in DB takes effect immediately (JWT role revalidation).</text>
+ 
+   <rect class="box optional" x="40" y="80" width="800" height="100" rx="8"/>
+   <text x="56" y="104" class="title" fill="#6eb5ff">LAYER A — EDGE (optional)</text>
+   <text x="56" y="128" class="label">Cloudflare Zero Trust · email OTP on public hostname</text>
+-  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI · CF JWT middleware removed (#93)</text>
++  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI</text>
+   <rect x="56" y="158" width="140" height="22" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
+   <text x="68" y="173" class="sub">Protects who reaches nginx</text>
+ 
+   <line class="arrow" x1="440" y1="180" x2="440" y2="210"/>
+ 
+-  <rect class="box" x="40" y="210" width="800" height="120" rx="8"/>
++  <rect class="box" x="40" y="210" width="800" height="140" rx="8"/>
+   <text x="56" y="234" class="title">LAYER B — APPLICATION (always on)</text>
+   <text x="56" y="258" class="label">Built-in username/password · server sessions · briefr_at cookie</text>
+   <text x="56" y="278" class="sub">First-run /api/auth/setup · refresh token rotation · admin routes require live admin role in users table</text>
+@@ -40,5 +40,5 @@
+   <rect x="424" y="290" width="180" height="28" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
+   <text x="436" y="308" class="label">Role gate on /api/admin</text>
+ 
+-  <text x="640" y="308" class="sub">Legacy X-BRIEFR-Admin-Key removed (Sprint A0)</text>
++  <text x="56" y="328" class="sub">Legacy admin-key header removed</text>
+ </svg>
+diff --git a/docs/admin-guide/assets/placeholder-diagram.svg b/docs/admin-guide/assets/placeholder-diagram.svg
+deleted file mode 100644
+index 7a936db..0000000
+--- a/docs/admin-guide/assets/placeholder-diagram.svg
++++ /dev/null
+@@ -1,10 +0,0 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420">
+-  <rect width="960" height="420" rx="16" fill="#0a0a08" stroke="#3d3d38" stroke-width="2"/>
+-  <rect x="24" y="24" width="912" height="48" rx="8" fill="#141412" stroke="#2a2a25"/>
+-  <text x="48" y="54" fill="#c8b88a" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Diagram placeholder</text>
+-  <text x="48" y="120" fill="#e8e6df" font-family="system-ui,sans-serif" font-size="22" font-weight="600">Image not added yet</text>
+-  <text x="48" y="156" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">Export from Miro / Figma / Penpot and save to docs/assets/</text>
+-  <text x="48" y="184" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">See IMAGE_BRIEFS.md for filename and prompt</text>
+-  <rect x="48" y="220" width="864" height="2" fill="#2a2a25"/>
+-  <text x="48" y="260" fill="#5a5850" font-family="ui-monospace,monospace" font-size="13">Replace this file reference in the doc when your PNG/SVG is ready</text>
+-</svg>
+diff --git a/docs/admin-guide/operations.md b/docs/admin-guide/operations.md
+index 3438520..37362d0 100644
+--- a/docs/admin-guide/operations.md
++++ b/docs/admin-guide/operations.md
+@@ -9,6 +9,8 @@ sidebar_position: 2
+ **Last updated:** 2026-07-21
+ **Status:** Current production ops contract — Postgres-first systemd/nginx deploy with opt-in durable queue, embeddings, and catch-up controls.
+ 
++**First-time install:** [`SELF_HOST.md`](./self-host.md) §3 (production checklist, `.env`, verify). **This document** covers ongoing operations after BRIEFR is installed.
++
+ ---
+ 
+ ## Purpose
+@@ -195,6 +197,32 @@ When Procrastinate is disabled or unavailable, those paths fall back to existing
+ 
+ Embeddings are scheduler-side. With `EMBEDDINGS_ENABLED=1`, the backfill job runs on `EMBEDDINGS_SYNC_INTERVAL_HOURS`; `EMBEDDINGS_AUTO_ON_INGEST=1` (default when embeddings are enabled) also warms vectors for newly ingested/updated CVEs after NVD ingest, capped by `EMBEDDINGS_INGEST_MAX_PER_RUN`. Production Postgres must use `pgvector/pgvector:pg16` before enabling embeddings.
+ 
++### SigmaHQ detection index
++
++Job id: `sigmahq_index_sync` (default enabled, interval **168h** / weekly).
++
++**First deploy / empty index:** Alembic `035` only creates empty tables. Rules are
++**not** loaded until the sync job runs. After a successful update, run **one** of:
++
++- Admin → **Feed health** → SigmaHQ card → **Sync** (respects watermark), or
++- Admin → **Scheduler** → **Sync SigmaHQ index** / Run now, or
++- Wait for the weekly scheduled tick (up to ~168h if you do nothing).
++
++Expect Feed health to move from **EMPTY** → **INDEXED** with `rules_active` > 0.
++Optional `GITHUB_TOKEN` raises GitHub rate limits for tip-commit resolve + archive
++download; unauthenticated usually works for weekly cadence. Force re-sync clears
++the watermark **and** spawns a forced apply (unlike EPSS clear-only).
++
++1. Resolves tip commit on `SigmaHQ/sigma`, downloads one codeload tarball, upserts YAML into Postgres (`detection_rules*`), soft-retires missing paths.
++2. Watermark key `sigmahq_archive_identity` stores `{commit_sha, sha256, synced_at}` — skip when unchanged. Watermark advances only after full successful apply.
++3. **Scheduler → Sync SigmaHQ index** respects the watermark.
++4. **Feed Health → Force re-sync** clears the watermark **and** spawns `run_sigmahq_index_sync(force=True)` (unlike EPSS force-resync, which is clear-only). Documented divergence: operators should not need a second click.
++5. License: rules are **DRL-1.1** — retain author, license link, and unmodified YAML. Do not claim SigmaHQ content as BRIEFR IP.
++6. Detect/Forge read the local index (CVE-exact). GitHub Sigma search is fallback only when the index is empty.
++7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). Column `"references"` is quoted (Postgres reserved word). SQLite test suite skips PG-gated index tests. Raw SQL migrations are scanned for unquoted reserved column names in `test_alembic_revisions.py`.
++
++Disable with `SIGMAHQ_INDEX_SYNC_ENABLED=0`. Config + Scheduler disabled gate returns 400 with enable guidance on Run now / Force.
++
+ ---
+ 
+ ## Container readiness (design now, ship V2.0)
+@@ -221,10 +249,39 @@ Same env vars as systemd. See [`archive/beta/Beta V2.0.md`](https://github.com/S
+ 
+ ---
+ 
++---
++
++## Production zone deploy (no git pull)
++
++Use when the app host **cannot** or **should not** pull from GitHub (air-gapped,
++DMZ, change-controlled artifact drops). `briefr-update.sh` remains for
++internet-connected hosts that pull `main` directly.
++
++| Script | When | What it does |
++|--------|------|----------------|
++| [`briefr-install.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-install.sh) | First install | User/dirs, venv, `.env` template, ufw (optional), then `briefr-deploy.sh` |
++| [`briefr-deploy.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-deploy.sh) | New release on disk | pip, Alembic, frontend build, systemd/nginx, health gate, optional smoke — **no git** |
++| [`briefr-service.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-service.sh) | Day-to-day ops | `start` \| `stop` \| `restart` \| `status` \| `health` — systemd only |
++
++**Typical flow:**
++
++1. Stage release at `/opt/briefr` (rsync, tarball, CI artifact).
++2. First time: `bash /opt/briefr/deploy/briefr-install.sh` → edit `backend/.env`.
++3. Later versions: replace tree → `bash /opt/briefr/deploy/briefr-deploy.sh`.
++4. After `.env` edits: `bash /opt/briefr/deploy/briefr-service.sh restart`.
++
++**Optional env (deploy):** `BRIEFR_SKIP_BACKUP=1`, `BRIEFR_SKIP_BUILD=1` (pre-built
++`frontend/dist`), `BRIEFR_SKIP_MIGRATE=1`, `BRIEFR_SKIP_SMOKE=1`,
++`BRIEFR_BUILD_COMMIT` / `BRIEFR_BUILD_AT` when the tree is not a git checkout.
++
++**Install:** `BRIEFR_SKIP_UFW=1` when host firewall is managed elsewhere.
++
++---
++
+ ## Production update path (`briefr-update.sh`)
+ 
+-The update script is **atomic-or-recoverable**: a failed deploy should not leave the
+-box wedged on a broken release without a defined recovery path.
++**Legacy / internet-connected:** git pull from `main`, optional automatic rollback on
++health-gate failure. Production zones should prefer **`briefr-deploy.sh`** above.
+ 
+ **Sequence (Postgres production):**
+ 
+@@ -259,6 +316,11 @@ USER/PASSWORD variables. **Strict by default (J3):** a failing smoke check exits
+ non-zero. Opt out with `BRIEFR_SKIP_SMOKE=1` (skip entirely) or
+ `BRIEFR_STRICT_SMOKE=0` (warn only).
+ 
++**OTX upstream outages:** when AlienVault OTX returns HTTP 4xx/5xx during smoke or
++normal CVE detail loads, BRIEFR serves stale `otx_cve_pulses` when present and does
++not wipe the mirror. Smoke may still fail if no cached pulses exist for the fixture
++CVE — retry later or use `BRIEFR_STRICT_SMOKE=0`; the deploy itself is not rolled back.
++
+ ---
+ 
+ ## Pre-release checklist (J4)
+@@ -272,7 +334,7 @@ independent phase.
+ | 1 | **Migrations forward-only** — new Alembic revision(s) apply cleanly on Postgres (`alembic upgrade head`); no edits to already-applied migration files. |
+ | 2 | **API additive** — new response fields only (prefer `meta`); no breaking shape changes without a documented version bump. |
+ | 3 | **Deploy additive** — systemd unit, nginx site, and cloudflared changes are additive; existing paths (`/opt/briefr`, `DATABASE_URL`, `BACKUP_DIR`) unchanged. |
+-| 4 | **Local verify green** — `./scripts/verify-local.sh` (and `--full` when Postgres/tools available). |
++| 4 | **Release CI green** on the tagged commit (GitHub Actions or your release pipeline). |
+ | 5 | **Backup path known** — APScheduler `scheduled_backup` running (`BACKUP_INTERVAL_HOURS`); `briefr-pg-backup.timer` **disabled**; `BACKUP_AGE_KEY_FILE` present and backed up off-host. |
+ | 6 | **Update path documented** — J1 rollback + health gate behavior understood; operator knows `BRIEFR_SKIP_ROLLBACK` / smoke opt-outs. |
+ | 7 | **Post-deploy smoke** — expect strict Intel smoke on production update (J3); confirm OTX key if Intel campaigns matter. |
+@@ -560,7 +622,7 @@ Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens
+ 5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
+ 6. Optional: append `?density=compact` for a denser tile layout on large displays (4K wall mounts).
+ 
+-See [`planning/BACKLOG.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/planning/BACKLOG.md) §6 for optional layout tails.
++Optional layout tails are documented in the product repository when needed.
+ 
+ ---
+ 
+@@ -586,4 +648,8 @@ To scale API concurrency:
+ | [`archive/THREAT_MODEL.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/archive/THREAT_MODEL.md) | Security |
+ | [`POSTGRES.md`](./postgres.md) | PostgreSQL production guide |
+ | [`ONBOARDING.md`](../developer-guide/onboarding.md) | Deploy scripts |
+-| [`../deploy/setup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/setup.sh) | Initial install |
++| [`../deploy/setup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/setup.sh) | Initial install (git) |
++| [`../deploy/briefr-install.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-install.sh) | First install (production zone artifact) |
++| [`../deploy/briefr-deploy.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-deploy.sh) | Local-tree production deploy |
++| [`../deploy/briefr-service.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-service.sh) | Service start/stop/restart |
++| [`../deploy/briefr-update.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-update.sh) | Git pull update |
+diff --git a/docs/admin-guide/postgres.md b/docs/admin-guide/postgres.md
+index 482a9bb..eb195ce 100644
+--- a/docs/admin-guide/postgres.md
++++ b/docs/admin-guide/postgres.md
+@@ -5,6 +5,8 @@ sidebar_position: 3
+ 
+ # PostgreSQL database (production)
+ 
++**Install steps (Postgres + pgvector + linking `DATABASE_URL`):** start at [`SELF_HOST.md`](./self-host.md) §2 (dev) or §3 (production). This document is the **deep reference** for DSN shape, backups, restore, dual-dialect tests, external Postgres, and pgvector cutover.
++
+ BRIEFR stores all intel data in **PostgreSQL**. Production runs Postgres **16** in Docker at `/opt/infra/postgres`; the BRIEFR app on the host connects via `DATABASE_URL` (published port `127.0.0.1:5432`).
+ 
+ Use a host `postgresql-client` whose **major version matches** the server (16 in production). The deploy scripts install `postgresql-client` and fall back across supported majors.
+@@ -66,7 +68,7 @@ If you previously started `briefr-pg-test` on plain `postgres:16-alpine`, recrea
+ ./scripts/postgres-dev.sh destroy && ./scripts/postgres-dev.sh start
+ ```
+ 
+-`./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.
++Contributors can start a disposable Postgres test container with `./scripts/postgres-dev.sh start` (see [Contributor onboarding](/docs/developer-guide/onboarding)).
+ 
+ ### Dual-dialect tests (SQLite default + Postgres CI)
+ 
+diff --git a/docs/admin-guide/self-host.md b/docs/admin-guide/self-host.md
+index fdc6b33..ae8148a 100644
+--- a/docs/admin-guide/self-host.md
++++ b/docs/admin-guide/self-host.md
+@@ -5,7 +5,16 @@ sidebar_position: 1
+ 
+ # Self-host BRIEFR
+ 
+-One guide for installing and running BRIEFR on your server.
++**Authoritative install guide.** Pick one path below — you do not need to read every section.
++
++| I want to… | Go to |
++|------------|-------|
++| Try BRIEFR locally in 5 minutes | [§1 Quick dev (SQLite)](#1-quick-local-development-sqlite) |
++| Develop or test with real Postgres + pgvector | [§2 Postgres dev](#2-local-development-with-postgresql--pgvector) |
++| Run on a production Debian server | [§3 Production](#3-production-debian--systemd--nginx) |
++| Deep Postgres / backup / pgvector cutover | [`POSTGRES.md`](./postgres.md) |
++| Day-2 ops (updates, smoke, scheduler) | [`OPERATIONS.md`](./operations.md) |
++| Something broke after install | [`TROUBLESHOOTING.md`](../user-guide/troubleshooting.md) |
+ 
+ ---
+ 
+@@ -15,55 +24,318 @@ One guide for installing and running BRIEFR on your server.
+ 
+ | Piece | What |
+ |-------|------|
+-| App | FastAPI `:8000` + React static via nginx |
+-| Database | **PostgreSQL 16** required; use `pgvector/pgvector:pg16` when embeddings are enabled |
+-| Code | `/opt/briefr` |
+-| Backups | `/var/lib/briefr/backups` |
++| App | FastAPI `:8000` + React static via nginx (production) or Vite `:5173` (dev) |
++| Database | **PostgreSQL 16** required in production; use **`pgvector/pgvector:pg16`** when embeddings or SigmaHQ index are enabled |
++| Code (production) | `/opt/briefr` |
++| Backups (production) | `/var/lib/briefr/backups` |
++| Schema | Alembic migrations run automatically on backend startup (`init_db()` → `alembic upgrade head`) |
+ 
+ ---
+ 
+-## Quick start (development)
++## 1. Quick local development (SQLite)
++
++**Use when:** you want to evaluate BRIEFR with zero database setup.  
++**Not for production** — SQLite is a dev/test fallback only.
++
++### Prerequisites
++
++- Python 3.11+
++- Node.js 18+
++- Git
++
++### Steps
+ 
+ ```bash
+ git clone https://github.com/Soldier0x0/briefr.git
+ cd briefr/backend
+ python3 -m venv .venv && source .venv/bin/activate
+ pip install -r requirements-dev.txt
+-cp .env.example .env
++cp .env.example .env    # optional API keys — app works without them
+ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+ ```
+ 
++In a second terminal:
++
+ ```bash
+-cd ../frontend && npm install && npm run dev
++cd briefr/frontend
++npm install
++npm run dev    # http://localhost:5173 — proxies /api → :8000
+ ```
+ 
+-Open http://localhost:5173. First visit → complete **setup** to create the admin user.
++1. Open http://localhost:5173
++2. Complete **first-run setup** to create the admin user (shown when no users exist)
++3. Optional sample data: `python scripts/seed_screenshot_data.py` from repo root
+ 
+-**Sample data:** `python scripts/seed_screenshot_data.py` from repo root.
++### Verify
+ 
+-**Postgres locally:** `docker compose -f deploy/docker-compose.postgres.yml up -d`
++```bash
++curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
++```
++
++| Check | Expected |
++|-------|----------|
++| `"backend"` | `"sqlite"` |
++| `"cve_count"` | `0` on first boot, then grows (auto-ingest if &lt; 10 CVEs) |
++| UI loads | Login/setup screen at `:5173` |
++
++**Bare cloud VM note:** if `.env` contains a placeholder Postgres URL and nothing listens on `:5432`, startup fails. Clear it: `DATABASE_URL=""` and `BRIEFR_REQUIRE_POSTGRES=0` in `backend/.env`.
+ 
+ ---
+ 
+-## Production
++## 2. Local development with PostgreSQL + pgvector
++
++**Use when:** you want production-like behaviour locally (migrations, pgvector, dual-dialect tests, embeddings, SigmaHQ index).
++
++### Prerequisites
++
++- Everything in §1, plus **Docker** (or an existing Postgres 16 server with the `vector` extension)
++
++### Step 1 — Start Postgres (pgvector image)
++
++From the repo root:
++
++```bash
++docker compose -f deploy/docker-compose.postgres.yml up -d
++```
++
++This runs **`pgvector/pgvector:pg16`** on `127.0.0.1:5432` (user/db/password: `briefr` / `briefr` / `briefr`).
++
++**Port 5432 already in use?** Use the disposable test container on **:5433**:
++
++```bash
++./scripts/postgres-dev.sh start
++# prints DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr
++```
++
++**Already have Postgres elsewhere?** Skip compose; set `DATABASE_URL` to your server — see [`POSTGRES.md` § External Postgres](./postgres.md#external-postgres-no-bundled-container).
++
++### Step 2 — Link the app to the database
++
++Edit `backend/.env`:
++
++```bash
++DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr
++BRIEFR_REQUIRE_POSTGRES=1
++DATABASE_POOL_SIZE=10
++```
++
++Use port **5433** if you started `postgres-dev.sh` instead of compose.
++
++### Step 3 — Start backend and frontend
++
++```bash
++cd backend && source .venv/bin/activate
++uvicorn main:app --host 0.0.0.0 --port 8000 --reload
++```
++
++```bash
++cd frontend && npm run dev
++```
++
++On first backend start, **Alembic applies all migrations** (including `vector` extension and embeddings tables when the image supports it).
++
++### Step 4 — Verify database link
++
++```bash
++curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
++```
++
++| Check | Expected |
++|-------|----------|
++| `"backend"` | `"postgresql"` |
++| `"cve_count"` | number (ingest or seed script) |
++| pgvector (optional) | `psql "$DATABASE_URL" -c "SELECT extname FROM pg_extension WHERE extname='vector';"` → one row |
++
++### Step 5 — First-run setup and optional data
++
++1. Open http://localhost:5173 → create admin user
++2. Optional: `python scripts/seed_screenshot_data.py` (with `DATABASE_URL` set)
++3. Optional embeddings: `EMBEDDINGS_ENABLED=1` in `.env` (requires `pip install fastembed` and pgvector image above)
++
++### Step 6 — Optional feature flags (dev)
++
++| Variable | When to set |
++|----------|-------------|
++| `EMBEDDINGS_PGVECTOR` | `1` (default) — store vectors in Postgres when extension exists |
++| `SIGMAHQ_INDEX_SYNC_ENABLED` | `1` (default) — weekly SigmaHQ mirror; **first sync is manual**: Admin → Feed health → SigmaHQ → Sync |
++| `OTX_API_KEY` | Pulses / correlation (optional) |
++| `NVD_API_KEY` | Recommended for ingest rate limits |
++
++Full list: `backend/.env.example` and [README environment table](https://github.com/Soldier0x0/briefr/blob/main/README.md).
++
++---
++
++## 3. Production (Debian + systemd + nginx)
++
++**Use when:** installing BRIEFR on a server you operate.
++
++### Choose your production path
++
++| Environment | First install | Apply new release | Start / stop / restart |
++|-------------|---------------|-------------------|-------------------------|
++| **Production zone** (no outbound git; artifact/rsync) | `bash deploy/briefr-install.sh` | `bash deploy/briefr-deploy.sh` | `bash deploy/briefr-service.sh restart` |
++| **Internet-connected** (git pull OK) | `bash deploy/setup.sh` | `bash deploy/briefr-update.sh` *(legacy)* | `bash deploy/briefr-service.sh restart` |
++
++**Production zone workflow:** copy or extract the release to `/opt/briefr`, edit `backend/.env`, then `briefr-install.sh` once. Later releases: replace the tree (or rsync delta), then `briefr-deploy.sh`. Day-to-day restarts after `.env` changes: `briefr-service.sh` — no build, no git.
++
++### Prerequisites
++
++| Requirement | Notes |
++|-------------|-------|
++| Debian 11 / 12 / 13 (or compatible) | `deploy/setup.sh` targets Debian |
++| PostgreSQL **16** with **pgvector** | Production: Docker at `/opt/infra/postgres` with image `pgvector/pgvector:pg16` — see [`POSTGRES.md`](./postgres.md) |
++| DNS / TLS (optional) | nginx serves the app; many operators add Cloudflare Tunnel or reverse proxy |
++| API keys (recommended) | At minimum `NVD_API_KEY`; see `backend/.env.example` |
++
++### Step 1 — Provision PostgreSQL
++
++Postgres runs **outside** the BRIEFR git tree. Production layout:
++
++```bash
++cd /opt/infra/postgres
++docker compose up -d
++docker compose ps    # confirm healthy
++```
++
++Image must be **`pgvector/pgvector:pg16`** (plain `postgres:16` cannot run embeddings migrations).
++
++Create the database/user to match your DSN, or use the defaults from your infra compose file.
++
++Detail: [`POSTGRES.md` § Infrastructure](./postgres.md#infrastructure-optinfrapostgres) and [§ pgvector cutover](./postgres.md#pgvector-cutover-embeddings-e1).
++
++### Step 2 — Install the application
++
++**Production zone** (artifact already on disk at `/opt/briefr` — no `git pull`):
++
++```bash
++# As root — creates venv, .env template, builds frontend, systemd + nginx
++bash /opt/briefr/deploy/briefr-install.sh
++```
++
++**Internet-connected** (clone from GitHub):
+ 
+ ```bash
+ bash deploy/setup.sh
+-bash deploy/briefr-update.sh
+ ```
+ 
+-| Checklist | Setting |
+-|-----------|---------|
+-| Database | `DATABASE_URL=postgresql://...` |
+-| Require Postgres | `BRIEFR_REQUIRE_POSTGRES=1` |
+-| CORS | `ALLOWED_ORIGINS` = your public URL |
+-| Rate limits | `RATE_LIMIT_ENABLED=1` |
+-| Swagger off | `BRIEFR_ENV=production` |
+-| Static wallboard | optional `WALLBOARD_TOKEN` |
++`setup.sh` installs Python, clones to `/opt/briefr`, creates the venv, then runs `briefr-update.sh`.
++
++### Step 3 — Configure `backend/.env`
++
++On the server: `/opt/briefr/backend/.env`
++
++**Minimum production shape:**
++
++```bash
++DATABASE_URL=postgresql://briefr:YOUR_PASSWORD@127.0.0.1:5432/briefr
++BRIEFR_REQUIRE_POSTGRES=1
++JWT_SECRET=<openssl rand -hex 32>
++BRIEFR_ENV=production
++ALLOWED_ORIGINS=https://your-public-hostname.example
++RATE_LIMIT_ENABLED=1
++```
++
++| Variable | Purpose |
++|----------|---------|
++| `DATABASE_URL` | **Required** — TCP to Postgres |
++| `BRIEFR_REQUIRE_POSTGRES` | **Required** — refuse SQLite fallback |
++| `JWT_SECRET` | **Required** in production — session signing |
++| `ALLOWED_ORIGINS` | Your public URL (not `:5173`) |
++| `NVD_API_KEY` | Strongly recommended |
++| `EMBEDDINGS_ENABLED` | Optional semantic search (`fastembed` in venv) |
++| `EMBEDDINGS_PGVECTOR` | `1` when using pgvector image |
++| `GITHUB_TOKEN` | Optional — SigmaHQ sync + detection search rate limits |
++
++Template: `backend/.env.example` · encrypted admin secrets: [`OPERATIONS.md` § ADR-006](./operations.md).
++
++### Step 4 — Deploy / restart
++
++**New release** (production zone — local tree, no git):
++
++```bash
++bash /opt/briefr/deploy/briefr-deploy.sh
++```
++
++**New release** (internet-connected — git pull + rollback):
+ 
+-Optional edge: Cloudflare Tunnel + Zero Trust OTP. It is separate from BRIEFR's app login.
++```bash
++bash /opt/briefr/deploy/briefr-update.sh
++```
++
++**Restart only** (after `.env` or config change — no pip/build/migrate):
++
++```bash
++bash /opt/briefr/deploy/briefr-service.sh restart
++# or: start | stop | status | health
++```
++
++### Step 5 — Verify production install
+ 
+-Full ops detail: [`OPERATIONS.md`](./operations.md) · Postgres: [`POSTGRES.md`](./postgres.md)
++```bash
++curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
++systemctl status briefr-backend
++```
++
++| Check | Expected |
++|-------|----------|
++| `"backend"` | `"postgresql"` |
++| `briefr-backend` | `active (running)` |
++| Public URL | UI loads over nginx (not Vite) |
++| First visit | Setup wizard if no users exist |
++
++Post-deploy smoke (optional, needs seeded CVE data):
++
++```bash
++bash /opt/briefr/deploy/smoke-intel.sh
++```
++
++### Step 6 — Post-install operator tasks
++
++| Task | Where |
++|------|-------|
++| Create admin (if not done in UI) | First browser visit, or `POST /api/auth/setup` |
++| SigmaHQ rules (empty until synced) | Admin → Feed health → SigmaHQ → **Sync** |
++| Feed ingest | Automatic scheduler; or `POST /api/refresh` |
++| Backups | Automatic every 6h + pre-update; archives in `/var/lib/briefr/backups` |
++| Ongoing updates | `bash /opt/briefr/deploy/briefr-update.sh` |
++
++---
++
++## After install: verification checklist
++
++Use this table regardless of path:
++
++| What to check | Command / location | Good sign |
++|---------------|-------------------|-----------|
++| Backend up | `curl -s http://127.0.0.1:8000/api/health` | HTTP 200, JSON with `cve_count` |
++| Database backend | same JSON → `"backend"` | `"postgresql"` (prod/dev PG) or `"sqlite"` (§1 only) |
++| UI | Browser → app URL | Login or setup screen |
++| Migrations applied | Backend logs / restart once | No `relation "cves" does not exist` |
++| pgvector (if embeddings) | `psql "$DATABASE_URL" -c "\\dx vector"` | `vector` extension listed |
++| CVE data | health `cve_count` or FEED tab | &gt; 0 after ingest or seed script |
++| SigmaHQ (Detect tab) | Admin → Feed health | Row shows last sync after manual Sync |
++| Backups (production) | `ls /var/lib/briefr/backups` | `briefr-*.tar.gz` or `.age` archives |
++
++---
++
++## Where to look for what
++
++| I need… | Document | Path / command |
++|---------|----------|----------------|
++| Install steps (this page) | `docs/SELF_HOST.md` | You are here |
++| Postgres DSN, pgvector, backups, restore | `docs/POSTGRES.md` | `backend/.env` → `DATABASE_URL` |
++| Updates, smoke tests, scheduler, webhooks | `docs/OPERATIONS.md` | `/opt/briefr/deploy/briefr-update.sh` |
++| Symptom → fix | `docs/TROUBLESHOOTING.md` | — |
++| Developer workflow / tests | `docs/ONBOARDING.md` | `./scripts/verify-local.sh` |
++| API keys template | `backend/.env.example` | copy to `backend/.env` |
++| Compose Postgres (dev) | `deploy/docker-compose.postgres.yml` | `docker compose -f deploy/docker-compose.postgres.yml up -d` |
++| Disposable Postgres (CI / :5433) | `scripts/postgres-dev.sh` | `./scripts/postgres-dev.sh start` |
++| External Postgres env stub | `deploy/external-postgres.env.example` | — |
++| Production install script | `deploy/setup.sh` (git) or `deploy/briefr-install.sh` (artifact) |
++| Production deploy (local tree) | `deploy/briefr-deploy.sh` |
++| Production deploy (git pull) | `deploy/briefr-update.sh` |
++| Service control | `deploy/briefr-service.sh` | run once as root |
++| Health / logs (production) | `journalctl -u briefr-backend` | `deploy/check-backend.sh` |
+ 
+ ---
+ 
+@@ -74,7 +346,9 @@ bash /opt/briefr/deploy/briefr-update.sh
+ bash /opt/briefr/deploy/briefr-restore.sh --list
+ ```
+ 
+-Backups run every **6h** plus before each update. Archives are age-encrypted when `/var/lib/briefr/keys/backup-age.key` exists.
++Backups run every **6 hours** (in-app scheduler) plus before each update. Archives are age-encrypted when `/var/lib/briefr/keys/backup-age.key` exists.
++
++Restore detail: [README § Backups](https://github.com/Soldier0x0/briefr/blob/main/README.md) and [`POSTGRES.md` § Restore](./postgres.md#restore).
+ 
+ ---
+ 
+@@ -85,10 +359,12 @@ Do not copy every `.env.example` line blindly. Set the operating shape first:
+ | Variable | Purpose |
+ |----------|---------|
+ | `DATABASE_URL` | PostgreSQL DSN; required in production |
+-| `BRIEFR_REQUIRE_POSTGRES` | Refuse startup without Postgres |
+-| `PROCRASTINATE_ENABLED` | Durable Postgres-backed jobs panel / retryable work |
++| `BRIEFR_REQUIRE_POSTGRES` | Refuse startup without Postgres (`1` in production) |
++| `JWT_SECRET` | Session signing — **required** when `BRIEFR_ENV=production` |
+ | `EMBEDDINGS_ENABLED` | Local CPU semantic search / related-CVE similarity |
+ | `EMBEDDINGS_PGVECTOR` | Store embeddings in pgvector when Postgres has the extension |
++| `PROCRASTINATE_ENABLED` | Durable Postgres-backed jobs panel / retryable work |
++| `SIGMAHQ_INDEX_SYNC_ENABLED` | Weekly SigmaHQ mirror into `detection_rules*` |
+ | `BRIEFR_RATE_LIMIT_STORE` | Set `db` only if sharing buckets across workers |
+ | `RATE_LIMIT_ENABLED` | Inbound token buckets for IOC/refresh/login/wallboard |
+ | `NVD_API_KEY` | Recommended for ingest pacing |
+@@ -101,4 +377,4 @@ Full reference: `backend/.env.example` · API catalog: [`API_REFERENCE.md`](../a
+ 
+ ## Something wrong?
+ 
+-Read [TROUBLESHOOTING.md](../user-guide/troubleshooting.md).
++Read [`TROUBLESHOOTING.md`](../user-guide/troubleshooting.md) — symptom → fix table, no prerequisites.
+diff --git a/docs/api-reference.md b/docs/api-reference.md
+index 4e68741..84c27cc 100644
+--- a/docs/api-reference.md
++++ b/docs/api-reference.md
+@@ -1,6 +1,6 @@
+ ---
+ sidebar_label: API Reference
+-sidebar_position: 5
++sidebar_position: 61
+ ---
+ 
+ # BRIEFR API Reference
+@@ -507,7 +507,7 @@ Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404
+ - `400` — invalid CVE ID format
+ - `404` — CVE not found
+ 
+-**Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays.
++**Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays. **OTX:** `otx_pulses` loads from `feed_cache` (6h) → `otx_cve_pulses` (6h) → live OTX API. When upstream OTX is unavailable (HTTP 4xx/5xx, circuit open), the handler serves any-age stale `otx_cve_pulses` rows and does not overwrite the mirror with an empty list.
+ 
+ **Provenance (additive — added in V1.3):** `affected_products_source` is `""` for official CPE-derived (or unset) product lists and `"llm"` when `affected_products` was filled by the env-gated LLM product extraction job for an NVD-unanalyzed CVE. Official CPE data supersedes LLM output on the next NVD sync and clears the marker. The field also appears on items returned by `GET /api/cves` and `GET /api/cves/export`.
+ 
+@@ -1124,11 +1124,12 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
+   "sigma_rules": [],
+   "elastic_rules": [],
+   "has_community_rules": false,
+-  "generated_sigma": "...",
++  "generated_sigma": null,
+   "generated_sigma_meta": {
+     "briefr_basis": "cwe",
+     "status": "experimental",
+-    "compose_basis": "template_fallback"
++    "compose_basis": "community",
++    "suppressed": "community_primary"
+   },
+   "detection_context": null,
+   "siem_queries": { },
+@@ -1152,12 +1153,32 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
+       "primary_source": "none"
+     }
+   },
+-  "provenance": { }
++  "provenance": { },
++  "sigmahq_index": {
++    "rules_active": 0,
++    "synced_at": "",
++    "ok": false,
++    "commit_sha": ""
++  }
+ }
+ ```
+ 
+-Sigma/Elastic rules cached 24h. `generated_sigma` is always returned as a labeled supplement (D5). Additive `evidence` (DC-1) is the shared evidence pack. DC-2 emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact paths/keywords are injected into Sigma and SIEM queries; `generated_sigma_meta.compose_basis` is `community|nuclei_artifacts|yara|template_fallback`. No LLM.
+-
++Sigma community rules: **local SigmaHQ index first** (Postgres `detection_rules` /
++`detection_rule_cves`, CVE-exact only, DRL-1.1 fields `author` / `license` /
++`license_url` / `attribution` / `match_basis=cve_exact`). Index hits cache 1h.
++Live GitHub SigmaHQ search runs only when the index has zero active rows
++(then caches 24h; hits include `match_basis` `cve_exact` \| `cve_search` \|
++`technique_related`). Elastic search remains GitHub-backed. Additive
++`sigmahq_index` reports local index freshness so the UI can be honest when
++there is no CVE-exact hit vs never-synced/empty index. `generated_sigma` is
++**optional**: omitted (`null`) when community rules are present
++(`suppressed: community_primary`) or the BRIEFR template would be generic
++(`suppressed: generic_refused`); otherwise a class-mapped CWE/ATT&CK template
++may be returned. Additive `evidence` (DC-1) is the shared evidence pack. DC-2
++emits Sigma/SIEM/YARA from that pack via `emit_composed_detection` — artifact
++paths/keywords are injected into Sigma and SIEM queries;
++`generated_sigma_meta.compose_basis` is
++`community|sigmahq_index|nuclei_artifacts|yara|template_fallback`. No LLM.
+ ---
+ 
+ ## Forge (V1.3 MVP)
+@@ -1285,9 +1306,11 @@ is supplied. 400 on malformed CVE ID, 404 when the CVE is not in the database.
+ ```
+ 
+ Content is emitted via the detection composer (`include_community=False` — no
+-GitHub Sigma/Elastic search on this path). Artifact evidence injects into Sigma
+-and SIEM; `compose_basis` is `nuclei_artifacts|yara|template_fallback` (community
+-basis appears on Detect, not Forge generate).
++live GitHub Sigma/Elastic search on this path). When the local SigmaHQ index
++has a CVE-exact rule, that YAML is stored as `sigma_yaml` and
++`compose_basis` is `sigmahq_index`; otherwise artifact/template emit is used
++(`nuclei_artifacts|yara|template_fallback`). Artifact evidence injects into
++SIEM when present.
+ 
+ Pack priority is derived from the CVE: KEV → `critical`; CVSS ≥ 9.0 or
+ EPSS ≥ 0.5 → `high`; CVSS ≥ 7.0 or EPSS ≥ 0.1 → `medium`; else `low`.
+@@ -1706,6 +1729,9 @@ typed table/timeline/card layout instead of a plain list.
+   `cve_id`, `is_kev`, and the CVE's real `severity` (never synthesized). These rows
+   can't be closed by hand; they disappear when the underlying query stops matching.
+   `?stale=true` never includes them (only curated rows carry a `review_date`).
++  Risks responses also include additive `live_self_stack` stats:
++  `candidate_rows` (query candidates before score filter), `scored_matches` (rows scoring
++  55/100), `admitted` (rows returned after cap), and `cap` (`50`).
+ 
+ **TM-5 live enrichment:**
+ 
+@@ -1720,7 +1746,9 @@ typed table/timeline/card layout instead of a plain list.
+   `redact.mask_audit_log_target` — the same table and masking rule as the Admin Audit
+   Log view (`routers/admin/diagnostics.py::get_audit_log`), not a duplicate.
+ 
+-**Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...] }`
++**Response:** `{ "section": "...", "type": "...", "available_types": [...], "count": N, "items": [...], "live_self_stack": { "candidate_rows": 0, "scored_matches": 0, "admitted": 0, "cap": 50 } }`
++
++`live_self_stack` is present on `section_id=risks` only.
+ 
+ 404 when `section_id` isn't a manifest section.
+ 
+@@ -2125,6 +2153,19 @@ Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `l
+ ### GET /api/admin/ai/operations/activity
+ Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. Each row includes `input_tokens`/`output_tokens`/`total_tokens` (null for providers that don't report usage). No prompt text.
+ 
++### GET /api/admin/ai/operations/{operation_id}/payload
++Returns the stored failure payload for a recorded LLM attempt (Program E Task 2): `{operation_id, messages, response_excerpt, task_class, provider, model, created_at}`. `messages` is the redacted parsed message array from `ai_operation_payloads.messages_json`. `404` when no payload row exists for the operation id.
++
++### POST /api/admin/ai/operations/{operation_id}/retry
++Manual replay of a stored failure payload through the normal LLM router/recording path. Optional JSON body: `{force?: boolean}` (`false` default).
++
++Response: `{replay_operation_id, success, provider, model, error_class}` from the newly recorded replay row in `ai_operations`.
++
++Behavior:
++- Replays use `context_type="replay"` and `context_id=<original operation_id>` for traceability in Activity.
++- If the original payload provider circuit is open and `force` is not true, returns `409` with operator guidance (`force=true` bypass).
++- Records audit action `ai.operations.retry` (target = original `operation_id`) with replay metadata.
++
+ ### POST /api/admin/config/webhook-test
+ Body `{destination_id}` or legacy `{channel}` (`discord` / `telegram` / `generic`). Sends a test message via the SSRF-safe webhook client. **Works on disabled destinations** (connectivity check before enable). Audit: `webhook.test.{destination_id}`.
+ 
+@@ -2179,6 +2220,14 @@ next scheduled or triggered EPSS sync re-parses and applies scores even if the
+ remote FIRST CSV.GZ bytes are unchanged. Admin session required.
+ Returns `{ok, cleared, message}`.
+ 
++### `POST /api/admin/feeds/sigmahq/force-resync`
++
++Clears SigmaHQ archive identity (`sync_state.sigmahq_archive_identity`) **and**
++spawns `run_sigmahq_index_sync(force=True)` once. Unlike EPSS force-resync
++(clear-only), operators do not need a second Scheduler click. Returns 400 when
++`SIGMAHQ_INDEX_SYNC_ENABLED=0`. Admin session required.
++Returns `{ok, cleared, started, message}`.
++
+ **All other admin endpoints** (`GET/DELETE /api/admin/watchlist*`, `GET/DELETE /api/admin/ioc-cache*`, `GET/DELETE /api/admin/hunt-packs*`, `GET/POST /api/admin/config`, `POST /api/admin/config/webhook-test`, `GET/POST /api/admin/scheduler/*`, `GET/POST /api/admin/feeds/*`, `POST /api/admin/backups/*`, `GET /api/admin/backups`) remain as documented in V1.3; scheduler jobs now include `status` field (ACTIVE/PAUSED/LOCKED/DISABLED), `last_error_message`, and `run_history` (array of last 5 runs).
+ 
+ ---
+diff --git a/docs/developer-guide/_category_.json b/docs/developer-guide/_category_.json
+index b2251c3..e4ab6da 100644
+--- a/docs/developer-guide/_category_.json
++++ b/docs/developer-guide/_category_.json
+@@ -1,5 +1,5 @@
+ {
+   "label": "Developer Guide",
+-  "position": 3,
++  "position": 5,
+   "collapsed": false
+ }
+diff --git a/docs/developer-guide/index.md b/docs/developer-guide/index.md
+index ff7c77d..67d5585 100644
+--- a/docs/developer-guide/index.md
++++ b/docs/developer-guide/index.md
+@@ -6,7 +6,7 @@ description: Architecture, conventions, and contributor onboarding for extending
+ # Developer Guide
+ 
+ For contributors. BRIEFR is a FastAPI backend with a React 19 + Vite
+-frontend, PostgreSQL-native in production, licensed AGPL-3.0-or-later.
++frontend, PostgreSQL-native in production, licensed BUSL-1.1.
+ 
+ | Chapter | What it covers |
+ | --- | --- |
+diff --git a/docs/developer-guide/onboarding.md b/docs/developer-guide/onboarding.md
+index be5e7e0..f14c829 100644
+--- a/docs/developer-guide/onboarding.md
++++ b/docs/developer-guide/onboarding.md
+@@ -6,7 +6,13 @@ sidebar_position: 2
+ # BRIEFR Contributor Onboarding
+ 
+ 
+-**Purpose:** Entry point for developers changing the code. If you only want to **use** or **self-host** BRIEFR, start at [`index.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/index.md) instead.
++**Purpose:** Entry point for developers changing the code.
++
++| If you want to… | Start here |
++|-----------------|------------|
++| **Install** BRIEFR (any path) | [`SELF_HOST.md`](../admin-guide/self-host.md) — authoritative step-by-step |
++| **Use** or **self-host** without changing code | [`index.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/index.md) → SELF_HOST or USE |
++| **Change the code** | Continue below |
+ 
+ ---
+ 
+@@ -31,6 +37,8 @@ sidebar_position: 2
+ 
+ ## 2. Local development
+ 
++**Install paths (SQLite vs Postgres+pgvector vs production):** [`SELF_HOST.md`](../admin-guide/self-host.md). This section assumes you are developing against the repo.
++
+ ### Prerequisites
+ 
+ - Python 3.11+
+@@ -50,7 +58,7 @@ cp .env.example .env    # add keys as needed
+ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+ ```
+ 
+-- PostgreSQL via `DATABASE_URL` in `backend/.env` (local: `docker compose -f deploy/docker-compose.postgres.yml up -d` on **:5432**, or disposable `./scripts/postgres-dev.sh start` on **:5433** for dual-DB pytest — see `docs/POSTGRES.md`)
++- PostgreSQL via `DATABASE_URL` in `backend/.env` — full steps: [`SELF_HOST.md` §2](../admin-guide/self-host.md#2-local-development-with-postgresql--pgvector) (`docker compose -f deploy/docker-compose.postgres.yml up -d` on **:5432**, or disposable `./scripts/postgres-dev.sh start` on **:5433** — see `docs/POSTGRES.md`)
+ - Interactive API docs: http://localhost:8000/api/docs
+ - Health check: http://localhost:8000/api/health
+ 
+@@ -166,7 +174,7 @@ All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebra
+ 
+ | Variable | Default | Purpose |
+ |----------|---------|---------|
+-| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit **or** set empty (`DATABASE_URL=""`) for zero-config local SQLite. If `.env` has a placeholder Postgres DSN and nothing listens on `:5432`, startup fails with `ConnectionRefusedError` — clear the URL and set `BRIEFR_REQUIRE_POSTGRES=0` (cloud/bare VM; see `AGENTS.md`) |
++| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit **or** set empty (`DATABASE_URL=""`) for zero-config local SQLite. If `.env` has a placeholder Postgres DSN and nothing listens on `:5432`, startup fails with `ConnectionRefusedError` — clear the URL and set `BRIEFR_REQUIRE_POSTGRES=0` (cloud/bare VM; see [Contributor onboarding](/docs/developer-guide/onboarding)) |
+ | `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production). Use `0` with empty `DATABASE_URL` for SQLite-only cloud/dev boxes without Docker |
+ | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
+ | `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | `60` | SQL statement timeout only — not feed HTTP; see [POSTGRES.md](../admin-guide/postgres.md) |
+@@ -217,7 +225,7 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
+ | `MITRE_REFRESH_HOUR` / `MITRE_REFRESH_MINUTE` | `2` / `0` | Weekly MITRE + ATLAS (Sunday) |
+ | `CORRELATION_HOUR` / `CORRELATION_TIMEZONE` | `1` / `Asia/Kolkata` | Nightly correlation engine |
+ | `OTX_CORRELATION_HOUR` / `OTX_CORRELATION_TIMEZONE` | `2` / `Asia/Kolkata` | OTX nightly job (skipped if no `OTX_API_KEY`) |
+-| `CACHE_REFRESH_HOUR` / `CACHE_REFRESH_MINUTE` | `6` / `0` | Feed cache maintenance |
++| `CACHE_REFRESH_HOUR` / `CACHE_REFRESH_MINUTE` | `6` / `0` | Unused — no scheduler job; kept for env compatibility |
+ 
+ ### Ingest tuning
+ 
+@@ -272,12 +280,17 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
+ 
+ ## 5. Production deploy (overview)
+ 
++**Full production install checklist:** [`SELF_HOST.md` §3](../admin-guide/self-host.md#3-production-debian--systemd--nginx). This section is a developer-oriented summary; operators should use SELF_HOST + OPERATIONS.
++
+ BRIEFR targets a single Debian server with **systemd + nginx**. Install path: `/opt/briefr`.
+ 
+ | Script | Purpose |
+ |--------|---------|
+-| [`deploy/setup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/setup.sh) | Initial install: Python, clone repo, venv, then production deploy |
+-| [`deploy/briefr-update.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-update.sh) | Pull, build frontend, restart backend + nginx |
++| [`deploy/setup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/setup.sh) | Initial install (git clone) + production deploy |
++| [`deploy/briefr-install.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-install.sh) | First install from local artifact (production zone, no git) |
++| [`deploy/briefr-deploy.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-deploy.sh) | Apply release from local tree (pip, migrate, build, restart) |
++| [`deploy/briefr-service.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-service.sh) | Start / stop / restart / status / health (no build) |
++| [`deploy/briefr-update.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-update.sh) | Pull `main`, build frontend, restart (git + rollback) |
+ | [`deploy/briefr-backup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-backup.sh) | Manual or scheduled PostgreSQL backup (`pg_dump`) |
+ | [`deploy/briefr-pg-backup.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-pg-backup.sh) | systemd entry point (`briefr-pg-backup.timer`) |
+ | [`deploy/briefr-restore.sh`](https://github.com/Soldier0x0/briefr/blob/main/deploy/briefr-restore.sh) | List or restore archives |
+@@ -307,7 +320,8 @@ See [README.md § Backups and restore](https://github.com/Soldier0x0/briefr/blob
+ | Incidents & News tab | `backend/feeds/case_study_feed.py`, `incident_news.py`, `CaseStudies.jsx` |
+ | Risk score | `backend/scoring/risk.py`, `backend/scoring/asset_match.py`, `POST /api/cves/{id}/risk`; UI in `frontend/src/scoring/riskScore.js` |
+ | Correlation | `backend/correlation/engine.py` |
+-| Detection rules | `backend/detection/` |
++| Detection rules | `backend/detection/` (`sigmahq_index.py`, `rule_sources.py`, `composer.py`) |
++| SigmaHQ local index | `backend/detection/sigmahq_index.py`, scheduler `sigmahq_index_sync`, Admin Feed health |
+ | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
+ | Database schema / SQL adaptation | `backend/database.py` (`init_db`), `backend/db/pg_adapt.py` (legacy SQLite-shaped SQL adapted at the Postgres connection boundary), [`archive/snapshots/TECHNICAL_INVENTORY.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
+ | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
+@@ -327,7 +341,8 @@ See [README.md § Backups and restore](https://github.com/Soldier0x0/briefr/blob
+ | IOC lookup returns empty VT/AbuseIPDB | Missing API keys | Add keys to `.env`; restart backend |
+ | CORS errors in browser | Origin not allowed | Add your URL to `ALLOWED_ORIGINS` |
+ | GreyNoise always empty | No key or weekly quota exhausted | Set `GREYNOISE_API_KEY`; opt in per lookup |
+-| OTX pulses missing | No `OTX_API_KEY` | Key required for nightly correlation and pulse data |
++| OTX pulses missing | No `OTX_API_KEY` or upstream OTX outage | Key required for live refresh; cached `otx_cve_pulses` served on 5xx when present. Post-deploy smoke may fail during OTX outages — retry `deploy/smoke-intel.sh` or use `BRIEFR_STRICT_SMOKE=0` |
++| Detect shows no Sigma rules | SigmaHQ index never synced | Admin → Feed health → SigmaHQ → Sync (Alembic `035` creates empty tables only) |
+ | RSS shows contest/promo headlines | Editorial filter gap | Add pattern to `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py` |
+ | `pytest` import errors | Wrong working directory | Run from `backend/` (tests prepend parent to `sys.path`) |
+ | Frontend `/api` 404 in dev | Backend not running | Start uvicorn on `:8000` before `npm run dev` |
+diff --git a/docs/developer-guide/system-design.md b/docs/developer-guide/system-design.md
+index 8c9948e..3730170 100644
+--- a/docs/developer-guide/system-design.md
++++ b/docs/developer-guide/system-design.md
+@@ -7,8 +7,8 @@ sidebar_position: 1
+ 
+ 
+ **Version:** 1.5
+-**Last updated:** 2026-07-21
+-**Source of truth:** `/workspace` codebase and [`docs/PRODUCT_STATUS.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/PRODUCT_STATUS.md). Archive snapshots are historical context only.
++**Last updated:** 2026-07-22
++**Source of truth:** the BRIEFR repository on GitHub and [`docs/PRODUCT_STATUS.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/PRODUCT_STATUS.md). Archive snapshots are historical context only.
+ 
+ ---
+ 
+@@ -40,18 +40,19 @@ Feed Ingestion  →  PostgreSQL  →  FastAPI API  →  React UI
+ │ NVD API      │ CISA KEV     │ EPSS CSV     │ MITRE STIX   │ ATLAS YAML     │
+ │ Sploitus     │ GreyNoise    │ VirusTotal   │ AbuseIPDB    │ OTX            │
+ │ OSV.dev      │ CIRCL        │ MalwareBazaar│ URLhaus      │ Groq/Cerebras/ │
+-│ VulnCheck    │ ThreatFox    │              │              │ OpenRtr/Gemini │
++│ VulnCheck    │ ThreatFox    │ SigmaHQ      │              │ OpenRtr/Gemini │
+ │ GitHub API   │ RSS x5       │ NVD CPE API  │              │                │
+ └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┴────────┬───────┘
+        │              │              │              │                │
+        ▼              ▼              ▼              ▼                ▼
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+-│ APScheduler (scheduler.py) — 26 normal jobs + 3 registration-gated optional jobs │
++│ APScheduler (scheduler.py) — 27 normal jobs + 4 registration-gated optional jobs │
+ ├─────────────────────────────────────────────────────────────────────────────┤
+ │ Ingest: nvd_incremental_sync, kev_metadata_sync, epss_score_sync,           │
+ │ weekly_mitre_refresh, vulnrichment_snapshot_sync, cvelistv5_incremental_sync│
+ │ Intel: otx_nightly_correlation, otx_continuous_sync*, threatfox_sync,       │
+-│ vulncheck_kev_sync, ioc_retro_match, exploit_sources_sync*                  │
++│ vulncheck_kev_sync, ioc_retro_match, exploit_sources_sync*,                 │
++│ sigmahq_index_sync*                                                         │
+ │ Detection/retrieval: nightly_correlation, embeddings_backfill,              │
+ │ detection_context_sync, detection_context_llm*, kev_backlog_reconcile       │
+ │ Product/stack: llm_product_extraction, catchup_tick, cpe_catalog_sync       │
+@@ -96,6 +97,8 @@ Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](https://git
+ | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
+ | `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
+ | `otx_*` | CVE detail, correlation, IOC lookup | DetailDrawer Intel tab, IOCLookup |
++| `detection_rules`, `detection_rule_cves`, `detection_rule_techniques` | `GET /api/cves/{id}/detection`, Forge generate | DetailDrawer Detect tab, Forge hunt packs |
++| `ai_operation_payloads` | `GET /api/admin/ai/operations/{id}/payload`, replay | Admin AI Operations |
+ | `feed_cache`, `ioc_cache` | Internal — snapshot/TTL cache; `GET /api/usage/ioc` for IOC usage aggregate | Transparent to UI except IOC quota display |
+ | `correlation_*` | `GET /api/cves/{id}/correlation`, drawer bundle, `GET /api/correlation/clusters` | DetailDrawer correlation section, Forge campaigns, wallboard |
+ | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
+@@ -231,7 +234,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](https://github.com/Sol
+    - `GET /api/cves/{id}/related` — only when **Related** tab active
+    - `GET /api/cves/{id}/detection` — only when **Detect** tab first opened
+    - `GET /api/cves/{id}/greynoise-scans` — only when the GreyNoise action is triggered
+-5. **OTX pulse IOCs:** loaded via CVE detail `otx_pulses`; pulse IOC drill-down uses `GET /api/otx/pulses/{id}/iocs`.
++5. **OTX pulse IOCs:** loaded via CVE detail `otx_pulses`; pulse IOC drill-down uses `GET /api/otx/pulses/{id}/iocs`. Cache order: `feed_cache` (6h) → `otx_cve_pulses` (6h) → live OTX API. When the upstream returns HTTP 4xx/5xx or the circuit is open, `fetch_cve_pulses` returns `None` and `load_otx_pulses_for_cve` serves **any-age** stale rows from `otx_cve_pulses` without overwriting the mirror — transient OTX outages must not wipe cached pulses.
+ 
+ **ATLAS wiring:** `GET /api/cves/{id}` returns `has_ai_context`, `atlas_techniques`, and `atlas_case_studies` via `database.get_atlas_techniques_for_cve` / `get_atlas_case_studies_for_cve` for `DrawerAtlasSection.jsx`.
+ 
+@@ -319,8 +322,11 @@ Flowchart: [`docs/diagrams/startup.mermaid`](https://github.com/Soldier0x0/brief
+    the template library, derives priority from KEV/CVSS/EPSS, and upserts into
+    `hunt_packs` (`UNIQUE(technique_id, cve_id)` — idempotent regeneration).
+    The UI refetches coverage so the technique flips to `yours`.
+-5. **Boundary:** community-rule *search* (SigmaHQ/Elastic over GitHub) stays on
+-   `GET /api/cves/{cve_id}/detection` (drawer Detect tab). **V1.5 rule proof
++5. **Boundary:** SigmaHQ community rules are mirrored into Postgres by
++   `sigmahq_index_sync` and served CVE-exact from the local index on Detect
++   (`find_sigma_rules`) and Forge generate (index YAML when present). Live
++   GitHub Sigma search is fallback only when the index is empty; Elastic
++   search remains GitHub-backed on Detect. **V1.5 rule proof
+    bench** (`POST /api/proof/run`, Forge hunt pack panel) validates saved Sigma
+    rules against pasted log lines — file-based, no live SIEM. **V1.5 KEV detection
+    backlog** (`GET /api/detection-backlog`, Forge Backlog tab) surfaces stack-matched
+@@ -388,7 +394,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](https://github.com/Soldier0x0/brief
+      rail section) — both additive, no schema change.
+    - **KEV backlog notifications:** `detection/backlog.py`'s
+      `process_new_kev_backlog` / `reconcile_kev_backlog` (both scheduler-only
+-     — CLAUDE.md danger zone 6, never on the request path) call
++     — heavy work never runs on the request path) call
+      `notifications/emit.py::emit_kev_backlog_notification` for each newly
+      created backlog row, one `user_notifications` insert per active analyst
+      (`entity_type="kev_backlog"`, `dedupe_key=f"kev_backlog:{cve_id}:
+@@ -420,6 +426,15 @@ Signed-in users keep their pinned CVEs in `watchlist`; legacy snooze data is cle
+ 4. **UI:** `useWatchlist` hook loads pins on mount and clears legacy snoozes via `DELETE /api/watchlist/snoozes`. Pin on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip. Mutations bump a version counter so `CVEFeed` refetches without a full page reload. No `localStorage`. Snooze controls were removed from the UI (API retained for migration).
+ 5. **Monitor alerts:** `watchlist_monitor_alerts` checks pinned CVEs hourly for KEV / EPSS / PoC changes and emits optional `watchlist_alert` webhooks.
+ 
++### G1. SigmaHQ local detection index (2026-07)
++
++1. **Scheduler:** `sigmahq_index_sync` (default enabled, interval `SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS` = 168). Registered in `scheduler.py`; manual Run now via Admin Scheduler; Force re-sync via `POST /api/admin/feeds/sigmahq/force-resync` clears watermark **and** spawns one forced apply.
++2. **Ingest path:** `detection/sigmahq_index.py` resolves tip commit on `SigmaHQ/sigma`, downloads one codeload tarball, parses YAML, batch-upserts into Postgres `detection_rules` + link tables (`detection_rule_cves`, `detection_rule_techniques`). Soft-retires paths missing from the archive. Watermark `sync_state.sigmahq_archive_identity` stores `{commit_sha, sha256, synced_at}` — skip when unchanged.
++3. **Schema:** Alembic `035_detection_rules_sigmahq` (Postgres-only). Column `"references"` is quoted (reserved word). CI scans all migrations for unquoted reserved column names (`test_alembic_revisions.py`).
++4. **Read path:** `find_index_rules_for_cve` / `find_sigma_rules` serve CVE-exact YAML from the local index on `GET /api/cves/{id}/detection` and Forge generate (`compose_basis: sigmahq_index`). Live GitHub Sigma search in `detection/rule_sources.py` is fallback **only when the index is empty**; Elastic community search remains GitHub-backed.
++5. **UI honesty:** Detect tab shows DRL-1.1 attribution (author, license, Show YAML). Empty copy distinguishes never-synced index, empty index (0 rules), and no CVE-exact match. Admin Feed Health + Needs Attention flag empty/stale (>14d) index.
++6. **First deploy:** Alembic creates empty tables — operator must run Sync once (Feed health or Scheduler) before `rules_active` > 0.
++
+ ### H. Security posture — corpus + Admin shell + live sections (TM-0→TM-6)
+ 
+ 1. **Corpus (TM-1, extended TM-3/TM-4/TM-5):** `backend/security_architecture/corpus/` — versioned YAML, `origin: generated | curated | live` per record. Generated files (`components.yaml`, `api_inventory.yaml`, `scheduler_jobs.yaml`, `db_tables.yaml`, `self_stack.yaml`, and TM-4's `graphs/architecture.json`) are emitted by `scripts/generate_security_corpus.py` from live route/scheduler/schema/dependency-manifest introspection and drift-tested in CI (`test_security_architecture_corpus.py::test_committed_corpus_has_no_drift`, plus TM-4's `test_committed_architecture_graph_has_no_drift`). `self_stack.yaml` (TM-3, spec §4.5) holds one record per dependency term parsed from `backend/requirements.txt` and `frontend/package.json`, plus declared runtime components (`postgresql`, `nginx`) — a new dependency changes this file and fails the drift check until regenerated. `graphs/architecture.json` (TM-4) holds nodes for every component/job/table already in the other generated files (no parallel node list to hand-sync — a corpus test asserts the node id set equals that union exactly) plus `component -> table` `references_table` edges, derived by regexing each router source file for table names appearing directly after a SQL keyword (`FROM`/`JOIN`/`INTO`/`UPDATE`/`DELETE FROM`) — anchored to real SQL syntax so a table named e.g. `users` can't spuriously match an unrelated identifier or comment elsewhere in the file. No x/y layout ships in this file: presentation isn't a code fact, so it doesn't belong in a drift-checked generated artifact — `ArchitectureGraphSection.jsx` computes a deterministic cluster+index grid layout at render time. Curated files: `controls.yaml` got its first real security-review seed in TM-3 (10 controls); TM-4 seeded `trust_boundaries.yaml` with its first 2 real boundaries (Browser→API→Database, BRIEFR→external services), each linking `related_ids` to real generated component/table ids and TM-3's curated controls. TM-5 seeded `security_decisions.yaml` (2 records mapping the two real ADRs in `docs/decisions/` — `decision`/`alternatives`/`tradeoffs`/`consequences` drawn directly from each ADR's own sections, not invented), `abuse_cases.yaml` (6 entries, each `current_protection` field citing real code as evidence — webhook SSRF, webhook replay, rate-limit bypass, SQL injection, log secret leakage, plus one honestly-open `broken-authorization-single-tier-session` finding with no mitigating control), and `reviews.yaml` (3 curated review-pass records documenting the program's own TM-3/TM-4/TM-5 security-review passes). `risks.yaml` stays intentionally empty — no real risk-register judgment pass has happened; the Risk Register's only non-empty content is `live` self-stack rows. `corpus_loader.py` validates required fields, `origin`, and cross-file `related_ids` at load time (mtime-cached); `security_architecture/graphs.py` separately loads/caches `graphs/architecture.json` (JSON, not YAML — different schema shape, not an entity-record list). `live` rows (self-stack risk-register entries, and TM-5's `reviews` section audit-log events) are never stored in a file — computed at read time by `security_architecture/merge.py` and merged into `/section/{risks,reviews}` responses.
+@@ -464,6 +479,7 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 5× RSS,
+ - **NVD exception:** keeps its bespoke 429/key-rejection retry logic but uses the pooled client and reports into the same health registry.
+ - **Quota-billed sources** (VirusTotal, AbuseIPDB, GreyNoise) use `retries=0` — a failed call is never retried automatically, so quota cannot be burned by the retry loop. Circuit breakers still apply.
+ - **CIRCL negative caching:** failed/missing lookups are cached for 24h (`circl_miss:*` keys) so a rate-limited upstream is not re-hammered with the same IDs on every sync cycle.
++- **OTX pulse stale fallback:** when `fetch_cve_pulses` cannot reach OTX (HTTP 4xx/5xx, circuit open, quota exhausted), `load_otx_pulses_for_cve` returns any-age rows from `otx_cve_pulses` and does **not** call `store_otx_cve_pulses` with an empty list — upstream outages must not delete mirrored pulses.
+ - **SQL vs source I/O:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` (default 60) is an asyncpg **SQL statement** budget only. Feed/API HTTP timeouts stay per-source in `feeds/` (CIRCL ~25s, Sploitus ~30s, ThreatFox ~120s, …). Scheduler paths commit or close before outbound source I/O (`db/txn_boundaries.commit_before_source_io`) so slow CIRCL/Sploitus cannot hold `cves` locks and burn concurrent writers (VulnCheck/KEV/EPSS) into `Database command timeout`. Do not raise the global SQL timeout to paper over slow APIs.
+ 
+ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
+@@ -523,7 +539,7 @@ delivery means each durable task must be idempotent; the table records the guara
+ 
+ | System | Owner / entrypoint | Jobs | Idempotency mechanism |
+ |--------|--------------------|------|-----------------------|
+-| **APScheduler** (in-process) | `scheduler.py:start_scheduler`; gated by `BRIEFR_SCHEDULER_ENABLED` (single owner across replicas) | 26 normal recurring jobs in non-smoke startup + 3 registration-gated optional jobs (`otx_continuous_sync`, `exploit_sources_sync`, `detection_context_llm`). `llm_product_extraction` becomes an enqueue tick when Procrastinate is enabled. | `max_instances=1` + `coalesce=True` per job; per-job `asyncio.Lock` (`scheduler_locks._LOCKS`); manual `/api/refresh*` shares the same locks |
++| **APScheduler** (in-process) | `scheduler.py:start_scheduler`; gated by `BRIEFR_SCHEDULER_ENABLED` (single owner across replicas) | 27 normal recurring jobs in non-smoke startup + 4 registration-gated optional jobs (`otx_continuous_sync`, `exploit_sources_sync`, `detection_context_llm`, `sigmahq_index_sync`). `llm_product_extraction` becomes an enqueue tick when Procrastinate is enabled. | `max_instances=1` + `coalesce=True` per job; per-job `asyncio.Lock` (`scheduler_locks._LOCKS`); manual `/api/refresh*` shares the same locks |
+ | **Procrastinate** (durable queue) | `jobs/app.py` + `jobs/worker.py:start_inprocess_worker`; gated by `PROCRASTINATE_ENABLED`, Postgres-only | `jobs:health_ping`, `jobs:stack_backfill`, `jobs:llm_product_extraction` (`jobs/tasks.py`) | `stack_backfill`: per-run `queueing_lock` on defer (IDEM-B) + atomic `claim_run_running` run gate (IDEM-A); NVD rate-limit deferrals self-schedule the same task 180s later when the durable app is available. `llm_product_extraction`: singleton `queueing_lock` on scheduler defer/retry/manual Run + pool-scoped extraction (`db=None`) + bounded retry delays for retryable timeouts |
+ 
+ Because `claim_run_running` (IDEM-A) makes stack-backfill execution exactly-once regardless of
+@@ -586,15 +602,16 @@ row here with their idempotency key before merge.
+ | GreyNoise | `feeds/extended.py`, IOC | IP classification | `GREYNOISE_API_KEY` | 50/week | `[]` or unknown record |
+ | VirusTotal | `enrichment/ioc.py` | IP/hash/domain reputation | `VIRUSTOTAL_API_KEY` | 500/day | Empty VT fields |
+ | AbuseIPDB | `enrichment/ioc.py` | IP abuse score | `ABUSEIPDB_API_KEY` | 1000/day | Skipped if no key |
+-| OTX | `feeds/otx.py` | Pulses, IOCs | `OTX_API_KEY` | 10k/month | `[]`; nightly skipped if unset |
++| OTX | `feeds/otx.py` | Pulses, IOCs | `OTX_API_KEY` | 10k/month | `[]` on detail when unset; upstream 5xx serves stale `otx_cve_pulses` when present; nightly skipped if unset |
++| SigmaHQ | `detection/sigmahq_index.py`, scheduler `sigmahq_index_sync` | Local Sigma rule mirror (CVE-exact, DRL-1.1) | — (optional `GITHUB_TOKEN` for rate limits) | Unrestricted tarball | Empty index until first sync; Detect/Forge fall back to GitHub Sigma search only when index empty |
+ | OSV.dev | `feeds/osv.py` | Package affected versions | — | Unrestricted | `[]` |
+ | CIRCL (vulnerability.circl.lu) | `feeds/extended.py` | Extra refs, CAPEC (CVE 5.x records) | `CIRCL_API_KEY` optional (`X-API-KEY`) | Rate-limited; 7d hit cache + 24h negative cache | No merge |
+ | MalwareBazaar | `feeds/extended.py` | Hash metadata | `ABUSECH_AUTH_KEY` | Fair use | `None` |
+ | URLhaus | `feeds/extended.py` | Domain malware URLs | `ABUSECH_AUTH_KEY` | Fair use | `None` |
+ | ThreatFox | `feeds/threatfox.py`, scheduler | IOC mirror for retro-match | `ABUSECH_AUTH_KEY` | Fair use | Skip sync; prior rows retained |
+ | VulnCheck KEV | `feeds/vulncheck_kev.py`, scheduler | Exploited-in-the-wild tier | `VULNCHECK_API_KEY` | API key required | Job no-op; flags unchanged |
+-| Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
+-| GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
++| Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts; Program E Task 2 adds admin replay flows backed by stored failure payloads (`GET /api/admin/ai/operations/{operation_id}/payload`, `POST .../{operation_id}/retry`) with replay provenance (`context_type="replay"`, `context_id=<original operation_id>`) and circuit-open guard (`409` unless `force=true`) | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
++| GitHub | `detection/rule_sources.py`, `detection/sigmahq_index.py` | Sigma/Elastic rule search; SigmaHQ tarball tip resolve | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules; SigmaHQ index preferred over live search when populated |
+ | RSS (5 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
+ | CISA Vulnrichment | `feeds/vulnrichment.py` | CISA ADP CVSS / CWE / CPE gap-fill | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; skip run |
+ | cvelistV5 | `feeds/cvelistv5.py` | CVE JSON 5.x + ADP (pre-NVD) | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; watermark retained |
+@@ -630,7 +647,7 @@ GitHub Actions job **`playwright-smoke`** in `.github/workflows/backend-tests.ym
+ 
+ ## 8. Current roadmap references
+ 
+-Near-future engineering and product intent lives in [`docs/planning/SPRINT_2026-07.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/planning/SPRINT_2026-07.md), [`docs/planning/BACKLOG.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/planning/BACKLOG.md), and active specs under [`docs/planning/specs/`](https://github.com/Soldier0x0/briefr/tree/main/docs/planning/specs/). Historical beta docs remain in `docs/archive/` and are not current system truth.
++Product direction and shipped scope are summarized in the [public roadmap](/docs/roadmap) and [release notes](/docs/release-notes).
+ 
+ ---
+ 
+diff --git a/docs/faq.md b/docs/faq.md
+index 2a6a42c..2da4903 100644
+--- a/docs/faq.md
++++ b/docs/faq.md
+@@ -1,5 +1,5 @@
+ ---
+-sidebar_position: 9
++sidebar_position: 65
+ sidebar_label: FAQ
+ description: Short answers on licensing, requirements, data ownership, and scope.
+ ---
+@@ -14,9 +14,12 @@ and helps you ship detections.
+ 
+ ### What's the license?
+ 
+-AGPL-3.0-or-later. You can run it, modify it, and redistribute it; if you
+-offer a modified BRIEFR as a network service, you must publish your
+-modifications under the same license.
++**Business Source License 1.1 (BUSL-1.1).** You can self-host, modify, and use
++BRIEFR free of charge for personal and non-commercial purposes. Commercial use
++by a for-profit organization requires a one-time commercial license from the
++licensor. Source becomes available under Apache 2.0 after the change date
++defined in the license. Full text:
++[LICENSE](https://github.com/Soldier0x0/briefr/blob/main/LICENSE).
+ 
+ ### What do I need to run it?
+ 
+@@ -42,6 +45,14 @@ Yes, for syncing CVE feeds and enrichment providers. The sync jobs run on a
+ scheduler in the background — the UI itself doesn't block on upstream
+ services.
+ 
++### How do I update a production install?
++
++Use the deploy scripts shipped with your release — not a daily `git pull`
++workflow. Production zones stage a release at `/opt/briefr`, then run
++`briefr-deploy.sh`. Day-to-day restarts after `.env` changes use
++`briefr-service.sh restart`. See [Operations](/docs/admin-guide/operations)
++and [Self-host BRIEFR](/docs/admin-guide/self-host).
++
+ ### How do I report a security issue?
+ 
+ Privately, via
+diff --git a/docs/how-briefr-works/_category_.json b/docs/how-briefr-works/_category_.json
+index 95cd723..c4daf9d 100644
+--- a/docs/how-briefr-works/_category_.json
++++ b/docs/how-briefr-works/_category_.json
+@@ -1,6 +1,6 @@
+ {
+   "label": "How BRIEFR Works — and Why",
+-  "position": 3,
++  "position": 4,
+   "collapsed": false,
+   "link": {"type": "doc", "id": "how-briefr-works/index"}
+ }
+diff --git a/docs/how-briefr-works/index.mdx b/docs/how-briefr-works/index.mdx
+index e210e12..afc0329 100644
+--- a/docs/how-briefr-works/index.mdx
++++ b/docs/how-briefr-works/index.mdx
+@@ -21,7 +21,7 @@ textbook.
+ | **How it's built** | System design as BRIEFR implements it, with notes on how larger orgs differ | [Ingestion and scheduler](/docs/how-briefr-works/how-its-built/ingestion-scheduler) |
+ | **System Design** | Classic SD curriculum grounded in BRIEFR — honest gap units where the product omits a topic | [System Design pathway](/docs/how-briefr-works/system-design/) |
+ 
+-Not sure which track fits you? Use **[Pathways](/docs/how-briefr-works/pathways)** to pick a route
++Not sure which track fits you? Start at **[Pathways](/docs/pathways)** to pick a route
+ based on your role.
+ 
+ ## Rules of the road
+@@ -29,11 +29,3 @@ based on your role.
+ - Every chapter answers the same questions: what / why / where in BRIEFR / how / what it needs / how industry differs.
+ - Deploying BRIEFR is **recommended**, never required.
+ - The docs site never asks for your API keys and never fires live third-party calls.
+-
+-## Study content in the product repo
+-
+-A companion study guide lives alongside the source code at
+-[github.com/Soldier0x0/briefr/tree/main/docs/study-guide](https://github.com/Soldier0x0/briefr/tree/main/docs/study-guide).
+-It provides worked exercises and annotated code walkthroughs that mirror the
+-chapters here. The two are kept in sync; if they disagree, the docs site wins
+-on concepts and the repo file wins on implementation details.
+diff --git a/docs/how-briefr-works/intel-lifecycle/index.mdx b/docs/how-briefr-works/intel-lifecycle/index.mdx
+index b1d957d..88c9a27 100644
+--- a/docs/how-briefr-works/intel-lifecycle/index.mdx
++++ b/docs/how-briefr-works/intel-lifecycle/index.mdx
+@@ -22,4 +22,4 @@ Track A follows security intel from external feeds into your morning brief. Each
+ | 7 | [Prioritize / report](/docs/how-briefr-works/intel-lifecycle/prioritize) | Scoring, morning brief ranking, and PDF export |
+ | Reference | [Sources](/docs/how-briefr-works/intel-lifecycle/sources) | Deep-dives for NVD, CISA KEV, EPSS, and AlienVault OTX |
+ 
+-Start at [Collect](/docs/how-briefr-works/intel-lifecycle/collect), inspect the [Sources](/docs/how-briefr-works/intel-lifecycle/sources) behind the first lifecycle stages, or pick a [pathway](/docs/how-briefr-works/pathways) if you already know your role.
++Start at [Collect](/docs/how-briefr-works/intel-lifecycle/collect), inspect the [Sources](/docs/how-briefr-works/intel-lifecycle/sources) behind the first lifecycle stages, or pick a [pathway](/docs/pathways) if you already know your role.
+diff --git a/docs/how-briefr-works/synced/.gitkeep b/docs/how-briefr-works/synced/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/docs/integrations.md b/docs/integrations.md
+index 369dcc8..a53eebc 100644
+--- a/docs/integrations.md
++++ b/docs/integrations.md
+@@ -1,5 +1,5 @@
+ ---
+-sidebar_position: 6
++sidebar_position: 62
+ sidebar_label: Integrations
+ description: Every source BRIEFR pulls from — keys, quotas, failure behavior — and what it pushes out.
+ ---
+diff --git a/docs/pathways/_category_.json b/docs/pathways/_category_.json
+new file mode 100644
+index 0000000..bb080e3
+--- /dev/null
++++ b/docs/pathways/_category_.json
+@@ -0,0 +1,6 @@
++{
++  "label": "Pathways",
++  "position": 3,
++  "collapsed": false,
++  "link": {"type": "doc", "id": "pathways/index"}
++}
+diff --git a/docs/how-briefr-works/pathways.mdx b/docs/pathways/index.mdx
+similarity index 64%
+rename from docs/how-briefr-works/pathways.mdx
+rename to docs/pathways/index.mdx
+index 1fc7040..65140e7 100644
+--- a/docs/how-briefr-works/pathways.mdx
++++ b/docs/pathways/index.mdx
+@@ -1,46 +1,45 @@
+ ---
+-sidebar_position: 2
+-sidebar_label: Pathways
++sidebar_position: 1
++sidebar_label: Choose a path
+ title: Pathways
+-description: Pick a starting path — analyst, builder, or system-design learner — into How BRIEFR Works.
++description: Pick a learning route — analyst, architect, or system-design learner — based on your role and goals.
+ ---
+ 
+ import {PathwayCards} from '@site/src/components/learn/PathwayCards';
+ 
+ # Pathways
+ 
+-Three starting points depending on what you care about. The Analyst and Architect
+-paths are **complete** — every unit is grounded in the real BRIEFR product.
+-System Design is **hybrid**: BRIEFR teaches the units it implements; honest gap
+-units with curated externals cover the rest.
++BRIEFR is both a tool you deploy and a system you can study. Pick a starting
++point based on what you need right now — you can cross-read the other tracks
++later.
+ 
+ <PathwayCards
+   cards={[
+     {
+-      title: 'Analyst',
++      title: 'Security analyst',
+       blurb:
+-        'Follow the data from raw feed to analyst brief. You care about the intel lifecycle — collect, normalize, enrich, correlate, hunt, detect, prioritize.',
++        'Follow intel from raw feed to morning brief. Collect, normalize, enrich, correlate, hunt, detect, and prioritize — the analyst-facing lifecycle.',
+       to: '/docs/how-briefr-works/intel-lifecycle/collect',
+       completeness: 'complete',
+     },
+     {
+-      title: 'Architect / builder',
++      title: 'Security architect / builder',
+       blurb:
+-        'Learn how BRIEFR is wired. Ingestion, resilience, storage, APIs, background jobs, search, and operations — all grounded in the real codebase.',
++        'Learn how BRIEFR is wired: ingestion, resilience, storage, APIs, background jobs, search, and day-two operations — all grounded in the real product.',
+       to: '/docs/how-briefr-works/how-its-built/ingestion-scheduler',
+       completeness: 'complete',
+     },
+     {
+-      title: 'System Design',
++      title: 'System design',
+       blurb:
+-        'Work through a classic SD curriculum. BRIEFR anchors the units it implements; gap units explain what the product omits and point to curated externals.',
++        'Work through a classic system-design curriculum. BRIEFR anchors units it implements; gap units explain deliberate omissions with curated externals.',
+       to: '/docs/how-briefr-works/system-design/',
+       completeness: 'hybrid',
+     },
+   ]}
+ />
+ 
+-## Analyst path
++## Security analyst path
+ 
+ You care about the feed, enrichment, and why a CVE rose in the brief.
+ 
+@@ -55,7 +54,7 @@ You care about the feed, enrichment, and why a CVE rose in the brief.
+ Then skim [Resilience](/docs/how-briefr-works/how-its-built/resilience) so quota
+ and rate limits make sense when a source goes quiet.
+ 
+-## Architect / builder path
++## Security architect / builder path
+ 
+ You care about how the machine is wired.
+ 
+@@ -70,7 +69,7 @@ You care about how the machine is wired.
+ Cross-read the [Intel lifecycle](/docs/how-briefr-works/intel-lifecycle/) spine so
+ design choices stay tied to the data path.
+ 
+-## System Design path
++## System design path
+ 
+ A classic system-design curriculum — foundations through design review — taught
+ from BRIEFR where the product maps, with honest gap units where it does not.
+@@ -80,3 +79,11 @@ then follow the numbered units in order.
+ Units are tagged **briefr** (BRIEFR-primary), **partial** (BRIEFR section first,
+ then externals), or **gap** (BRIEFR omits this by design — rationale + curated
+ resources).
++
++## Deploy while you learn
++
++Installing BRIEFR on your own hardware is **recommended but never required** for
++reading these chapters. When you are ready, start with
++[Self-host BRIEFR](/docs/admin-guide/self-host). Production operators use
++`briefr-install.sh` / `briefr-deploy.sh` / `briefr-service.sh` — not a daily
++git-pull workflow.
+diff --git a/docs/release-notes.md b/docs/release-notes.md
+index ff988a2..6918c2f 100644
+--- a/docs/release-notes.md
++++ b/docs/release-notes.md
+@@ -1,5 +1,5 @@
+ ---
+-sidebar_position: 8
++sidebar_position: 64
+ sidebar_label: Release Notes
+ description: What changed in each release, in plain language.
+ ---
+@@ -39,7 +39,7 @@ What BRIEFR does today, in one pass:
+   health, a token-guarded wallboard kiosk, and a production posture
+   self-check.
+ - **PostgreSQL-native** storage; SQLite remains only as the dev/test
+-  fallback. License: AGPL-3.0-or-later.
++  fallback. License: BUSL-1.1 (Business Source License).
+ 
+ Known gaps at this snapshot: no public Docker platform compose yet
+ (Postgres compose exists), dark theme only.
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index 41be001..c2cb1b4 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -1,5 +1,5 @@
+ ---
+-sidebar_position: 7
++sidebar_position: 63
+ sidebar_label: Roadmap
+ description: Where BRIEFR is going, and what is deliberately out of scope.
+ ---
+@@ -35,7 +35,6 @@ detection-engineering platform. The destination:
+ 
+ ## Following along
+ 
+-Granular planning lives in the repository
+-([docs/planning](https://github.com/Soldier0x0/briefr/tree/main/docs/planning))
+-and in [GitHub issues](https://github.com/Soldier0x0/briefr/issues). What
+-ships is recorded in the [Release Notes](/docs/release-notes).
++What ships is recorded in the [Release Notes](/docs/release-notes).
++Feature requests and bugs:
++[GitHub issues](https://github.com/Soldier0x0/briefr/issues).
+diff --git a/docs/security-guide.md b/docs/security-guide.md
+index 526b75e..6265990 100644
+--- a/docs/security-guide.md
++++ b/docs/security-guide.md
+@@ -1,5 +1,5 @@
+ ---
+-sidebar_position: 4
++sidebar_position: 60
+ sidebar_label: Security Guide
+ description: The auth model, secret handling, network exposure, a hardening checklist, and how to report a vulnerability.
+ ---
+diff --git a/docs/user-guide/assets/auth-layers.svg b/docs/user-guide/assets/auth-layers.svg
+index 31a0cb0..af27810 100644
+--- a/docs/user-guide/assets/auth-layers.svg
++++ b/docs/user-guide/assets/auth-layers.svg
+@@ -1,4 +1,4 @@
+-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" role="img" aria-label="BRIEFR auth layers">
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" role="img" aria-label="BRIEFR auth layers">
+   <defs>
+     <style>
+       .bg { fill: #0a0a08; }
+@@ -13,20 +13,20 @@
+       <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
+     </marker>
+   </defs>
+-  <rect class="bg" width="880" height="360"/>
++  <rect class="bg" width="880" height="380"/>
+   <text x="24" y="32" class="title">Two independent auth layers</text>
+   <text x="24" y="52" class="sub">Edge policy and app sessions are separate — demoting admin in DB takes effect immediately (JWT role revalidation).</text>
+ 
+   <rect class="box optional" x="40" y="80" width="800" height="100" rx="8"/>
+   <text x="56" y="104" class="title" fill="#6eb5ff">LAYER A — EDGE (optional)</text>
+   <text x="56" y="128" class="label">Cloudflare Zero Trust · email OTP on public hostname</text>
+-  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI · CF JWT middleware removed (#93)</text>
++  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI</text>
+   <rect x="56" y="158" width="140" height="22" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
+   <text x="68" y="173" class="sub">Protects who reaches nginx</text>
+ 
+   <line class="arrow" x1="440" y1="180" x2="440" y2="210"/>
+ 
+-  <rect class="box" x="40" y="210" width="800" height="120" rx="8"/>
++  <rect class="box" x="40" y="210" width="800" height="140" rx="8"/>
+   <text x="56" y="234" class="title">LAYER B — APPLICATION (always on)</text>
+   <text x="56" y="258" class="label">Built-in username/password · server sessions · briefr_at cookie</text>
+   <text x="56" y="278" class="sub">First-run /api/auth/setup · refresh token rotation · admin routes require live admin role in users table</text>
+@@ -40,5 +40,5 @@
+   <rect x="424" y="290" width="180" height="28" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
+   <text x="436" y="308" class="label">Role gate on /api/admin</text>
+ 
+-  <text x="640" y="308" class="sub">Legacy X-BRIEFR-Admin-Key removed (Sprint A0)</text>
++  <text x="56" y="328" class="sub">Legacy admin-key header removed</text>
+ </svg>
+diff --git a/docs/user-guide/assets/placeholder-diagram.svg b/docs/user-guide/assets/placeholder-diagram.svg
+deleted file mode 100644
+index 7a936db..0000000
+--- a/docs/user-guide/assets/placeholder-diagram.svg
++++ /dev/null
+@@ -1,10 +0,0 @@
+-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420">
+-  <rect width="960" height="420" rx="16" fill="#0a0a08" stroke="#3d3d38" stroke-width="2"/>
+-  <rect x="24" y="24" width="912" height="48" rx="8" fill="#141412" stroke="#2a2a25"/>
+-  <text x="48" y="54" fill="#c8b88a" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Diagram placeholder</text>
+-  <text x="48" y="120" fill="#e8e6df" font-family="system-ui,sans-serif" font-size="22" font-weight="600">Image not added yet</text>
+-  <text x="48" y="156" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">Export from Miro / Figma / Penpot and save to docs/assets/</text>
+-  <text x="48" y="184" fill="#9a9890" font-family="system-ui,sans-serif" font-size="14">See IMAGE_BRIEFS.md for filename and prompt</text>
+-  <rect x="48" y="220" width="864" height="2" fill="#2a2a25"/>
+-  <text x="48" y="260" fill="#5a5850" font-family="ui-monospace,monospace" font-size="13">Replace this file reference in the doc when your PNG/SVG is ready</text>
+-</svg>
+diff --git a/docs/user-guide/how-it-works.md b/docs/user-guide/how-it-works.md
+index ae304df..5ba7924 100644
+--- a/docs/user-guide/how-it-works.md
++++ b/docs/user-guide/how-it-works.md
+@@ -58,7 +58,9 @@ The drawer calls `POST /api/cves/{cve_id}/risk` with optional asset/profile cont
+ 
+ ![Correlation pipeline](assets/correlation-pipeline.svg)
+ 
+-Four explainable lanes: **Campaigns**, **Infrastructure**, **Actor/sector**, **Temporal**. OTX pulse titles are normalized for display, and pulse clusters show why members were grouped. No black-box ML score; drawer open does not call OTX live.
++Four explainable lanes: **Campaigns**, **Infrastructure**, **Actor/sector**, **Temporal**. OTX pulse titles are normalized for display, and pulse clusters show why members were grouped. No black-box ML score; drawer open does not call OTX live. When OTX is temporarily down, cached `otx_cve_pulses` are served without wiping the mirror.
++
++**Detection:** SigmaHQ rules are mirrored weekly into Postgres (`sigmahq_index_sync`); Detect and Forge read CVE-exact YAML from the local index (DRL-1.1 attribution). Live GitHub Sigma search is fallback only when the index is empty.
+ 
+ ---
+ 
+diff --git a/docs/user-guide/troubleshooting.md b/docs/user-guide/troubleshooting.md
+index a472e67..8237432 100644
+--- a/docs/user-guide/troubleshooting.md
++++ b/docs/user-guide/troubleshooting.md
+@@ -7,6 +7,8 @@ sidebar_position: 3
+ 
+ Find your **symptom** → try the **fix**. No need to read other docs first.
+ 
++**Not installed yet?** Follow [`SELF_HOST.md`](../admin-guide/self-host.md) (pick §1 SQLite, §2 Postgres+pgvector, or §3 production), then use the [verification checklist](../admin-guide/self-host.md#after-install-verification-checklist).
++
+ | Symptom | Fix |
+ |---------|-----|
+ | **Empty or slow CVE feed** | First boot ingests in background — wait or run `python scripts/seed_screenshot_data.py`. Check `curl localhost:8000/api/health` |
+@@ -17,16 +19,17 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
+ | **Embeddings / pgvector missing** | Use `pgvector/pgvector:pg16`, run migrations, keep `EMBEDDINGS_PGVECTOR=1`. Without pgvector BRIEFR falls back to heuristic related-CVE matching |
+ | **429 Too Many Requests** | Normal rate limit — wait for `Retry-After`. Don't hammer IOC/refresh endpoints |
+ | **Security page: RATE LIMIT OFF** | Set `RATE_LIMIT_ENABLED=1` in `.env`, restart backend |
+-| **Can't connect to database** | Check Postgres running + `DATABASE_URL`. Dev: `docker compose -f deploy/docker-compose.postgres.yml up -d` |
++| **Can't connect to database** | Check Postgres running + `DATABASE_URL`. Dev: [`SELF_HOST.md` §2](../admin-guide/self-host.md#2-local-development-with-postgresql--pgvector) — `docker compose -f deploy/docker-compose.postgres.yml up -d` |
++| **Install verify fails** (`backend` not `postgresql`) | Set `DATABASE_URL` + `BRIEFR_REQUIRE_POSTGRES=1`, restart backend — see [SELF_HOST verify checklist](../admin-guide/self-host.md#after-install-verification-checklist) |
+ | **Backup / restore failed** | Need age key for encrypted archives. `briefr-restore.sh --list` · see [SELF_HOST.md](../admin-guide/self-host.md#updates--backups) |
+ | **OTX / correlation empty** | Set `OTX_API_KEY`, wait for nightly job |
+ | **Durable jobs panel empty/off** | Set `PROCRASTINATE_ENABLED=1`, restart backend, then check Admin → Scheduler → Durable outbound jobs. If stuck, use Ping queue and inspect the request ID in the backend logs (`X-Request-ID` / structured `request_id`) to trace the job. |
+ | **Catch-up active but backlog not moving** | Catch-up only kicks eligible jobs and never raises provider limits. Check Admin → Scheduler for LOCKED jobs, source cooldowns, and outbound queue rows |
+ | **Stack backfill deferred / partial** | FEED backfill respects rate limits and runtime caps. Use Resume from the banner; lower stack terms if the request is too broad |
+ | **IOC providers empty** | Add keys in `.env` — see `backend/.env.example` |
+-| **BRIEF / widgets: `Not authenticated` while header still shows user** | Access cookie expired and a bare `/auth/refresh` raced API 401 retries (reuse detection revoked sessions). Fixed in #731: shared `refreshAccessToken()` + AuthContext uses `fetchMe()` only. Retry / re-login recovers; multi-tab concurrent refresh can still hit reuse detection by design |
+-| **Can't log in** | Complete first-run setup once. Fix `ALLOWED_ORIGINS` for CORS |
+-| **Cloud / bare VM: `ConnectionRefusedError` on `:5432`** | No Docker/Postgres on the box; `.env` may still have a Postgres placeholder DSN. Run with `DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0` for SQLite (see `AGENTS.md`) |
++| **BRIEF / widgets: `Not authenticated` while header still shows user** | Access cookie expired and a bare `/auth/refresh` raced API 401 retries (reuse detection revoked sessions). Retry or re-login recovers; multi-tab concurrent refresh can still hit session reuse detection by design. |
++| **Can't log in** | Complete first-run setup once ([SELF_HOST](../admin-guide/self-host.md)). Fix `ALLOWED_ORIGINS` for CORS |
++| **Cloud / bare VM: `ConnectionRefusedError` on `:5432`** | No Docker/Postgres on the box; `.env` may still have a Postgres placeholder DSN. Run with `DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0` for SQLite (see [Contributor onboarding](/docs/developer-guide/onboarding)) |
+ | **`/api` 404 in dev** | Start backend on `:8000` before frontend |
+ | **Model download / HF warnings** | Optional: `HF_TOKEN`, `EMBEDDINGS_CACHE_DIR=/var/lib/briefr/models`; embeddings are optional |
+ | **Wallboard asks for token** | Set `WALLBOARD_TOKEN`, restart backend, open `/wallboard`, enter the token once to create the read-only session cookie |
+@@ -35,6 +38,7 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
+ 
+ ## Still stuck?
+ 
++- [`SELF_HOST.md`](../admin-guide/self-host.md) — install paths and verification checklist
+ - [PRODUCT_STATUS.md](https://github.com/Soldier0x0/briefr/blob/main/docs/PRODUCT_STATUS.md) — what's supposed to work today
+ - [HOW_IT_WORKS.md](./how-it-works.md) — architecture if you need context
+ - GitHub issues on the repo
+diff --git a/docs/user-guide/using-briefr.md b/docs/user-guide/using-briefr.md
+index 1a13bc8..26f7e13 100644
+--- a/docs/user-guide/using-briefr.md
++++ b/docs/user-guide/using-briefr.md
+@@ -7,8 +7,6 @@ sidebar_position: 1
+ 
+ For analysts, security enthusiasts, and anyone using the UI — not deploying it.
+ 
+-Screenshots are not committed yet. Use [`IMAGE_BRIEFS.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/IMAGE_BRIEFS.md) for capture prompts.
+-
+ ---
+ 
+ ## Main shell
+diff --git a/docusaurus.config.ts b/docusaurus.config.ts
+index 8cdd9f5..21f054f 100644
+--- a/docusaurus.config.ts
++++ b/docusaurus.config.ts
+@@ -104,8 +104,9 @@ const config: Config = {
+       items: [
+         {to: '/docs/user-guide', label: 'User', position: 'left'},
+         {to: '/docs/admin-guide', label: 'Admin', position: 'left'},
+-        {to: '/docs/developer-guide', label: 'Developer', position: 'left'},
++        {to: '/docs/pathways', label: 'Pathways', position: 'left'},
+         {to: '/docs/how-briefr-works', label: 'Learn', position: 'left'},
++        {to: '/docs/developer-guide', label: 'Developer', position: 'left'},
+         {to: '/docs/api-reference', label: 'API', position: 'left'},
+         {
+           href: 'https://github.com/Soldier0x0/briefr',
+@@ -122,8 +123,9 @@ const config: Config = {
+           items: [
+             {label: 'User Guide', to: '/docs/user-guide'},
+             {label: 'Administrator Guide', to: '/docs/admin-guide'},
+-            {label: 'Developer Guide', to: '/docs/developer-guide'},
++            {label: 'Pathways', to: '/docs/pathways'},
+             {label: 'How BRIEFR Works', to: '/docs/how-briefr-works'},
++            {label: 'Developer Guide', to: '/docs/developer-guide'},
+             {label: 'Security Guide', to: '/docs/security-guide'},
+           ],
+         },
+@@ -145,7 +147,7 @@ const config: Config = {
+           ],
+         },
+       ],
+-      copyright: `Copyright © ${new Date().getFullYear()} Sai Harsha Vardhan · AGPL-3.0-or-later · Self-hosted — your data stays yours.`,
++      copyright: `Copyright © ${new Date().getFullYear()} Sai Harsha Vardhan · BUSL-1.1 · Self-hosted — your data stays yours.`,
+     },
+     prism: {
+       theme: prismThemes.oneDark,
+diff --git a/scripts/migrate.cjs b/scripts/migrate.cjs
+index 2ae318e..d2b1ff1 100644
+--- a/scripts/migrate.cjs
++++ b/scripts/migrate.cjs
+@@ -1,13 +1,13 @@
+-// Pulls canonical docs from the briefr-main repo into the portal, prepending
++// Pulls canonical docs from the briefr repo into the portal, prepending
+ // Docusaurus front matter. Re-runnable: overwrites the migrated copies, so
+-// briefr-main/docs stays the single source of truth for these files.
+-// The per-file AGPL copyright paragraph is dropped — the license notice
++// briefr/docs stays the single source of truth for these files.
++// The per-file copyright paragraph is dropped — the license notice
+ // lives once in the site footer instead of atop every page.
+ const fs = require('fs');
+ const path = require('path');
+ 
+ const SRC =
+-  process.env.BRIEFR_MAIN_DOCS || path.resolve(__dirname, '../../briefr-main/docs');
++  process.env.BRIEFR_MAIN_DOCS || path.resolve(__dirname, '../../docs');
+ const DST = path.resolve(__dirname, '../docs');
+ 
+ const FILES = [
+@@ -19,7 +19,7 @@ const FILES = [
+   ['POSTGRES.md', 'admin-guide/postgres.md', 'PostgreSQL', 3],
+   ['SYSTEM_DESIGN.md', 'developer-guide/system-design.md', 'System design', 1],
+   ['ONBOARDING.md', 'developer-guide/onboarding.md', 'Contributor onboarding', 2],
+-  ['API_REFERENCE.md', 'api-reference.md', 'API Reference', 5],
++  ['API_REFERENCE.md', 'api-reference.md', 'API Reference', 61],
+   // planning/ROADMAP.md is deliberately NOT migrated: it's an internal
+   // planning index (version bookkeeping, spec links, phasing labels). The
+   // portal ships a curated public docs/roadmap.md instead.
+@@ -32,7 +32,7 @@ const ASSET_DEST_DIRS = ['user-guide/assets', 'admin-guide/assets'];
+ const COPYRIGHT_RE =
+   /^Copyright © \d{4} Sai Harsha Vardhan\..*(?:\r?\n(?!\r?\n).*)*\r?\n?/m;
+ 
+-// Cross-doc links in the sources use briefr-main/docs filenames. Links to
++// Cross-doc links in the sources use briefr/docs filenames. Links to
+ // docs that were migrated become relative links into the new tree; links to
+ // everything else in the repo fall back to GitHub.
+ const MIGRATED = new Map(FILES.map(([src, dst]) => [src, dst]));
+@@ -60,12 +60,72 @@ function rewriteLinks(body, srcDocPath, dstDocPath) {
+   });
+ }
+ 
++/** Strip maintainer-only references before publishing on the docs portal. */
++function scrubForPublicPortal(body, dst) {
++  let out = body;
++
++  out = out.replace(
++    /Screenshots are not committed yet\. Use \[`IMAGE_BRIEFS\.md`\]\([^)]+\) for capture prompts\.\s*/g,
++    '',
++  );
++
++  out = out.replace(
++    /\(see `AGENTS\.md`\)/g,
++    '(see [Contributor onboarding](/docs/developer-guide/onboarding))',
++  );
++
++  out = out.replace(
++    /\*\*Source of truth:\*\* `\/workspace` codebase/g,
++    '**Source of truth:** the BRIEFR repository on GitHub',
++  );
++
++  out = out.replace(
++    /— CLAUDE\.md danger zone 6, never on the request path\)/g,
++    '— heavy work never runs on the request path)',
++  );
++
++  out = out.replace(
++    /\| 4 \| \*\*Local verify green\*\* — `\.\/scripts\/verify-local\.sh` \(and `--full` when Postgres\/tools available\)\. \|/,
++    '| 4 | **Release CI green** on the tagged commit (GitHub Actions or your release pipeline). |',
++  );
++
++  out = out.replace(
++    /Near-future engineering and product intent lives in \[`docs\/planning\/SPRINT_2026-07\.md`\]\([^)]+\), \[`docs\/planning\/BACKLOG\.md`\]\([^)]+\), and active specs under \[`docs\/planning\/specs\/`\]\([^)]+\)\. Historical beta docs remain in `docs\/archive\/` and are not current system truth\./,
++    'Product direction and shipped scope are summarized in the [public roadmap](/docs/roadmap) and [release notes](/docs/release-notes).',
++  );
++
++  out = out.replace(
++    /See \[`planning\/BACKLOG\.md`\]\([^)]+\) §6 for optional layout tails\./,
++    'Optional layout tails are documented in the product repository when needed.',
++  );
++
++  if (dst === 'admin-guide/postgres.md') {
++    out = out.replace(
++      '`./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.',
++      'Contributors can start a disposable Postgres test container with `./scripts/postgres-dev.sh start` (see [Contributor onboarding](/docs/developer-guide/onboarding)).',
++    );
++  }
++
++  out = out.replace(
++    /\(cloud\/bare VM; see `AGENTS\.md`\)/g,
++    '(cloud/bare VM; see [Contributor onboarding](/docs/developer-guide/onboarding))',
++  );
++
++  out = out.replace(
++    /Fixed in #731: shared `refreshAccessToken\(\)` \+ AuthContext uses `fetchMe\(\)` only\. Retry \/ re-login recovers; multi-tab concurrent refresh can still hit reuse detection by design/,
++    'Retry or re-login recovers; multi-tab concurrent refresh can still hit session reuse detection by design.',
++  );
++
++  return out;
++}
++
+ for (const [src, dst, label, position] of FILES) {
+   const srcPath = path.join(SRC, src);
+   const dstPath = path.join(DST, dst);
+   let body = fs.readFileSync(srcPath, 'utf8');
+   body = body.replace(COPYRIGHT_RE, '');
+   body = rewriteLinks(body, src, dst);
++  body = scrubForPublicPortal(body, dst);
+   const fm = [
+     '---',
+     `sidebar_label: ${label}`,
+@@ -91,7 +151,7 @@ for (const dir of ASSET_DEST_DIRS) {
+   console.log(`assets/* -> ${dir}/ (${assets.length} files)`);
+ }
+ 
+-// Screenshots use permanent filenames (see briefr-main docs/assets/screenshots/
++// Screenshots use permanent filenames (see briefr docs/assets/screenshots/
+ // README): replacing one = dropping a same-named file there and re-running this.
+ const shotSrc = path.join(SRC, 'assets', 'screenshots');
+ if (fs.existsSync(shotSrc)) {
+@@ -105,30 +165,6 @@ if (fs.existsSync(shotSrc)) {
+   console.log(`assets/screenshots/* -> {guides}/assets/screenshots/ (${shots.length} files)`);
+ }
+ 
+-function mirrorTree(relDir) {
+-  const from = path.join(SRC, relDir);
+-  const to = path.join(DST, 'how-briefr-works', 'synced', relDir);
+-  if (!fs.existsSync(from)) {
+-    console.log(`skip ${relDir}/ (not present under BRIEFR_MAIN_DOCS)`);
+-    return;
+-  }
+-  fs.rmSync(to, {recursive: true, force: true});
+-  fs.mkdirSync(to, {recursive: true});
+-  const walk = (dir, outDir) => {
+-    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+-      const srcPath = path.join(dir, entry.name);
+-      const dstPath = path.join(outDir, entry.name);
+-      if (entry.isDirectory()) {
+-        fs.mkdirSync(dstPath, {recursive: true});
+-        walk(srcPath, dstPath);
+-      } else if (/\.(md|mdx|svg|png|webp|json)$/i.test(entry.name)) {
+-        fs.copyFileSync(srcPath, dstPath);
+-      }
+-    }
+-  };
+-  walk(from, to);
+-  console.log(`${relDir}/* -> how-briefr-works/synced/${relDir}/`);
+-}
+-
+-mirrorTree('study-guide');
+-mirrorTree('learn');
++// Study-guide / learn mirrors are maintainer-only; excluded from Docusaurus routes.
++// Skip copying to keep the public repo lean.
++console.log('skip study-guide/ + learn/ mirrors (portal-native Learn section)');
+diff --git a/src/pages/index.module.css b/src/pages/index.module.css
+index 2ca26f2..25a44b4 100644
+--- a/src/pages/index.module.css
++++ b/src/pages/index.module.css
+@@ -49,7 +49,7 @@
+ .masthead {
+   font-family: var(--brf-font-display);
+   font-weight: 400;
+-  font-size: clamp(3rem, 8vw, 5.6rem);
++  font-size: clamp(2.4rem, 6.5vw, 4.4rem);
+   line-height: 1.04;
+   letter-spacing: -0.015em;
+   color: var(--brf-bright);
+diff --git a/src/pages/index.tsx b/src/pages/index.tsx
+index 7f942ae..6c4bf99 100644
+--- a/src/pages/index.tsx
++++ b/src/pages/index.tsx
+@@ -5,15 +5,26 @@ import Layout from '@theme/Layout';
+ import styles from './index.module.css';
+ 
+ const GUIDES = [
++  {
++    tag: 'FOR LEARNERS',
++    title: 'Pathways',
++    to: '/docs/pathways',
++    desc: 'Choose your angle: security analyst, architect/builder, or system-design learner. Each path links into the chapters that match your role.',
++    chapters: [
++      {label: 'Security analyst', to: '/docs/how-briefr-works/intel-lifecycle/collect'},
++      {label: 'Architect / builder', to: '/docs/how-briefr-works/how-its-built/ingestion-scheduler'},
++      {label: 'System design', to: '/docs/how-briefr-works/system-design/'},
++    ],
++  },
+   {
+     tag: 'FOR LEARNERS',
+     title: 'How BRIEFR Works',
+     to: '/docs/how-briefr-works',
+     desc: 'Understand what BRIEFR actually does: the intel lifecycle from feed to brief, the system design, and how each subsystem is built.',
+     chapters: [
+-      {label: 'Pathways', to: '/docs/how-briefr-works/pathways'},
+       {label: 'Intel lifecycle', to: '/docs/how-briefr-works/intel-lifecycle/collect'},
+       {label: 'How it\'s built', to: '/docs/how-briefr-works/how-its-built/ingestion-scheduler'},
++      {label: 'System design', to: '/docs/how-briefr-works/system-design/'},
+     ],
+   },
+   {
+@@ -134,7 +145,7 @@ export default function Home(): ReactNode {
+           <div className={styles.dispatch}>
+             <span>BRIEFR — DOCUMENTATION</span>
+             <span>CLASS: PUBLIC</span>
+-            <span>LICENSE: AGPL-3.0</span>
++            <span>LICENSE: BUSL-1.1</span>
+             <span>REV 2026.07</span>
+           </div>
+ 
+@@ -155,6 +166,9 @@ export default function Home(): ReactNode {
+             <Link className={styles.ctaPrimary} to="/docs/user-guide">
+               Get started
+             </Link>
++            <Link className={styles.ctaGhost} to="/docs/pathways">
++              Pick a pathway
++            </Link>
+             <Link className={styles.ctaGhost} to="/docs/how-briefr-works">
+               How BRIEFR Works
+             </Link>
+-- 
+2.43.0
+
