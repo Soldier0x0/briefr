@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" role="img" aria-label="BRIEFR auth layers">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" role="img" aria-label="BRIEFR auth layers">
   <defs>
     <style>
       .bg { fill: #0a0a08; }
@@ -13,20 +13,20 @@
       <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
     </marker>
   </defs>
-  <rect class="bg" width="880" height="360"/>
+  <rect class="bg" width="880" height="380"/>
   <text x="24" y="32" class="title">Two independent auth layers</text>
   <text x="24" y="52" class="sub">Edge policy and app sessions are separate — demoting admin in DB takes effect immediately (JWT role revalidation).</text>
 
   <rect class="box optional" x="40" y="80" width="800" height="100" rx="8"/>
   <text x="56" y="104" class="title" fill="#6eb5ff">LAYER A — EDGE (optional)</text>
   <text x="56" y="128" class="label">Cloudflare Zero Trust · email OTP on public hostname</text>
-  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI · CF JWT middleware removed (#93)</text>
+  <text x="56" y="148" class="sub">Operator-controlled · not embedded in FastAPI</text>
   <rect x="56" y="158" width="140" height="22" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
   <text x="68" y="173" class="sub">Protects who reaches nginx</text>
 
   <line class="arrow" x1="440" y1="180" x2="440" y2="210"/>
 
-  <rect class="box" x="40" y="210" width="800" height="120" rx="8"/>
+  <rect class="box" x="40" y="210" width="800" height="140" rx="8"/>
   <text x="56" y="234" class="title">LAYER B — APPLICATION (always on)</text>
   <text x="56" y="258" class="label">Built-in username/password · server sessions · briefr_at cookie</text>
   <text x="56" y="278" class="sub">First-run /api/auth/setup · refresh token rotation · admin routes require live admin role in users table</text>
@@ -40,5 +40,5 @@
   <rect x="424" y="290" width="180" height="28" rx="4" fill="#1a1a17" stroke="#3d3d38"/>
   <text x="436" y="308" class="label">Role gate on /api/admin</text>
 
-  <text x="640" y="308" class="sub">Legacy X-BRIEFR-Admin-Key removed (Sprint A0)</text>
+  <text x="56" y="328" class="sub">Legacy admin-key header removed</text>
 </svg>
