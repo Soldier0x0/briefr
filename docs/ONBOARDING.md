@@ -313,7 +313,8 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 | Incidents & News tab | `backend/feeds/case_study_feed.py`, `incident_news.py`, `CaseStudies.jsx` |
 | Risk score | `backend/scoring/risk.py`, `backend/scoring/asset_match.py`, `POST /api/cves/{id}/risk`; UI in `frontend/src/scoring/riskScore.js` |
 | Correlation | `backend/correlation/engine.py` |
-| Detection rules | `backend/detection/` |
+| Detection rules | `backend/detection/` (`sigmahq_index.py`, `rule_sources.py`, `composer.py`) |
+| SigmaHQ local index | `backend/detection/sigmahq_index.py`, scheduler `sigmahq_index_sync`, Admin Feed health |
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
 | Database schema / SQL adaptation | `backend/database.py` (`init_db`), `backend/db/pg_adapt.py` (legacy SQLite-shaped SQL adapted at the Postgres connection boundary), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
@@ -333,7 +334,8 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 | IOC lookup returns empty VT/AbuseIPDB | Missing API keys | Add keys to `.env`; restart backend |
 | CORS errors in browser | Origin not allowed | Add your URL to `ALLOWED_ORIGINS` |
 | GreyNoise always empty | No key or weekly quota exhausted | Set `GREYNOISE_API_KEY`; opt in per lookup |
-| OTX pulses missing | No `OTX_API_KEY` | Key required for nightly correlation and pulse data |
+| OTX pulses missing | No `OTX_API_KEY` or upstream OTX outage | Key required for live refresh; cached `otx_cve_pulses` served on 5xx when present. Post-deploy smoke may fail during OTX outages — retry `deploy/smoke-intel.sh` or use `BRIEFR_STRICT_SMOKE=0` |
+| Detect shows no Sigma rules | SigmaHQ index never synced | Admin → Feed health → SigmaHQ → Sync (Alembic `035` creates empty tables only) |
 | RSS shows contest/promo headlines | Editorial filter gap | Add pattern to `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py` |
 | `pytest` import errors | Wrong working directory | Run from `backend/` (tests prepend parent to `sys.path`) |
 | Frontend `/api` 404 in dev | Backend not running | Start uvicorn on `:8000` before `npm run dev` |

@@ -36,18 +36,19 @@ Feed Ingestion  →  PostgreSQL  →  FastAPI API  →  React UI
 │ NVD API      │ CISA KEV     │ EPSS CSV     │ MITRE STIX   │ ATLAS YAML     │
 │ Sploitus     │ GreyNoise    │ VirusTotal   │ AbuseIPDB    │ OTX            │
 │ OSV.dev      │ CIRCL        │ MalwareBazaar│ URLhaus      │ Groq/Cerebras/ │
-│ VulnCheck    │ ThreatFox    │              │              │ OpenRtr/Gemini │
+│ VulnCheck    │ ThreatFox    │ SigmaHQ      │              │ OpenRtr/Gemini │
 │ GitHub API   │ RSS x5       │ NVD CPE API  │              │                │
 └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┴────────┬───────┘
        │              │              │              │                │
        ▼              ▼              ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ APScheduler (scheduler.py) — 26 normal jobs + 3 registration-gated optional jobs │
+│ APScheduler (scheduler.py) — 27 normal jobs + 4 registration-gated optional jobs │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Ingest: nvd_incremental_sync, kev_metadata_sync, epss_score_sync,           │
 │ weekly_mitre_refresh, vulnrichment_snapshot_sync, cvelistv5_incremental_sync│
 │ Intel: otx_nightly_correlation, otx_continuous_sync*, threatfox_sync,       │
-│ vulncheck_kev_sync, ioc_retro_match, exploit_sources_sync*                  │
+│ vulncheck_kev_sync, ioc_retro_match, exploit_sources_sync*,                 │
+│ sigmahq_index_sync*                                                         │
 │ Detection/retrieval: nightly_correlation, embeddings_backfill,              │
 │ detection_context_sync, detection_context_llm*, kev_backlog_reconcile       │
 │ Product/stack: llm_product_extraction, catchup_tick, cpe_catalog_sync       │
@@ -92,6 +93,8 @@ Mermaid sources: master graph [`docs/diagrams/system-graph.mermaid`](diagrams/sy
 | `mitre_techniques`, `cve_technique_map` | `GET /api/techniques/top`, CVE `techniques` field | Sidebar, DetailDrawer Intel tab |
 | `atlas_*`, `cve_atlas_map` | `GET /api/atlas/*`, `GET /api/cves/{id}` (per-CVE fields) | DrawerAtlasSection, CaseStudies (global list) |
 | `otx_*` | CVE detail, correlation, IOC lookup | DetailDrawer Intel tab, IOCLookup |
+| `detection_rules`, `detection_rule_cves`, `detection_rule_techniques` | `GET /api/cves/{id}/detection`, Forge generate | DetailDrawer Detect tab, Forge hunt packs |
+| `ai_operation_payloads` | `GET /api/admin/ai/operations/{id}/payload`, replay | Admin AI Operations |
 | `feed_cache`, `ioc_cache` | Internal — snapshot/TTL cache; `GET /api/usage/ioc` for IOC usage aggregate | Transparent to UI except IOC quota display |
 | `correlation_*` | `GET /api/cves/{id}/correlation`, drawer bundle, `GET /api/correlation/clusters` | DetailDrawer correlation section, Forge campaigns, wallboard |
 | `cve_exploits` | Via Sploitus loader in CVE detail | DetailDrawer Intel tab |
@@ -227,7 +230,7 @@ Sequence diagram: [`docs/diagrams/flow_cve_feed.mermaid`](diagrams/flow_cve_feed
    - `GET /api/cves/{id}/related` — only when **Related** tab active
    - `GET /api/cves/{id}/detection` — only when **Detect** tab first opened
    - `GET /api/cves/{id}/greynoise-scans` — only when the GreyNoise action is triggered
-5. **OTX pulse IOCs:** loaded via CVE detail `otx_pulses`; pulse IOC drill-down uses `GET /api/otx/pulses/{id}/iocs`.
+5. **OTX pulse IOCs:** loaded via CVE detail `otx_pulses`; pulse IOC drill-down uses `GET /api/otx/pulses/{id}/iocs`. Cache order: `feed_cache` (6h) → `otx_cve_pulses` (6h) → live OTX API. When the upstream returns HTTP 4xx/5xx or the circuit is open, `fetch_cve_pulses` returns `None` and `load_otx_pulses_for_cve` serves **any-age** stale rows from `otx_cve_pulses` without overwriting the mirror — transient OTX outages must not wipe cached pulses.
 
 **ATLAS wiring:** `GET /api/cves/{id}` returns `has_ai_context`, `atlas_techniques`, and `atlas_case_studies` via `database.get_atlas_techniques_for_cve` / `get_atlas_case_studies_for_cve` for `DrawerAtlasSection.jsx`.
 
@@ -419,6 +422,15 @@ Signed-in users keep their pinned CVEs in `watchlist`; legacy snooze data is cle
 4. **UI:** `useWatchlist` hook loads pins on mount and clears legacy snoozes via `DELETE /api/watchlist/snoozes`. Pin on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip. Mutations bump a version counter so `CVEFeed` refetches without a full page reload. No `localStorage`. Snooze controls were removed from the UI (API retained for migration).
 5. **Monitor alerts:** `watchlist_monitor_alerts` checks pinned CVEs hourly for KEV / EPSS / PoC changes and emits optional `watchlist_alert` webhooks.
 
+### G1. SigmaHQ local detection index (2026-07)
+
+1. **Scheduler:** `sigmahq_index_sync` (default enabled, interval `SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS` = 168). Registered in `scheduler.py`; manual Run now via Admin Scheduler; Force re-sync via `POST /api/admin/feeds/sigmahq/force-resync` clears watermark **and** spawns one forced apply.
+2. **Ingest path:** `detection/sigmahq_index.py` resolves tip commit on `SigmaHQ/sigma`, downloads one codeload tarball, parses YAML, batch-upserts into Postgres `detection_rules` + link tables (`detection_rule_cves`, `detection_rule_techniques`). Soft-retires paths missing from the archive. Watermark `sync_state.sigmahq_archive_identity` stores `{commit_sha, sha256, synced_at}` — skip when unchanged.
+3. **Schema:** Alembic `035_detection_rules_sigmahq` (Postgres-only). Column `"references"` is quoted (reserved word). CI scans all migrations for unquoted reserved column names (`test_alembic_revisions.py`).
+4. **Read path:** `find_index_rules_for_cve` / `find_sigma_rules` serve CVE-exact YAML from the local index on `GET /api/cves/{id}/detection` and Forge generate (`compose_basis: sigmahq_index`). Live GitHub Sigma search in `detection/rule_sources.py` is fallback **only when the index is empty**; Elastic community search remains GitHub-backed.
+5. **UI honesty:** Detect tab shows DRL-1.1 attribution (author, license, Show YAML). Empty copy distinguishes never-synced index, empty index (0 rules), and no CVE-exact match. Admin Feed Health + Needs Attention flag empty/stale (>14d) index.
+6. **First deploy:** Alembic creates empty tables — operator must run Sync once (Feed health or Scheduler) before `rules_active` > 0.
+
 ### H. Security posture — corpus + Admin shell + live sections (TM-0→TM-6)
 
 1. **Corpus (TM-1, extended TM-3/TM-4/TM-5):** `backend/security_architecture/corpus/` — versioned YAML, `origin: generated | curated | live` per record. Generated files (`components.yaml`, `api_inventory.yaml`, `scheduler_jobs.yaml`, `db_tables.yaml`, `self_stack.yaml`, and TM-4's `graphs/architecture.json`) are emitted by `scripts/generate_security_corpus.py` from live route/scheduler/schema/dependency-manifest introspection and drift-tested in CI (`test_security_architecture_corpus.py::test_committed_corpus_has_no_drift`, plus TM-4's `test_committed_architecture_graph_has_no_drift`). `self_stack.yaml` (TM-3, spec §4.5) holds one record per dependency term parsed from `backend/requirements.txt` and `frontend/package.json`, plus declared runtime components (`postgresql`, `nginx`) — a new dependency changes this file and fails the drift check until regenerated. `graphs/architecture.json` (TM-4) holds nodes for every component/job/table already in the other generated files (no parallel node list to hand-sync — a corpus test asserts the node id set equals that union exactly) plus `component -> table` `references_table` edges, derived by regexing each router source file for table names appearing directly after a SQL keyword (`FROM`/`JOIN`/`INTO`/`UPDATE`/`DELETE FROM`) — anchored to real SQL syntax so a table named e.g. `users` can't spuriously match an unrelated identifier or comment elsewhere in the file. No x/y layout ships in this file: presentation isn't a code fact, so it doesn't belong in a drift-checked generated artifact — `ArchitectureGraphSection.jsx` computes a deterministic cluster+index grid layout at render time. Curated files: `controls.yaml` got its first real security-review seed in TM-3 (10 controls); TM-4 seeded `trust_boundaries.yaml` with its first 2 real boundaries (Browser→API→Database, BRIEFR→external services), each linking `related_ids` to real generated component/table ids and TM-3's curated controls. TM-5 seeded `security_decisions.yaml` (2 records mapping the two real ADRs in `docs/decisions/` — `decision`/`alternatives`/`tradeoffs`/`consequences` drawn directly from each ADR's own sections, not invented), `abuse_cases.yaml` (6 entries, each `current_protection` field citing real code as evidence — webhook SSRF, webhook replay, rate-limit bypass, SQL injection, log secret leakage, plus one honestly-open `broken-authorization-single-tier-session` finding with no mitigating control), and `reviews.yaml` (3 curated review-pass records documenting the program's own TM-3/TM-4/TM-5 security-review passes). `risks.yaml` stays intentionally empty — no real risk-register judgment pass has happened; the Risk Register's only non-empty content is `live` self-stack rows. `corpus_loader.py` validates required fields, `origin`, and cross-file `related_ids` at load time (mtime-cached); `security_architecture/graphs.py` separately loads/caches `graphs/architecture.json` (JSON, not YAML — different schema shape, not an entity-record list). `live` rows (self-stack risk-register entries, and TM-5's `reviews` section audit-log events) are never stored in a file — computed at read time by `security_architecture/merge.py` and merged into `/section/{risks,reviews}` responses.
@@ -463,6 +475,7 @@ All scheduler-driven intel sources (NVD, KEV, EPSS, MITRE, ATLAS, OSV, 5× RSS, 
 - **NVD exception:** keeps its bespoke 429/key-rejection retry logic but uses the pooled client and reports into the same health registry.
 - **Quota-billed sources** (VirusTotal, AbuseIPDB, GreyNoise) use `retries=0` — a failed call is never retried automatically, so quota cannot be burned by the retry loop. Circuit breakers still apply.
 - **CIRCL negative caching:** failed/missing lookups are cached for 24h (`circl_miss:*` keys) so a rate-limited upstream is not re-hammered with the same IDs on every sync cycle.
+- **OTX pulse stale fallback:** when `fetch_cve_pulses` cannot reach OTX (HTTP 4xx/5xx, circuit open, quota exhausted), `load_otx_pulses_for_cve` returns any-age rows from `otx_cve_pulses` and does **not** call `store_otx_cve_pulses` with an empty list — upstream outages must not delete mirrored pulses.
 - **SQL vs source I/O:** `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` (default 60) is an asyncpg **SQL statement** budget only. Feed/API HTTP timeouts stay per-source in `feeds/` (CIRCL ~25s, Sploitus ~30s, ThreatFox ~120s, …). Scheduler paths commit or close before outbound source I/O (`db/txn_boundaries.commit_before_source_io`) so slow CIRCL/Sploitus cannot hold `cves` locks and burn concurrent writers (VulnCheck/KEV/EPSS) into `Database command timeout`. Do not raise the global SQL timeout to paper over slow APIs.
 
 All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS, RSS) and on-demand enrichment (`enrichment/ioc.py`, `feeds/extended.py` — Sploitus/GreyNoise/MalwareBazaar/URLhaus/CIRCL, `feeds/otx.py`, `feeds/osv.py`).
@@ -522,7 +535,7 @@ delivery means each durable task must be idempotent; the table records the guara
 
 | System | Owner / entrypoint | Jobs | Idempotency mechanism |
 |--------|--------------------|------|-----------------------|
-| **APScheduler** (in-process) | `scheduler.py:start_scheduler`; gated by `BRIEFR_SCHEDULER_ENABLED` (single owner across replicas) | 26 normal recurring jobs in non-smoke startup + 3 registration-gated optional jobs (`otx_continuous_sync`, `exploit_sources_sync`, `detection_context_llm`). `llm_product_extraction` becomes an enqueue tick when Procrastinate is enabled. | `max_instances=1` + `coalesce=True` per job; per-job `asyncio.Lock` (`scheduler_locks._LOCKS`); manual `/api/refresh*` shares the same locks |
+| **APScheduler** (in-process) | `scheduler.py:start_scheduler`; gated by `BRIEFR_SCHEDULER_ENABLED` (single owner across replicas) | 27 normal recurring jobs in non-smoke startup + 4 registration-gated optional jobs (`otx_continuous_sync`, `exploit_sources_sync`, `detection_context_llm`, `sigmahq_index_sync`). `llm_product_extraction` becomes an enqueue tick when Procrastinate is enabled. | `max_instances=1` + `coalesce=True` per job; per-job `asyncio.Lock` (`scheduler_locks._LOCKS`); manual `/api/refresh*` shares the same locks |
 | **Procrastinate** (durable queue) | `jobs/app.py` + `jobs/worker.py:start_inprocess_worker`; gated by `PROCRASTINATE_ENABLED`, Postgres-only | `jobs:health_ping`, `jobs:stack_backfill`, `jobs:llm_product_extraction` (`jobs/tasks.py`) | `stack_backfill`: per-run `queueing_lock` on defer (IDEM-B) + atomic `claim_run_running` run gate (IDEM-A); NVD rate-limit deferrals self-schedule the same task 180s later when the durable app is available. `llm_product_extraction`: singleton `queueing_lock` on scheduler defer/retry/manual Run + pool-scoped extraction (`db=None`) + bounded retry delays for retryable timeouts |
 
 Because `claim_run_running` (IDEM-A) makes stack-backfill execution exactly-once regardless of
@@ -585,7 +598,8 @@ row here with their idempotency key before merge.
 | GreyNoise | `feeds/extended.py`, IOC | IP classification | `GREYNOISE_API_KEY` | 50/week | `[]` or unknown record |
 | VirusTotal | `enrichment/ioc.py` | IP/hash/domain reputation | `VIRUSTOTAL_API_KEY` | 500/day | Empty VT fields |
 | AbuseIPDB | `enrichment/ioc.py` | IP abuse score | `ABUSEIPDB_API_KEY` | 1000/day | Skipped if no key |
-| OTX | `feeds/otx.py` | Pulses, IOCs | `OTX_API_KEY` | 10k/month | `[]`; nightly skipped if unset |
+| OTX | `feeds/otx.py` | Pulses, IOCs | `OTX_API_KEY` | 10k/month | `[]` on detail when unset; upstream 5xx serves stale `otx_cve_pulses` when present; nightly skipped if unset |
+| SigmaHQ | `detection/sigmahq_index.py`, scheduler `sigmahq_index_sync` | Local Sigma rule mirror (CVE-exact, DRL-1.1) | — (optional `GITHUB_TOKEN` for rate limits) | Unrestricted tarball | Empty index until first sync; Detect/Forge fall back to GitHub Sigma search only when index empty |
 | OSV.dev | `feeds/osv.py` | Package affected versions | — | Unrestricted | `[]` |
 | CIRCL (vulnerability.circl.lu) | `feeds/extended.py` | Extra refs, CAPEC (CVE 5.x records) | `CIRCL_API_KEY` optional (`X-API-KEY`) | Rate-limited; 7d hit cache + 24h negative cache | No merge |
 | MalwareBazaar | `feeds/extended.py` | Hash metadata | `ABUSECH_AUTH_KEY` | Fair use | `None` |
@@ -593,7 +607,7 @@ row here with their idempotency key before merge.
 | ThreatFox | `feeds/threatfox.py`, scheduler | IOC mirror for retro-match | `ABUSECH_AUTH_KEY` | Fair use | Skip sync; prior rows retained |
 | VulnCheck KEV | `feeds/vulncheck_kev.py`, scheduler | Exploited-in-the-wild tier | `VULNCHECK_API_KEY` | API key required | Job no-op; flags unchanged |
 | Groq → Cerebras → OpenRouter → Gemini | `ai/llm_router.py`, `ai/summary.py`, `ml/product_extraction.py`, `detection/context_llm_sync.py` | Fixed-order failover chain: executive summary, LLM product extraction, detection-context artifacts; Program E Task 2 adds admin replay flows backed by stored failure payloads (`GET /api/admin/ai/operations/{operation_id}/payload`, `POST .../{operation_id}/retry`) with replay provenance (`context_type="replay"`, `context_id=<original operation_id>`) and circuit-open guard (`409` unless `force=true`) | `GROQ_API_KEY` / `CEREBRAS_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY` | Per-provider RPM/TPM pacing (`ai/llm_pacing.py`) | Falls through to the next provider, then to a deterministic template/heuristic — no Anthropic/Claude integration exists in this codebase |
-| GitHub | `detection/rule_sources.py` | Sigma/Elastic rule search | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules |
+| GitHub | `detection/rule_sources.py`, `detection/sigmahq_index.py` | Sigma/Elastic rule search; SigmaHQ tarball tip resolve | `GITHUB_TOKEN` (optional) | 60/hr anon | `[]` rules; SigmaHQ index preferred over live search when populated |
 | RSS (5 sources) | `feeds/incident_news.py` | News cards (editorial titles filtered) | — | Per-feed | Per-source error in `errors[]` |
 | CISA Vulnrichment | `feeds/vulnrichment.py` | CISA ADP CVSS / CWE / CPE gap-fill | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; skip run |
 | cvelistV5 | `feeds/cvelistv5.py` | CVE JSON 5.x + ADP (pre-NVD) | `GITHUB_TOKEN` (optional) | 60/hr anon GitHub API | Log error; watermark retained |

@@ -14,6 +14,8 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+---
+
 ## 2026-07-23 — Install documentation clarity (SELF_HOST canonical guide)
 
 ### What changed
@@ -28,7 +30,23 @@ Operators asked whether README alone covered Postgres+pgvector install and linki
 
 ### Next
 
-- None required for install docs; merge PR when green.
+- None required for install docs (merged #743).
+
+---
+
+## 2026-07-23 — Living docs + graphify sweep (SigmaHQ + OTX resilience)
+
+**Context:** Post-deploy operator asked for graphify refresh and architecture/docs
+aligned with shipped SigmaHQ local index, Alembic `035` guard, OTX stale fallback
+(#741), and About/Privacy/Terms refresh.
+
+**Updated:** `SYSTEM_DESIGN.md` (G1 SigmaHQ index flow, OTX stale fallback, scheduler
+job counts, external-deps table), `PRODUCT_STATUS.md`, `OPERATIONS.md`, `API_REFERENCE.md`,
+`README.md`, `HOW_IT_WORKS.md`, `DATA_SNAPSHOT.md`, `BACKLOG.md` (SigmaHQ → shipped),
+`ONBOARDING.md` (troubleshooting + subsystem pointers). `export_intel_snapshot.py`
+allowlist extended with `detection_rules*` + `sigmahq_archive_identity`.
+
+**Next:** Operator runs SigmaHQ Force re-sync on production; study guide refresh in follow-up commit.
 
 ---
 

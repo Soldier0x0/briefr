@@ -17,7 +17,7 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 [`../HANDOVER.md`](../HANDOVER.md). **Build order when activated:** add checkboxes to
 [`SPRINT_2026-07.md`](SPRINT_2026-07.md) or a future sprint doc.
 
-**Last reconciled:** 2026-07-23 (SigmaHQ local index design added). Prior: 2026-07-22 against `main` (post #731–#733). Post–UI E2E UX observations master plan added
+**Last reconciled:** 2026-07-23 (SigmaHQ local index shipped; OTX stale-fallback + doc sweep). Prior: 2026-07-22 against `main` (post #731–#733). Post–UI E2E UX observations master plan added
 ([`specs/e2e-ux-observations-2026-07-15.md`](specs/e2e-ux-observations-2026-07-15.md)).
 
 ---
@@ -31,7 +31,7 @@ docs so nothing is lost when specs move to [`archive/superseded/`](../archive/su
 | **G1–G4** | Maintainer modules 1–4 (trace + private notes) | 🅿️ end-of-lifecycle | Sprint §G |
 | **Phase 4 STIX/Sigma export** | V1.5 tail | 🅿️ | Sprint V1.5 |
 | **Detection composer** | Evidence-composed Sigma/KQL/SPL/QRadar/YARA (no LLM default); replace Forge keyword templates; shared drawer Detect + Forge | ✅ DC-1…DC-4 shipped | [`specs/detection-composer-design.md`](specs/detection-composer-design.md) |
-| **SigmaHQ local index** | Tarball ingest → Postgres upsert + commit/sha256 watermark; CVE-exact map; DRL-1.1 attribution; Detect/Forge read local (Sigma only; no YARA); full Admin multi-surface | 📋 implementation-ready plan — U1…U5 | [`specs/sigmahq-local-index-design.md`](specs/sigmahq-local-index-design.md) · [`../plans/2026-07-23-001-feat-sigmahq-local-index-plan.md`](../plans/2026-07-23-001-feat-sigmahq-local-index-plan.md) |
+| **SigmaHQ local index** | Tarball ingest → Postgres upsert + commit/sha256 watermark; CVE-exact map; DRL-1.1 attribution; Detect/Forge read local (Sigma only; no YARA); full Admin multi-surface | ✅ shipped 2026-07-23 | [`specs/sigmahq-local-index-design.md`](specs/sigmahq-local-index-design.md) · [`../plans/2026-07-23-001-feat-sigmahq-local-index-plan.md`](../plans/2026-07-23-001-feat-sigmahq-local-index-plan.md) |
 
 ---
 
