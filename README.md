@@ -80,7 +80,7 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 **Threat investigation**
 - Investigation panel with cross-tab pivots (CVE → IOC → ATLAS / Forge / related CVE)
 - Explainable correlation engine (shared OTX infrastructure, actor/sector match, temporal vendor anomalies, campaign clustering) — no black-box ML score
-- Detection tab and Forge: SigmaHQ + Elastic community rules, generated Sigma fallback, per-platform SIEM queries (Elastic KQL, Splunk SPL, Sentinel KQL, QRadar AQL), YARA generation from observed hashes
+- Detection tab and Forge: **local SigmaHQ Postgres index** (CVE-exact, DRL-1.1) with GitHub Sigma/Elastic fallback when the index is empty; generated Sigma hunt starters only when no community rule matches
 - Asset profile wizard with CPE-based exposure matching (`POST /api/cves/match` only — inventory never stored server-side)
 
 **IOC enrichment**
@@ -136,6 +136,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | MITRE ATT&CK | Techniques, groups, CVE mappings | Weekly (Sunday cron) | `POST /api/refresh/mitre` |
 | MITRE ATLAS | AI/ML techniques + case studies | Weekly (with MITRE job) | `POST /api/refresh/mitre` |
 | OTX (AlienVault) | Campaign pulses + IOCs | Nightly job + continuous budget-paced sync | `OTX_API_KEY` |
+| SigmaHQ | Community Sigma rules (local Postgres mirror) | Weekly `sigmahq_index_sync` + Admin Force re-sync | optional `GITHUB_TOKEN` (rate limits) |
 | ThreatFox (abuse.ch) | Bulk IOC mirror | Scheduler (7-day rolling window) | — |
 | VirusTotal | IOC reputation | On demand (6h cache) | `POST /api/ioc/lookup` |
 | AbuseIPDB | IP abuse score | On demand (6h cache) | `POST /api/ioc/lookup` |
@@ -148,7 +149,7 @@ BRIEFR incorporates publicly available intelligence from NVD, CISA KEV, FIRST EP
 | CIRCL (vulnerability.circl.lu) | Extended CVE references + CAPEC | On CVE detail / ingest (7d cache, 24h negative cache) | `CIRCL_API_KEY` optional |
 | VulnCheck | Community KEV supplement | Scheduler | `VULNCHECK_API_KEY` optional |
 | Groq / Cerebras / OpenRouter / Gemini | PDF executive summary, product extraction, detection-context artifacts | On demand / scheduler | see LLM keys below |
-| GitHub | Sigma + Elastic community rule search | On Detect tab open | `GITHUB_TOKEN` optional |
+| GitHub | Sigma/Elastic community rule search; SigmaHQ tarball tip resolve | Detect tab + weekly SigmaHQ sync | `GITHUB_TOKEN` optional |
 | RSS × 5 | Security news cards (The Hacker News, Krebs, Dark Reading, Schneier, CISA Advisories) | Snapshot every 30 min (`INCIDENT_FEED_REFRESH_MINUTES`) | `GET /api/case-studies/feed` |
 
 </details>
@@ -306,7 +307,7 @@ Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What change
 | `GREYNOISE_API_KEY` | IP context (50/week free) | — |
 | `ABUSECH_AUTH_KEY` | MalwareBazaar + URLhaus + ThreatFox | — |
 | `OTX_API_KEY` | OTX pulses + correlation | — |
-| `GITHUB_TOKEN` | Detection rule search + PoC-GitHub rate limit | — |
+| `GITHUB_TOKEN` | SigmaHQ index sync + detection rule search + PoC-GitHub rate limit | — |
 | `CIRCL_API_KEY` | vulnerability.circl.lu authenticated rate limits | — |
 | `VULNCHECK_API_KEY` | VulnCheck community KEV supplement | — |
 | `GROQ_API_KEY` | LLM chain, tried first (product extraction, detection-context, PDF summaries) | — |
@@ -318,6 +319,8 @@ Recent field changes: `GET /api/changes?since_hours=24` (BRIEF tab **What change
 | `EMBEDDINGS_PGVECTOR` | Store embeddings in Postgres pgvector when the extension exists | `1` |
 | `LLM_PRODUCT_EXTRACTION_ENABLED` | Fill empty `affected_products` for NVD-unanalyzed CVEs via the LLM chain (provenance-marked, superseded by official CPE) | `0` |
 | `DETECTION_CONTEXT_LLM_ENABLED` | LLM-based detection-artifact extraction (Nuclei-based extraction runs regardless, on by default) | `0` |
+| `SIGMAHQ_INDEX_SYNC_ENABLED` | Weekly mirror of SigmaHQ rules into Postgres (`detection_rules*`) | `1` |
+| `SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS` | SigmaHQ sync cadence | `168` |
 | `BRIEFR_ENV` | `production` disables Swagger/OpenAPI docs | `development` |
 | `RATE_LIMIT_ENABLED` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` + login | `1` |
 | `RATE_LIMIT_IOC_PER_MINUTE` / `RATE_LIMIT_REFRESH_PER_MINUTE` | Per-client-IP budgets (429 + `Retry-After` over the limit) | `30` / `10` |

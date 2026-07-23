@@ -54,6 +54,9 @@ INTEL_TABLES: tuple[str, ...] = (
     "otx_cve_pulses",
     "otx_pulse_iocs",
     "otx_pulses",
+    "detection_rules",
+    "detection_rule_cves",
+    "detection_rule_techniques",
     "correlation_actor",
     "correlation_temporal",
     "correlation_campaigns",
@@ -94,6 +97,7 @@ SYNC_STATE_ALLOWLIST: frozenset[str] = frozenset({
     "poc_github_commit",
     "correlation_build_watermark",
     "correlation_last_run",
+    "sigmahq_archive_identity",
 })
 
 

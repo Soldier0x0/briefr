@@ -168,7 +168,7 @@
       
       <h4 class="subhead how">Doctor, backup, update, compose</h4>
       <div class="prose">
-        <p>Beyond the systemd unit and nginx conf: <code>deploy/briefr-doctor.sh</code> runs health/import checks (and can fetch a support pack); <code>briefr-backup.sh</code> / timers and Postgres variants cover host backups; <code>briefr-update.sh</code> / <code>briefr-restore.sh</code> are the operator upgrade/restore path; <code>docker-compose.postgres.yml</code> is the local/dev Postgres+pgvector posture. Know the map even if you only run a subset on a given box.</p>
+        <p>Beyond the systemd unit and nginx conf: <code>deploy/briefr-doctor.sh</code> runs health/import checks (and can fetch a support pack); <code>briefr-backup.sh</code> / timers and Postgres variants cover host backups; <code>briefr-update.sh</code> / <code>briefr-restore.sh</code> are the operator upgrade/restore path (update runs Alembic forward-only, health gate, then strict <code>smoke-intel.sh</code> — OTX upstream 5xx can fail smoke even when deploy succeeded; retry smoke or <code>BRIEFR_STRICT_SMOKE=0</code>); <code>docker-compose.postgres.yml</code> is the local/dev Postgres+pgvector posture. After a deploy that adds SigmaHQ tables, run Feed health → SigmaHQ Sync once — empty index until then. Know the map even if you only run a subset on a given box.</p>
       </div>
 <div class="self-check">
         <h4>Self-check</h4>

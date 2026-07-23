@@ -283,6 +283,11 @@ USER/PASSWORD variables. **Strict by default (J3):** a failing smoke check exits
 non-zero. Opt out with `BRIEFR_SKIP_SMOKE=1` (skip entirely) or
 `BRIEFR_STRICT_SMOKE=0` (warn only).
 
+**OTX upstream outages:** when AlienVault OTX returns HTTP 4xx/5xx during smoke or
+normal CVE detail loads, BRIEFR serves stale `otx_cve_pulses` when present and does
+not wipe the mirror. Smoke may still fail if no cached pulses exist for the fixture
+CVE — retry later or use `BRIEFR_STRICT_SMOKE=0`; the deploy itself is not rolled back.
+
 ---
 
 ## Pre-release checklist (J4)

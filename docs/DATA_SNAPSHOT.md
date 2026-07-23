@@ -68,6 +68,9 @@ the monthly open-core snapshot.
 | `otx_cve_pulses` | OTX pulse ↔ CVE mirror |
 | `otx_pulse_iocs` | OTX IOC rows (public pulse data) |
 | `otx_pulses` | OTX pulse metadata |
+| `detection_rules` | SigmaHQ rule YAML mirror (DRL-1.1) |
+| `detection_rule_cves` | CVE-exact Sigma rule links |
+| `detection_rule_techniques` | Sigma rule ↔ ATT&CK technique links |
 | `correlation_actor` | Actor-sector correlation |
 | `correlation_temporal` | Vendor temporal anomalies |
 | `correlation_campaigns` | Campaign objects |
@@ -89,6 +92,7 @@ Export **only** ingest watermarks and upstream version markers:
 | `poc_github_commit` | PoC GitHub mirror commit |
 | `correlation_build_watermark` | Correlation build cursor |
 | `correlation_last_run` | Correlation last-run timestamp |
+| `sigmahq_archive_identity` | SigmaHQ tarball watermark `{commit_sha, sha256, synced_at}` |
 
 **Exclude** all other `sync_state` rows (scheduler pause flags, last-run
 telemetry, backup dead-man baselines, operator stack overrides, etc.).

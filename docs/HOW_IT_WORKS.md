@@ -53,7 +53,9 @@ The drawer calls `POST /api/cves/{cve_id}/risk` with optional asset/profile cont
 
 ![Correlation pipeline](assets/correlation-pipeline.svg)
 
-Four explainable lanes: **Campaigns**, **Infrastructure**, **Actor/sector**, **Temporal**. OTX pulse titles are normalized for display, and pulse clusters show why members were grouped. No black-box ML score; drawer open does not call OTX live.
+Four explainable lanes: **Campaigns**, **Infrastructure**, **Actor/sector**, **Temporal**. OTX pulse titles are normalized for display, and pulse clusters show why members were grouped. No black-box ML score; drawer open does not call OTX live. When OTX is temporarily down, cached `otx_cve_pulses` are served without wiping the mirror.
+
+**Detection:** SigmaHQ rules are mirrored weekly into Postgres (`sigmahq_index_sync`); Detect and Forge read CVE-exact YAML from the local index (DRL-1.1 attribution). Live GitHub Sigma search is fallback only when the index is empty.
 
 ---
 

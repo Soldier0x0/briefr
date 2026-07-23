@@ -503,7 +503,7 @@ Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404
 - `400` — invalid CVE ID format
 - `404` — CVE not found
 
-**Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays.
+**Notes:** Includes `has_ai_context`, `atlas_techniques[]`, and `atlas_case_studies[]` when MITRE ATLAS data is present in the DB. Enrichment failures return `200` with empty arrays. **OTX:** `otx_pulses` loads from `feed_cache` (6h) → `otx_cve_pulses` (6h) → live OTX API. When upstream OTX is unavailable (HTTP 4xx/5xx, circuit open), the handler serves any-age stale `otx_cve_pulses` rows and does not overwrite the mirror with an empty list.
 
 **Provenance (additive — added in V1.3):** `affected_products_source` is `""` for official CPE-derived (or unset) product lists and `"llm"` when `affected_products` was filled by the env-gated LLM product extraction job for an NVD-unanalyzed CVE. Official CPE data supersedes LLM output on the next NVD sync and clears the marker. The field also appears on items returned by `GET /api/cves` and `GET /api/cves/export`.
 
