@@ -115,6 +115,8 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 
 **Database:** PostgreSQL 16 in production (required); use a pgvector-enabled Postgres image for embeddings. SQLite is the zero-config dev/test fallback only — see [`docs/POSTGRES.md`](docs/POSTGRES.md).
 
+> **Note — PostgreSQL vs SQLite.** In early testing, when BRIEFR was a simple CVE reader dashboard, SQLite was a practical default. As the product matured — correlation, scheduled ingest, campaign logic, embeddings, and overlapping API plus scheduler traffic — parallel reads and writes became a bottleneck, and the architecture pivoted to **PostgreSQL 16 (+ pgvector)** for every serious deployment. The tree still carries a **SQLite dev/test fallback** (omit `DATABASE_URL` for a zero-config local file DB); on production hosts you should run Postgres, and those SQLite code paths are largely dormant there. **Removing the fallback** is tracked in draft [PR #752](https://github.com/Soldier0x0/briefr/pull/752), which is **not merged to `main`** — it will stay open until it is validated against existing Postgres installs, so nothing changes for production until that lands.
+
 **LLM enrichment (all optional, all free/cheap-tier, none load-bearing):** Groq → Cerebras → OpenRouter → Gemini, in that fixed failover order. Every LLM-backed feature (PDF summaries, product extraction, detection-context artifacts) has a deterministic non-LLM fallback — BRIEFR is fully functional with zero LLM keys configured.
 
 ---
