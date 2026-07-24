@@ -1,7 +1,7 @@
 """Intel snapshot format versioning (Wave 4 / open-core).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

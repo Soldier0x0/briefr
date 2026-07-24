@@ -1,6 +1,6 @@
 # BRIEFR — Operations & Deploy Compatibility
 
-Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the Apache License, Version 2.0 (`SPDX-License-Identifier: Apache-2.0`); see the repository `LICENSE` and `NOTICE` files.
 
 **Last updated:** 2026-07-21
 **Status:** Current production ops contract — Postgres-first systemd/nginx deploy with opt-in durable queue, embeddings, and catch-up controls.

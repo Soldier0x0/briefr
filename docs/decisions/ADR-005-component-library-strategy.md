@@ -24,7 +24,7 @@ Constraints (from ADR-003 / `CLAUDE.md` / the design system):
 - Components must be stylable entirely via BRIEFR semantic tokens (no injected theme/global CSS).
 - Motion budget: 120–180ms, `transform`/`opacity` only, respect the tool-wide motion toggle.
 - Preserve the dark-terminal identity and WCAG 2.1 AA.
-- Project license is **Business Source License 1.1**; dependencies must carry a permissive
+- Project license is **Apache License 2.0**; dependencies must carry a permissive
   license (MIT / Apache-2.0 / BSD) so they can be bundled without conflicting terms.
 
 ## Decision
@@ -89,7 +89,7 @@ reintroduce inconsistency.
 A new UI dependency (or promoting a Conditional one) requires **all** of:
 1. An update to this ADR (move it into the correct list with rationale).
 2. Design-review sign-off against `docs/design/design-system.md`.
-3. **License** check (MIT/Apache-2.0/BSD; bundlable under BUSL-1.1) and **React 19** compatibility.
+3. **License** check (MIT/Apache-2.0/BSD; bundlable under Apache-2.0) and **React 19** compatibility.
 4. **No Tailwind / no injected global CSS**; must be themable via BRIEFR semantic tokens.
 5. **Bundle-size** justification (prefer headless/tree-shakeable; note gzip cost).
    Current budgets (recorded in PR bodies): primitives layer ≤ 35 kB gzip incremental

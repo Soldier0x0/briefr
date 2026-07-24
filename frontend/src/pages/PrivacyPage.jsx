@@ -143,9 +143,9 @@ export default function PrivacyPage() {
 
       <h2 className="legal-section-heading">8. License and self-hosting</h2>
       <p className="legal-p">
-        BRIEFR's source code is licensed under the Business Source License
-        1.1 — see the Terms of Service for details. Copyright &copy; 2026
-        Sai Harsha Vardhan. This Privacy Policy describes data practices for
+        BRIEFR&apos;s source code is licensed under the Apache License,
+        Version 2.0 — see the Terms of Service for details. Copyright
+        &copy; 2026 Sai Harsha Vardhan. This Privacy Policy describes data practices for
         the hosted instance at projectjupiter.in only. If you encounter a
         self-hosted BRIEFR instance elsewhere, its operator — not Sai Harsha
         Vardhan — is the data fiduciary for that instance, and this policy

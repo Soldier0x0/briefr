@@ -6,7 +6,7 @@ The frontend (frontend/src/scoring/riskScore.js) fetches weights for display onl
 the canonical score is computed server-side via POST /api/cves/{cve_id}/risk.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from fastapi import APIRouter

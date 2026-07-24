@@ -14,7 +14,7 @@ module-level `app` object (same value, no shape change). `format_time_in_tz`
 stays in routers/health.py (its primary consumer) and is imported here.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 import asyncio

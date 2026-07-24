@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Why Business Source License 1.1 — and the AGPL decision it reversed — BRIEFR Study Guide</title>
+  <title>Why Apache License 2.0 — open source with built-in attribution — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="../assets/book.css">
 </head>
 <body data-page-id="arch-license" data-pages-base="" data-assets-base="../assets/">
@@ -36,7 +36,7 @@
         <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
         <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
         <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
-        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
       </div>
 
       <div class="toc-group">
@@ -133,34 +133,33 @@
     <section class="page active chapter" id="arch-license">
       <div class="chapter-head">
         <span class="chapter-num">Part 0B · Chapter A5</span>
-        <h3>Why Business Source License 1.1 — and the AGPL decision it reversed</h3>
-        <p class="dek">The license changed twice before the public flip: proprietary → AGPL-3.0-or-later → BSL-1.1. This chapter explains the current model and is honest about the reversal, since a study guide that hides its own subject's history isn't trustworthy.</p>
-        <div class="files"><span class="chip">LICENSE</span><span class="chip">docs/planning/STRATEGY.md</span></div>
+        <h3>Why Apache License 2.0 — open source with built-in attribution</h3>
+        <p class="dek">BRIEFR is OSI-approved open source under Apache 2.0. This chapter explains what that means for users and contributors — and why the project chose adoption over a commercial-use paywall.</p>
+        <div class="files"><span class="chip">LICENSE</span><span class="chip">NOTICE</span><span class="chip">CONTRIBUTING.md</span></div>
       </div>
 
-      <h4 class="subhead concept">What's actually on record — including the reversal</h4>
+      <h4 class="subhead concept">What is on record today</h4>
       <div class="prose">
-        <p><code>docs/planning/STRATEGY.md</code> §6 records two decisions in sequence, both dated: "Decided 2026-07-10 (Track F2): AGPL-3.0-or-later," then "Superseded 2026-07-19 (Track F2-R)" in favor of the Business Source License 1.1 (BSL). Both were made before the public repository flip, which matters for exactly one reason: no external party had received code under the AGPL grant yet, so reversing it carried none of the legacy-grant complications that revoking a license already held by outside forks would create. The current, governing license is BSL-1.1 — <code>LICENSE</code>, <code>CONTRIBUTING.md</code>, and every active source file's SPDX header (<code>SPDX-License-Identifier: BUSL-1.1</code>) all agree on this.</p>
+        <p>The governing license is <strong>Apache License, Version 2.0</strong> — <code>LICENSE</code>, <code>NOTICE</code>, <code>CONTRIBUTING.md</code>, and SPDX headers (<code>SPDX-License-Identifier: Apache-2.0</code>) on active source files. Earlier drafts considered proprietary terms, AGPL-3.0-or-later, and BUSL-1.1 before publication; those were reversed before external parties depended on them. The final choice fits BRIEFR's shape: a self-hosted analyst pane whose operators bring their own intel API keys — not a product whose revenue model is selling software licenses.</p>
       </div>
 
-      <h4 class="subhead why">What BSL-1.1 actually does — a paywall with a built-in expiry, not permanent copyleft</h4>
+      <h4 class="subhead why">What Apache 2.0 grants — and what attribution means</h4>
       <div class="prose">
-        <p>BSL is a different shape of license than either AGPL or a permissive license, and it's worth being precise about the difference rather than treating "source-available" as a synonym for "open source." BRIEFR's specific terms (set in the <code>LICENSE</code> file's "Additional Use Grant"): anyone may read, copy, modify, and self-host the code free of charge for personal, non-commercial purposes — but use by or on behalf of a for-profit organization ("Commercial Use") requires a one-time, lifetime commercial license purchased from the Licensor. That is the paywall AGPL does not have — AGPL would let a business self-host and even modify BRIEFR commercially for free, as long as they shared modifications back over the network; BSL asks that same business to pay once, with no such carve-out. The second defining feature is the "Change Date": four years after each version's publication, that version automatically converts to the Apache License 2.0 — fully permissive, no restrictions at all. So BSL isn't a permanent restriction; it's a time-boxed head start, letting the Licensor capture commercial-use revenue on recent versions while guaranteeing that revenue window eventually closes and the code becomes as open as it gets.</p>
-        <p>This is the same license family HashiCorp used for Terraform/Vault and IBM continues to use for Terraform since its BSL-authoring MariaDB origin — a well-understood, if debated, pattern for source-available commercial software that wants public code review and free non-commercial self-hosting without giving competitors a free ride to build a paid hosted clone.</p>
+        <p>Apache 2.0 is permissive: use, modify, distribute, and commercial self-hosting are allowed if you include the <code>LICENSE</code>, retain copyright notices, ship the <code>NOTICE</code> file, and document modifications. That is the built-in attribution — no custom license clause required. Apache 2.0 also includes a patent grant from contributors. It does <em>not</em> grant trademark rights to the BRIEFR name or logo.</p>
       </div>
 
-      <h4 class="subhead pitfall">What this costs, honestly — and why AGPL was considered first</h4>
+      <h4 class="subhead pitfall">What BRIEFR does not license for you</h4>
       <div class="pitfall-box">
-        <p>The tradeoff is real. Some organizations and distros flatly exclude BSL-licensed dependencies from "open source" bundles (it isn't OSI-approved), which AGPL — however restrictive — clears. AGPL's specific worry (a hosted competitor built on BRIEFR's own code, contributing nothing back) is answered differently by each license: AGPL answers it by forcing that competitor to publish their modifications; BSL answers it by making that competitor pay for the right to run it commercially at all, a blunter but more directly monetizable mechanism. The Track F2 → F2-R sequence in this project's own history is itself worth understanding as a real example of a team trying the reciprocal-sharing answer first, and switching to the direct-payment answer once — reflected in <code>STRATEGY.md</code>'s "Adoption engineering" pillar — commercial-license revenue became the more important goal than guaranteed source-sharing by commercial forks.</p>
+        <p>Open-sourcing BRIEFR does not open upstream intel. NVD, OTX, VirusTotal, AbuseIPDB, GreyNoise, SigmaHQ (DRL-1.1), and other feeds keep their own terms and quotas. Operators supply API keys and comply with each provider.</p>
       </div>
 
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
-          <li>What does BSL's "Additional Use Grant" require of a for-profit organization that AGPL would not?</li>
-          <li>Explain the "Change Date" mechanism — what happens to a given BRIEFR version four years after it's published, and why is that different from AGPL's permanence?</li>
-          <li>Why could the AGPL → BSL reversal happen cleanly, with no legacy-grant problem to manage?</li>
-          <li>Name one real reason an organization might refuse to depend on BSL-licensed code even though it's source-available.</li>
+          <li>Name the files a redistributor must include alongside BRIEFR source.</li>
+          <li>Can a for-profit company self-host BRIEFR under Apache 2.0 without paying the author?</li>
+          <li>Why is Apache 2.0 a better fit than BUSL for a tool that depends on third-party API keys?</li>
+          <li>Does Apache 2.0 grant trademark rights to use the BRIEFR name in a fork?</li>
         </ol>
       </div>
     </section>

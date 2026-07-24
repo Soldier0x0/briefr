@@ -7,7 +7,7 @@ writes made by on-demand GreyNoise/OTX enrichment are no longer rolled
 back on connection close.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 import os

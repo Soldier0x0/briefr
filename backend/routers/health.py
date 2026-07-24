@@ -4,7 +4,7 @@ phase 2). No behavior change. `format_time_in_tz` lives here because
 imports it from this module.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 import os

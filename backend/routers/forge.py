@@ -25,7 +25,7 @@ Out of scope (per Beta V1.3.md): rule proof on live logs (V1.5),
 HyperDX provisioning (V1.4/V1.5).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

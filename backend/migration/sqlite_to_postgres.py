@@ -5,7 +5,7 @@ file. Setting DATABASE_URL (via Admin -> Database) switches the running app to
 PostgreSQL; this module never writes to briefr.db after that point.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

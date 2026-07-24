@@ -154,14 +154,11 @@ proposes; pySigma disposes.
 A tool becomes "must-have" through installs and word of mouth, not features.
 Current blockers, in order:
 
-1. **License.** **Superseded 2026-07-19 (Track F2-R):** the 2026-07-10
-   AGPL-3.0-or-later decision is reversed in favor of the **Business Source
-   License 1.1** (`LICENSE`, `CONTRIBUTING.md`, SPDX headers) — free for
-   personal/non-commercial use; commercial use requires a one-time license
-   from the Licensor (contact harsha@projectjupiter.in); each published
-   version converts to Apache-2.0 four years after its publication date.
-   Reversed before the public flip, so no external party held rights under
-   the prior AGPL grant.
+1. **License.** **Apache License 2.0** (`LICENSE`, `NOTICE`, `CONTRIBUTING.md`,
+   SPDX headers) — OSI-approved open source; free for personal, commercial, and
+   self-hosted use with attribution. Published 2026-07-24 after prior drafts
+   (proprietary, AGPL-3.0-or-later, BUSL-1.1) were reversed before external
+   parties depended on them.
 2. **Install friction.** `docker compose up` must work, first try, on a
    clean machine, in under 10 minutes, with sensible no-API-key defaults.
    V2.0's compose work was parked "while the deployment is private" — now

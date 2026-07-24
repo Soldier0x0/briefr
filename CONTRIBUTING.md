@@ -1,14 +1,11 @@
 # Contributing to BRIEFR
 
 Thank you for your interest in BRIEFR. This project is licensed under the
-**Business Source License 1.1** (see [`LICENSE`](LICENSE)) — free for personal,
-non-commercial use; commercial use requires a one-time license (contact
-harsha@projectjupiter.in). Four years after publication of a given version,
-that version converts to Apache-2.0. The repository is maintained by
+**Apache License, Version 2.0** (see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE)).
+The repository is maintained by
 [Sai Harsha Vardhan](https://projectjupiter.in) — contributions are welcome
-on `main` via pull request. By submitting a contribution, you agree it may be
-distributed under the current or any future license the Licensor applies to
-BRIEFR, consistent with this file.
+on `main` via pull request. By submitting a contribution, you agree that your
+contribution is licensed under the Apache License 2.0, consistent with this file.
 
 ## Before you start
 

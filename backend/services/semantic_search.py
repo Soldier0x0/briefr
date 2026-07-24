@@ -1,7 +1,7 @@
 """Hybrid / semantic CVE + technique search orchestration (E3/E6).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations
