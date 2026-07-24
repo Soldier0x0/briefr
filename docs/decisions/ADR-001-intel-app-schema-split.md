@@ -49,9 +49,8 @@ required for the first snapshot release.
 - Follow-up: Physical schema split ADR revision when `intel` schema migration
   ships; update `DATA_SNAPSHOT.md` table lists to schema-qualified names.
 
-## Diagram (optional)
+## Diagram
 
-![Intel vs app data plane — pending](../assets/placeholder-diagram.svg)
+![Intel vs app data plane](../assets/adr-001-intel-app-split.svg)
 
-> **Asset:** `docs/assets/adr-001-intel-app-split.png`  
-> **Brief:** Two Postgres schemas feeding one export allowlist gate.
+Single database today; export tooling enforces the boundary via allowlisted tables and `sync_state` keys (`DATA_SNAPSHOT.md`).

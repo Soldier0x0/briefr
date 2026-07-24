@@ -1,6 +1,6 @@
 # Security Policy
 
-BRIEFR is maintained by Sai Harsha Vardhan ([projectjupiter.in](https://projectjupiter.in)).
+BRIEFR is maintained by Sai Harsha Vardhan.
 
 ## Supported versions
 

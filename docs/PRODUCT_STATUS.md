@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-23 (Detect community-Sigma-first; Program E AI ops; Program C overlays/Forge navigator; CACHE_REFRESH_* honesty)
+**Last updated:** 2026-07-24 (UI screenshots + ingest diagram; docs link cleanup)
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -13,7 +13,7 @@
 | **License** | **Apache License 2.0** (`LICENSE`, `NOTICE`, `CONTRIBUTING.md`) — OSI-approved open source. Free for personal, commercial, and self-hosted use with attribution. Active source trees carry `SPDX-License-Identifier: Apache-2.0` headers. Repository is public on GitHub. |
 | **Performance (Track I)** | **Phase 1–2 complete** (#378–#382): feed scroll isolation, parallel enrichments, bulk upsert, `/api/cves` KEV JOIN + count cache + `pg_trgm`. **Phase 3a–b shipped** (#436–#437): ORJSON default responses, keyset feed pagination (`pagination=keyset`), drawer bundle (`GET /api/cves/{id}/drawer`; each sub-fetch uses its own DB connection so parallel assembly is safe on asyncpg), shared rate-limit store (`BRIEFR_RATE_LIMIT_STORE=db`). **Phase 3 tail shipped** (#443–#444): I15 feed windowing (`content-visibility: auto`), I16 server-side stack relevance sort, `BRIEFR_SCHEDULER_ENABLED` for API-only workers. |
 | **Security tail** | CGNAT SSRF block (`100.64.0.0/10`) + refresh rejects past `sessions.expires_at` (#381). **JWT role revalidation** shipped (#392). **LLM summary auth** shipped — `GET/POST /api/ai/summary` and `POST /api/investigation/summary` require a logged-in session (`require_user` + session middleware); no per-PDF password prompt. |
-| **Database** | **PostgreSQL required** (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite removed from production path. **`DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is SQL-only** (default 60s) — feed/API HTTP timeouts stay per-source in `feeds/`; NVD ingest commits/closes before CIRCL/Sploitus enrich (`db/txn_boundaries.py`) so slow sources cannot burn concurrent writers’ SQL budget. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
+| **Database** | **PostgreSQL required** in production (`DATABASE_URL`, `BRIEFR_REQUIRE_POSTGRES=1`). SQLite dev/test fallback remains on `main` until [PR #752](https://github.com/Soldier0x0/briefr/pull/752) merges. **`DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` is SQL-only** (default 60s) — feed/API HTTP timeouts stay per-source in `feeds/`; NVD ingest commits/closes before CIRCL/Sploitus enrich (`db/txn_boundaries.py`) so slow sources cannot burn concurrent writers’ SQL budget. **Intel snapshot:** `scripts/export_intel_snapshot.py` exports allowlisted tables per `docs/DATA_SNAPSHOT.md` with versioned manifest (`format_version: 1`); `scripts/verify_intel_snapshot.py` and `scripts/import_intel_snapshot.py` validate/import bundles; upgrade steps in `docs/OPERATIONS.md`. Postgres CI runs export→restore smoke (`test_intel_snapshot_export.py`). **Backup round-trip:** Postgres CI runs `test_backup_roundtrip_postgres.py` (`run_backup` → wipe → `restore_backup`, row-count assert on `cves` / `kev_deadlines`). |
 | **Auth** | Built-in app login + sessions (first-run `/api/auth/setup`); **analyst `/api/*` routes require a valid session** (`briefr_at` cookie; #441 — matches React `RequireAuth`) and **live is_active check** (#449). Admin/refresh routes require the **admin role** (Sprint A0). Password changes immediately revoke all active sessions (#449). Legacy `BRIEFR_ADMIN_API_KEY` removed. Wallboard token is **header-only** (`X-BRIEFR-Wallboard-Token`; `?token=` removed, Sprint A7). Optional Cloudflare Zero Trust at **edge** (operator policy, not in app code). **FE refresh dedupe (#731):** `api.js` exports shared in-flight `refreshAccessToken()` so concurrent 401 retries share one `POST /api/auth/refresh` (reuse detection otherwise revokes all sessions). `AuthContext` bootstrap uses `fetchMe()` only — never a bare `/auth/refresh` fetch. |
 | **Rate limits** | Token buckets on IOC, refresh, admin, auth; set `RATE_LIMIT_ENABLED=1` in production. **Multi-worker:** optional shared store via `BRIEFR_RATE_LIMIT_STORE=db` persists buckets in `sync_state` (#437); set `BRIEFR_SCHEDULER_ENABLED=0` on API-only workers (#444). Scheduler runs on one owner only — see `OPERATIONS.md`. |
 | **API queue** | Outbound API serialization (#221) for NVD/OTX/etc.; `/api/health` exposes per-source task-level queue status (#341). Feed sync paths pass `operation` + safe `context_id` so rows show analyst copy (not generic “Outbound API request”). Header/admin **Background sync** indicator groups by provider, caps panel height with scroll, summary counts distinguish **waiting** vs **queued**, and opens in a **portaled Radix dropdown** (collision-aware; no clipped absolute panel). |
@@ -105,7 +105,7 @@
 | Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | Durability: PR-R1–R4; PG-002/003 |
 | UX-C1/C2 button standard (#474, #475) | Resource benchmarking: RB-1 collector ✅; RB-2 admin Resources page ✅ |
 
-Details: public roadmap at [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/roadmap).
+Details: https://docs.projectjupiter.in/docs/roadmap
 
 ---
 
@@ -113,7 +113,7 @@ Details: public roadmap at [docs.projectjupiter.in](https://docs.projectjupiter.
 
 | Phase | Status |
 |-------|--------|
-| Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
-| Living API / architecture docs | Refreshed 2026-07-21+ — `SYSTEM_DESIGN`, `API_REFERENCE`, reader guides, ONBOARDING, OPERATIONS, TROUBLESHOOTING |
-| Public docs portal | [docs.projectjupiter.in](https://docs.projectjupiter.in) — Pathways, guides, API reference (synced from this repo) |
+| Doc structure + image briefs | Phase A SVGs shipped (`production-architecture`, `auth-layers`, `correlation-pipeline`, `ingest-pipeline`, `adr-001-intel-app-split`); UI screenshots in `docs/assets/screenshots/` (#755) |
+| Living API / architecture docs | Refreshed 2026-07-24 — reader guides, OPERATIONS link fixes, USE.md gallery |
+| Online docs | https://docs.projectjupiter.in — synced from this repo |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |

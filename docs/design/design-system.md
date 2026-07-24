@@ -6,7 +6,7 @@
 
 **Companion documents (keep in sync):**
 - Tokens: [`frontend/src/styles/tokens.css`](../../frontend/src/styles/tokens.css)
-- Roadmap: public docs portal Pathways (UI modernization shipped in product)
+- Roadmap: https://docs.projectjupiter.in/docs/roadmap
 - Rationale: [`docs/decisions/ADR-003-ui-design-system.md`](../decisions/ADR-003-ui-design-system.md)
 - Approved UI libraries: [`docs/decisions/ADR-005-component-library-strategy.md`](../decisions/ADR-005-component-library-strategy.md)
 - Non-UI/bug backlog: tracked in maintainer planning (private repo)

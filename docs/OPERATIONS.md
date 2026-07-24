@@ -231,7 +231,7 @@ env_file:            secrets (DATABASE_URL)
 ports:               127.0.0.1:8000:8000
 ```
 
-Same env vars as systemd. See [`archive/beta/Beta V2.0.md`](archive/beta/Beta%20V2.0.md).
+Same env vars as systemd. Container packaging is future work — see [`SELF_HOST.md`](SELF_HOST.md) and [`POSTGRES.md`](POSTGRES.md) for current deploy paths.
 
 ---
 
@@ -628,7 +628,7 @@ Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens
 5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
 6. Optional: append `?density=compact` for a denser tile layout on large displays (4K wall mounts).
 
-See [`planning/BACKLOG.md`](planning/BACKLOG.md) §6 for optional layout tails.
+Optional wallboard layout tails are tracked in the maintainer repo — see [`MAINTAINER_MIGRATION.md`](MAINTAINER_MIGRATION.md).
 
 ---
 
@@ -650,8 +650,8 @@ To scale API concurrency:
 
 | Document | Role |
 |----------|------|
-| [`ROADMAP.md`](planning/ROADMAP.md) | Release index |
-| [`archive/THREAT_MODEL.md`](archive/THREAT_MODEL.md) | Security |
+| https://docs.projectjupiter.in | Online operator and architecture guides |
+| [`MAINTAINER_MIGRATION.md`](MAINTAINER_MIGRATION.md) | Where internal planning/archive docs moved |
 | [`POSTGRES.md`](POSTGRES.md) | PostgreSQL production guide |
 | [`ONBOARDING.md`](ONBOARDING.md) | Deploy scripts |
 | [`../deploy/setup.sh`](../deploy/setup.sh) | Initial install (git) |

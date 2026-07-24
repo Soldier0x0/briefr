@@ -8,7 +8,7 @@ Essential conventions for changing BRIEFR. Full install and test steps live in
 - [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) — what is shipped in production today
 - [`API_REFERENCE.md`](API_REFERENCE.md) — HTTP API contract
 - [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) — architecture
-- Public reader docs: [docs.projectjupiter.in](https://docs.projectjupiter.in)
+- Online docs: https://docs.projectjupiter.in
 
 When docs disagree with code, **code + PRODUCT_STATUS win**.
 
