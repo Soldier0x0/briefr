@@ -65,7 +65,7 @@ controls:
     status: active
     origin: curated
     review_date: '2026-07-01'
-    evidence: [backend/db/, docs/planning/specs/codebase-audit.md]
+    evidence: [backend/db/, backend/tests/test_db_explorer.py]
     related_ids: []
     category: injection-prevention
     threats_mitigated: [sql-injection]

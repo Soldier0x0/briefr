@@ -66,14 +66,14 @@ abuse_cases:
     status: mitigated
     origin: curated
     review_date: '2026-07-13'
-    evidence: [backend/db/, docs/planning/specs/codebase-audit.md]
+    evidence: [backend/db/, backend/tests/test_db_explorer.py]
     related_ids: [parameterized-sql]
     category: injection
     attack_flow:
       - Attacker supplies a crafted string in a filter/search/export query parameter.
       - The value reaches SQL construction in the db/ package.
     impact: Unauthorized data read, data modification, or (worst case) full database compromise.
-    current_protection: Every query in the Postgres-native db/ package uses parameter binding, not string interpolation of untrusted input (backend/db/connection.py, backend/db/pg_adapt.py) -- audited in docs/planning/specs/codebase-audit.md.
+    current_protection: Every query in the Postgres-native db/ package uses parameter binding, not string interpolation of untrusted input (backend/db/connection.py, backend/db/pg_adapt.py).
     remaining_risk: A future contributor adding a new query with ad-hoc string interpolation would reintroduce this class -- there is no automated static-analysis gate enforcing parameterization today, only code review discipline.
 
   - id: secret-leakage-via-logs
