@@ -1489,7 +1489,7 @@ CSV + PDF export), Decision Records (`DecisionsSection.jsx`), Abuse Cases
 curated + live audit-log timeline), Stale Records (`StaleRecordsSection.jsx`,
 cross-section drill-through), and global search (`GlobalSearch.jsx`, topbar) — this
 closes the committed program (TM-0→TM-5, 5 PRs, 11 sections) per
-`docs/planning/specs/threat-modeling-security-architecture.md` §8.
+See `backend/security_architecture/` and `docs/SYSTEM_DESIGN.md` § threat modeling.
 
 **TM-6 framework workspaces (analyst threat-intelligence lens).** Four framework sections
 — `cwe`, `owasp`, `capec`, `stride` — ship as live views over the **user's own** ingested

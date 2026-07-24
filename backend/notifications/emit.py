@@ -121,7 +121,7 @@ async def emit_kev_backlog_notification(
     dedupe_key: str,
 ) -> int:
     """New KEV-driven detection-backlog item (forge-redesign.md §4) — emitted
-    scheduler-side only (CLAUDE.md danger zone 6), from detection/backlog.py's
+    scheduler-side only (see docs/CONTRIBUTOR_RULES.md danger zone 6), from detection/backlog.py's
     process_new_kev_backlog / reconcile_kev_backlog, never on the request
     path. Deep-links to Forge's backlog view via entity_type."""
     user_ids = await list_active_user_ids(db, scope=SCOPE_ANALYST)

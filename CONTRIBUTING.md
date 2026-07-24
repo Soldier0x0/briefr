@@ -10,8 +10,9 @@ contribution is licensed under the Apache License 2.0, consistent with this file
 ## Before you start
 
 1. **Install BRIEFR locally:** [`docs/SELF_HOST.md`](docs/SELF_HOST.md) — §1 (SQLite) or §2 (Postgres+pgvector).
-2. Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) and [`CLAUDE.md`](CLAUDE.md)
-   (danger zones, SQL conventions, UI rules).
+2. Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) and
+   [`docs/CONTRIBUTOR_RULES.md`](docs/CONTRIBUTOR_RULES.md) (danger zones, SQL
+   conventions, UI rules).
 3. Production uses **PostgreSQL** (`DATABASE_URL`). The default test suite runs
    on SQLite; any `db/` change should also be validated against Postgres when
    possible (`DATABASE_URL=postgresql://… pytest tests/ -q`).
@@ -46,7 +47,7 @@ Use `--full` when Postgres and optional tools are available.
 - **Tests:** backend changes need `pytest tests/ -q` green; frontend changes
   need `npm run build` green.
 - **Docs:** if runtime behavior or API changes, update `docs/PRODUCT_STATUS.md`
-  and `docs/API_REFERENCE.md` in the same PR (see `CLAUDE.md` docs rules).
+  and `docs/API_REFERENCE.md` in the same PR (see `docs/CONTRIBUTOR_RULES.md`).
 - **Migrations:** Alembic only, forward-only — never edit applied revisions.
 - **Security:** do not weaken `require_admin`, webhook SSRF checks, or DB
   explorer allowlists without an explicit design discussion.

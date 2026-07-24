@@ -11,6 +11,6 @@ When the user reports an error (screenshot, admin job failure, log, UI bug) or y
 2. **RCA** — trace end-to-end and explain *why* it failed, not only the symptom.
 3. **Fix the class** — structural fix (query shape, failover, state machine, layout) over blind retries.
 4. **Guard** — test or gate when the bug could return.
-5. **Document** — `HANDOVER.md` when operator-visible behavior changes.
+5. **Document** — `docs/PRODUCT_STATUS.md` when operator-visible behavior changes.
 
 Do not ship symptom-only patches without stated root cause.

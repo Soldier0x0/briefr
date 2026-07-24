@@ -319,11 +319,21 @@ CVE — retry later or use `BRIEFR_STRICT_SMOKE=0`; the deploy itself is not rol
 
 ---
 
+## Deploy compatibility promise
+
+Releases must remain **additive** for existing systemd + nginx + cloudflared deploys
+unless documented in this file:
+
+- Stable default paths: `DATABASE_URL`, `BACKUP_DIR`, `/opt/briefr`
+- Forward-only DB migrations (Alembic)
+- CLI backup/restore scripts remain supported as break-glass
+
+---
+
 ## Pre-release checklist (J4)
 
-Run before tagging or deploying a release to production. Encodes the
-[`ROADMAP.md`](planning/ROADMAP.md) compatibility promise — each release should be a small,
-independent phase.
+Run before tagging or deploying a release to production. Encodes the deploy
+**compatibility promise** — each release should be a small, independent phase.
 
 | Step | Check |
 |------|--------|

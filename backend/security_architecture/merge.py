@@ -422,7 +422,7 @@ def search_corpus(corpus: dict[str, Any], query: str, *, limit: int = 50) -> lis
     """Search over the already mtime-cached corpus (spec §5.17). No index
     subsystem: this is a bounded linear scan over data `corpus_loader.
     get_corpus()` already holds in memory -- cheap enough to run on the
-    request path (CLAUDE.md danger zone 6 only forbids *heavy* work there),
+    request path (see docs/CONTRIBUTOR_RULES.md danger zone 6 only forbids *heavy* work there),
     and re-scanning on every keystroke is exactly as fresh as the corpus
     itself."""
     q = query.strip().lower()

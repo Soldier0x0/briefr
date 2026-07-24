@@ -18,14 +18,12 @@ Copyright © 2026 Sai Harsha Vardhan. Licensed under the Apache License, Version
 |------|----------|-----|
 | 1 | [`index.md`](index.md) + [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) | Quick product context (5 min) |
 | 2 | [`README.md`](../README.md) | Features and local quick start |
-| 3 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture and trade-offs |
-| 4 | [`API_REFERENCE.md`](API_REFERENCE.md) | Endpoints when you touch the API |
-| 5 | [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) | Module map + AI guardrails |
-| 6 | Source + tests | `backend/tests/` and files named in [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) |
+| 3 | [`CONTRIBUTOR_RULES.md`](CONTRIBUTOR_RULES.md) | Danger zones, UI rules, merge gate |
+| 4 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Architecture and trade-offs |
+| 5 | [`API_REFERENCE.md`](API_REFERENCE.md) | Endpoints when you touch the API |
+| 6 | Source + tests | `backend/tests/` and the subsystem you are changing |
 
-**Deep reference when needed:** [`archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md), [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md).
-
-**Historical planning:** [`archive/`](archive/) (beta specs, agent notes — not required reading).
+**Deep reference when needed:** [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md), [`decisions/`](decisions/), [docs portal](https://docs.projectjupiter.in).
 
 **Printable architecture:** generate `SYSTEM_DESIGN.pdf` with `node scripts/generate_system_design_pdf.mjs` (not committed).
 
@@ -319,7 +317,7 @@ See [README.md § Backups and restore](../README.md) and [`docs/POSTGRES.md`](PO
 | Detection rules | `backend/detection/` (`sigmahq_index.py`, `rule_sources.py`, `composer.py`) |
 | SigmaHQ local index | `backend/detection/sigmahq_index.py`, scheduler `sigmahq_index_sync`, Admin Feed health |
 | Scheduled ingest | `backend/scheduler.py`, `backend/feeds/` |
-| Database schema / SQL adaptation | `backend/database.py` (`init_db`), `backend/db/pg_adapt.py` (legacy SQLite-shaped SQL adapted at the Postgres connection boundary), [`archive/snapshots/TECHNICAL_INVENTORY.md`](archive/snapshots/TECHNICAL_INVENTORY.md) §2 |
+| Database schema / SQL adaptation | `backend/database.py` (`init_db`), `backend/db/pg_adapt.py`, Alembic `backend/alembic/versions/` |
 | PDF export | `frontend/src/utils/pdfReport.js`, `backend/ai/summary.py` |
 | Morning brief | `frontend/src/components/MorningBrief.jsx` (unified `action_queue` list + filter chips) |
 | Analyst charts | `frontend/src/components/BriefCharts.jsx` (activity/KEV/vendor views + EPSS movers table), `CveDescriptionClamp.jsx`, `frontend/src/components/briefVendorChartRecharts.jsx`, `frontend/src/utils/rechartsTheme.js` |
@@ -377,8 +375,7 @@ Update the source markdown in the same PR when you change behaviour those artifa
 
 ## Related documentation
 
-- [`archive/snapshots/CODEBASE_CONTEXT.md`](archive/snapshots/CODEBASE_CONTEXT.md) — consolidated codebase reference (architecture, flows, AI guardrails)
 - [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) — architecture deep dive
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
-- [`archive/snapshots/APPLICATION_EXECUTION_MAP.md`](archive/snapshots/APPLICATION_EXECUTION_MAP.md) — runtime traces
-- [`archive/snapshots/FOLDER_STRUCTURE_GUIDE.md`](archive/snapshots/FOLDER_STRUCTURE_GUIDE.md) — every file in the repo
+- [`CONTRIBUTOR_RULES.md`](CONTRIBUTOR_RULES.md) — danger zones and conventions
+- [docs.projectjupiter.in](https://docs.projectjupiter.in) — public learning paths and guides

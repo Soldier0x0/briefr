@@ -5,7 +5,7 @@
 **ACCEPTED — 2026-07-14.** Establishes the UI architecture that all future UI work
 follows. Companion to [`docs/design/design-system.md`](../design/design-system.md)
 (rules), [`frontend/src/styles/tokens.css`](../../frontend/src/styles/tokens.css) (token spec),
-and [`docs/planning/ui-modernization-plan.md`](../planning/ui-modernization-plan.md) (roadmap).
+and [`docs/design/design-system.md`](../design/design-system.md) (roadmap context: UI modernization program, shipped 2026-07).
 Continues the `docs/decisions/ADR-00N` sequence (previous: ADR-001 schema split, ADR-002
 operational priority). Reliability track is decided separately in
 [`ADR-004`](ADR-004-correlation-precompute.md).
@@ -24,7 +24,7 @@ deep but inconsistent and, in places, amateur/broken:
 - **One whole section (ARCH) shipped essentially unstyled** (11 of 12 pages wall-of-text).
 - **Bespoke, non-portaled tooltips/tables** → overflow and header/body resize desync.
 
-`CLAUDE.md` states BRIEFR is "React 19 + Vite frontend, plain JSX/CSS, **no component
+`docs/CONTRIBUTOR_RULES.md` states BRIEFR is "React 19 + Vite frontend, plain JSX/CSS, **no component
 library**," and `App.css` already carries an ad-hoc token block (`--bg*`, `--text*`,
 `--type-*`, `--red/amber/green`, `--accent #c8b88a`, `--focus-ring`, `--motion-fast`, `--z-*`)
 but **no severity/status scale, spacing scale, or single selection token**. We need a real,
@@ -70,7 +70,7 @@ signature dark-terminal identity and (per maintainer) **not adopt Tailwind**.
 - **Why shadcn patterns (not the library):** shadcn is the best-documented reference for
   composing Radix + tokens; borrowing its patterns accelerates work without importing Tailwind.
 - **Why defer Tailwind:** BRIEFR is plain CSS today; a Tailwind migration is a large, risky
-  change to a shared surface (`CLAUDE.md` danger zone) with no benefit that tokens+Radix don't
+  change to a shared surface (`docs/CONTRIBUTOR_RULES.md` danger zones) with no benefit that tokens+Radix don't
   already deliver. Deferring keeps blast radius small and honors the maintainer's constraint.
 
 ## Migration strategy
