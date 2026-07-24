@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Security &amp; trust boundaries — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-security" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-security">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 2</span>
+        <h3>Security &amp; trust boundaries</h3>
+        <p class="dek">Sessions, JWT refresh, rate limits, secrets, and fail-closed production posture.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What network egress assumptions should operators know?</h4>
+        <p class="answer"><strong>A:</strong> The app initiates outbound HTTPS to NVD, threat feeds, and optional IOC/LLM APIs. Inbound is typically nginx → uvicorn on localhost. No inbound agent protocol—it's a pull-based intel dashboard, not an EDR.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the trust model for correlation and scoring output?</h4>
+        <p class="answer"><strong>A:</strong> Scores are computed server-side from auditable inputs (KEV, CVSS, EPSS, stack terms). Correlation lanes expose explainable factors—not opaque ML black boxes for OP/Threat. ML augments optional detection context and embeddings retrieval, not the primary risk band.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: How are webhook destinations secured?</h4>
+        <p class="answer"><strong>A:</strong> Admin CRUD for webhook destinations stores configs masked on GET. Delivery dedupe is per destination. Test webhooks work even on disabled destinations for validation. Delivery log errors are masked on read.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: What CORS and origin controls exist?</h4>
+        <p class="answer"><strong>A:</strong> <code>ALLOWED_ORIGINS</code> binds at middleware startup; changing it requires restart (honest <code>apply_strategy: restart</code> in config schema). Self-hosted deployments typically front nginx on one origin; dev uses Vite proxy to <code>/api</code>.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: What are BRIEFR&#x27;s two independent auth layers?</h4>
+        <p class="answer"><strong>A:</strong> Optional edge auth: Cloudflare Tunnel + Zero Trust email OTP protects the public hostname—outside FastAPI. Application auth: username/password with server-side sessions (<code>briefr_at</code> cookie), JWT access tokens, and refresh rotation. Operators can use either or both; they do not replace each other.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does session authentication work?</h4>
+        <p class="answer"><strong>A:</strong> First-run <code>/api/auth/setup</code> creates the admin user. Login issues a short-lived access token and refresh token stored in HttpOnly cookies. Analyst <code>/api/*</code> routes require a valid session via middleware; admin routes additionally require the <code>admin</code> role with live <code>is_active</code> revalidation.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Explain JWT + refresh token flow.</h4>
+        <p class="answer"><strong>A:</strong> Access tokens authorize API calls; refresh tokens rotate on <code>POST /api/auth/refresh</code>. Concurrent 401s dedupe through a shared in-flight <code>refreshAccessToken()</code> in <code>api.js</code> so one refresh does not stampede and revoke all sessions. Password change revokes every active session immediately.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What happened to the legacy admin API key?</h4>
+        <p class="answer"><strong>A:</strong> Sprint A0 removed <code>BRIEFR_ADMIN_API_KEY</code> because it failed open when unset. Admin operations now require a logged-in user with the admin role. Production fails closed without <code>JWT_SECRET</code>—no silent dev auto-generation in production posture.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are rate limits implemented?</h4>
+        <p class="answer"><strong>A:</strong> Token-bucket limiters guard auth, refresh, IOC lookup, and admin endpoints. Enable with <code>RATE_LIMIT_ENABLED=1</code> in production. Buckets default in-memory; <code>BRIEFR_RATE_LIMIT_STORE=db</code> persists them in <code>sync_state</code> for multi-worker deployments.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What SSRF protections exist?</h4>
+        <p class="answer"><strong>A:</strong> Outbound fetches block CGNAT range <code>100.64.0.0/10</code> and other unsafe targets. Refresh endpoints reject sessions past <code>expires_at</code>. LLM summary routes require authenticated sessions—no anonymous PDF summarization that could proxy arbitrary URLs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are secrets handled at rest?</h4>
+        <p class="answer"><strong>A:</strong> Secret-typed admin config keys encrypt in <code>app_settings</code> when <code>BRIEFR_SETTINGS_KEY</code> is set (ADR-006). Without it, secrets stay in process env or <code>.env</code> only. Structured logging redacts <code>*_KEY</code>, <code>*_TOKEN</code>, <code>*_SECRET</code>, and <code>*_PASSWORD</code> in extra fields—never log raw secrets in message strings.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the wallboard trust boundary?</h4>
+        <p class="answer"><strong>A:</strong> Wallboard uses a dedicated header token, not the analyst session. Query-string <code>?token=</code> was removed (Sprint A7). Optional <code>WALLBOARD_TOKEN</code> in admin config can gate kiosk mode. Tokenless wallboard in production triggers posture warnings.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does BRIEFR fail closed in production?</h4>
+        <p class="answer"><strong>A:</strong> Startup logs warnings for unsafe flags: rate limits off, insecure cookies, tokenless wallboard when <code>BRIEFR_ENV=production</code>. The Security admin panel mirrors the same checks. Missing <code>JWT_SECRET</code> blocks production boot rather than generating an ephemeral secret.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What audit trail exists for operator actions?</h4>
+        <p class="answer"><strong>A:</strong> <code>audit_log</code> records admin mutations with redacted targets via <code>redact.py</code>. DB explorer browse events log without row bodies. Webhook and config changes are traceable. Retention cleanup ages audit rows on a conservative 365-day window.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is role revalidation enforced?</h4>
+        <p class="answer"><strong>A:</strong> JWT role claims are not trusted blindly—handlers re-check <code>users.is_active</code> and role on sensitive routes (#392). Deactivated users lose access immediately even if an old access token has not expired.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What protects the admin DB explorer?</h4>
+        <p class="answer"><strong>A:</strong> Allowlisted tables only—deny by default. Sensitive tables (<code>users</code>, <code>sessions</code>, <code>webhook_destinations</code>) return 404. <code>cves</code> requires a <code>cve_id</code> filter. Rate limit 30/min; browse is audited without returning full row payloads in logs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does LLM outbound data minimization work?</h4>
+        <p class="answer"><strong>A:</strong> <code>ai/llm_payload.py</code> skips provider HTTP when messages or source text are empty—no quota burn on blanks. Prompt text is not stored in <code>ai_operations</code>; only redacted metadata and token counts. Admin can view captured payloads for failed ops when recorded.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are refresh-token reuse attacks handled?</h4>
+        <p class="answer"><strong>A:</strong> Refresh rotation with reuse detection can revoke all sessions if the same refresh token is presented twice. Frontend dedupes concurrent refresh calls to avoid accidental self-revocation under parallel 401 retries.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How would you harden a fresh BRIEFR install?</h4>
+        <p class="answer"><strong>A:</strong> Set <code>JWT_SECRET</code>, enable <code>RATE_LIMIT_ENABLED=1</code>, use <code>AUTH_COOKIE_SECURE=1</code> behind TLS, configure <code>BRIEFR_SETTINGS_KEY</code> for DB-stored secrets, rotate wallboard token, and optionally add Cloudflare Zero Trust at the edge.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-architecture.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Architecture &amp; system design</span></a><span class="spacer"></span><a class="next" href="iv-backend-db.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend &amp; database</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

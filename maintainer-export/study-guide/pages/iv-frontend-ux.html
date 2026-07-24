@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Frontend &amp; UX — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-frontend-ux" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-frontend-ux">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 10</span>
+        <h3>Frontend &amp; UX</h3>
+        <p class="dek">React 19, Radix, semantic tokens, DetailDrawer patterns, and accessibility.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What chart library is used?</h4>
+        <p class="answer"><strong>A:</strong> Recharts behind <code>ChartShell</code> with fixed-height wrappers and <code>maintainAspectRatio: false</code>. EPSS sparklines remain custom SVG. Chart.js was fully removed.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What motion rules apply?</h4>
+        <p class="answer"><strong>A:</strong> 120–180ms transitions on transform/opacity only; respect <code>prefers-reduced-motion</code> and global <code>data-motion</code> toggle on <code>&lt;html&gt;</code>. No layout property animation.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the DataGrid pattern?</h4>
+        <p class="answer"><strong>A:</strong> Shared <code>DataGrid</code> with <code>table-layout: fixed</code> and shared <code>&lt;col&gt;</code> definitions so column resize keeps header/body aligned.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What accessibility baseline?</h4>
+        <p class="answer"><strong>A:</strong> WCAG 2.1 AA: focus rings via <code>--focus-ring</code>, icon-only controls need <code>aria-label</code>, interactive targets ≥24px. Tooltips explain status pills—design principle 1.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is dark-mode-only policy?</h4>
+        <p class="answer"><strong>A:</strong> Light theme removed (W6)—do not reintroduce without ADR. <code>tokens.css</code> assumes dark surfaces; contrast uses <code>--text-muted</code> floor.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is stack input persisted?</h4>
+        <p class="answer"><strong>A:</strong> <code>GET/PUT /api/me/stack</code> with legacy <code>briefr_stack</code> localStorage migration on login. Feed filter bar and asset wizard consume server stack.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: How are colors managed?</h4>
+        <p class="answer"><strong>A:</strong> Semantic tokens only: <code>--surface-*</code>, <code>--text-*</code>, <code>--severity-*</code>, <code>--accent-selected</code> for active states. Red is destructive/critical only—not for links or selection. Brand orange <code>#e85533</code> via <code>--accent-primary</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does DateTimePicker work?</h4>
+        <p class="answer"><strong>A:</strong> Shared <code>DateTimePicker</code> / <code>DateTimeRangeField</code> with DD-MM-YY HH:mm:ss and dropdown selects—never native <code>datetime-local</code> in new code per design system §23.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does admin differ visually?</h4>
+        <p class="answer"><strong>A:</strong> Shared tokens but denser tables via <code>AdminDataGrid</code>, uppercase mono wayfinding breadcrumbs, collapsible config sections, sticky apply bar. Typography enforces 12px minimum via <code>--type-*</code> scale.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are toasts handled?</h4>
+        <p class="answer"><strong>A:</strong> Shared toast tray: errors persist until dismissed; success auto-dismiss 8s; max 4 visible; pause on hover. Backend restart uses top banner via health poll—not a fleeting toast.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does URL state work for Forge?</h4>
+        <p class="answer"><strong>A:</strong> <code>?tab=forge</code> with <code>view</code>, <code>technique</code>, <code>pack</code> params. Intentional navigations push history; cosmetic param hygiene uses replaceState.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: What UI primitives are standard?</h4>
+        <p class="answer"><strong>A:</strong> Radix: Checkbox, Switch, Dialog, Select, Tabs, DropdownMenu, Tooltip, Popover, ScrollArea—styled with design tokens. Zero native <code>&lt;select&gt;</code> or checkbox inputs in new code (grep gates in verify-local).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does the command palette work?</h4>
+        <p class="answer"><strong>A:</strong> ⌘K command palette (Track E) for wayfinding—portaled, keyboard accessible. Global shortcuts ignore modifiers when text is selected; drawer and tab state preserved.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How would you add a new analyst page?</h4>
+        <p class="answer"><strong>A:</strong> Follow Primitives → Composites → Features layering, reuse Radix + tokens, implement four async states, wire URL tab sync if needed, and update design-system.md if introducing a new pattern.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: What is the async region pattern?</h4>
+        <p class="answer"><strong>A:</strong> Every async view implements loading skeleton, empty, error with request-id, and data states. Empty and error must look distinct. Long LOCKED jobs show progress message plus indeterminate bar.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: What is FEED performance work?</h4>
+        <p class="answer"><strong>A:</strong> Scroll isolation, <code>content-visibility: auto</code> windowing (I15), keyset pagination, parallel drawer bundle fetches. Filters and scroll survive tab hidden panels.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: How is auth wired in the frontend?</h4>
+        <p class="answer"><strong>A:</strong> <code>AuthContext</code> bootstraps via <code>fetchMe()</code> only—never bare refresh on load. <code>RequireAuth</code> wraps analyst routes matching backend session gate (#441).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What lint gates protect UI quality?</h4>
+        <p class="answer"><strong>A:</strong> <code>verify-local.sh</code> runs design-token lint, native control grep gates, frontend build, and scoped ESLint on scoring + admin pages.</p>
+      </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
+      <div class="interview-qa">
+        <h4>Q: Why no Tailwind?</h4>
+        <p class="answer"><strong>A:</strong> ADR-003 mandates plain CSS with semantic tokens in <code>tokens.css</code>—dark terminal identity, no Tailwind runtime. shadcn patterns are reference-only, re-skinned to BRIEFR CSS. Mantine/MUI/Chakra are prohibited per ADR-005.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-detection-forge.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Detection &amp; Forge</span></a><span class="spacer"></span><a class="next" href="iv-api-ops.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">API &amp; operations</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

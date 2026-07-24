@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Campaign, IOC &amp; graph logic — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-campaign-ioc" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-campaign-ioc">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 7</span>
+        <h3>Campaign, IOC &amp; graph logic</h3>
+        <p class="dek">OTX pulses, correlation campaigns, IOC enrichment, shared infrastructure, and analyst IOC tab.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What is the campaign layer in BRIEFR?</h4>
+        <p class="answer"><strong>A:</strong> Nightly/on-demand correlation clusters OTX pulses and related intel into <code>correlation_campaigns</code> and lane artifacts—temporal, actor/sector, infrastructure. Intel tab and semantic search surface campaigns; OP may escalate one band when linkage is HIGH/MED after client merge.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the IOC tab vs campaign graph?</h4>
+        <p class="answer"><strong>A:</strong> IOC tab is live operator lookup (IP/domain/hash) against VT, AbuseIPDB, GreyNoise with rate limits and <code>ioc_cache</code>. Campaign graph is persisted correlation over pulses/IOCs—no live external call inside the correlation engine run itself.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: How are pulse titles normalized for clustering?</h4>
+        <p class="answer"><strong>A:</strong> <code>normalize_pulse_name</code> (stronger than display <code>formatIntelLabel</code>) collapses vendor noise so related OTX pulses group. Active Campaigns UI shows humanized titles but matching uses the normalized base title.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does find_shared_infrastructure_v2 do?</h4>
+        <p class="answer"><strong>A:</strong> In <code>correlation/ioc_graph.py</code>, it finds shared IOCs across pulses/CVEs for infrastructure lanes—used in corroboration tests with ThreatFox and OTX fixtures. Outputs structured lane factors for explainability, not opaque scores.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is OTX data stored?</h4>
+        <p class="answer"><strong>A:</strong> Pulses mirror into Postgres tables plus TTL <code>feed_cache</code> JSON. <code>otx_continuous_sync</code> is registration-gated. Upstream errors serve stale mirror rows without deleting cached intel.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does the IOC lookup API work?</h4>
+        <p class="answer"><strong>A:</strong> Authenticated analyst POST/GET routes call outbound providers through resilient client + dedicated IOC rate bucket. Results cache in <code>ioc_cache</code> with retention cleanup job. Missing API keys return honest empty states, not fake scores.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is ThreatFox corroboration?</h4>
+        <p class="answer"><strong>A:</strong> Tests and ingest paths can corroborate OTX IOCs with ThreatFox mirrors—shared infrastructure lane gets stronger evidence when both sources agree on domain/hash overlap.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does wallboard use campaigns?</h4>
+        <p class="answer"><strong>A:</strong> Campaign counts and intel tiles read <code>correlation_campaigns</code> with active filters—kiosk token auth, ranked CVE tiles still use OP then Threat, not campaign score alone.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What YARA generator inputs use IOCs?</h4>
+        <p class="answer"><strong>A:</strong> <code>test_yara_generator.py</code> shows IOC structs (type/value) feeding detection emit paths—deterministic from structured intel, not LLM guesses.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are retracted campaigns filtered?</h4>
+        <p class="answer"><strong>A:</strong> Embedding backfill and semantic search skip retracted <code>correlation_campaigns</code> rows (E8). UI must not show stale campaign cards after retraction—tests guard empty vs active states.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: How do campaigns appear in the DetailDrawer?</h4>
+        <p class="answer"><strong>A:</strong> Intel tab loads campaign clusters from correlation tables—primary card plus related count, collapsed by default. Drawer bundle may parallel-fetch intel slice; OP hero can render before correlation finishes loading.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does semantic search include campaigns?</h4>
+        <p class="answer"><strong>A:</strong> <code>/api/search/semantic</code> embeds non-retracted <code>correlation_campaigns</code> (E8) and returns a Campaigns section alongside CVEs and techniques when embeddings enabled.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What webhooks fire on IOC/watchlist events?</h4>
+        <p class="answer"><strong>A:</strong> <code>ioc_watchlist_hit</code>, watchlist KEV/EPSS change alerts, and KEV backlog events use database-backed destinations with dedupe keys and delivery logs—configured in admin Webhooks.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does Forge overlay campaigns?</h4>
+        <p class="answer"><strong>A:</strong> When enabled, navigator/hunt context can reference correlated campaigns for technique selection—must not claim 'ranked for your stack' without stack pins (honesty PRs).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do watchlist pins interact with IOC graph?</h4>
+        <p class="answer"><strong>A:</strong> Pins drive <code>watchlist_monitor_alerts</code> on KEV/EPSS changes—not continuous IOC graph polling. Snooze removed; pin/watchlist remains.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: What happens when OTX is down?</h4>
+        <p class="answer"><strong>A:</strong> Serve any-age stale pulses from mirror/cache; Feed Health shows freshness vs circuit separately. Correlation job uses persisted data only—no live OTX inside engine run.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does IOC rate limiting behave?</h4>
+        <p class="answer"><strong>A:</strong> Token bucket per minute; drained bucket returns 429 with Retry-After. Tests in <code>test_rate_limit.py</code> cover IOC path. <code>BRIEFR_RATE_LIMIT_STORE=db</code> needed for multi-worker consistency.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What if correlation precompute is disabled?</h4>
+        <p class="answer"><strong>A:</strong> <code>CORRELATION_PRECOMPUTE_ENABLED=0</code> (default): <code>/risk</code> does not block on correlation snapshot; escalation merges when correlation API data arrives. Avoids drawer open latency regression.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Empty Active Campaigns—what does UI show?</h4>
+        <p class="answer"><strong>A:</strong> Distinct empty state: never-synced OTX vs no matches vs retracted campaigns filtered. No fabricated campaign cards.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What if GreyNoise/VT keys are missing?</h4>
+        <p class="answer"><strong>A:</strong> Routes return structured empty/missing-key states; UI explains which provider is unconfigured. Core CVE workflows unaffected—IOC is enrichment, not gate.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: Why no live API inside nightly_correlation?</h4>
+        <p class="answer"><strong>A:</strong> Engine run reads Postgres only—bounded runtime, no external rate-limit coupling. Fresh OTX is the ingest job's responsibility; correlation consumes stable snapshots.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is ioc_cache retention managed?</h4>
+        <p class="answer"><strong>A:</strong> <code>cache_retention_cleanup</code> sweeps stale IOC cache entries alongside <code>feed_cache</code> and aged mirrors—prevents unbounded disk growth on busy IOC tabs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are pulse families tested?</h4>
+        <p class="answer"><strong>A:</strong> <code>test_pulse_families.py</code> exercises <code>normalize_pulse_name</code> edge cases—vendor suffix stripping, unicode, duplicate collapse—guarding clustering stability.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Does IOC tab block the feed thread?</h4>
+        <p class="answer"><strong>A:</strong> No—IOC lookups are async API calls with loading/error states per lookup. Rate limits bound concurrent external queries; cache hits avoid repeat provider calls.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: What data leaves the network on IOC lookup?</h4>
+        <p class="answer"><strong>A:</strong> Operator-typed IOC values go to configured third-party APIs (VT, etc.) over HTTPS. Keys are env/encrypted settings; responses are cached locally. No anonymous public IOC proxy endpoint.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are webhook IOC events scoped?</h4>
+        <p class="answer"><strong>A:</strong> Admin configures destinations and subscribed events; delivery errors masked on read. Test POST allowed on disabled destinations for validation without enabling production spam.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Can IOC lookup be abused for scanning?</h4>
+        <p class="answer"><strong>A:</strong> Session auth + per-user rate limits + operator-only keys. Not a public DNS walker; each lookup is user-initiated with audit-friendly logging metadata.</p>
+      </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
+      <div class="interview-qa">
+        <h4>Q: Why client-side OP escalation from correlation?</h4>
+        <p class="answer"><strong>A:</strong> Temporary documented compromise: hero OP renders from cheap signals immediately; campaign linkage may arrive later. Server-side merge in <code>/risk</code> is the future hardening—today honesty prefers fast shell over blocking drawer.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why persist campaigns instead of query OTX per CVE?</h4>
+        <p class="answer"><strong>A:</strong> Same rationale as NVD: predictable latency, explainable factors, offline degradation. Clustering is compute-heavy—belongs in scheduler, not request path.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-correlation-scoring.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Correlation &amp; scoring</span></a><span class="spacer"></span><a class="next" href="iv-ml-embeddings.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">ML &amp; embeddings</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

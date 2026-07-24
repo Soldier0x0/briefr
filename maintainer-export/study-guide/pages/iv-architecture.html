@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Architecture &amp; system design — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-architecture" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-architecture">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 1</span>
+        <h3>Architecture &amp; system design</h3>
+        <p class="dek">Monolith boundaries, asyncio, single-worker defaults, and request vs background work.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What are intentional non-goals in the current architecture?</h4>
+        <p class="answer"><strong>A:</strong> Full multi-tenant SaaS, a shipped all-in-one docker-compose platform (Postgres compose exists), STIX export in the current loop, and heavy ML on the request path. Detection composer beyond deterministic templates remains parked; the product optimizes analyst time on a single server.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the graphify knowledge graph used for?</h4>
+        <p class="answer"><strong>A:</strong> AST-derived <code>graphify-out/</code> maps modules, jobs, and inferred edges for onboarding. Agents run <code>graphify query</code> before broad code exploration; after code edits, <code>graphify update .</code> keeps the graph current.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: How does BRIEFR document architectural truth?</h4>
+        <p class="answer"><strong>A:</strong> <code>docs/PRODUCT_STATUS.md</code> is the living runtime truth; <code>docs/SYSTEM_DESIGN.md</code> describes structure. When docs disagree with code, code and PRODUCT_STATUS win. The maintainer-export study guide and graphify knowledge graph support onboarding.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How would you diagram BRIEFR for an interviewer?</h4>
+        <p class="answer"><strong>A:</strong> Draw external feeds on the left, APScheduler ingest jobs writing Postgres in the middle, FastAPI serving JSON to React on the right, and call out the scheduler owner + single-worker default. Mention session-gated <code>/api/*</code>, job locks, and that correlation/scoring are server-side—not recomputed in the browser.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does ORJSON fit the API layer?</h4>
+        <p class="answer"><strong>A:</strong> FastAPI default response class uses ORJSON for faster serialization on large CVE list payloads. It is an implementation detail behind routers—clients still see standard JSON.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: What is BRIEFR at a high level?</h4>
+        <p class="answer"><strong>A:</strong> BRIEFR is a self-hosted CVE intelligence and detection-engineering platform. It ingests NVD, KEV, EPSS, and enrichment feeds into PostgreSQL, scores and correlates them server-side, and exposes everything through a React analyst UI with Forge detection workflows and an operator Admin console.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What frontend build stack is used?</h4>
+        <p class="answer"><strong>A:</strong> React 19 with Vite, React Router 7, plain JSX/CSS with semantic design tokens—no Tailwind runtime. Chart.js was removed; charts use Recharts behind <code>ChartShell</code>. Radix primitives provide accessible dialogs, selects, and menus styled with BRIEFR tokens.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is state preserved across tab switches?</h4>
+        <p class="answer"><strong>A:</strong> Main analyst tabs use <code>hidden</code> panels instead of unmounting so FEED scroll position and filters survive. DetailDrawer Intel/Detect/Related tabs stay mounted after first visit for the same reason. URL query params (<code>?tab=</code>, <code>?cve=</code>) sync navigation for back-button behavior.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: How does BRIEFR handle optional external API keys?</h4>
+        <p class="answer"><strong>A:</strong> No keys are required for core CVE feed, search, and RSS. IOC enrichment (VirusTotal, AbuseIPDB, GreyNoise) and LLM PDF summaries stay empty until operators add keys. Process environment wins over <code>backend/.env</code> because <code>load_dotenv()</code> does not override existing env vars.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: Describe the four-layer architecture.</h4>
+        <p class="answer"><strong>A:</strong> The pipeline is Feed Ingestion (APScheduler jobs in <code>scheduler.py</code>) → PostgreSQL (asyncpg pool) → FastAPI API (<code>main.py</code> + routers) → React UI (<code>frontend/src</code>). Heavy work never runs on the HTTP request path; schedulers and background jobs own sync, correlation, and ML.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does asyncio fit into the backend?</h4>
+        <p class="answer"><strong>A:</strong> FastAPI handlers are <code>async def</code>; database I/O uses asyncpg. Scheduled jobs are async coroutines registered with APScheduler. The outbound <code>api_queue</code> serializes external HTTP per source so NVD pacing and circuit breakers stay predictable under concurrent requests.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the outbound API queue?</h4>
+        <p class="answer"><strong>A:</strong> <code>api_queue</code> serializes outbound calls to rate-limited sources (NVD, OTX, LLM providers). <code>/api/health</code> exposes per-source queue depth so operators see waiting vs active work. Feed sync paths pass human-readable <code>operation</code> labels for the header Background sync indicator.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does the platform separate read and write paths?</h4>
+        <p class="answer"><strong>A:</strong> Analyst GET endpoints read from Postgres and caches (<code>feed_cache</code>, <code>ioc_cache</code>). Writes flow through ingest jobs, admin config apply, or authenticated POST/PATCH routes. NVD ingest uses explicit transaction boundaries so slow enrichments cannot hold writer connections.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the request-path vs background-work rule?</h4>
+        <p class="answer"><strong>A:</strong> ML, enrichment sweeps, and external syncs belong in <code>scheduler.py</code> jobs. Request handlers do DB reads and cached lookups only. Violating this exhausts pools and couples analyst latency to NVD/LLM outages—danger zone #6.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: What is the role of &lt;code&gt;main.py&lt;/code&gt; lifespan?</h4>
+        <p class="answer"><strong>A:</strong> Lifespan opens the asyncpg pool, optionally starts APScheduler when <code>BRIEFR_SCHEDULER_ENABLED=1</code>, may start an in-process Procrastinate worker when enabled, runs startup hygiene (session cleanup, integrity probes), and shuts everything down cleanly on exit.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do analyst and admin surfaces split?</h4>
+        <p class="answer"><strong>A:</strong> Analyst routes live under the main shell (BRIEF, FEED, IOC, Incidents, Forge) behind session auth. Admin is a separate sidebar shell with operator tools: scheduler, feed health, backups, config, AI operations, and security posture. Both share the same FastAPI app and Postgres backend.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is Procrastinate&#x27;s role relative to APScheduler?</h4>
+        <p class="answer"><strong>A:</strong> APScheduler remains the in-process cron owner for ~27 recurring jobs. Procrastinate (optional, <code>PROCRASTINATE_ENABLED</code>) adds durable outbound jobs—health ping, stack backfill, LLM product extraction—with Postgres-backed retries. Most ingest still runs through APScheduler locks.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does multi-worker deployment work if needed?</h4>
+        <p class="answer"><strong>A:</strong> Run multiple uvicorn replicas with <code>BRIEFR_SCHEDULER_ENABLED=0</code> on API-only nodes and exactly one scheduler owner. Set <code>BRIEFR_RATE_LIMIT_STORE=db</code> so auth, refresh, and IOC limits are shared. APScheduler must not run on every replica or jobs would duplicate.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the wallboard and how does it differ from the analyst UI?</h4>
+        <p class="answer"><strong>A:</strong> Wallboard v2 is a kiosk-oriented, mono-styled tile grid for SOC displays. It authenticates via <code>X-BRIEFR-Wallboard-Token</code> header (or admin-configured token), not the analyst session cookie. Top-risk tiles rank by Operational Priority then Threat Score.</p>
+      </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
+      <div class="interview-qa">
+        <h4>Q: Why is BRIEFR a monolith rather than microservices?</h4>
+        <p class="answer"><strong>A:</strong> A single deployable unit matches the solo-operator and small-team audience: one Postgres, one uvicorn process, one scheduler owner. Cross-cutting concerns—auth, rate limits, metering, and job locks—stay coherent without distributed tracing overhead. Scale-out is optional via API-only workers plus a shared rate-limit store.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why does BRIEFR run a single uvicorn worker by design?</h4>
+        <p class="answer"><strong>A:</strong> Default rate-limit token buckets are in-process. Multiple workers would split buckets unless <code>BRIEFR_RATE_LIMIT_STORE=db</code> persists them in <code>sync_state</code>. The documented production pattern is one API worker plus one scheduler owner, not an arbitrary worker fleet.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the DetailDrawer and why is it central?</h4>
+        <p class="answer"><strong>A:</strong> The DetailDrawer is the CVE deep-dive overlay: Overview (OP/Threat/Env), Intel, Detect, Related, and more. A drawer bundle endpoint assembles sub-resources in parallel, each on its own DB connection, so asyncpg concurrency stays safe while the UI renders quickly.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-part.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">How to use interview prep</span></a><span class="spacer"></span><a class="next" href="iv-security.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Security &amp; trust boundaries</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

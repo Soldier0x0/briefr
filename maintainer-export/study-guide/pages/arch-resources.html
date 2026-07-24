@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>The resource-consciousness thread — designed for modest hardware — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="arch-resources" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="arch-resources">
+      <div class="chapter-head">
+        <span class="chapter-num">Part 0B · Chapter A2</span>
+        <h3>The resource-consciousness thread — designed for modest hardware</h3>
+        <p class="dek">A recurring, mostly-unstated design bias runs through nearly every chapter in this book: keep the footprint small enough to run comfortably on a low-end VPS. This chapter names it explicitly and is honest about where it isn't yet backed by a documented number.</p>
+        <div class="files"><span class="chip">ml/embeddings.py</span><span class="chip">rate_limit.py</span><span class="chip">docs/audit/PHASE_06_performance.md</span></div>
+      </div>
+
+      <h4 class="subhead concept">Naming the thread — a design bias visible only once you look across chapters</h4>
+      <div class="prose">
+        <p>No single file in this codebase says "keep memory under X gigabytes." But look back across the chapters you've already read and a consistent pattern emerges, choice after choice, each one individually justified on its own terms and collectively adding up to a system that stays lightweight: <strong>CPU-only ONNX embeddings</strong> (Chapter 24 — <code>BAAI/bge-small-en-v1.5</code> via <code>fastembed</code>, no GPU, no PyTorch runtime) instead of a larger transformer model that would need meaningfully more RAM and ideally a GPU to run at reasonable speed. <strong>A single uvicorn worker</strong> (Chapter 12's rate-limiting chapter noted this explicitly — <code>--workers 1</code>) instead of a multi-process pool that would multiply baseline memory by however many workers ran. <strong>In-memory rate-limit buckets, the outbound API queue, and the read cache</strong> (Chapters 12, 16, and the API surface chapters) instead of standing up a separate Redis instance purely to hold small, ephemeral counters. <strong>SQLite as the zero-config default</strong> (Chapter 9) rather than requiring Postgres even for a first-time evaluator just trying the tool out. <strong>Free and cheap-tier hosted LLM APIs</strong> (Chapter 24) rather than self-hosting an open-weight LLM locally, which would require the single largest chunk of RAM and compute of anything in this list by a wide margin. <strong>Client-side PDF generation</strong> (Chapter 5) instead of a headless-Chromium rendering process living inside the backend. <strong>Lazy-loaded, code-split chart and export libraries</strong> on the frontend (also Chapter 5) instead of one enormous eagerly-loaded bundle.</p>
+        <p>None of these were framed, in the code or docs, as "we did this to hit a RAM budget" — each has its own local justification (privacy, cost, simplicity, avoiding a new dependency). But taken together, they describe a system whose default configuration is comfortable running on genuinely modest hardware: a small VPS with a couple of CPU cores and a few gigabytes of RAM, not a dedicated machine with a GPU and dozens of gigabytes free.</p>
+      </div>
+
+      <h4 class="subhead why">The honest gap: this isn't a documented, benchmarked number yet</h4>
+      <div class="prose">
+        <p>It would overstate the case to claim BRIEFR has an official "runs in 2GB RAM on 2 cores" specification — it doesn't, and it's worth being precise about that rather than inventing a certainty the project itself doesn't claim. The project's own performance audit (<code>docs/audit/PHASE_06_performance.md</code>) says so directly, listing it as an open gap in its own words: "what's missing is guidance/limits: recommended CPU/RAM/disk envelopes." The same audit's overall score of 7/10 for performance readiness reflects real, specific findings worth knowing precisely rather than a vague "needs work": the Postgres connection pool defaults to a minimum size of 1 and maximum of 10 (modest, and consistent with a small-footprint target, but also a real concurrency ceiling nobody has load-tested against); the CVE feed defaults to OFFSET-based pagination rather than the more scalable keyset pagination that already exists but is opt-in; <code>recharts</code> is imported statically in chart wrappers with no bundle-size budget enforced in <code>vite.config.js</code>; and roughly twenty places in the <code>db/</code> layer run an <code>await execute/fetch</code> call inside a loop, a pattern worth watching for N+1-style query cost as data volume grows. None of these are urgent given today's usage pattern (a single operator's browser), and the audit says as much — but they are the concrete reasons "how much hardware does BRIEFR actually need" doesn't yet have a number attached to it, only a design direction.</p>
+      </div>
+
+      <h4 class="subhead how">What the design direction is consistent with, stated as a target rather than a guarantee</h4>
+      <div class="prose">
+        <p>Given the choices actually made — a single worker process, CPU-only small-model inference, in-memory ephemeral state instead of a separate cache service, and a SQLite path that needs no database server at all for evaluation — the natural, honest way to state the target is: <strong>this architecture is built to be comfortable on a small VPS in the low single-digit gigabytes of RAM and one or two CPU cores, for a single operator's traffic pattern</strong> — not "requires 16GB and a GPU," and not "certified to run in 512MB" either. If you're sizing a box to run this yourself, a couple of cores and 2–4GB of RAM is the range every individual choice in this system points toward, even though — per the paragraph above — nobody has yet run the load test that would turn that direction into a documented, verified number. Chapter titled "Roadmap, reversals & open gaps" later in this book lists exactly this as an open item: publishing a real recommended CPU/RAM/disk envelope, backed by measurement rather than inference from design choices.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>List four separate design decisions from earlier chapters that each independently reduce BRIEFR's resource footprint, and state each one's <em>primary</em> stated justification (which usually isn't "save RAM" directly).</li>
+          <li>Why is it inaccurate to describe BRIEFR as having an official minimum hardware requirement, even though its design choices clearly point toward a lightweight footprint?</li>
+          <li>Of the five concrete performance-audit findings named in this chapter, which one would you expect to matter first as CVE corpus size grows, and why?</li>
+        </ol>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="arch-monolith.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Monolith by design — and why not microservices</span></a><a class="next" href="arch-connectivity.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">How the pieces connect — and why some deliberately don't</span></a></nav>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

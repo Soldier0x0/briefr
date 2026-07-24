@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>DevOps &amp; deploy — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-devops-deploy" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-devops-deploy">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 12</span>
+        <h3>DevOps &amp; deploy</h3>
+        <p class="dek">Production layout, verify-local, backups, migrations, and multi-worker ops.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does &lt;code&gt;briefr-doctor.sh&lt;/code&gt; do?</h4>
+        <p class="answer"><strong>A:</strong> Deploy script runs health/import checks and optional support pack download—operator diagnostics on the live box without manual curl juggling.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What env vars matter for ops?</h4>
+        <p class="answer"><strong>A:</strong> <code>DATABASE_URL</code>, <code>JWT_SECRET</code>, <code>BRIEFR_REQUIRE_POSTGRES=1</code>, <code>RATE_LIMIT_ENABLED=1</code>, <code>BRIEFR_SCHEDULER_ENABLED</code>, <code>BRIEFR_RATE_LIMIT_STORE=db</code> for multi-worker, <code>BRIEFR_SETTINGS_KEY</code> for encrypted settings.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is log rotation?</h4>
+        <p class="answer"><strong>A:</strong> Deploy artifacts include logrotate configs for structured JSON logs—journald-friendly stderr from uvicorn.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What license applies?</h4>
+        <p class="answer"><strong>A:</strong> Apache 2.0—free for personal, commercial, and self-hosted use with attribution. SPDX headers in source trees.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: Is full docker-compose shipped?</h4>
+        <p class="answer"><strong>A:</strong> Postgres compose exists (<code>deploy/docker-compose.postgres.yml</code> with pgvector image). All-in-one platform compose is planned—not the current production reference path.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do migrations run in deploy?</h4>
+        <p class="answer"><strong>A:</strong> Alembic upgrade on deploy before uvicorn restart. Forward-only—roll forward fixes, never edit stamped revisions. Postgres apply required before merge for DDL changes.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do intel snapshots help DR?</h4>
+        <p class="answer"><strong>A:</strong> Export/import bundles for allowlisted intel tables—versioned manifest, verify script, documented in OPERATIONS.md. Complements pg_dump backups, not a replacement.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do deploy scripts stay safe?</h4>
+        <p class="answer"><strong>A:</strong> Additive compatibility promise in ROADMAP/OPERATIONS—<code>deploy/</code> scripts run on live production boxes; changes must not break existing operator paths.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: What does production deployment look like?</h4>
+        <p class="answer"><strong>A:</strong> Code at <code>/opt/briefr</code>, Postgres 16 often Docker at <code>/opt/infra/postgres</code>, nginx serving <code>frontend/dist</code>, systemd <code>briefr-backend.service</code> running uvicorn on :8000, age-encrypted backups under <code>/var/lib/briefr/backups</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are backups handled?</h4>
+        <p class="answer"><strong>A:</strong> Scheduled backup job plus deadman check. Postgres CI runs backup round-trip test. Admin UI exposes backup status; Download DB removed for Postgres—legacy SQLite export route remains dev-only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is nginx configured?</h4>
+        <p class="answer"><strong>A:</strong> Serves static frontend, proxies <code>/api</code> to uvicorn on localhost. TLS typically terminates at nginx or Cloudflare tunnel—not inside FastAPI.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is frontend released?</h4>
+        <p class="answer"><strong>A:</strong> <code>npm run build</code> produces <code>dist/</code> copied to nginx root on deploy. Vite dev server proxies <code>/api</code> only for development.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What about Playwright smoke?</h4>
+        <p class="answer"><strong>A:</strong> Gated behind <code>PLAYWRIGHT_SMOKE=1</code> in verify-local full mode. Seeds SQLite and starts uvicorn + preview for UI smoke—optional locally.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: How is Postgres sized?</h4>
+        <p class="answer"><strong>A:</strong> No official sizing envelope published; architecture targets small VPS—CPU embeddings, single worker, bounded pool. Operators monitor admin Resources page and host disk I/O charts.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: What is &lt;code&gt;verify-local.sh&lt;/code&gt;?</h4>
+        <p class="answer"><strong>A:</strong> Pre-merge gate mirroring CI: SQLite pytest, dependency audit, frontend build, unit tests, scoped lint. <code>--full</code> adds Postgres pytest, gitleaks, Playwright smoke. Green local verify suffices when GitHub Actions quota is exhausted.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What CI jobs exist?</h4>
+        <p class="answer"><strong>A:</strong> test, dependency-audit, frontend build, frontend unit tests; full adds Postgres tests, gitleaks (known red), Playwright smoke. dependency-audit and gitleaks are known non-blockers per CLAUDE.md.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do API-only workers deploy?</h4>
+        <p class="answer"><strong>A:</strong> Multiple uvicorn instances behind nginx with <code>BRIEFR_SCHEDULER_ENABLED=0</code>; exactly one scheduler owner with <code>=1</code>. Shared DB rate-limit store mandatory for consistent auth/IOC limits.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What production warnings fire at startup?</h4>
+        <p class="answer"><strong>A:</strong> Posture self-check logs per unsafe flag when <code>BRIEFR_ENV=production</code>—rate limits off, insecure cookies, tokenless wallboard. Surfaced again in Admin Security panel.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What would you check after a failed deploy?</h4>
+        <p class="answer"><strong>A:</strong> Alembic version, health endpoint backend kind, scheduler owner flag, nginx proxy, JWT/auth login, feed row count, and application logs for migration or pool errors.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-api-ops.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">API &amp; operations</span></a><span class="spacer"></span><a class="next" href="iv-tests-docs.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Tests, docs &amp; roadmap</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

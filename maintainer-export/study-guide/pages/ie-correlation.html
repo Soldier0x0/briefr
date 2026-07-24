@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>The correlation engine — a five-phase build, and why it had to move off the request path — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="ie-correlation" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="ie-correlation">
+      <div class="chapter-head">
+        <span class="chapter-num">Part IV · Chapter 20</span>
+        <h3>The correlation engine — a five-phase build, and why it had to move off the request path</h3>
+        <p class="dek">Twenty-one files, three overlapping version-numbering schemes, one real production incident that reshaped the whole thing, and a scoring synthesis layer bolted on after the fact. This is the deepest chapter in the book — it earns it.</p>
+        <div class="files"><span class="chip">correlation/*.py — 21 files</span><span class="chip">ADR-004</span></div>
+      </div>
+
+      <h4 class="subhead concept">What "correlation" actually means here — and what it deliberately isn't</h4>
+      <div class="prose">
+        <p>Worth being precise about scope before anything else, because the name is genuinely ambiguous across the codebase: this engine is primarily about <strong>CVE-to-CVE</strong> linkage — connecting different CVEs that share threat-intelligence evidence, chiefly OTX (AlienVault Open Threat Exchange) "pulses" and the indicators of compromise attached to them. It secondarily covers CVE-to-actor/sector attribution (via MITRE ATT&amp;CK technique overlap and OTX's own adversary tagging) and CVE-to-vendor volume anomalies (a sudden spike in CVEs from one vendor). It is explicitly <em>not</em> CVE-to-detection matching (Chapter 21 owns that) and <em>not</em> CVE-to-asset matching (Chapter 19 owns that).</p>
+      </div>
+
+      <h4 class="subhead concept">Reading the file docstrings: three numbering schemes, one evolving system</h4>
+      <div class="prose">
+        <p>Almost every file in this package carries an inline "Phase N" or "CORR-PR-N" label in its docstring, and taken at face value they look inconsistent — <code>priority.py</code> calls itself "Correlation v3," while <code>config.py</code> still hardcodes <code>CAMPAIGN_ALGORITHM_VERSION = "2.0.0-phase2"</code> even though <code>campaigns.py</code>'s actual behavior (pulse-family deduplication, a later addition tagged <code>CORR-PR-9</code>) is well past what "Phase 2" meant in the original plan. The accurate story, reconstructed from a now-superseded planning document (<code>docs/archive/superseded/CORRELATION_V2_PLAN.md</code>) plus every file's own docstring: a phased plan (Phases 1 through 5) was written and largely built section-by-section — the plan's own quality-control subsections (§24.1 through §24.13) map almost one-to-one onto individual files here — and then, after the plan was formally superseded by a newer spec document, <em>more</em> was built on top without renumbering: a priority-scoring synthesis layer (informally "v3"), and later still, ADR-004's precompute architecture. Don't read the phase labels as a strict changelog — read them as archaeological layers, each still live in production, none of them replaced by the next.</p>
+      </div>
+
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <pre class="mermaid">
+flowchart TB
+  IN["Raw OTX pulse + IOC data"] --> N["ioc_normalize.py\ndefang, collapse types, flag noise IPs"]
+  N --> H["hub_suppress.py\ndrop IOCs over 50-pulse cap"]
+  H --> P["pulse_families.py\nunion-find dedup (CORR-PR-9)"]
+  P --> C["campaigns.py\nbuild one campaign per family"]
+  C --> E["ioc_graph.py + confidence.py + freshness.py\nshared-infra edges, scored"]
+  E --> A["attribution.py + threatfox_corroboration.py\nalias-aware actor match, 2nd-source corroboration"]
+  A --> L["lifecycle.py\nemerging / active / declining / stale"]
+  L --> PR["priority.py (v3)\none 0–100 number, capped &amp; explainable"]
+  PR --> OUT["engine.py::get_correlation_for_cve\nADR-004 precompute-or-fallback"]
+  F["suppressions.py + feedback.py"] -.->|analyst dismiss / confirm / reject| C
+  M["metrics.py + status.py"] -.->|nightly self-monitoring| OUT
+          </pre>
+        </div>
+        <figcaption>Five archaeological phases plus the later priority layer, drawn as one pipeline — each box below is one file, in the order data actually flows through them.</figcaption>
+      </figure>
+
+      <h4 class="subhead how">Phase 1 — Foundation: normalize, suppress hubs, dedupe pulses into campaigns</h4>
+      <div class="prose">
+        <p><strong><code>ioc_normalize.py</code></strong> is the entry gate every raw OTX indicator passes through before it's usable for correlation at all: it defangs indicators (OTX data arrives as <code>hxxps://</code>, <code>1[.]2[.]3[.]4</code>-style defanged text, which this module un-defangs via four regex replacements), collapses type-name drift (IPV4/IPV6→IP, HOSTNAME→DOMAIN, MD5/SHA1/SHA256→HASH), and — worth calling out as a deliberate, documented scope decision — flags a small hardcoded set of 16 well-known public DNS resolvers (Google's 8.8.8.8, Cloudflare's 1.1.1.1, Quad9, OpenDNS, and their IPv6 equivalents) as always-noise. The code comment explains why the list stops there rather than growing into a full CDN/cloud-IP denylist: maintaining a comprehensive "which IPs are too generic to mean anything" feed was judged not worth the ongoing maintenance burden, when the general popularity-based degree penalty (below) already catches broader noise structurally instead of by name.</p>
+        <p><strong><code>hub_suppress.py</code></strong> is the direct, named fix for the incident this chapter's ADR-004 section covers below: <code>is_hub_cve()</code> flags any CVE whose IOC pulse-count exceeds <code>CORRELATION_HUB_CVE_PULSE_CAP</code> (default 50), and <code>filter_campaign_members()</code> applies an asymmetric rule worth understanding precisely — if the CVE being queried is <em>itself</em> a hub, only its direct co-members survive (heavily capped); if it's <em>not</em> a hub, any peer that <em>is</em> one gets dropped from the expansion entirely. This asymmetry is what stops a single Log4Shell-scale CVE from gluing hundreds of otherwise-unrelated CVEs into one giant, meaningless "campaign" via shared low-value infrastructure. A separate function, <code>apply_member_cap()</code>, enforces a hard membership ceiling (default 25) by sorting CVE IDs and keeping the first N — deterministic across rebuilds, not weighted, so the same query always returns the same members.</p>
+        <p><strong><code>pulse_families.py</code></strong> (tagged <code>CORR-PR-9</code>, a later addition) solves a real duplication problem: different analysts submit near-duplicate OTX pulses describing the same real-world campaign, under different names, with mostly-but-not-fully overlapping IOC sets. Two merge rules, implemented via classic union-find (disjoint-set with path compression): pulses merge if they share an identical CVE member set <em>and</em> identical normalized name, or if they clear a Jaccard similarity of at least 0.7 on their non-hub IOC sets (each side needing at least 3 IOCs before the comparison is considered meaningful — comparing two pulses that each have one IOC in common would be statistical noise, not a real similarity signal). Family IDs and campaign IDs are both derived deterministically as <code>sha256(oldest_pulse_id)[:12]</code>, anchored to the family's oldest member — so IDs stay stable across nightly rebuilds even as a family's membership grows over time. A bridging function, <code>legacy_campaign_id_for_pulse()</code>, preserves the pre-dedup per-pulse ID scheme purely so that analyst suppressions recorded before this migration still resolve correctly afterward.</p>
+        <p><strong><code>campaigns.py</code></strong> is both the nightly builder and the read path — its behavior has grown well past its own "Phase 1" docstring label. <code>build_campaigns_from_pulses()</code> calls <code>rebuild_pulse_families</code> first, then builds exactly one campaign per family (not per pulse), skips families under 2 members, computes lifecycle via the function covered below, and — notably — soft-retracts (rather than deletes) campaigns whose family vanished since the last run, preserving suppression history rather than silently losing it. The read path, <code>get_campaigns_for_cve()</code>, does something worth pausing on: it expands a campaign's membership with CVEs that share <em>strong</em> IOCs (hash/domain) with the anchor CVE even if they were never co-tagged in the same OTX pulse — a deliberate choice so that strong shared evidence isn't artificially siloed into the weaker "infrastructure" bucket (below) purely because of where OTX happened to draw pulse boundaries.</p>
+      </div>
+
+      <h4 class="subhead how">Phase 2 — Evidence: shared infrastructure, confidence, freshness decay, and honest copy</h4>
+      <div class="prose">
+        <p><strong><code>ioc_graph.py</code></strong> is, concretely, the file behind the ADR-004 incident below — its <code>_shared_ioc_rows()</code> function is the exact self-join (<code>otx_pulse_iocs</code> against itself, joined through <code>otx_cve_pulses</code>) that produced the O(n²) blowup on hub IOCs. <code>find_shared_infrastructure_v2()</code> is the orchestrator: batches enrichment confirmations and ThreatFox corroboration checks (rather than one query per IOC), computes per-edge confidence, aggregates multiple edges per peer CVE into one confidence tier, and sorts results by confidence first and IOC-type strength second (hash &gt; domain &gt; url &gt; ip) — explicitly so a strong peer is never truncated out of the result limit in favor of one that merely sorted earlier alphabetically.</p>
+        <p><strong><code>confidence.py</code></strong> holds the per-edge scoring rules, and it's worth being precise about the exact order of operations, because the order is itself a design decision: start from a base score by IOC type (hash=high, domain/url=medium, IP=low, with IP additionally forced to low if it's a noise address per <code>ioc_normalize.is_noise_ip</code>); apply confirmation adjustments from cached third-party enrichment (GreyNoise "malicious" bumps confidence up, GreyNoise "benign" pulls it down, MalwareBazaar/URLhaus hits bump it up); apply the degree penalty <strong>last</strong, after every other adjustment — a comment states this ordering explicitly so "a hub can't be rescued back up" by a positive confirmation. A numeric cross-check (below) can pull the level down further, but only up if independent corroboration exists.</p>
+        <p><strong><code>freshness.py</code></strong> is the exact formula this book quoted earlier, and it's worth re-reading now with the full picture: base score by type (hash 0.9, domain 0.6, url 0.65, IP 0.3) × a logarithmic degree penalty (flat below a pulse-count of 3, smoothly decaying above it — a softer, graduated sibling to <code>hub_suppress.py</code>'s hard 50-pulse cliff) × an exponential freshness decay keyed to a per-type half-life (IP 30 days, URL 60, domain 120, hash 365 — reflecting that a file hash discovered a year ago is exactly as malicious today, while an IP from a year ago has very likely changed hands) × a corroboration factor rewarding independent confirmation with diminishing returns. One detail worth knowing: when neither an <code>observed_at</code> nor <code>ingested_at</code> timestamp is available at all, the function explicitly skips decay entirely (factor forced to 1.0, flagged <code>freshness_fallback: true</code>) rather than penalizing an indicator just because its age happens to be unrecorded.</p>
+        <p><strong><code>confirm.py</code></strong> enforces a hard architectural rule worth stating plainly: it reads already-cached third-party enrichment (GreyNoise/MalwareBazaar/URLhaus, via the same <code>ioc_cache</code> table Chapter 23's IOC lookup writes to) and never makes a new HTTP call at correlation read-time — corroboration is only ever based on data some other subsystem already fetched for its own purposes. <strong><code>copy.py</code></strong> is small (three functions) but carries a real security property: every OTX-derived free-text string (pulse names, adversary names) that reaches an analyst's screen passes through <code>sanitize_pulse_text()</code> first, which HTML-escapes and truncates it — because OTX pulse names are community-submitted, user-generated text, and rendering them unsanitized would be a stored-XSS vector into BRIEFR's own UI.</p>
+        <p><strong><code>attribution.py</code></strong> handles the alias-aware conflict check already covered in this book's earlier pass, precisely: <code>build_alias_families()</code> indexes every alias in MITRE's <code>mitre_groups.aliases</code> field so that "APT28" and "Fancy Bear" resolve to the same family, and <code>attribution_conflict()</code> returns true — a conflict — only when there's <em>no</em> evidence of agreement between an OTX-attributed adversary and a MITRE-technique-matched actor, rather than requiring positive proof of disagreement.</p>
+      </div>
+
+      <h4 class="subhead concept">The analyst feedback loop: two genuinely different kinds of human input</h4>
+      <div class="prose">
+        <p>It's worth distinguishing two mechanisms that sound similar but record different things. <strong><code>suppressions.py</code></strong> is dismissal — an analyst saying "hide this specific finding," scoped to a campaign, a CVE pair, a pulse, or an infrastructure link. Its most intricate piece, <code>resolve_suppressed_campaign_ids()</code>, exists because of a real migration wrinkle: suppressions were recorded against per-pulse campaign IDs before <code>pulse_families.py</code>'s dedup shipped, so this function expands an old suppressed ID into whichever new, family-anchored campaign ID it now belongs to — an old dismissal keeps working correctly even after the underlying campaigns got merged. <strong><code>feedback.py</code></strong> is a separate, later addition (<code>CORR-PR-12</code>) recording a genuinely different judgment: <em>confirm</em>, <em>reject</em>, or <em>resolve_conflict</em> — not "hide this," but "this correlation is/isn't actually correct," which feeds directly into the confirmation-rate and rejection-rate metrics covered below.</p>
+        <p><strong><code>threatfox_corroboration.py</code></strong> is the mechanism behind "independent corroboration" mentioned above: it cross-references an OTX-sourced IOC against BRIEFR's separately-ingested ThreatFox mirror table (Chapter 14), and a match there — a second, independent intelligence source agreeing — feeds directly into <code>freshness.py</code>'s corroboration factor.</p>
+        <p><strong><code>lifecycle.py</code></strong> computes a campaign's stage — <code>emerging</code> (≤7 days), <code>active</code> (≤14), <code>declining</code> (≤30), <code>stale</code> (&gt;365 days with no KEV/PoC boosters) — strictly from the most recent <em>true</em> observation timestamp of any member (a pulse link date, an IOC's own <code>observed_at</code>), never from when BRIEFR itself happened to ingest that data (tagged <code>CORR-PR-7</code>, explicitly to prevent a genuinely stale campaign from appearing "emerging" just because BRIEFR synced it late).</p>
+      </div>
+
+      <h4 class="subhead pitfall">The previously-undiscovered mechanism: <code>local.py</code> — correlation signal that needs no OTX key at all</h4>
+      <div class="pitfall-box">
+        <p>This is the file this book's earlier gap-audit specifically flagged as unresearched, and it turns out to bundle two small, unrelated responsibilities under one "Phase 3" label. First, <strong>stack-matching</strong>: a Python-side re-check of whether a CVE mentions any of the operator's declared stack terms, deliberately mirroring (rather than re-querying) the SQL-based stack-match clause used elsewhere, to avoid a second database round trip on data already in hand. Second, and more consequentially, <strong>KEV/exploit "boosters"</strong>: given a campaign's member CVE list, this function checks which members are independently KEV-listed or have public exploits — <em>local database facts requiring no OTX API key whatsoever</em>. This is the concrete mechanism behind BRIEFR's "degraded mode" promise: even with no OTX key configured at all, KEV/PoC/stack signal still flows into campaign scoring, because it never depended on OTX data in the first place. One nuance worth getting right: a booster is explicitly documented as <em>a priority signal, not a confidence signal</em> — a KEV-listed peer doesn't make the underlying correlation more trustworthy, it makes it more urgent to act on — which is precisely why boosters feed into <code>priority.py</code>'s scoring (below) rather than <code>confidence.py</code>'s.</p>
+      </div>
+
+      <h4 class="subhead how">Phase 4–5 — What analysts and operators actually see</h4>
+      <div class="prose">
+        <p><strong><code>clusters.py</code></strong> is the single function backing <code>GET /api/correlation/clusters</code> — the "Campaigns" list view. It filters to non-retracted, non-stale (unless explicitly requested), 2-or-more-member campaigns, cross-references the watchlist table to compute how many members are pinned, and sorts by a deliberate priority order: stack-relevance first, then watchlisted-member count, then total size, then lifecycle stage (emerging sorts before stale), then label alphabetically as a final tiebreak — a direct implementation of "show the analyst's own stack and pins first," not a generic popularity sort.</p>
+        <p><strong><code>status.py</code></strong> backs the admin diagnostics view: last-run timestamps, campaign counts by lifecycle stage, CVE and OTX coverage percentages, suppression counts, and the latest metrics snapshot (below) — plus a static feature-flag manifest advertising which correlation capabilities are actually live, so the frontend/operator can introspect the deployed feature set directly.</p>
+        <p><strong><code>metrics.py</code></strong> (<code>CORR-PR-13</code>) is the nightly self-monitoring snapshot this book referenced earlier, now precisely: over a rolling 30-day window it computes <code>confirmation_rate</code> and <code>rejection_rate</code> from the feedback table, a <code>weak_edge_ratio</code> (the fraction of all stored IOCs that are the weakest tier, IP-type), an <code>orphan_cve_ratio</code> (CVEs with OTX pulses but no campaign membership at all — a coverage gap, not a quality one), a <code>campaign_survival_rate</code> (today's active-campaign count over yesterday's — a churn signal), and a <code>median_evidence_age_days</code>. This is what turns correlation quality from an assumed property into a trackable, dated number.</p>
+      </div>
+
+      <h4 class="subhead how">The v3 addition: <code>priority.py</code> — one ranked number from four independent signals</h4>
+      <div class="prose">
+        <p>This module is a later, un-phase-labeled addition sitting on top of everything above — its own docstring calls it "Correlation v3" and explicitly says it "mirrors <code>scoring/risk.py</code>'s additive-capped-contribution model" (Chapter 18), applying the same explainable-and-bounded design instinct to a structurally different problem: converting four independent signal arrays (campaign, infrastructure, actor, temporal) into one 0–100 number an analyst can triage from directly, instead of scanning four separate lists.</p>
+      </div>
+      <pre class="code"><code>CAP_CAMPAIGN = <span class="num">40</span>
+CAP_INFRASTRUCTURE = <span class="num">25</span>
+CAP_ACTOR = <span class="num">20</span>
+CAP_TEMPORAL = <span class="num">15</span>
+<span class="cmt"># caps sum to exactly 100</span>
+
+_CONFIDENCE_FRACTION = {<span class="str">"high"</span>: <span class="num">1.0</span>, <span class="str">"medium"</span>: <span class="num">0.625</span>, <span class="str">"low"</span>: <span class="num">0.25</span>}</code></pre>
+      <p class="code-caption">correlation/priority.py, the real constants</p>
+      <div class="prose">
+        <p>Each of the four contributions is computed independently, then only positive ones are kept, sorted descending, summed, and capped at 100. The campaign contribution takes the highest-confidence campaign's confidence fraction, adds a flat <strong>+0.15</strong> bonus if that campaign carries a KEV or exploit booster from <code>local.py</code> (explicitly documented as urgency, not certainty — the reason CORR-PR-4 moved this bonus out of <code>confidence.py</code> and into this file specifically, to keep the two concepts from bleeding into each other), caps the combined fraction at 1.0, and multiplies by 40. The infrastructure contribution adds a shared-IOC-count bonus (capped at +0.2) before multiplying by 25. The actor contribution adds a flat +0.3 if the matched actor's known sector overlaps the CVE's inferred sector, before multiplying by 20. The temporal contribution is simply <code>min(1.0, anomaly_score / 5.0) × 15</code>. Every component also carries a human sentence, so the final triage number is never presented without its own explanation — the same explainability requirement you've now seen enforced in the Risk Score, the Environment tier, and here, for a fourth time.</p>
+      </div>
+
+      <h4 class="subhead why">ADR-004 — the production incident, now traceable to an exact function</h4>
+      <div class="prose">
+        <p>This is worth reading as a case study in how a real performance failure reshapes an architecture, because the numbers are concrete and the root cause is now traceable to a specific function rather than a vague "the correlation query." At production scale, <code>ioc_graph.py</code>'s <code>_shared_ioc_rows()</code> self-joined a 132,802-row IOC table against a 49,209-row CVE-pulse table, and a small number of hub IOCs caused the join's result set to explode combinatorially — the textbook O(n²) fan-out problem. The measured result: <code>GET /correlation</code> took roughly 61 seconds, past the 60-second database timeout BRIEFR itself enforces. Worse, the Operational Priority endpoint (Chapter 18) called the exact same correlation-escalation check internally, silently inheriting the identical cost — an entire UI element simply never rendered, with no obvious error pointing back to correlation as the cause.</p>
+        <p>This directly violates the project's heavy-work-never-on-the-request-path rule. ADR-004's fix, gated behind <code>CORRELATION_PRECOMPUTE_ENABLED</code> (default off): a nightly job precomputes and stores a correlation snapshot per CVE, so the request path becomes a cheap indexed read. The <em>same</em> underlying compute function, <code>_compute_correlation_for_cve()</code> in <code>engine.py</code>, is reused for both the nightly precompute pass and the live on-demand fallback — meaning the system fails open to the old, slower-but-correct behavior rather than erroring outright whenever precompute is disabled or a snapshot doesn't exist yet.</p>
+      </div>
+
+      <h4 class="subhead how"><code>engine.py</code> — the orchestrator tying every phase together</h4>
+      <div class="prose">
+        <p>This is the largest file in the package and the only one routers import directly. Beyond hosting <code>_compute_correlation_for_cve</code> and its cached public wrapper <code>get_correlation_for_cve</code> (6-hour cache, ADR-004 precompute-or-fallback logic, and a degraded-stub response on any exception rather than a propagated error), <code>engine.py</code> also implements the two correlation signals that don't live in their own files: <strong>actor/sector correlation</strong> (MITRE technique overlap, filtered to at least 25% technique overlap with the candidate group, plus a weaker OTX free-text adversary-field signal layered on top) and <strong>temporal volume anomaly detection</strong> (flagging a vendor whose this-week CVE count is at least 3× its 90-day rolling average — gated through <code>local.py</code>'s stack-match check so an anomaly in a vendor nobody runs is suppressed as noise rather than surfaced).</p>
+        <p>The nightly orchestration, <code>run_nightly_correlation()</code>, runs in a fixed order worth knowing because each step depends on the one before it: rebuild the IOC-degree table first (so this run's confidence scoring uses fresh popularity counts) → temporal anomaly detection → prune campaign members whose CVE no longer exists (data hygiene against NVD retractions) → actor/sector correlation for recently-active CVEs → rebuild campaigns from pulses (which internally rebuilds pulse families first) → snapshot the quality metrics → optionally, if precompute is enabled, recompute and store a snapshot for up to 500 CVEs per run, committing after each individual row so a mid-batch crash only loses the one in-flight row, never the whole batch. Every stage wraps its own try/except with a Postgres-specific rollback helper, because Postgres — unlike SQLite — aborts an entire transaction after any single failed statement, so one failed metrics computation must not be allowed to poison the campaign-rebuild work that already succeeded in the same run.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Walk through ADR-004's root-cause chain, naming the exact function responsible: what data shape caused a 61-second query, and why did the same slowness silently break an apparently unrelated endpoint (<code>POST /risk</code>)?</li>
+          <li>Why does <code>hub_suppress.py</code>'s member-filtering rule behave asymmetrically depending on whether the queried CVE is itself a hub? Walk through both branches.</li>
+          <li>Why must the degree penalty in <code>confidence.py</code> apply <em>after</em> confirmation bumps rather than before — what specific outcome does that ordering prevent?</li>
+          <li>Explain why a KEV/exploit "booster" affects <code>priority.py</code>'s score but not <code>confidence.py</code>'s — what's the precise conceptual line CORR-PR-4 draws between the two files?</li>
+          <li><code>local.py</code>'s booster logic requires no OTX API key. Explain exactly why, and what "degraded mode" correlation would still be able to tell an analyst with no OTX key configured at all.</li>
+          <li>Why does <code>lifecycle.py</code> insist on true observation timestamps over BRIEFR's own ingest timestamps? Construct a concrete scenario where getting this wrong would mislead an analyst.</li>
+          <li>Why does <code>resolve_suppressed_campaign_ids()</code> need to exist at all — what would silently break for an analyst without it, after the pulse-family dedup migration?</li>
+          <li>If precompute is enabled but no snapshot exists yet for a specific CVE, what actually happens on that request — and why was that fallback chosen over returning an error?</li>
+        </ol>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="ie-matching.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Asset and CPE matching — the mechanical layer under the 0.35 weight</span></a><a class="next" href="ie-detection.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Detection engineering — a generator, deliberately not a live detector</span></a></nav>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

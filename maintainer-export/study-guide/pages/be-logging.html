@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Logging and redaction — two systems, and one real gap between them — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="be-logging" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="be-logging">
+      <div class="chapter-head">
+        <span class="chapter-num">Part II · Chapter 13</span>
+        <h3>Logging and redaction — two systems, and one real gap between them</h3>
+        <p class="dek">Structured JSON logs, an admin log viewer, and a documented boundary on what redaction actually covers — worth understanding precisely, not just trusting.</p>
+        <div class="files"><span class="chip">structured_logging.py</span><span class="chip">redact.py</span></div>
+      </div>
+      <div class="prose">
+        <p>It's easy to assume a codebase has "one logging system with redaction built in," but BRIEFR actually has two separate mechanisms solving two different problems, and conflating them is the most common way to misjudge how well-protected a given piece of data actually is.</p>
+      </div>
+
+      <h4 class="subhead concept"><code>structured_logging.py</code>: the logging pipeline itself</h4>
+      <div class="prose">
+        <p>Every log line becomes one JSON object emitted to stderr — deliberately structured rather than free-text, so log aggregation tools (or a human grepping the output) can filter by field rather than parsing prose. A contextvar-based mechanism propagates a <code>request_id</code>/<code>job_id</code>/<code>run_id</code> through the whole call chain of a single request or job, so every log line produced while handling one request can be correlated back to it — genuinely useful when a request touches five subsystems and something in the middle fails. A fixed-size, in-process ring buffer holds the last 500 log entries specifically to back the Admin UI's live log viewer, without needing a separate log-shipping pipeline for that feature.</p>
+      </div>
+
+      <pre class="code"><code><span class="kw">def</span> _should_redact_field(key: <span class="kw">str</span>) -> <span class="kw">bool</span>:
+    key_upper = key.upper()
+    <span class="kw">return</span> key_upper <span class="kw">in</span> _REDACT_EXACT <span class="kw">or</span> <span class="kw">any</span>(
+        key_upper.endswith(suffix) <span class="kw">for</span> suffix <span class="kw">in</span> _REDACT_SUFFIXES
+    )</code></pre>
+      <p class="code-caption">structured_logging.py — this function only ever sees the <em>keys</em> of <code>extra={...}</code> kwargs, never a log message string</p>
+
+      <h4 class="subhead why">The gap, stated exactly, not hand-waved</h4>
+      <div class="prose">
+        <p>CLAUDE.md states this directly, and reading the actual function confirms it precisely: <code>_should_redact_field()</code> only ever inspects the <em>keys</em> of whatever dictionary is passed as <code>extra={...}</code> to a logging call, masking the value when the key's name ends in <code>_KEY</code>, <code>_TOKEN</code>, <code>_SECRET</code>, or <code>_PASSWORD</code> (or matches a short exact-match list). It never touches the log message string itself — the human-readable text passed as the first argument to <code>logger.info(...)</code>. This is a real, deliberate design boundary, not an accidental gap someone forgot to close: <code>logger.info(f"NVD sync failed with key {api_key}")</code> interpolates the secret directly into the message text and sails straight past redaction untouched, while <code>logger.info("NVD sync failed", extra={"api_key": api_key})</code> passes the exact same information through the one code path that actually gets checked. The entire safety of this system rests on every call site in the codebase following that convention correctly — there's no code-level enforcement stopping a developer from writing the first version.</p>
+      </div>
+
+      <h4 class="subhead concept"><code>redact.py</code>: a completely different surface</h4>
+      <div class="prose">
+        <p>Where <code>structured_logging.py</code> is about what gets written to log output, <code>redact.py</code> is about what gets returned from the Admin config API and stored in the audit log — a different data path serving a different purpose (an operator viewing their own saved config; an auditor reviewing what changed and when).</p>
+      </div>
+      <pre class="code"><code><span class="kw">def</span> mask_secret_value(value: <span class="kw">str</span>) -> <span class="kw">str</span>:
+    text = (value <span class="kw">or</span> <span class="str">""</span>).strip()
+    <span class="kw">if not</span> text:
+        <span class="kw">return</span> <span class="str">"not configured"</span>
+    <span class="kw">if</span> <span class="kw">len</span>(text) &lt;= <span class="num">8</span>:
+        <span class="kw">return</span> <span class="str">"***"</span>
+    <span class="kw">return</span> <span class="kw">f"</span>{text[:<span class="num">4</span>]}…{text[-<span class="num">4</span>:]}<span class="kw">"</span></code></pre>
+      <p class="code-caption">redact.py — shows first/last 4 characters of a longer secret, enough for an operator to recognize <em>which</em> key is configured without exposing it</p>
+      <div class="prose">
+        <p>Beyond this exact-field masking, <code>redact.py</code> also runs a heuristic — <code>_looks_like_secret_value</code> — over config values that don't already have a schema-declared <code>type: "secret"</code>, matching known API-key prefix formats (<code>gsk_</code> for Groq, <code>sk-</code> and <code>sk-or-v1-</code> for OpenAI-family and OpenRouter keys, <code>vulncheck_</code>, and similar) or simply flagging any long, token-shaped string with no spaces or slashes. This is a genuinely best-effort net, not a guarantee: it will miss a short secret, an unrecognized provider's key format, or a secret embedded mid-sentence inside a longer free-text value — say, a webhook delivery error message that happens to quote back an API key as part of the upstream error text. A separate, deliberately coarser function, <code>mask_webhook_delivery_error</code>, exists specifically for that surface: it redacts any full URL and any string containing the words "token," "password," or "secret" (case-insensitive), or anything longer than 80 characters — trading precision for a wider net on a surface where the shape of what needs hiding is less predictable.</p>
+      </div>
+
+      <div class="security-box">
+        <p><strong>The practical rule that falls out of both systems together:</strong> if you're extending BRIEFR and handling anything sensitive, secrets belong in <code>extra=</code> keyword arguments when logging (never interpolated into the message string), and in schema-typed <code>"secret"</code> config fields when they flow through the Admin config surface (never as free text a heuristic has to guess about). Free-text interpolation is the one unguarded path shared by both systems — and it's the path that requires no special knowledge to fall into by accident.</p>
+      </div>
+
+      <div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>A developer writes <code>logger.error(f"NVD sync failed with key {os.environ['NVD_API_KEY']}")</code>. Does BRIEFR's redaction catch this? Trace through <code>_should_redact_field</code> to justify your answer, then rewrite the call correctly.</li>
+          <li>Why does <code>mask_secret_value</code> show the first and last four characters of a secret instead of fully masking it, or showing nothing at all?</li>
+          <li>Give a concrete example of a secret that <code>_looks_like_secret_value</code>'s heuristic would miss, and explain why it would miss it.</li>
+        </ol>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="be-ratelimit.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Rate limiting — inbound, and the residual risk that's accepted rather than solved</span></a><a class="next" href="in-part.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Where the data actually comes from</span></a></nav>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

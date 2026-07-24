@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Detection &amp; Forge — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-detection-forge" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-detection-forge">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 9</span>
+        <h3>Detection &amp; Forge</h3>
+        <p class="dek">SigmaHQ index, class router, DetectionContext, and Forge navigator workflows.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What is &lt;code&gt;DetectionContext&lt;/code&gt;?</h4>
+        <p class="answer"><strong>A:</strong> Scaffold in <code>feed_cache</code> as <code>detection_ctx:{cve_id}</code> with CWE, product, class, artifacts, model metadata. Written by <code>detection_context_sync</code> job (default off) and Nuclei/LLM enrichers when enabled.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does Forge provide?</h4>
+        <p class="answer"><strong>A:</strong> ATT&amp;CK navigator matrix, hunt packs, threat scenarios, proof bench, KEV backlog, and coverage views. Top tabs switch views; matrix click toggles technique selection. Hunt pack generation shares detection engine with Detect tab—no LLM required.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is detection composer status?</h4>
+        <p class="answer"><strong>A:</strong> DC-1…DC-4 shipped for evidence pack and emit Sigma/SIEM/YARA via shared engine. Broader composer UX may expand, but core emit paths are live in Detect and Forge generate.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is community-Sigma-first policy?</h4>
+        <p class="answer"><strong>A:</strong> Detect prefers community SigmaHQ rules over generated BRIEFR templates when CVE-exact matches exist. Reduces noise and respects SigmaHQ authorship with Show YAML and attribution strings.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What ATT&amp;amp;CK navigator UX shipped (PM-4d)?</h4>
+        <p class="answer"><strong>A:</strong> Top view tabs; tactic columns with id + name; click toggles selection; hunt pack only on coverage view. Removed GAP/COMMUNITY/YOURS chrome for clarity.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What tests cover detection?</h4>
+        <p class="answer"><strong>A:</strong> <code>test_sigmahq_index.py</code>, <code>test_sigmahq_index_read.py</code>, class router tests, and admin job map tests ensure scheduler wiring matches <code>run_sigmahq_index_sync</code>.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: Explain BRIEFR class templates.</h4>
+        <p class="answer"><strong>A:</strong> Deterministic templates keyed by ATT&amp;CK technique when mapped, else CWE (<code>briefr_basis</code>), never generic dumps. <code>class_router.py</code> resolves class consistently for Sigma, SIEM, and log patterns.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does KEV backlog appear?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler <code>kev_backlog_reconcile</code> and <code>detection/backlog.py</code> emit <code>kev_backlog</code> notifications deep-linking to Forge <code>?view=backlog</code>. Surfaces gaps between KEV and detection coverage.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do artifacts merge from Nuclei?</h4>
+        <p class="answer"><strong>A:</strong> <code>DETECTION_CONTEXT_NUCLEI_ENABLED=1</code> default parses Nuclei YAML on exploit sync into detection context; merges keywords/paths into emitted BRIEFR templates when present.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: How does Forge link to the drawer?</h4>
+        <p class="answer"><strong>A:</strong> Drawer MITRE section pivots to Forge navigator; hunt-pack CVE chips open the drawer. URL sync uses <code>?tab=forge</code> plus <code>view</code>/<code>technique</code> params with history push for back button.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What SIEM outputs exist?</h4>
+        <p class="answer"><strong>A:</strong> Class-aware queries selected by <code>class_router</code>—same class as Sigma and log patterns. Export paths live in detection module consumed by Detect UI and Forge hunt-pack generate.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: How is Forge coverage honest?</h4>
+        <p class="answer"><strong>A:</strong> Empty/sparse matrix uses shared <code>EmptyState</code>—no forced tall black columns. Campaign clusters avoid 'ranked for your stack' without stack pins. Wallboard distinguishes global vs stack-scoped empty copy.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are detection flags configured?</h4>
+        <p class="answer"><strong>A:</strong> Admin config exposes <code>DETECTION_CONTEXT_*</code> and <code>SIGMAHQ_INDEX_SYNC_*</code> with honest apply strategies—immediate vs restart for LLM job registration.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: What is the Detect tab&#x27;s purpose?</h4>
+        <p class="answer"><strong>A:</strong> Surface detection content for a CVE: community Sigma rules from the local SigmaHQ index, BRIEFR class templates when appropriate, SIEM queries, and log patterns—driven by a unified class router so all three agree on class.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does SigmaHQ indexing work?</h4>
+        <p class="answer"><strong>A:</strong> <code>sigmahq_index_sync</code> mirrors the SigmaHQ tarball into Postgres with commit and SHA256 watermark. <code>find_sigma_rules</code> prefers CVE-exact local matches with DRL attribution. Live GitHub search is fallback only when index empty.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is &lt;code&gt;match_basis&lt;/code&gt; honesty?</h4>
+        <p class="answer"><strong>A:</strong> UI distinguishes never-synced index, empty index, no CVE-exact match, and community vs BRIEFR template sources. BRIEFR YAML is suppressed when community hits exist or template would be <code>generic</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Can Forge generate without cloud AI?</h4>
+        <p class="answer"><strong>A:</strong> Yes—hunt pack generate and detection emit paths are deterministic from structured CVE context and Sigma index. LLM is optional overlay for richer artifacts, not a gate.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does Detect relate to IOC tab?</h4>
+        <p class="answer"><strong>A:</strong> IOC tab is live enrichment lookup (VT, AbuseIPDB, GreyNoise)—separate from rule generation. Detection uses persisted CVE context and Sigma index, not IOC query results directly.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How would you demo Detect in an interview?</h4>
+        <p class="answer"><strong>A:</strong> Open a KEV CVE with Sigma index synced—show community rules with attribution, contrast with CWE-based BRIEFR template on unmapped technique, and pivot to Forge matrix for coverage context.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-ml-embeddings.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">ML &amp; embeddings</span></a><span class="spacer"></span><a class="next" href="iv-frontend-ux.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Frontend &amp; UX</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

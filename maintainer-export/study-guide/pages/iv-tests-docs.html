@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Tests, docs &amp; roadmap — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-tests-docs" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-tests-docs">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 13</span>
+        <h3>Tests, docs &amp; roadmap</h3>
+        <p class="dek">verify-local gates, PRODUCT_STATUS truth, planning docs, and how to keep the repo interview-ready.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What is the documentation hierarchy in BRIEFR?</h4>
+        <p class="answer"><strong>A:</strong> <code>docs/PRODUCT_STATUS.md</code> is runtime truth; <code>docs/SYSTEM_DESIGN.md</code> structure; <code>docs/API_REFERENCE.md</code> endpoints; <code>docs/planning/SPRINT_2026-07.md</code> active queue; <code>docs/HANDOVER.md</code> session context. Archives under <code>docs/archive/</code> are historical—never resurrected.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Where does the maintainer study guide live?</h4>
+        <p class="answer"><strong>A:</strong> Private <code>briefr-maintainer</code> repo (<code>docs/study-guide/</code>) after PR #751 migrated it out of public <code>briefr</code>. This interview pack ships as <code>maintainer-export/</code> drop-in until pushed to maintainer.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is ADR-003 and why interviewers care?</h4>
+        <p class="answer"><strong>A:</strong> UI design system decision: semantic tokens, Radix primitives, no Tailwind runtime. Violations (native selects, hardcoded hex) are explicit amateur defects gated in verify-local.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is ADR-005?</h4>
+        <p class="answer"><strong>A:</strong> Approved component libraries (Radix + sanctioned headless). Mantine/MUI/Chakra prohibited until ADR updated—explains frontend dependency discipline.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the danger zones list in CLAUDE.md?</h4>
+        <p class="answer"><strong>A:</strong> Six areas agents must read before editing: Postgres-native SQL, scheduler lock map, forward-only migrations, secrets in logs, deploy script compatibility, no heavy work on request path. Interviewers use it to probe whether you know where bugs become outages.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: What does verify-local.sh run by default?</h4>
+        <p class="answer"><strong>A:</strong> SQLite pytest, frontend dependency audit, <code>npm run build</code>, frontend unit tests, scoped ESLint (scoring + admin), backend ruff F/E9. Mirrors CI merge gate; green local suffices when GitHub Actions quota exhausted.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does verify-local --full add?</h4>
+        <p class="answer"><strong>A:</strong> Postgres pytest, gitleaks (known red), Playwright smoke when available. Required for <code>db/</code> DDL changes and scheduler lock map edits before production merge.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why default pytest on SQLite?</h4>
+        <p class="answer"><strong>A:</strong> Zero-config CI/dev on cloud VMs without Docker. <code>db/pg_adapt.py</code> keeps parallel SQL constants. Production is Postgres-only—operators must run Postgres path before merging dangerous SQL.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What frontend tests exist?</h4>
+        <p class="answer"><strong>A:</strong> <code>npm run test:unit</code> (Vitest) for scoring helpers and admin patterns. Playwright smoke behind <code>PLAYWRIGHT_SMOKE=1</code>. Design-token lint and native-control grep gates in verify-local.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is test_scheduler job map guard?</h4>
+        <p class="answer"><strong>A:</strong> Tests assert <code>scheduler.py</code> job <code>id=</code> strings match <code>routers/admin/jobs.py</code> <code>_JOB_RUN_MAP</code>—danger zone #2. Drift breaks Run Now and locks.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How are Alembic revisions tested?</h4>
+        <p class="answer"><strong>A:</strong> <code>test_alembic_revisions.py</code> scans for reserved-word quoting bugs. Forward-only migrations; Postgres apply in --full before merge.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you add a regression test for a user-reported bug?</h4>
+        <p class="answer"><strong>A:</strong> RCA reproduce → minimal pytest or Vitest asserting fixed behavior → run verify-local. Note operator-visible changes in HANDOVER.md.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What playwright smoke covers?</h4>
+        <p class="answer"><strong>A:</strong> Optional UI smoke in <code>test_playwright_smoke.py</code>—login shell, basic navigation—gated behind <code>PLAYWRIGHT_SMOKE=1</code>. Not default on every dev machine; complements unit tests.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: How do docs stay aligned with API changes?</h4>
+        <p class="answer"><strong>A:</strong> Same PR updates PRODUCT_STATUS, SYSTEM_DESIGN, API_REFERENCE when behavior changes. Admin corpus drift check compares generated security architecture to committed files.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does HANDOVER relate to SPRINT?</h4>
+        <p class="answer"><strong>A:</strong> HANDOVER is newest-first session log for agents/operators; SPRINT is the checked work queue. Agents execute next unchecked SPRINT item without stopping at wave boundaries per AGENTS.md.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does CLAUDE.md relate to AGENTS.md?</h4>
+        <p class="answer"><strong>A:</strong> CLAUDE.md is the rulebook (danger zones, UI, PR workflow). AGENTS.md points agents to read order and cloud caveats without duplicating rules.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What planning docs track roadmap?</h4>
+        <p class="answer"><strong>A:</strong> <code>docs/planning/BACKLOG.md</code>, specs under <code>docs/planning/specs/</code>, ROADMAP.md compatibility promise, OPERATIONS.md for live box procedures.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does PRODUCT_STATUS differ from planning specs?</h4>
+        <p class="answer"><strong>A:</strong> PRODUCT_STATUS records what is true in production now; specs describe intended work. When they conflict, PRODUCT_STATUS and code win.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does issue #498 map to this section?</h4>
+        <p class="answer"><strong>A:</strong> Issue asks repo-wide categorized questions by subsystem. Part VII chapters mirror priority areas (NVD, correlation, campaign/IOC, detection, API, scheduler, DB, tests/docs) with hundreds of concrete Q&amp;A—generated from <code>interview_qa_data.py</code> + <code>interview_qa_extra.py</code>.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: What tests fail on SQLite-only CI that are expected?</h4>
+        <p class="answer"><strong>A:</strong> Postgres-only tests: stack backfill, NVD txn boundary, API metering, CPE catalog, Procrastinate—attempt <code>127.0.0.1:5432</code> and fail without container. Not regressions on default path.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you RCA a CI failure vs local pass?</h4>
+        <p class="answer"><strong>A:</strong> Compare env: DATABASE_URL, Node/Python versions, missing Playwright browsers. Re-run failing file with same env vars as CI job log. RCA-first: reproduce → trace → class fix → regression test.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: dependency-audit and gitleaks red in CI?</h4>
+        <p class="answer"><strong>A:</strong> Known non-blockers per CLAUDE.md until fixed. Do not ignore new failures in test job—those are merge blockers.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What happens when docs claim a removed feature?</h4>
+        <p class="answer"><strong>A:</strong> Interview trap: Investigation Score, snooze UI, light theme, admin API key—removed with documented non-goals. Always cross-check PRODUCT_STATUS.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: Why scoped lint not whole-repo?</h4>
+        <p class="answer"><strong>A:</strong> Incremental hygiene: ESLint on scoring + admin where type complexity matters; ruff F/E9 on backend. Full-repo lint deferred—verify-local stays fast enough for solo maintainer loop.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do golden query tests help embeddings?</h4>
+        <p class="answer"><strong>A:</strong> Contract tests for semantic search shapes prevent silent retrieval regressions without recomputing OP math in frontend.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: What security tests ship?</h4>
+        <p class="answer"><strong>A:</strong> Rate limit tests, SSRF blocks, session refresh dedupe, admin DB explorer allowlist, structured log redaction tests, security architecture corpus generation tests.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How is secrets leakage tested?</h4>
+        <p class="answer"><strong>A:</strong> Structured logging tests ensure <code>*_KEY</code> fields redact in extra dicts; gitleaks in --full (known red) for committed secrets.</p>
+      </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
+      <div class="interview-qa">
+        <h4>Q: Why graphify/study-guide vs only README?</h4>
+        <p class="answer"><strong>A:</strong> README orients users; study guide and graphify orient contributors across hundreds of modules. Maintainer-private guide can go deeper than public onboarding without bloating product repo.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why issue #498 output in maintainer not public repo?</h4>
+        <p class="answer"><strong>A:</strong> Interview prep is maintainer-facing depth; public repo stays product-focused after study guide migration #751. Portable <code>maintainer-export/</code> bridges until private push.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why keep SQLite dev fallback on main while PR #752 removes it?</h4>
+        <p class="answer"><strong>A:</strong> Launch caution: Postgres-only draft needs full validation. README documents both paths; production uses Postgres; CI uses SQLite for speed until removal merges.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-devops-deploy.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">DevOps &amp; deploy</span></a><span class="spacer"></span><a class="next" href="iv-product-behavioral.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Product, behavioral &amp; solo owner</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

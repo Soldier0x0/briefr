@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>The outbound queue and circuit breakers — never dropping a request on purpose — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="in-queue" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="in-queue">
+      <div class="chapter-head">
+        <span class="chapter-num">Part III · Chapter 16</span>
+        <h3>The outbound queue and circuit breakers — never dropping a request on purpose</h3>
+        <p class="dek">One shared choke point every feed passes through before it ever touches the network, built around a single stated principle: wait, don't fail.</p>
+        <div class="files"><span class="chip">resilient_client.py</span><span class="chip">api_queue.py</span><span class="chip">api_queue_operations.py</span><span class="chip">api_metering.py</span><span class="chip">backend/api_metering.py</span><span class="chip">source_rate_limits.py</span></div>
+      </div>
+      <div class="prose">
+        <p>Every outbound call any feed module makes — to NVD, GitHub, OTX, CISA, FIRST.org, any of it — is routed through <code>resilient_client.py</code>'s <code>resilient_get</code>/<code>resilient_request</code>, never a raw <code>httpx</code> call made directly by a feed module. This centralization is what makes it possible to reason about outbound reliability in one place instead of 29 separate, inconsistent implementations.</p>
+      </div>
+
+      <pre class="code"><code>CIRCUIT_FAILURE_THRESHOLD = <span class="num">3</span>
+CIRCUIT_COOLDOWN_SECONDS = <span class="num">60.0</span>
+
+<span class="kw">def</span> _record_failure(source: <span class="kw">str</span>, error: <span class="kw">str</span>, *, cooldown_seconds=<span class="kw">None</span>) -> <span class="kw">None</span>:
+    state = _state(source)
+    state[<span class="str">"consecutive_failures"</span>] += <span class="num">1</span>
+    <span class="kw">if</span> state[<span class="str">"consecutive_failures"</span>] &gt;= CIRCUIT_FAILURE_THRESHOLD:
+        cooldown = cooldown_seconds <span class="kw">if</span> cooldown_seconds <span class="kw">is not None else</span> CIRCUIT_COOLDOWN_SECONDS
+        state[<span class="str">"circuit_open_until"</span>] = time.time() + cooldown
+
+<span class="kw">def</span> is_circuit_open(source: <span class="kw">str</span>) -> <span class="kw">bool</span>:
+    open_until = _circuit_open_until(source)
+    <span class="kw">return</span> <span class="kw">bool</span>(open_until <span class="kw">and</span> time.time() &lt; open_until)</code></pre>
+      <p class="code-caption">resilient_client.py, real code — three consecutive failures, sixty seconds of silence, then one more try</p>
+
+      <h4 class="subhead concept">The circuit-breaker state machine, made concrete</h4>
+      <div class="prose">
+        <p>Part 0 described a circuit breaker in the abstract; here it is exactly. Each source (NVD, OTX, GitHub, and so on) has its own independent health state: a count of consecutive failures, and a timestamp marking when the circuit reopens. After 3 consecutive failures, the circuit "opens" for 60 seconds — during that window, <code>is_circuit_open()</code> returns true immediately and calls to that source fail fast without even attempting the network request, protecting BRIEFR from wasting time and connections hammering a service that's already down. A single success resets the failure count to zero and clears the open-until timestamp entirely — the breaker doesn't require a gradual healing period, one clean response is enough to trust the source again. This asymmetry (three strikes to open, one success to close) is a deliberate choice: opening the circuit is a costly false-negative to get wrong too eagerly (you'd stop legitimate traffic to a source that was only briefly slow), so it requires a real pattern of failure; closing it back up is cheap to get wrong (worst case, one more failed request before it reopens), so a single success is enough evidence.</p>
+      </div>
+
+      <h4 class="subhead why">Never dropping a request, and what that actually costs</h4>
+      <div class="prose">
+        <p>The module's own design principle, stated directly: a 429 (rate limited) response should make the caller <em>wait</em> and retry, not fail the entire sync outright. This is why NVD's page-fetching loop (Chapter 14) retries on 429 indefinitely rather than raising after some fixed number of attempts — a design that trades "the sync might take noticeably longer than expected on a bad day" for "the sync never simply gives up partway through and leaves data half-updated." <code>api_queue.py</code> implements the pacing half of this: a registry tracking, per source, how many requests are currently in flight and when the next one is allowed to start, so a caller doesn't just retry blindly but genuinely waits until pacing constraints are satisfied — visible live in the admin UI as requests move through <code>queued</code> → <code>waiting</code> → <code>active</code> states, rather than being an invisible internal detail.</p>
+        <p><code>source_rate_limits.py</code> adds one more layer of care: several distinct BRIEFR feeds — PoC-GitHub, cvelistV5, Metasploit-module sync — all ultimately hit GitHub's API under the hood, and GitHub's rate limit is per <em>account</em>, not per feed. If each feed paced itself independently, thinking it alone was respecting GitHub's limit, the three of them running concurrently would collectively blow straight through it. <code>resolve_pacing_key</code> aliases all three onto one shared pacing bucket keyed simply as <code>github</code>, so the constraint that actually exists (one shared quota) is modeled as one shared bucket, not three independent ones that happen to sum past the real limit.</p>
+      </div>
+
+      <div class="pitfall-box">
+        <p><strong>A specific, non-obvious detail:</strong> GitHub's rate-limit headers (<code>x-ratelimit-remaining</code>, <code>x-ratelimit-reset</code>) work differently from the generic <code>Retry-After</code> header most APIs use. <code>Retry-After</code> is a relative delay ("wait 30 seconds"); GitHub's <code>x-ratelimit-reset</code> is an absolute Unix epoch timestamp marking when its rolling window resets. BRIEFR's pause-duration calculation branches on which kind of header a given source actually sends — computing <code>reset_at - time.time()</code> for GitHub specifically, rather than naively parsing it as if it were a relative delay, which would produce a wildly wrong (usually enormous) wait time.</p>
+      </div>
+
+      
+      <h4 class="subhead how">Queue operations and metering</h4>
+      <div class="prose">
+        <p><code>api_queue_operations.py</code> and <code>api_metering.py</code> sit beside the in-memory <code>api_queue.py</code> pacing layer: operations helpers for queue introspection/control paths, and metering for usage accounting — neither replaces the token-bucket / circuit-breaker story in this chapter; they extend the operational surface around it.</p>
+      </div>
+<div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why does the circuit breaker require three consecutive failures to open but only one success to close? What would go wrong with the opposite asymmetry?</li>
+          <li>Three different feeds all ultimately call GitHub's API. Why are they aliased onto one shared pacing bucket instead of three independent ones, and what would happen if they weren't?</li>
+          <li>Explain concretely why treating GitHub's <code>x-ratelimit-reset</code> header as if it were a relative <code>Retry-After</code> delay would produce a badly wrong wait time.</li>
+        </ol>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="in-scheduler.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">The scheduler and its lock layer — a danger zone, verified line by line</span></a><a class="next" href="in-jobs.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Durable background jobs — a second job system, and why one wasn't enough</span></a></nav>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

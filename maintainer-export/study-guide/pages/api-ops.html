@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Ops and observability — keeping a self-hosted instance alive without its authors watching over it — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="api-ops" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="api-ops">
+      <div class="chapter-head">
+        <span class="chapter-num">Part V · Chapter 30</span>
+        <h3>Ops and observability — keeping a self-hosted instance alive without its authors watching over it</h3>
+        <p class="dek">Backup, a genuinely separate data-migration path, redacted diagnostics, and a kiosk dashboard with its own auth scheme.</p>
+        <div class="files"><span class="chip">backup/__init__.py</span><span class="chip">backup/manager.py</span><span class="chip">migration/sqlite_to_postgres.py</span><span class="chip">diagnostics/support_pack.py</span><span class="chip">monitoring/api_key_health.py</span><span class="chip">wallboard/service.py</span><span class="chip">wallboard/session.py</span><span class="chip">read_cache.py</span><span class="chip">storage_metrics.py</span><span class="chip">resource_collector.py</span></div>
+      </div>
+      <div class="prose">
+        <p><strong>Backup</strong> is dual-backend, matching Chapter 9's split: SQLite uses its own online backup API (<code>sqlite3.Connection.backup()</code>) plus a <code>PRAGMA integrity_check</code> both before and after, with automatic restore-from-backup on startup if the live file is found corrupt (this is the exact recovery path Chapter 6's <code>lifespan()</code> invokes). Postgres instead shells out to <code>pg_dump --format=custom</code> and restores with <code>pg_restore --clean --if-exists</code>. Both backends produce tar bundles with optional X25519 encryption — and the encryption key is required, by an explicit enforced check, to live <em>outside</em> the backup directory itself, for a reason that should be obvious once stated: an encrypted backup whose decryption key sits right next to it in the same backup archive or directory provides no real protection at all if that directory is ever copied, leaked, or compromised as a whole.</p>
+        <p><strong>Migration</strong> (<code>migration/sqlite_to_postgres.py</code>) is a completely separate concept from Alembic, despite touching some of the same territory — Alembic (Chapter 10) only ever handles schema DDL, forward-only, automatically, on every startup. This module is a one-shot, admin-triggered <em>data</em> copy: an operator moving from the zero-config SQLite dev setup to a real Postgres production deployment runs this once, and it first runs <code>alembic upgrade head</code> against the new Postgres target to get the schema right, then copies actual rows table by table in dependency order (respecting foreign-key relationships so a child row is never inserted before its parent exists), persisting progress into <code>sync_state</code> so that a crash mid-migration is correctly reported to the operator as "interrupted, needs attention" rather than silently appearing to have succeeded, or worse, silently appearing as if it simply hadn't started.</p>
+        <p><strong>Diagnostics</strong> (<code>support_pack.py</code>) assembles a single redacted JSON bundle — health status, database integrity, feed health, correlation status, production-posture warnings, and recent log entries — for an operator to hand to someone helping them debug an issue, explicitly redacting database connection URLs and never including secrets of any kind, consistent with Chapter 13's redaction discipline. <strong>Monitoring</strong> (<code>api_key_health.py</code>) actively pings every external API key BRIEFR has configured (NVD, Groq, Gemini, GitHub, OTX, GreyNoise, AbuseIPDB, and others) with a cheap, low-cost probe request, persists the result, and emits an operator notification (Chapter 28) the moment one goes unhealthy — with a genuinely thoughtful dedup detail: it normalizes digit runs inside error messages before comparing them for deduplication purposes, so an error message whose only difference from the last one is an embedded timestamp or a changing port number doesn't defeat deduplication and spam the operator with what looks like a new, distinct failure every single time it's checked.</p>
+        <p><strong>Wallboard</strong> (<code>wallboard/service.py</code>, <code>session.py</code>) is a read-only kiosk-mode dashboard — the kind of thing you'd put on a wall-mounted monitor in a SOC — cached for roughly 45 seconds since kiosk displays typically poll every 60 to 120 seconds and don't need fresher data than that. It runs its own entirely separate signed httpOnly cookie session scheme rather than reusing the main JWT auth system from Chapter 11, specifically so the raw, shareable <code>WALLBOARD_TOKEN</code> secret is never actually stored client-side in any form a browser could expose — a deliberate isolation between "credential a human logs in with" and "credential a kiosk display authenticates with," even though both ultimately grant read access to similar data.</p>
+      </div>
+
+      <h4 class="subhead how">The rest of the backup toolchain, and two smaller ops files</h4>
+      <div class="prose">
+        <p><code>backup/postgres_util.py</code> holds every Postgres-specific helper <code>manager.py</code> calls into rather than implementing directly: locating the real <code>pg_dump</code>/<code>pg_restore</code> binaries (checking both the system PATH and Debian's versioned <code>/usr/lib/postgresql/N/bin/</code> path), running them as subprocesses with <code>--no-owner --no-acl</code> (so a restore doesn't fight over Postgres role ownership on a different box), tolerating <code>pg_restore</code>'s exit code 1 as "warnings only" rather than a hard failure, verifying a dump file's integrity by checking its magic-byte header before trusting it, and redacting the connection URL's embedded credentials before it's ever written to a log line. <code>backup/__main__.py</code> is the CLI surface an operator actually runs by hand or from a cron job (<code>python -m backup run|list|restore|verify|ensure|keygen</code>) — pure argument dispatch onto the functions above and in <code>manager.py</code>, each subcommand returning a shell-appropriate exit code so it composes correctly in scripts.</p>
+        <p><code>monitoring/notifications.py</code> is the aggregation layer sitting one level above the API-key health checker: it merges recent audit-log rows, job-error entries, and unhealthy-key alerts into a single, time-ordered operator notification feed — reusing Chapter 13's audit-log redaction rather than re-implementing it. <code>metrics/request_counter.py</code> is genuinely trivial, confirmed directly rather than assumed: a thread-locked integer counter with an atomic read-and-reset, existing purely to answer "how many requests came in since the last resource sample" for the resource-monitoring collector this chapter's Chapter 31 companion covers.</p>
+      </div>
+
+      
+      <h4 class="subhead how">Read cache, storage, and resource collectors</h4>
+      <div class="prose">
+        <p><code>read_cache.py</code> is the short-TTL in-process cache used by hot read paths (including health-style endpoints) so polling UIs do not stampede the database. <code>storage_metrics.py</code> and <code>resource_collector.py</code> feed Admin Storage / Resources charts — table sizes, host disk, CPU/memory trends — without standing up Prometheus.</p>
+      </div>
+<div class="self-check">
+        <h4>Self-check</h4>
+        <ol>
+          <li>Why must a backup's encryption key live outside the backup directory itself — what specific failure scenario does this prevent?</li>
+          <li>Why is <code>migration/sqlite_to_postgres.py</code> a separate module from Alembic, when it still invokes Alembic internally as its very first step?</li>
+          <li>Why does the API key health monitor normalize digit runs inside error messages before deduplicating them?</li>
+          <li>Why does the wallboard use its own separate cookie session scheme instead of the main JWT auth system covered in Chapter 11?</li>
+          <li>Why does <code>backup/postgres_util.py</code> tolerate <code>pg_restore</code> exiting with code 1 rather than treating any non-zero exit as a hard failure?</li>
+          <li>Why does <code>monitoring/notifications.py</code> reuse Chapter 13's audit-log redaction rather than building its own masking for the merged feed?</li>
+        </ol>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="api-proof.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Proof, services, and templates — three more names worth clarifying precisely</span></a><a class="next" href="api-scripts.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Scripts and top-level admin guardrails</span></a></nav>
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate: <code>scripts/build_study_guide_book.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

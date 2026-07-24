@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Product, behavioral &amp; solo owner — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-product-behavioral" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">3 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">4 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">5 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">6 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">7 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">8 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">9 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">10 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">11 · Product, behavioral & solo owner</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-product-behavioral">
+      <div class="chapter-head">
+        <span class="chapter-num">Interview · 14</span>
+        <h3>Product, behavioral &amp; solo owner</h3>
+        <p class="dek">Roadmap judgment, trade-offs, and maintainer narrative in first person.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What metric would you track if you had more time?</h4>
+        <p class="answer"><strong>A:</strong> Time-to-triage for stack-matched KEV CVEs—proxy via feed sort + OP accuracy feedback. Today we expose operational signals (backlog notifications, feed health) more than product analytics.</p>
+      </div>
+      <h4 class="interview-category">Core implementation</h4>
+      <div class="interview-qa">
+        <h4>Q: Tell me about UX debt you paid down.</h4>
+        <p class="answer"><strong>A:</strong> Forge honesty PRs: no fake 'ranked for your stack', real EmptyState on sparse ATT&amp;CK matrix, community-Sigma-first Detect. I treat analyst trust as a feature—wrong detection is worse than no detection.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you onboard a new contributor quickly?</h4>
+        <p class="answer"><strong>A:</strong> CLAUDE.md rulebook, HANDOVER newest-first, graphify/study-guide for architecture. Danger zones call out scheduler lock strings, migration forward-only, and request-path heavy work prohibition.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: Describe coordinating UI and backend changes.</h4>
+        <p class="answer"><strong>A:</strong> ADR-002 scoring shipped API-first—frontend displays <code>/risk</code> only. Drawer bundle reduced chatty fetches. I resist duplicating business logic in React; it always drifts.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: Describe a production incident mindset you encoded.</h4>
+        <p class="answer"><strong>A:</strong> RCA-first: reproduce, trace end-to-end, fix the class of bug, add a regression test. Example: FE refresh dedupe—concurrent 401s could revoke all sessions; shared in-flight refresh fixed the structural race, not just retry logic.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you say no to features?</h4>
+        <p class="answer"><strong>A:</strong> STIX export excluded from current loop, light theme removed, snooze removed, Investigation Score removed—documented non-goals. I prefer deleting misleading UI over maintaining half-honest paths.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you design for self-hosters with no API keys?</h4>
+        <p class="answer"><strong>A:</strong> Core CVE feed, RSS, and search work offline from public feeds. Empty states explain missing VT/GreyNoise keys without looking broken. Keys enhance; they do not gate login.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you decide when to add Procrastinate vs APScheduler?</h4>
+        <p class="answer"><strong>A:</strong> Durable when failure is expensive and retry semantics matter—stack backfill, LLM product extraction. Cron ingest stays APScheduler with locks—simpler mental model for operators.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Where is BRIEFR headed next?</h4>
+        <p class="answer"><strong>A:</strong> Durability tail (PR-R series), formal resource benchmarking, detection composer expansion, and honest platform compose—while keeping single-server deploy the default story.</p>
+      </div>
+      <h4 class="interview-category">Performance</h4>
+      <div class="interview-qa">
+        <h4>Q: How do you manage LLM cost risk?</h4>
+        <p class="answer"><strong>A:</strong> Router failover, pacing headroom, empty-payload skip, ai_operations metering without storing prompts. LLM defaults off for detection context; deterministic Nuclei path default on.</p>
+      </div>
+      <h4 class="interview-category">Security</h4>
+      <div class="interview-qa">
+        <h4>Q: How do you prioritize the roadmap?</h4>
+        <p class="answer"><strong>A:</strong> <code>docs/PRODUCT_STATUS.md</code> and <code>docs/planning/SPRINT_2026-07.md</code> drive truth. I ship operator pain first—auth hardening, scheduler honesty, feed performance—before greenfield features like full platform compose.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you handle docs vs code drift?</h4>
+        <p class="answer"><strong>A:</strong> PRODUCT_STATUS wins over README snapshots. I update SYSTEM_DESIGN and API_REFERENCE in the same PR as behavior changes. Corpus drift check in admin compares generated security architecture to committed files.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do you handle security findings?</h4>
+        <p class="answer"><strong>A:</strong> Fail closed in production: JWT required, admin key removed, SSRF blocks expanded, session revalidation. Security posture page gives analysts read-only transparency without duplicating admin corpus editing.</p>
+      </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
+      <div class="interview-qa">
+        <h4>Q: Why build BRIEFR as a solo maintainer project?</h4>
+        <p class="answer"><strong>A:</strong> I wanted analyst-grade CVE triage without SIEM cost or SaaS data residency concerns. A monolith with honest self-host docs matches how small teams actually deploy—one Postgres, one operator, incremental flags instead of microservice sprawl.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Tell me about a hard technical trade-off you made.</h4>
+        <p class="answer"><strong>A:</strong> I kept APScheduler in-process instead of jumping to Celery everywhere. Procrastinate is optional for a narrow durable queue. That trades theoretical scale for operability—one lock map, one admin Scheduler page, predictable failures.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why Apache 2.0?</h4>
+        <p class="answer"><strong>A:</strong> Maximum adoption for defenders who cannot ship GPL contagion into commercial SOCs. Clear NOTICE attribution; aligns with SigmaHQ and ecosystem tooling expectations.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is your testing philosophy?</h4>
+        <p class="answer"><strong>A:</strong> Default SQLite pytest for speed; Postgres path before merging db/ changes. verify-local as merge gate. Playwright smoke optional. Tests assert behavior operators see—job lock maps, EPSS skip, Sigma index read path.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What would you do differently starting over?</h4>
+        <p class="answer"><strong>A:</strong> I might stamp Postgres-only earlier—but SQLite test fallback still saves CI minutes. I'd also centralize model catalog from day one; we recovered from stale OpenRouter IDs with SSOT in <code>model_catalog.py</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why dark terminal aesthetic?</h4>
+        <p class="answer"><strong>A:</strong> Analysts live in terminals and SOC walls; light mode was noise. Tokens and Radix gave accessibility without Material blandness. Density-first—no hero marketing columns.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-tests-docs.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Tests, docs &amp; roadmap</span></a><span class="spacer"></span><a class="next" href="glossary.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Glossary</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>
