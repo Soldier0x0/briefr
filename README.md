@@ -115,7 +115,14 @@ One FastAPI process, one database, a scheduler that does all the heavy lifting s
 
 **Database:** PostgreSQL 16 in production (required); use a pgvector-enabled Postgres image for embeddings. SQLite is the zero-config dev/test fallback only — see [`docs/POSTGRES.md`](docs/POSTGRES.md).
 
-> **Note — PostgreSQL vs SQLite.** In early testing, when BRIEFR was a simple CVE reader dashboard, SQLite was a practical default. As the product matured — correlation, scheduled ingest, campaign logic, embeddings, and overlapping API plus scheduler traffic — parallel reads and writes became a bottleneck, and the architecture pivoted to **PostgreSQL 16 (+ pgvector)** for every serious deployment. The tree still carries a **SQLite dev/test fallback** (omit `DATABASE_URL` for a zero-config local file DB); on production hosts you should run Postgres, and those SQLite code paths are largely dormant there. **Removing the fallback** is tracked in draft [PR #752](https://github.com/Soldier0x0/briefr/pull/752), which is **not merged to `main`** — it will stay open until it is validated against existing Postgres installs, so nothing changes for production until that lands.
+> **Note — PostgreSQL vs SQLite**
+>
+> | | |
+> |---|---|
+> | **Why SQLite existed** | Early on, while BRIEFR was still a simple CVE reader during testing, I used SQLite — single file, zero setup. |
+> | **Why I pivoted to Postgres** | As the tool matured (correlation, scheduled ingest, embeddings, overlapping API + scheduler traffic), parallel reads and writes became a bottleneck. **PostgreSQL 16 (+ pgvector)** is what I run in production. |
+> | **What ships on `main` today** | Production expects Postgres. The repo still carries a **SQLite dev/test fallback** (omit `DATABASE_URL`) — on real Postgres hosts those paths are largely dormant. |
+> | **Open PR [#752](https://github.com/Soldier0x0/briefr/pull/752)** | I have a draft to remove the SQLite fallback entirely. **It is not merged to `main`.** I will merge it only after I have validated it against existing Postgres installs — **nothing changes for production until then.** |
 
 **LLM enrichment (all optional, all free/cheap-tier, none load-bearing):** Groq → Cerebras → OpenRouter → Gemini, in that fixed failover order. Every LLM-backed feature (PDF summaries, product extraction, detection-context artifacts) has a deterministic non-LLM fallback — BRIEFR is fully functional with zero LLM keys configured.
 
@@ -199,6 +206,8 @@ npm run dev    # http://localhost:5173 — proxies /api → :8000
 Open http://localhost:5173 → complete **first-run setup** to create the admin user.
 
 ### Postgres + pgvector (dev or production)
+
+> **Use Postgres for production.** See the **PostgreSQL vs SQLite** table under [Tech Stack → Database](#tech-stack) for why I pivoted away from SQLite and why [PR #752](https://github.com/Soldier0x0/briefr/pull/752) (SQLite removal) is still open.
 
 1. Start Postgres: `docker compose -f deploy/docker-compose.postgres.yml up -d` (image: `pgvector/pgvector:pg16`)
 2. Link in `backend/.env`:
