@@ -1,7 +1,7 @@
 """Wallboard read-only API (Beta V1.4 Theme 4).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response

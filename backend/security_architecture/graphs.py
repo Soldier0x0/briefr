@@ -16,7 +16,7 @@ match over data already loaded by corpus_loader.get_corpus() -- no new SQL,
 no scoring, counts only (spec §8 TM-4: "counts, not scores").
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

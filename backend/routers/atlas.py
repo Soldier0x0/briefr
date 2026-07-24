@@ -4,7 +4,7 @@ import (`fetch_all_incident_news`) was hoisted to module top per house
 convention.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from fastapi import APIRouter, Query

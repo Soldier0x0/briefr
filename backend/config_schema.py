@@ -8,7 +8,7 @@ second hand-maintained copy of the same key list, and adding a new
 writable key is a one-line addition here instead of three.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

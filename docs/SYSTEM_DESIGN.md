@@ -1,6 +1,6 @@
 # BRIEFR System Design
 
-Copyright © 2026 Sai Harsha Vardhan. Licensed under the Business Source License 1.1 (`SPDX-License-Identifier: BUSL-1.1`); see the repository `LICENSE` for the full text.
+Copyright © 2026 Sai Harsha Vardhan. Licensed under the Apache License, Version 2.0 (`SPDX-License-Identifier: Apache-2.0`); see the repository `LICENSE` and `NOTICE` files.
 
 **Version:** 1.5
 **Last updated:** 2026-07-22

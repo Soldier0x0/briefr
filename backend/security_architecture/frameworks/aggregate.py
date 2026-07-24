@@ -15,7 +15,7 @@ rules that keep the numbers honest (spec central principle):
   evidence -- the exact advisories behind the count.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

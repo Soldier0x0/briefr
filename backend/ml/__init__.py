@@ -6,5 +6,5 @@ scheduler jobs only), and a deterministic fallback keeps the tool fully
 functional when ML is off.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """

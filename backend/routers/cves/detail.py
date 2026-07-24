@@ -4,7 +4,7 @@ Split from `routers.cves` (F1.2) without changing route registration order or
 handler behavior.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 import asyncio

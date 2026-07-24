@@ -1,7 +1,7 @@
 """Redacted operator support pack — health + logs, no secrets (V1.4 / Wave 4).
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

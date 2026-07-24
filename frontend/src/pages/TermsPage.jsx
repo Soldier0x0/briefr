@@ -71,39 +71,23 @@ export default function TermsPage() {
 
       <h2 className="legal-section-heading">8. License</h2>
       <p className="legal-p">
-        The BRIEFR source code is licensed under the Business Source License
-        1.1 (BSL). Copyright &copy; 2026 Sai Harsha Vardhan. Self-hosting and
-        use of the source code is free for personal, non-commercial purposes.
-        Any use by or on behalf of a for-profit organisation or business
-        ("commercial use") requires a one-time, lifetime commercial license —
-        contact harsha@projectjupiter.in to obtain one. A commercial license
-        grants only the right to use BRIEFR commercially, for life, in
-        exchange for a single one-time payment — it is not a support or
-        maintenance contract, and does not entitle the licensee to future
-        updates, patches, or fixes; a commercial licensee may self-maintain
-        their own fork or adopt whatever updates the operator chooses to
-        publish, at the operator's discretion. Individuals using BRIEFR for
-        free under the personal license may optionally support development
-        via Buy Me a Coffee (one-time or monthly) — this is never required,
-        and confers no additional rights, support, or update guarantee beyond
-        what the free personal license already provides. Self-hosted instances, whether
-        under the free personal license or a paid commercial license, are run
-        entirely at the operator's own risk: no maintenance, support,
-        updates, or uptime guarantee is provided to anyone (see Section 5,
-        Disclaimer, which applies equally to self-hosted instances). The
-        operator of a
-        self-hosted instance is solely responsible for that instance's data
-        handling and legal compliance — BRIEFR's Privacy Policy describes only
-        the hosted instance at projectjupiter.in. Four years after first
-        publication under this BSL, the license converts to the Apache
-        License 2.0.
+        The BRIEFR source code is licensed under the Apache License, Version
+        2.0. Copyright &copy; 2026 Sai Harsha Vardhan. You may use, modify,
+        and distribute the software (including commercially) provided you
+        retain the license and NOTICE attribution files in the repository.
+        See the full text in the <code>LICENSE</code> file. Self-hosted
+        instances are run entirely at the operator&apos;s own risk: no
+        maintenance, support, updates, or uptime guarantee is provided (see
+        Section 5, Disclaimer). The operator of a self-hosted instance is
+        solely responsible for that instance&apos;s data handling and legal
+        compliance — BRIEFR&apos;s Privacy Policy describes only the hosted
+        instance at projectjupiter.in when applicable.
       </p>
 
       <h2 className="legal-section-heading">9. Contact</h2>
       <p className="legal-p">
-        For questions about these terms, including commercial licensing,
-        contact Sai Harsha Vardhan (Grievance Officer) at
-        harsha@projectjupiter.in.
+        For questions about these terms, contact Sai Harsha Vardhan (Grievance
+        Officer) at harsha@projectjupiter.in.
       </p>
     </LegalPage>
   )

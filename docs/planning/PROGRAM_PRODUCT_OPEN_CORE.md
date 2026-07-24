@@ -105,8 +105,8 @@ Ops (not a code PR): publish `briefr-intel-YYYY-MM.pgdump.gz` from export script
 | First-hour onboarding checklist + external Postgres profile | #371 |
 | Intel snapshot versioning + upgrade runbook | #372 |
 
-**Track F2 (license) is done** — `LICENSE`, `CONTRIBUTING.md`, `FUNDING.yml`, and SPDX
-headers now reflect the Business Source License 1.1 (see `STRATEGY.md` §6, Track F2-R).
+**Track F2 (license) is done** — `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `FUNDING.yml`, and SPDX
+headers reflect **Apache License 2.0** (see `STRATEGY.md` §6; relicense 2026-07-24).
 Full V2.0 platform compose remains parked per `ROADMAP.md`.
 
 ---

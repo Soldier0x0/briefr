@@ -16,6 +16,46 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ---
 
+## 2026-07-24 — License: Apache 2.0 (public open source)
+
+### What changed
+
+- **`LICENSE`** — replaced Business Source License 1.1 with the standard **Apache
+  License, Version 2.0** text.
+- **`NOTICE`** — added attribution file (BRIEFR, copyright Sai Harsha Vardhan,
+  GitHub URL).
+- **SPDX headers** — active source trees updated from `BUSL-1.1` to
+  `SPDX-License-Identifier: Apache-2.0` (backend `.py`, frontend `.jsx`/`.js`,
+  `scripts/snapshot_version.py`).
+- **Product surfaces** — `README.md`, `CONTRIBUTING.md`, `docs/PRODUCT_STATUS.md`,
+  `docs/API_REFERENCE.md`, `docs/ONBOARDING.md`, `docs/OPERATIONS.md`,
+  `docs/SYSTEM_DESIGN.md`, `docs/planning/ROADMAP.md`, `docs/decisions/ADR-005`,
+  `docs/planning/STRATEGY.md` §6, `docs/planning/PROGRAM_PRODUCT_OPEN_CORE.md`,
+  study guide (`arch-license` chapter + rebuild), OpenAPI `license_info` in
+  `backend/main.py`, About modal and legal pages in the frontend.
+- **Historical entries** (HANDOVER F2-R, SPRINT F2-R rows, `docs/archive/**`)
+  left as written — they record prior license decisions.
+
+### Why
+
+Operator and contributor clarity: BRIEFR is OSI-approved open source under Apache
+2.0 with built-in attribution (`LICENSE` + `NOTICE`), not a time-delayed or
+commercial-restricted license.
+
+### Parallel repos (separate PRs)
+
+- **`briefr-docs`** — public docs portal (`docs.projectjupiter.in`): FAQ, footer,
+  homepage license line.
+- **`projectjupiter-landing`** — showcase site only: factual Briefr module license
+  line; no documentation content.
+
+### Next
+
+Merge product PR; merge docs + landing PRs; revoke any one-time PAT used for
+`briefr-docs` push if still active.
+
+---
+
 ## 2026-07-23 — Production-zone deploy scripts (no git pull)
 
 ### What changed

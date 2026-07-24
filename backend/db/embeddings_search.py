@@ -5,7 +5,7 @@ embeds the query once when ``EMBEDDINGS_ENABLED=1`` (design §7.1); bulk ML
 sweeps remain scheduler-only.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations

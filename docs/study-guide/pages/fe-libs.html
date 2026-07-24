@@ -36,7 +36,7 @@
         <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
         <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
         <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
-        <a class="toc-link toc-sub" href="arch-license.html">Why BSL-1.1</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
       </div>
 
       <div class="toc-group">
@@ -160,14 +160,14 @@
 
       <h4 class="subhead how">The governance gate itself</h4>
       <div class="prose">
-        <p>Adding anything new to the approved list — or promoting something out of "conditional" — requires all of: an update to the ADR text itself with rationale, design-review sign-off against the design-system doc, a license compatibility check (the project is licensed under BSL-1.1 (Chapter A5), so dependencies must carry a permissive license — MIT, Apache-2.0, or BSD — that can be bundled without conflicting terms), a bundle-size justification against recorded budgets (the primitives layer is capped at ≤35 kB gzip incremental; Recharts' lazy chunk at ≤110 kB), and accessibility parity at least equal to the Radix baseline. This is deliberately high friction — the point of the friction is that it's cheaper to update one ADR than to discover six months later that three different component kits crept in one at a time.</p>
+        <p>Adding anything new to the approved list — or promoting something out of "conditional" — requires all of: an update to the ADR text itself with rationale, design-review sign-off against the design-system doc, a license compatibility check (the project is licensed under Apache 2.0 (Chapter A5), so dependencies must carry a permissive license — MIT, Apache-2.0, or BSD — that can be bundled without conflicting terms), a bundle-size justification against recorded budgets (the primitives layer is capped at ≤35 kB gzip incremental; Recharts' lazy chunk at ≤110 kB), and accessibility parity at least equal to the Radix baseline. This is deliberately high friction — the point of the friction is that it's cheaper to update one ADR than to discover six months later that three different component kits crept in one at a time.</p>
       </div>
 
       <div class="self-check">
         <h4>Self-check</h4>
         <ol>
           <li>Chart.js used to be the temporary exception in this registry. What mechanism bounded that exception during migration, and what proves the exception is closed now?</li>
-          <li>Why does the registry require a license check specifically, and why does that check matter for BRIEFR's source-available BSL-1.1 model even though BSL isn't a copyleft license the way AGPL is?</li>
+          <li>Why does the registry require a license check specifically, and why does that check matter for BRIEFR's Apache 2.0 model even though BSL isn't a copyleft license the way AGPL is?</li>
           <li>A future contributor wants to add a date-picker library that isn't on any list here. Walk through, step by step, what has to happen before that's allowed.</li>
         </ol>
       </div>

@@ -139,7 +139,7 @@ export default function AboutModal({ onClose }) {
         <div className="about-footer">
           <div className="about-footer-meta">
             <p className="about-copyright mono">
-              &copy; 2026 BRIEFR &middot; Licensed under the Business Source License 1.1
+              &copy; 2026 BRIEFR &middot; Licensed under the Apache License 2.0
             </p>
             <p className="about-built-by">
               Built by{' '}

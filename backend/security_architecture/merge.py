@@ -7,7 +7,7 @@ matching, while threat scenarios still reuse the shipping stack query path
 pointed at the generated self-stack instead of a user's asset profile.
 
 Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: BUSL-1.1
+SPDX-License-Identifier: Apache-2.0
 """
 
 from __future__ import annotations
