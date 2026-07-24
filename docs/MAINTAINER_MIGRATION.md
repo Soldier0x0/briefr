@@ -16,28 +16,12 @@ private repository.
 - `docs/LEARNING_PATH.md`, `docs/AGENT_METHODOLOGY.md`, `docs/DOCUMENTATION_PLAN.md`
 - Study-guide scripts and tests
 
-## Create `briefr-maintainer` (one-time)
+## `briefr-maintainer` repo
 
-**Prepared bundle:** `/opt/cursor/artifacts/briefr-maintainer-bundle` (214 files, ready to push).
+**Live:** https://github.com/Soldier0x0/briefr-maintainer (private)
 
-```bash
-cd /opt/cursor/artifacts/briefr-maintainer-bundle
-git remote add origin https://github.com/Soldier0x0/briefr-maintainer.git 2>/dev/null || true
-gh repo create briefr-maintainer --private --source=. --remote=origin --push
-```
-
-If the repo already exists, just push:
-
-```bash
-git push -u origin main
-```
-
-Recover from git history (alternative):
-
-```bash
-git checkout <commit-before-cleanup>
-# copy moved paths into a fresh briefr-maintainer repo
-```
+Contains HANDOVER, planning, archive, audit, study guide, `CLAUDE.md`, and agent scripts
+copied from `briefr` before the public cleanup (PR #751).
 
 ## Public repo now points to
 
