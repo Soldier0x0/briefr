@@ -14,7 +14,7 @@ Scopes (spec reframe -- the user's own threat surface, not BRIEFR's):
 Aggregation reads only the columns it needs (``cve_id``, ``severity``,
 ``is_kev``, ``epss_score``, ``published``, ``cwe_ids``) and is bounded by a
 cap, prioritising KEV then most-recent, so a whole-corpus scope stays a
-request-path-safe read (CLAUDE.md danger zone 6). The sample size and total
+request-path-safe read (docs/CONTRIBUTOR_RULES.md danger zone 6). The sample size and total
 in scope are both returned so a capped aggregation is never mistaken for a
 complete one (every-number-shows-its-inputs).
 

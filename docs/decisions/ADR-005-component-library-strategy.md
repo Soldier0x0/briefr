@@ -19,7 +19,7 @@ inconsistency the design system exists to remove (opinionated themes, global CSS
 heavy/decorative animation). We also need to cover **headless utility** libraries, not just
 component kits, and to define a **governance gate** for adding any new UI dependency.
 
-Constraints (from ADR-003 / `CLAUDE.md` / the design system):
+Constraints (from ADR-003 / `docs/CONTRIBUTOR_RULES.md` / the design system):
 - No Tailwind or any CSS framework unless the maintainer explicitly requests it.
 - Components must be stylable entirely via BRIEFR semantic tokens (no injected theme/global CSS).
 - Motion budget: 120–180ms, `transform`/`opacity` only, respect the tool-wide motion toggle.
@@ -52,7 +52,7 @@ Constraints (from ADR-003 / `CLAUDE.md` / the design system):
   **Deprecated in favor of Recharts** so we can adopt the shadcn chart aesthetic (re-skinned,
   no Tailwind). Migrate chart-by-chart, each behind `ChartShell` with a visual-regression
   snapshot; **remove Chart.js once the last chart is ported** — never ship both libraries
-  long-term. Tracked as ticket **E7-5** in `docs/planning/ui-modernization-plan.md`.
+  long-term. Tracked in the UI modernization program (maintainer notes).
   Custom SVG visuals (90-day heatmap, EPSS sparklines) stay hand-built SVG — do NOT force
   them into Recharts.
 

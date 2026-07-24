@@ -11,7 +11,7 @@ Authoritative sources (read before UI work):
 - Tokens: `frontend/src/styles/tokens.css`
 - Rationale: `docs/decisions/ADR-003-ui-design-system.md`
 - Approved/prohibited UI libraries: `docs/decisions/ADR-005-component-library-strategy.md`
-- Roadmap: `docs/planning/ui-modernization-plan.md`
+- Roadmap: shipped UI modernization program (see `docs/design/design-system.md`)
 
 These rules apply to ALL generated or edited UI code across the **entire product**
 (analyst shell, admin, ARCH, Forge, wallboard — not admin-only). If a change

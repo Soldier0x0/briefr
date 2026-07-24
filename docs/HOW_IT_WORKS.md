@@ -71,8 +71,5 @@ Provider pacing is separate: NVD can still return transient 503s; wait for coold
 
 | Doc | When |
 |-----|------|
-| [`study-guide/`](study-guide/) | Primary generated architecture book |
-| [`STUDY_GUIDE.html`](STUDY_GUIDE.html) | Editable standalone source for the book |
-| [`ONBOARDING.md`](ONBOARDING.md) | Contributing code |
-| [`API_REFERENCE.md`](API_REFERENCE.md) | Every endpoint |
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Full architecture essay |
+| [docs.projectjupiter.in](https://docs.projectjupiter.in) | Public learning paths and guides |

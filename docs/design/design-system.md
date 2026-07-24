@@ -6,10 +6,10 @@
 
 **Companion documents (keep in sync):**
 - Tokens: [`frontend/src/styles/tokens.css`](../../frontend/src/styles/tokens.css)
-- Roadmap: [`docs/planning/ui-modernization-plan.md`](../planning/ui-modernization-plan.md)
+- Roadmap: public docs portal Pathways (UI modernization shipped in product)
 - Rationale: [`docs/decisions/ADR-003-ui-design-system.md`](../decisions/ADR-003-ui-design-system.md)
 - Approved UI libraries: [`docs/decisions/ADR-005-component-library-strategy.md`](../decisions/ADR-005-component-library-strategy.md)
-- Non-UI/bug backlog: [`docs/planning/reliability-and-bug-backlog.md`](../planning/reliability-and-bug-backlog.md)
+- Non-UI/bug backlog: tracked in maintainer planning (private repo)
 - Cursor enforcement: [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc)
 - Existing runtime tokens this consolidates: [`frontend/src/App.css`](../../frontend/src/App.css)
 
@@ -68,7 +68,7 @@ detection engineering. It is not a marketing surface. The system optimizes for:
    per-page tables (audit: ARCH shipped 11 unstyled tables + 1 good one).
 3. Every async region implements all four states (§16): loading, empty, error, data.
 4. Every status token ships a discoverable explanation (tooltip/legend) — a standing
-   BRIEFR rule (`CLAUDE.md`, `docs/PRODUCT.md`).
+   BRIEFR rule (`docs/CONTRIBUTOR_RULES.md`, `docs/PRODUCT.md`).
 5. Destructive controls live in a "Danger Zone" **below** operational content and require
    typed confirmation. Never place destructive panels at the top.
 6. Charts never grow unbounded — every chart lives in a fixed-height wrapper (audit

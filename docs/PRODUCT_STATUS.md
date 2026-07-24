@@ -86,7 +86,7 @@
 |---------|----------------|
 | Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
 | Correlation v3 complete (#473…#513) | STIX export (excluded from current loop) |
-| Forge redesign FR-1…FR-3 (#490, #492, #495) | **G0** LEARNING_PATH / ONBOARDING refresh |
+| Forge redesign FR-1…FR-3 (#490, #492, #495) | ONBOARDING refresh (ongoing) |
 | Threat modeling TM-0…TM-5 (#491, #493–#497); **TM-6 CWE/OWASP/CAPEC/STRIDE framework workspaces** | TM-6 NIST CSF / ASVS (operator control-backed, follow-up); self-monitoring/remediation job |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), O-3 kiosk config (#514), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444), LLM summary auth | |
 | **PM-3 ARCH graph** (cursor zoom, fit-to-view, viewport-locked shell, strong focus dim, truncated labels, toggle-deselect, one-hop SQL edges via db helpers/`database` shim, focus-only edge draw, core/external nodes, inline node detail, admin corpus drift) | Detection composer (parked); G0–G4 end-of-lifecycle |
@@ -105,7 +105,7 @@
 | Architecture diagrams (phase A); session auth middleware (#441); M-5 backup owner + N-4 kiosk docs (#442) | Durability: PR-R1–R4; PG-002/003 |
 | UX-C1/C2 button standard (#474, #475) | Resource benchmarking: RB-1 collector ✅; RB-2 admin Resources page ✅ |
 
-Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/archive/` (phase 2).
+Details: public roadmap at [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/roadmap).
 
 ---
 
@@ -114,11 +114,6 @@ Details: [`ROADMAP.md`](planning/ROADMAP.md). Historical beta specs → `docs/ar
 | Phase | Status |
 |-------|--------|
 | Doc structure + image briefs | Phase A diagrams shipped (`production-architecture`, `auth-layers`, `correlation-pipeline` SVGs) |
-| Living API / architecture docs | **Refreshed 2026-07-21** — full library pass (#687–#729), then post-merge pass for #731–#733 (auth refresh race, SQL vs source I/O already in #732 docs, AGENTS cloud/lint): `SYSTEM_DESIGN`, `API_REFERENCE`, reader guides, ONBOARDING/OPERATIONS/LEARNING_PATH/TROUBLESHOOTING, study-guide source + regenerated `study-guide/` + `learn/` |
-| Study guide + learn | Editable source `STUDY_GUIDE.html` → `scripts/build_study_guide_book.py` → `docs/study-guide/`; pathways via `scripts/build_learn_site.py` + `docs/learn/pathways.json`. Auth chapter matches #731 (`fetchMe` → shared `refreshAccessToken`). **2026-07-23:** Ch 21 (detection) documents SigmaHQ local index + DRL-1.1; Ch 14 OTX stale fallback; Ch 32 deploy smoke/SigmaHQ first-sync notes. |
-| Graphify knowledge graph | **Refreshed 2026-07-22** after docs truth pass (#731–#733) — `graphify update . --force` → `10894` nodes, `23175` edges, `559` communities (`graphify-out/` gitignored). Prior rebuild 2026-07-21 after library pass (`10875` / `20801` / `643`). Hook auto-rebuilds on code commits; doc moves need manual update. |
-| Archive beta root `.md` files | Pending (do not edit `docs/archive/beta/*`) |
-| MkDocs site | Pending |
+| Living API / architecture docs | Refreshed 2026-07-21+ — `SYSTEM_DESIGN`, `API_REFERENCE`, reader guides, ONBOARDING, OPERATIONS, TROUBLESHOOTING |
+| Public docs portal | [docs.projectjupiter.in](https://docs.projectjupiter.in) — Pathways, guides, API reference (synced from this repo) |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
-
-Plan: [`DOCUMENTATION_PLAN.md`](DOCUMENTATION_PLAN.md) · Refresh plan: [`superpowers/plans/2026-07-21-docs-library-refresh.md`](superpowers/plans/2026-07-21-docs-library-refresh.md).

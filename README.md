@@ -60,10 +60,8 @@ Five main areas:
 One FastAPI process, one database, a scheduler that does all the heavy lifting so the API stays fast. The picture at the top of this README is the real shape of it — for the full story (why it's built this way, not just what it is), see:
 
 - [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) — the short version, with diagrams
-- [`docs/study-guide/`](docs/study-guide/) — the primary generated architecture book: backend subsystems, frontend stack decisions, ML/LLM internals, deployment, CI, security posture, file by file
-- [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) — editable standalone source for the generated study-guide book
-- [`docs/learn/`](docs/learn/) — pathway chooser (System Design / Security analyst / Security architect) linking into the study guide
 - [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) — the reference architecture essay
+- [docs.projectjupiter.in](https://docs.projectjupiter.in) — public docs portal (Pathways, guides, API reference)
 
 ---
 
@@ -396,7 +394,7 @@ Interactive docs: `http://localhost:8000/api/docs` (Swagger — **disable in pro
 | Use the product | [`docs/USE.md`](docs/USE.md) |
 | Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Understand internals (short version) | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) |
-| **Learn the entire architecture, file by file** | [`docs/study-guide/`](docs/study-guide/) — generated book; [`docs/STUDY_GUIDE.html`](docs/STUDY_GUIDE.html) is the editable source |
+| **Learn architecture (guided paths)** | [docs.projectjupiter.in](https://docs.projectjupiter.in) |
 | Develop / contribute | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) + [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | See what's actually shipped today | [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) |
 
@@ -466,7 +464,7 @@ BRIEFR collects no personal data beyond your self-hosted login account, uses htt
 - Runs as a single uvicorn worker by design — rate-limit token buckets are in-memory unless `BRIEFR_RATE_LIMIT_STORE=db` is set; don't raise the worker count without also enabling that
 - Risk score v1.1b is computed server-side (`backend/scoring/risk.py`); weights for formula display only are fetched via `GET /api/config/risk`
 - AI/ML alerts chip requires AI/ML keywords in your saved stack or asset profile `aiSystems`
-- No official recommended CPU/RAM/disk sizing envelope is published yet (see the Study Guide's Roadmap chapter) — the architecture's design choices (CPU-only local embeddings, single worker, in-memory caches) point toward comfortable operation on a small VPS, but this hasn't been formally load-tested
+- No official recommended CPU/RAM/disk sizing envelope is published yet — the architecture's design choices (CPU-only local embeddings, single worker, in-memory caches) point toward comfortable operation on a small VPS, but this hasn't been formally load-tested
 
 ---
 

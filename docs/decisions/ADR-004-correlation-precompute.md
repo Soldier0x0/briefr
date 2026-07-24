@@ -3,18 +3,13 @@
 ## Status
 
 **ACCEPTED — 2026-07-14.** Decides the fix for the CRITICAL reliability finding
-REL-1/REL-2 in
-[`docs/planning/reliability-and-bug-backlog.md`](../planning/reliability-and-bug-backlog.md).
-Continues the `docs/decisions/ADR-00N` sequence. Relates to ADR-002 (Operational Priority,
-which depends on correlation for escalation) and **amends**
-`docs/planning/specs/correlation-engine-v2.md` (see "Relationship to the
-correlation-engine-v2 spec" below).
+REL-1/REL-2 (correlation on request path). Continues the `docs/decisions/ADR-00N`
+sequence. Relates to ADR-002 (Operational Priority, which depends on correlation
+for escalation).
 
 ## Relationship to the correlation-engine-v2 spec (what this ADR amends)
 
-The v3 program defined by
-[`specs/correlation-engine-v2.md`](../planning/specs/correlation-engine-v2.md) is
-**complete** (PR-1…PR-13, #473…#513 — see `docs/planning/BACKLOG.md` §2). This ADR is a
+The v3 correlation program is **complete** (PR-1…PR-13, #473…#513). This ADR is a
 **new increment on top of that shipped work**, not a reopening or rewrite of its PR queue.
 Precisely:
 
@@ -54,7 +49,7 @@ scheduler off, post-`ANALYZE`):
 `(ioc_type, ioc_value)` across `otx_cve_pulses` (**49,209 rows**). Hub IOCs shared by many
 pulses produce O(n²) fan-out that exceeds the 60s DB command timeout. Indexes are present;
 this is a cardinality/algorithm problem. Critically, this heavy work runs **on the request
-path**, violating `CLAUDE.md` danger zone 6 ("heavy work never runs on the request path").
+path**, violating `docs/CONTRIBUTOR_RULES.md` danger zone 6 ("heavy work never runs on the request path").
 
 ## Decision
 
@@ -81,7 +76,7 @@ path**, violating `CLAUDE.md` danger zone 6 ("heavy work never runs on the reque
   `CORRELATION_PRECOMPUTE_ENABLED`), defaulting off, so rollout is controlled and instantly
   reversible to the current on-request path.
 - If persistence requires schema, add a **new forward-only Alembic migration** and additive
-  table(s) (`CLAUDE.md` danger zone 3 — never edit an applied migration). Keep SQLite
+  table(s) (`docs/CONTRIBUTOR_RULES.md` — never edit an applied migration). Keep SQLite
   test-parity per the `db/` danger-zone rules.
 - Backfill via the scheduler; measure p95 for `/correlation` and `/risk` on the restored
   production dataset before/after; assert budgets (p95 `/correlation` < 2s; OP hero < 1s).
@@ -94,10 +89,10 @@ path**, violating `CLAUDE.md` danger zone 6 ("heavy work never runs on the reque
 - **Storage growth:** bounded by degree-capping + retention (align with the existing
   `cache_retention_cleanup` job).
 - **Semantic drift** from degree-capping (dropping hub IOCs may hide weak links) — validate
-  against `docs/planning/specs/correlation-engine-v2.md` expectations; expose suppressed-edge
+  against shipped correlation v3 semantics; expose suppressed-edge
   counts (the spec already tracks `hub_suppressed_edge_count`).
 - **Scheduler load:** run within existing `SCHEDULER_DB_CONCURRENCY`; ensure lock ids stay in
-  sync with `routers/admin.py` (`CLAUDE.md` danger zone 2).
+  sync with `routers/admin.py` (`docs/CONTRIBUTOR_RULES.md` danger zone 2).
 
 ## Alternatives considered
 
