@@ -244,7 +244,7 @@ SigmaHQ rules use **Detection Rule License 1.1** ([SigmaHQ/Detection-Rule-Licens
 | Indicate DRL + link license text | `license_id`, `license_url` on every row + API; UI license link; Detect framing copy mentions DRL-1.1 |
 | Attribution on **matches** (if we ever show SIEM hit UI) | Future: any “this alert matched rule X” view must show author — note in SYSTEM_DESIGN; not in v1 Detect copy-only |
 | Do not strip license metadata from YAML | Store **full** `content_yaml` unmodified |
-| Commercial use of BRIEFR | Allowed under DRL with attribution; BRIEFR’s own BSL is separate — do **not** relicense Sigma content as BRIEFR-proprietary |
+| Commercial use of BRIEFR | Allowed under DRL with attribution; BRIEFR is Apache 2.0 — do **not** relicense Sigma content as BRIEFR-proprietary |
 
 ### 6.2 What we must not do
 

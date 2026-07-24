@@ -25,7 +25,7 @@ _Proposed outline after 2026-07-19 audit. Stub titles only — prose rewrites ar
 | `arch-resources` | Resource-consciousness thread | Keep |
 | `arch-connectivity` | How the pieces connect | Keep |
 | `arch-ai-restraint` | Why AI is used sparingly | Keep |
-| `arch-license` | Why BSL-1.1 | Keep (AGPL reversal already covered) |
+| `arch-license` | Why Apache 2.0 | Keep (license chapter updated 2026-07-24) |
 
 ### Part I — Frontend decisions (keep)
 | Id | Title | Notes |

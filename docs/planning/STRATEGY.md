@@ -157,7 +157,7 @@ Current blockers, in order:
 1. **License.** **Apache License 2.0** (`LICENSE`, `NOTICE`, `CONTRIBUTING.md`,
    SPDX headers) — OSI-approved open source; free for personal, commercial, and
    self-hosted use with attribution. Published 2026-07-24 after prior drafts
-   (proprietary, AGPL-3.0-or-later, BUSL-1.1) were reversed before external
+   (proprietary, AGPL-3.0-or-later, and other pre-publication drafts) were reversed before external
    parties depended on them.
 2. **Install friction.** `docker compose up` must work, first try, on a
    clean machine, in under 10 minutes, with sensible no-API-key defaults.

@@ -17,7 +17,7 @@ Legend: C=Concept, W=Why, H=How, S=Self-check, IR=interview-ready?
 | arch-resources | Resource-consciousness | strong | strong | strong | strong | yes | |
 | arch-connectivity | How pieces connect | strong | strong | adequate | strong | yes | |
 | arch-ai-restraint | Why AI sparingly | strong | strong | strong | strong | yes | |
-| arch-license | Why BSL-1.1 | strong | strong | strong | strong | yes | |
+| arch-license | Why Apache 2.0 | strong | strong | strong | strong | yes | |
 | fe-react | Why React 19 | strong | strong | strong | strong | yes | |
 | fe-design | Tokens + Radix | strong | strong | strong | strong | yes | |
 | fe-libs | Library registry | adequate | strong | strong | strong | yes | |
