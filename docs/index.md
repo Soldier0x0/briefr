@@ -10,7 +10,8 @@ Pick **one** guide — you do not need to read everything unless something break
 | **Fix something** | [Troubleshooting](TROUBLESHOOTING.md) | **Authoritative** |
 | **Understand how it works** | [How it works](HOW_IT_WORKS.md) | Overview |
 | **Change the code** | [Onboarding](ONBOARDING.md) | **Authoritative** |
-| **Learn architecture (guided paths)** | [docs.projectjupiter.in](https://docs.projectjupiter.in) | Public docs portal |
+| **Learn architecture online** | https://docs.projectjupiter.in | Synced from this repo |
+| **Internal maintainer docs** | [Maintainer migration](MAINTAINER_MIGRATION.md) | Planning, HANDOVER, archive (private repo) |
 
 Deep reference: [API catalog](API_REFERENCE.md) · [System design](SYSTEM_DESIGN.md) · [Product principles](PRODUCT.md) · [What's shipped](PRODUCT_STATUS.md) · [ADRs](decisions/)
 

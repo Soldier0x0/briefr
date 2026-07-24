@@ -18,6 +18,8 @@
 
 ## Ingest and jobs
 
+![Ingest pipeline](assets/ingest-pipeline.svg)
+
 NVD, cvelistV5, CISA KEV, Vulnrichment, EPSS, OTX, MITRE ATT&CK/ATLAS, exploit sources, RSS × 5, and optional LLM/embedding jobs run on schedulers — not page load.
 
 Outbound HTTP calls are paced by the API queue. Restart-sensitive work can use Procrastinate durable jobs (`PROCRASTINATE_ENABLED=1`), visible in Admin → Scheduler → Durable outbound jobs.
@@ -72,4 +74,4 @@ Provider pacing is separate: NVD can still return transient 503s; wait for coold
 | Doc | When |
 |-----|------|
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Full architecture essay |
-| [docs.projectjupiter.in](https://docs.projectjupiter.in) | Public learning paths and guides |
+| https://docs.projectjupiter.in | Online docs (synced from this repo) |

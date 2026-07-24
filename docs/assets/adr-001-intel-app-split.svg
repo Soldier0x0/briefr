@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 320" role="img" aria-label="Intel vs app data plane">
+  <defs>
+    <style>
+      .bg { fill: #0a0a08; }
+      .box { fill: #111110; stroke: #2a2a25; }
+      .intel { stroke: #4a9e6a; }
+      .app { stroke: #6eb5ff; }
+      .gate { fill: #1a1a17; stroke: #c8b88a; stroke-width: 2; }
+      .title { fill: #c8b88a; font: 600 13px 'IBM Plex Mono', monospace; }
+      .label { fill: #e8e6df; font: 500 12px 'IBM Plex Sans', system-ui, sans-serif; }
+      .sub { fill: #9a9890; font: 400 11px 'IBM Plex Sans', system-ui, sans-serif; }
+      .arrow { stroke: #c8b88a; stroke-width: 2; fill: none; marker-end: url(#ah); }
+      .deny { stroke: #c85a4a; stroke-dasharray: 6 4; }
+    </style>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="920" height="320"/>
+  <text x="24" y="32" class="title">ADR-001  intel vs app boundary (export allowlist)</text>
+
+  <rect class="box intel" x="40" y="56" width="280" height="200" rx="8"/>
+  <text x="56" y="84" class="label">Intel (redistributable)</text>
+  <text x="56" y="108" class="sub">cves · kev_deadlines · epss · mitre maps</text>
+  <text x="56" y="128" class="sub">otx mirrors · correlation tables</text>
+  <text x="56" y="148" class="sub">embeddings · detection_rules*</text>
+  <text x="56" y="168" class="sub">ingest watermarks in sync_state</text>
+  <text x="56" y="200" class="sub" fill="#4a9e6a">’ included in public snapshot bundle</text>
+
+  <rect class="box app" x="600" y="56" width="280" height="200" rx="8"/>
+  <text x="616" y="84" class="label">App (operator-local)</text>
+  <text x="616" y="108" class="sub">users · sessions · audit_log</text>
+  <text x="616" y="128" class="sub">ioc_cache · webhook_destinations</text>
+  <text x="616" y="148" class="sub">user_preferences · api_key_health</text>
+  <text x="616" y="168" class="sub">scheduler keys · backup state</text>
+  <text x="616" y="200" class="sub" fill="#c85a4a">’ never in public export</text>
+
+  <rect class="gate" x="360" y="120" width="200" height="72" rx="8"/>
+  <text x="376" y="148" class="label">export_intel_snapshot</text>
+  <text x="376" y="168" class="sub">allowlist + manifest verify</text>
+
+  <line class="arrow" x1="320" y1="156" x2="360" y2="156"/>
+  <line class="arrow deny" x1="600" y1="156" x2="560" y2="156"/>
+  <text x="568" y="148" class="sub" fill="#c85a4a">blocked</text>
+
+  <text x="40" y="292" class="sub">Single Postgres database today; physical intel/app schema split deferred  boundary enforced in tooling (DATA_SNAPSHOT.md)</text>
+</svg>

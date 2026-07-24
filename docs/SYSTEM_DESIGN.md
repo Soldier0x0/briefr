@@ -646,4 +646,4 @@ GitHub Actions job **`playwright-smoke`** in `.github/workflows/backend-tests.ym
 - [`docs/ONBOARDING.md`](ONBOARDING.md) — contributor entry point, local dev, tests, troubleshooting
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
 - [`docs/diagrams/`](diagrams/) — Mermaid diagrams (render in GitHub, VS Code, Notion). Master: [`system-graph.mermaid`](diagrams/system-graph.mermaid). Flows: CVE feed/detail, IOC lookup, NVD sync, PDF export, error handling (`flow_error_handling.mermaid`), startup, schema ERD.
-- [docs.projectjupiter.in](https://docs.projectjupiter.in) — public learning paths and operator guides
+- https://docs.projectjupiter.in — online architecture and operator guides

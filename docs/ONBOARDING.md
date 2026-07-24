@@ -23,7 +23,7 @@ Copyright © 2026 Sai Harsha Vardhan. Licensed under the Apache License, Version
 | 5 | [`API_REFERENCE.md`](API_REFERENCE.md) | Endpoints when you touch the API |
 | 6 | Source + tests | `backend/tests/` and the subsystem you are changing |
 
-**Deep reference when needed:** [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md), [`decisions/`](decisions/), [docs portal](https://docs.projectjupiter.in).
+**Deep reference when needed:** [`OPERATIONS.md`](OPERATIONS.md), [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md), [`decisions/`](decisions/), https://docs.projectjupiter.in
 
 **Printable architecture:** generate `SYSTEM_DESIGN.pdf` with `node scripts/generate_system_design_pdf.mjs` (not committed).
 
@@ -367,7 +367,7 @@ curl -X POST http://127.0.0.1:8000/api/refresh
 |--------|---------|
 | `SYSTEM_DESIGN.pdf` | `cd frontend && npm install && node ../scripts/generate_system_design_pdf.mjs` |
 | `TECHNICAL_INVENTORY.xlsx` | `python3 scripts/generate_technical_inventory_xlsx.py` |
-| README screenshots | `python3 scripts/seed_screenshot_data.py` then `node scripts/capture_readme_screenshots.mjs` |
+| README screenshots | `python3 scripts/seed_screenshot_data.py` then `SCREENSHOT_USERNAME=admin SCREENSHOT_PASSWORD='…' node scripts/capture_readme_screenshots.mjs` (backend `:8000`, frontend `:5173`) |
 
 Update the source markdown in the same PR when you change behaviour those artifacts describe.
 
@@ -378,4 +378,4 @@ Update the source markdown in the same PR when you change behaviour those artifa
 - [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) — architecture deep dive
 - [`API_REFERENCE.md`](API_REFERENCE.md) — endpoint catalog
 - [`CONTRIBUTOR_RULES.md`](CONTRIBUTOR_RULES.md) — danger zones and conventions
-- [docs.projectjupiter.in](https://docs.projectjupiter.in) — public learning paths and guides
+- https://docs.projectjupiter.in — online docs (synced from this repo)

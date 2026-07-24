@@ -89,7 +89,7 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 
 | Field | Value |
 |-------|--------|
-| **File** | `docs/assets/ingest-pipeline.png` |
+| **File** | `docs/assets/ingest-pipeline.svg` (PNG alias optional) |
 | **Used in** | [`HOW_IT_WORKS.md`](HOW_IT_WORKS.md) |
 
 **Shows:** APScheduler jobs feeding PostgreSQL: NVD, KEV, EPSS, cvelistV5, Vulnrichment, OTX, MITRE, exploit sources, embeddings (optional).
@@ -275,11 +275,13 @@ Copy the **Miro / AI prompt** for each asset. Export as **PNG @2×** (or SVG). S
 |---|----------|----------|------|
 | 1 | production-architecture.svg | **P0** | [x] |
 | 5 | correlation-pipeline.svg | **P0** | [x] |
-| 6 | ingest-pipeline.png | **P0** | [ ] |
+| 6 | ingest-pipeline.svg | **P0** | [x] |
 | 8 | auth-layers.svg | **P0** | [x] |
 | 9 | rate-limits-and-queue.png | **P1** | [ ] |
 | 3 | backup-restore-flow.png | **P1** | [ ] |
-| 11–15 | ui-*.png | **P1** (screenshots OK) | [ ] |
+| 11–15 | ui-*.png | **P1** (screenshots OK) | [x] |
+| 11b | screenshots/incidents-news.png | **P1** | [x] |
+| ADR-001 | adr-001-intel-app-split.svg | **P0** | [x] |
 | 2,4,7,10,16,17 | others | **P2** | [ ] |
 
 When an asset is added, update the doc `![...]()` path and mark **Done** `[x]` here.

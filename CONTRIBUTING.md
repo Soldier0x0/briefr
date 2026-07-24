@@ -2,8 +2,7 @@
 
 Thank you for your interest in BRIEFR. This project is licensed under the
 **Apache License, Version 2.0** (see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE)).
-The repository is maintained by
-[Sai Harsha Vardhan](https://projectjupiter.in) — contributions are welcome
+The repository is maintained by Sai Harsha Vardhan — contributions are welcome
 on `main` via pull request. By submitting a contribution, you agree that your
 contribution is licensed under the Apache License 2.0, consistent with this file.
 

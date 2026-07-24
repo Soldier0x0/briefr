@@ -25,5 +25,5 @@ copied from `briefr` before the public cleanup (PR #751).
 
 ## Public repo now points to
 
-- **Operators / users:** [docs.projectjupiter.in](https://docs.projectjupiter.in)
+- **Operators / users:** https://docs.projectjupiter.in
 - **Contributors:** `docs/ONBOARDING.md`, `docs/CONTRIBUTOR_RULES.md`, `CONTRIBUTING.md`

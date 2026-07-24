@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 380" role="img" aria-label="BRIEFR ingest pipeline">
+  <defs>
+    <style>
+      .bg { fill: #0a0a08; }
+      .hub { fill: #1a1a17; stroke: #c8b88a; stroke-width: 2; }
+      .feed { fill: #111110; stroke: #2a2a25; }
+      .db { fill: #4a9e6a; }
+      .title { fill: #c8b88a; font: 600 13px 'IBM Plex Mono', monospace; }
+      .label { fill: #e8e6df; font: 500 12px 'IBM Plex Sans', system-ui, sans-serif; }
+      .sub { fill: #9a9890; font: 400 10px 'IBM Plex Sans', system-ui, sans-serif; }
+      .arrow { stroke: #c8b88a; stroke-width: 1.5; fill: none; marker-end: url(#ah); }
+    </style>
+    <marker id="ah" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#c8b88a"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="920" height="380"/>
+  <text x="24" y="32" class="title">Ingest pipeline  schedulers write PostgreSQL; UI reads precomputed state</text>
+
+  <rect class="hub" x="380" y="140" width="160" height="72" rx="8"/>
+  <text x="408" y="172" class="label">APScheduler</text>
+  <text x="408" y="192" class="sub">~26 jobs · API queue pacing</text>
+
+  <circle class="db" cx="460" cy="300" r="32"/>
+  <text x="442" y="306" class="label" fill="#0a0a08">PG</text>
+  <text x="510" y="296" class="label">PostgreSQL 16</text>
+  <text x="510" y="314" class="sub">cves · kev · epss · otx · mitre · embeddings</text>
+
+  <g>
+    <rect class="feed" x="40" y="56" width="100" height="48" rx="6"/><text x="52" y="78" class="label">NVD</text><text x="52" y="94" class="sub">~1h</text>
+    <rect class="feed" x="40" y="120" width="100" height="48" rx="6"/><text x="52" y="142" class="label">KEV</text><text x="52" y="158" class="sub">~15m</text>
+    <rect class="feed" x="40" y="184" width="100" height="48" rx="6"/><text x="52" y="206" class="label">EPSS</text><text x="52" y="222" class="sub">~6h</text>
+    <rect class="feed" x="160" y="56" width="110" height="48" rx="6"/><text x="172" y="78" class="label">cvelistV5</text><text x="172" y="94" class="sub">~30m</text>
+    <rect class="feed" x="160" y="120" width="110" height="48" rx="6"/><text x="172" y="142" class="label">Vulnrichment</text><text x="172" y="158" class="sub">~6h</text>
+    <rect class="feed" x="160" y="184" width="110" height="48" rx="6"/><text x="172" y="206" class="label">OTX</text><text x="172" y="222" class="sub">nightly + budget</text>
+    <rect class="feed" x="290" y="56" width="110" height="48" rx="6"/><text x="302" y="78" class="label">MITRE</text><text x="302" y="94" class="sub">weekly</text>
+    <rect class="feed" x="290" y="120" width="110" height="48" rx="6"/><text x="302" y="142" class="label">Exploit src</text><text x="302" y="158" class="sub">scheduler</text>
+    <rect class="feed" x="290" y="184" width="110" height="48" rx="6"/><text x="302" y="206" class="label">SigmaHQ</text><text x="302" y="222" class="sub">weekly</text>
+    <rect class="feed" x="290" y="248" width="110" height="48" rx="6"/><text x="302" y="270" class="label">RSS ×5</text><text x="302" y="286" class="sub">30m snapshot</text>
+  </g>
+
+  <g>
+    <rect class="feed" x="580" y="56" width="120" height="48" rx="6"/><text x="592" y="78" class="label">Embeddings</text><text x="592" y="94" class="sub">optional · CPU</text>
+    <rect class="feed" x="580" y="120" width="120" height="48" rx="6"/><text x="592" y="142" class="label">Correlation</text><text x="592" y="158" class="sub">precompute</text>
+    <rect class="feed" x="580" y="184" width="120" height="48" rx="6"/><text x="592" y="206" class="label">LLM extract</text><text x="592" y="222" class="sub">optional</text>
+    <rect class="feed" x="720" y="56" width="100" height="48" rx="6"/><text x="732" y="78" class="label">Cache</text><text x="732" y="94" class="sub">retention</text>
+    <rect class="feed" x="720" y="120" width="100" height="48" rx="6"/><text x="732" y="142" class="label">Webhooks</text><text x="732" y="158" class="sub">delivery</text>
+  </g>
+
+  <line class="arrow" x1="140" y1="80" x2="380" y2="168"/>
+  <line class="arrow" x1="140" y1="144" x2="380" y2="176"/>
+  <line class="arrow" x1="140" y1="208" x2="380" y2="184"/>
+  <line class="arrow" x1="270" y1="80" x2="380" y2="164"/>
+  <line class="arrow" x1="640" y1="80" x2="540" y2="164"/>
+  <line class="arrow" x1="460" y1="212" x2="460" y2="268"/>
+  <text x="24" y="360" class="sub">Request handlers do not run full ingest  heavy work stays in scheduler jobs (see OPERATIONS.md)</text>
+</svg>
