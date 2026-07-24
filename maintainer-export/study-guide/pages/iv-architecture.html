@@ -165,6 +165,10 @@
         <h4>Q: What is the graphify knowledge graph used for?</h4>
         <p class="answer"><strong>A:</strong> AST-derived <code>graphify-out/</code> maps modules, jobs, and inferred edges for onboarding. Agents run <code>graphify query</code> before broad code exploration; after code edits, <code>graphify update .</code> keeps the graph current.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What analyst tabs exist in the main shell?</h4>
+        <p class="answer"><strong>A:</strong> BRIEF (summary), FEED (CVE list), IOC (live lookup), Incidents/News (RSS + case studies), Forge (ATT&amp;CK/hunt). Tabs use <code>hidden</code> panels—not unmount—to preserve scroll/filters. URL syncs <code>?tab=</code>.</p>
+      </div>
       <h4 class="interview-category">Core implementation</h4>
       <div class="interview-qa">
         <h4>Q: How does BRIEFR document architectural truth?</h4>
@@ -178,6 +182,10 @@
         <h4>Q: How does ORJSON fit the API layer?</h4>
         <p class="answer"><strong>A:</strong> FastAPI default response class uses ORJSON for faster serialization on large CVE list payloads. It is an implementation detail behind routers—clients still see standard JSON.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What is the BRIEF tab?</h4>
+        <p class="answer"><strong>A:</strong> Executive summary surface for prioritized intel—uses same session auth and scoring API as FEED; auth refresh race (#731) specifically broke BRIEF with concurrent 401s before shared <code>refreshAccessToken()</code> dedupe.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: What is BRIEFR at a high level?</h4>
@@ -190,6 +198,14 @@
       <div class="interview-qa">
         <h4>Q: How is state preserved across tab switches?</h4>
         <p class="answer"><strong>A:</strong> Main analyst tabs use <code>hidden</code> panels instead of unmounting so FEED scroll position and filters survive. DetailDrawer Intel/Detect/Related tabs stay mounted after first visit for the same reason. URL query params (<code>?tab=</code>, <code>?cve=</code>) sync navigation for back-button behavior.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does RSS link to CVEs?</h4>
+        <p class="answer"><strong>A:</strong> Incidents ingest parses <code>cve_ids</code> from title/body; cards chip to open drawer; drawer RELATED tab includes <code>related_news</code> on bundle endpoint—bidirectional news↔CVE navigation.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does MITRE ATLAS appear?</h4>
+        <p class="answer"><strong>A:</strong> <code>GET /api/case-studies/feed</code> alongside RSS sources in Incidents—separate from ATT&amp;CK Forge navigator corpora refreshed by <code>weekly_mitre_refresh</code>.</p>
       </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">

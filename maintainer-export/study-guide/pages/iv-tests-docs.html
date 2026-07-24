@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-tests-docs">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 13</span>
+        <span class="chapter-num">Interview · 14</span>
         <h3>Tests, docs &amp; roadmap</h3>
         <p class="dek">verify-local gates, PRODUCT_STATUS truth, planning docs, and how to keep the repo interview-ready.</p>
       </div>
@@ -176,6 +176,10 @@
       <div class="interview-qa">
         <h4>Q: What is the danger zones list in CLAUDE.md?</h4>
         <p class="answer"><strong>A:</strong> Six areas agents must read before editing: Postgres-native SQL, scheduler lock map, forward-only migrations, secrets in logs, deploy script compatibility, no heavy work on request path. Interviewers use it to probe whether you know where bugs become outages.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What ADRs should interviewees know?</h4>
+        <p class="answer"><strong>A:</strong> ADR-001 intel schema split; ADR-002 OP/scoring; ADR-003 UI tokens/Radix; ADR-004 correlation precompute; ADR-005 component libraries; ADR-006 encrypted settings. PRODUCT_STATUS wins when ADRs lag.</p>
       </div>
       <h4 class="interview-category">Core implementation</h4>
       <div class="interview-qa">
@@ -209,6 +213,10 @@
       <div class="interview-qa">
         <h4>Q: What playwright smoke covers?</h4>
         <p class="answer"><strong>A:</strong> Optional UI smoke in <code>test_playwright_smoke.py</code>—login shell, basic navigation—gated behind <code>PLAYWRIGHT_SMOKE=1</code>. Not default on every dev machine; complements unit tests.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does verify-local grep-gate on native controls?</h4>
+        <p class="answer"><strong>A:</strong> Fails build on native <code>&lt;select&gt;</code> / checkbox in new code—design system §23 amateur defect prevention alongside token lint.</p>
       </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">

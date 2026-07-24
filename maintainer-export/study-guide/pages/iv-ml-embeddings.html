@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-ml-embeddings">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 8</span>
+        <span class="chapter-num">Interview · 9</span>
         <h3>ML &amp; embeddings</h3>
         <p class="dek">pgvector retrieval, LLM router, pacing, and what ML does not own in BRIEFR.</p>
       </div>
@@ -194,6 +194,10 @@
         <h4>Q: How does retrieval health reporting work?</h4>
         <p class="answer"><strong>A:</strong> <code>GET /api/admin/retrieval/health</code> shows embedding counts by entity, pending work, extension presence, last backfill. Coupled to AI ops panel—not a separate silo.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What is AI-3 quota advisory?</h4>
+        <p class="answer"><strong>A:</strong> <code>ai/quota.py</code> snapshots provider rate-limit headers into AI Operations provider rows—informational warnings, not hard enforcement (K5 pacing handles batch headroom).</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: How does Nuclei parsing relate to ML?</h4>
@@ -203,6 +207,10 @@
         <h4>Q: How do embeddings interact with catch-up?</h4>
         <p class="answer"><strong>A:</strong> Catch-up tick includes embeddings backfill when enabled, along with correlation precompute and CPE catalog sync—subject to existing gates and locks.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: How does Program E manual LLM retry work?</h4>
+        <p class="answer"><strong>A:</strong> <code>GET .../operations/{id}/payload</code> + <code>POST .../retry</code> with replay provenance, circuit-open guard (409 unless <code>force=true</code>), and <code>ai.operations.retry</code> audit. Activity rows show <code>has_payload</code>.</p>
+      </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">
         <h4>Q: How do empty LLM responses degrade?</h4>
@@ -211,6 +219,10 @@
       <div class="interview-qa">
         <h4>Q: What models are defaults in 2026?</h4>
         <p class="answer"><strong>A:</strong> OpenRouter free Gemini Flash-Lite IDs went stale; catalog SSOT updated to working IDs. Operators should clear old <code>OPENROUTER_MODEL_*</code> env overrides so defaults apply.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why skip LLM HTTP on empty CVE text?</h4>
+        <p class="answer"><strong>A:</strong> <code>llm_payload.py</code> guard at router + clients—prevents quota burn on blank descriptions. Feed Health degraded cards with 'empty LLM response' point operators to AI Operations.</p>
       </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">

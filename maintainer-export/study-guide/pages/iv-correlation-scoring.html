@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-correlation-scoring">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 6</span>
+        <span class="chapter-num">Interview · 7</span>
         <h3>Correlation &amp; scoring</h3>
         <p class="dek">Operational Priority, Threat Score, environment relevance, and explainable correlation.</p>
       </div>
@@ -177,6 +177,10 @@
         <h4>Q: What is environment UNKNOWN honesty?</h4>
         <p class="answer"><strong>A:</strong> UNKNOWN tier means insufficient stack evidence—scoring does not invent relevance points. Asset wizard optional toggles affect OP/SSVC only when set.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What lanes does correlation v3 expose?</h4>
+        <p class="answer"><strong>A:</strong> Campaign clusters, infrastructure/shared IOC, actor/sector signals, temporal patterns—each with structured factors in Postgres, served over REST to Intel tab and semantic search (campaign embeddings E8).</p>
+      </div>
       <h4 class="interview-category">Core implementation</h4>
       <div class="interview-qa">
         <h4>Q: How does Environment Relevance work?</h4>
@@ -193,6 +197,22 @@
       <div class="interview-qa">
         <h4>Q: How does feed ranking use scores?</h4>
         <p class="answer"><strong>A:</strong> Server-side stack relevance sort option; wallboard top-risk orders by OP then Threat. Feed cards show KEV ransomware badge and EPSS context without recomputing Threat client-side.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is correlation v3 Phase 4 and when did it ship?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-6…13 (#501–#513) added observation-time semantics, read-time freshness decay, pulse families, ThreatFox corroboration, alias-aware attribution conflicts, analyst confirm feedback, <code>correlation_metrics</code> snapshots, and feed-boost gating for watchlist campaign peers. Nightly engine still reads Postgres only—no live OTX in the correlation run.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why capture observed_at on OTX pulse IOCs?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-6 stores when an IOC was observed on a pulse so lifecycle, momentum, and freshness decay use observation time—not just ingest time. Prevents stale intel from looking newly active after a re-sync.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What are pulse families?</h4>
+        <p class="answer"><strong>A:</strong> <code>pulse_families</code> table + <code>rebuild_pulse_families</code> clusters pulses by Jaccard similarity on IOC sets (CORR-PR-9). Reduces duplicate campaign cards and powers dedup in Active Campaigns UI.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does correlation_metrics store?</h4>
+        <p class="answer"><strong>A:</strong> Daily snapshot rows via <code>snapshot_correlation_metrics</code>—counts of campaigns, lanes, stale factors—used for admin/ops visibility and CORR-PR-13 feed-boost gating decisions.</p>
       </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
@@ -219,10 +239,35 @@
         <h4>Q: What regression tests guard scoring?</h4>
         <p class="answer"><strong>A:</strong> Backend pytest covers priority bands, KEV floors, SSVC paths, and API <code>/risk</code> contracts. Frontend unit tests cover display helpers. Golden query contracts exist for embeddings—not for OP math duplication in FE.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: How does ThreatFox corroboration strengthen IOC edges?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-10: when ThreatFox and OTX agree on infrastructure IOCs, shared-infrastructure lanes get stronger evidence in <code>find_shared_infrastructure_v2</code>. Tests in <code>test_threatfox_corroboration.py</code> lock the behavior.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is the analyst confirm feedback API?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-12 exposes authenticated endpoints for analysts to confirm or reject correlation suggestions—feedback persisted for tuning and UI honesty (Confirm controls in drawer/Intel).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does feed-boost gating interact with watchlist?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-13 boosts CVEs linked to pinned campaign peers in feed sort when metrics + confirm state allow—tested in <code>test_feed_watchlist_campaign_sort.py</code>. Does not invent relevance without stack/pin context.</p>
+      </div>
+      <h4 class="interview-category">Failure modes &amp; edge cases</h4>
+      <div class="interview-qa">
+        <h4>Q: How does read-time freshness decay work?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-8 computes decay at read time so drawer staleness badges reflect age of observations. Postgres GROUP BY for freshness columns is tested—bad SQL here broke production reads before the str() guard fix.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is alias-aware attribution conflict?</h4>
+        <p class="answer"><strong>A:</strong> CORR-PR-11 resolves conflicting actor/alias labels on merged campaigns so analysts do not see contradictory attribution strings on related pulses. Explainable merge—not silent overwrite.</p>
+      </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">
         <h4>Q: What is &lt;code&gt;CORRELATION_PRECOMPUTE_ENABLED&lt;/code&gt;?</h4>
         <p class="answer"><strong>A:</strong> Optional snapshot precompute behind a flag (default off). When off, <code>POST /api/cves/{id}/risk</code> no longer blocks on correlation—improving drawer open latency. Escalation merges when correlation data arrives.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Does correlation block drawer open?</h4>
+        <p class="answer"><strong>A:</strong> Not when precompute is off—<code>POST /api/cves/{id}/risk</code> avoids blocking on correlation snapshot. Intel/campaign sections load asynchronously with staleness callouts.</p>
       </div>
       <h4 class="interview-category">Security</h4>
       <div class="interview-qa">
@@ -237,6 +282,10 @@
       <div class="interview-qa">
         <h4>Q: Why is correlation explainable?</h4>
         <p class="answer"><strong>A:</strong> Lanes surface structured factors and matching rationale—not a black-box model score. Campaign clustering uses normalized pulse titles; Active Campaigns UI shows primary card plus related count with honest empty states.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: Why client-side OP escalation if correlation is server-side?</h4>
+        <p class="answer"><strong>A:</strong> Historical latency compromise: OP hero uses cheap signals immediately; campaign escalation merges when correlation loads (<code>CORRELATION_PRECOMPUTE_ENABLED</code> default off). Server-side merge in <code>/risk</code> is the documented future hardening.</p>
       </div>
     </section>
     <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-ingest-scheduler.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Ingest &amp; scheduler</span></a><span class="spacer"></span><a class="next" href="iv-campaign-ioc.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Campaign, IOC &amp; graph logic</span></a></nav>

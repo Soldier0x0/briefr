@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-campaign-ioc">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 7</span>
+        <span class="chapter-num">Interview · 8</span>
         <h3>Campaign, IOC &amp; graph logic</h3>
         <p class="dek">OTX pulses, correlation campaigns, IOC enrichment, shared infrastructure, and analyst IOC tab.</p>
       </div>
@@ -198,6 +198,10 @@
         <h4>Q: How are retracted campaigns filtered?</h4>
         <p class="answer"><strong>A:</strong> Embedding backfill and semantic search skip retracted <code>correlation_campaigns</code> rows (E8). UI must not show stale campaign cards after retraction—tests guard empty vs active states.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: How does formatIntelLabel differ from normalize_pulse_name?</h4>
+        <p class="answer"><strong>A:</strong> Display uses <code>formatIntelLabel</code> (humanized titles, author Part N/M badge). Clustering/matching uses stronger <code>normalize_pulse_name</code>—underscores, Part tokens, punctuation identity only.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: How do campaigns appear in the DetailDrawer?</h4>
@@ -218,6 +222,10 @@
       <div class="interview-qa">
         <h4>Q: How do watchlist pins interact with IOC graph?</h4>
         <p class="answer"><strong>A:</strong> Pins drive <code>watchlist_monitor_alerts</code> on KEV/EPSS changes—not continuous IOC graph polling. Snooze removed; pin/watchlist remains.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How do IOC watchlist hits become webhooks?</h4>
+        <p class="answer"><strong>A:</strong> <code>ioc_watchlist_hit</code> event type on database-backed destinations; dedupe per <code>(destination_id, event_type, dedupe_key)</code>. Distinct from watchlist KEV/EPSS monitor alerts.</p>
       </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">

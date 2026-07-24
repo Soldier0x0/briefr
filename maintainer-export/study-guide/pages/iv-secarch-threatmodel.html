@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Ingest &amp; scheduler — BRIEFR Study Guide</title>
+  <title>Security architecture &amp; threat modeling — BRIEFR Study Guide</title>
   <link rel="stylesheet" href="../assets/book.css">
 </head>
-<body data-page-id="iv-ingest-scheduler" data-pages-base="" data-assets-base="../assets/">
+<body data-page-id="iv-secarch-threatmodel" data-pages-base="" data-assets-base="../assets/">
 <a class="skip-link" href="#main-content">Skip to content</a>
 <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
 <div class="nav-backdrop" id="nav-backdrop" hidden></div>
@@ -147,114 +147,84 @@
     </nav>
   </aside>
   <main id="main-content">
-    <section class="page active chapter" id="iv-ingest-scheduler">
+    <section class="page active chapter" id="iv-secarch-threatmodel">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 6</span>
-        <h3>Ingest &amp; scheduler</h3>
-        <p class="dek">APScheduler jobs, locks, api_queue, watermarks, and operator refresh honesty.</p>
+        <span class="chapter-num">Interview · 3</span>
+        <h3>Security architecture &amp; threat modeling</h3>
+        <p class="dek">PM-3 ARCH graph, Security posture, TM-6 framework workspaces, and live risk register.</p>
       </div>
       <div class="prose">
 
       </div>
       <h4 class="interview-category">What it does</h4>
       <div class="interview-qa">
-        <h4>Q: What schedules recurring work?</h4>
-        <p class="answer"><strong>A:</strong> APScheduler inside <code>scheduler.py</code>, started from FastAPI lifespan when <code>BRIEFR_SCHEDULER_ENABLED=1</code>. ~27 normal jobs plus optional registration-gated jobs (OTX continuous, exploit sources, detection LLM, SigmaHQ sync).</p>
+        <h4>Q: What is the PM-3 security architecture graph?</h4>
+        <p class="answer"><strong>A:</strong> Self-documenting corpus: routers, jobs, tables, external sources as nodes; SQL and job edges generated into <code>security_architecture/corpus/</code>. Admin Security posture and ARCH views render the graph with zoom, focus-dim, one-hop SQL edges via <code>database</code> shim.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: Name core ingest jobs.</h4>
-        <p class="answer"><strong>A:</strong> <code>nvd_incremental_sync</code>, <code>kev_metadata_sync</code>, <code>epss_score_sync</code>, <code>weekly_mitre_refresh</code>, <code>vulnrichment_snapshot_sync</code>, <code>cvelistv5_incremental_sync</code>—each writes canonical tables with watermarks.</p>
+        <h4>Q: Where do analysts vs admins see ARCH?</h4>
+        <p class="answer"><strong>A:</strong> PM-4b/c: analysts no longer edit corpus; <code>/security-architecture</code> redirects to Admin → Security posture. Analyst read-only posture pages (PM-4a): Overview, System Architecture, Trust Boundaries, Attack Surface, Risks.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: What startup one-shots exist?</h4>
-        <p class="answer"><strong>A:</strong> Full ingest when CVE count &lt; 10; deferred summary, EPSS history, exploit-source, and MITRE/ATLAS maintenance when data is sparse. These are not recurring cron entries but lifespan-triggered bootstrap.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: What jobs are registration-gated?</h4>
-        <p class="answer"><strong>A:</strong> <code>otx_continuous_sync</code>, <code>exploit_sources_sync</code>, <code>detection_context_llm</code>, <code>sigmahq_index_sync</code> register only when their feature flags enable them. <code>detection_context_llm</code> needs restart to register.</p>
+        <h4>Q: What is Security posture vs Security admin panel?</h4>
+        <p class="answer"><strong>A:</strong> Posture (PM-4a): read-only architecture/risk transparency for analysts. Admin Security: operator warnings (rate limits, cookies, wallboard token), config, corpus tools—editable operator surface.</p>
       </div>
       <h4 class="interview-category">Core implementation</h4>
       <div class="interview-qa">
-        <h4>Q: How are duplicate job runs prevented?</h4>
-        <p class="answer"><strong>A:</strong> Each job uses <code>max_instances=1</code>, <code>coalesce=True</code>, and a per-job <code>asyncio.Lock</code> in <code>scheduler_locks._LOCKS</code>. Manual admin Run Now shares the same lock mapping via <code>_JOB_RUN_MAP</code> in <code>routers/admin/jobs.py</code>.</p>
+        <h4>Q: How are one-hop SQL edges produced?</h4>
+        <p class="answer"><strong>A:</strong> PM-3 uses <code>database</code> shim helpers to trace single SQL statements from routers/jobs to tables—focus-only edge draw in UI; external nodes for NVD/OTX/etc. Not runtime dependency for CVE ops.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: How does stack backfill work?</h4>
-        <p class="answer"><strong>A:</strong> <code>STACK_BACKFILL_ENABLED</code> opt-in historical NVD+KEV+EPSS for shallow stack coverage. Checkpointed per product with atomic <code>claim_run_running</code> gate. Procrastinate can defer resume after NVD rate limits.</p>
+        <h4>Q: What is TM-6 framework workspaces?</h4>
+        <p class="answer"><strong>A:</strong> Admin Security posture FRAMEWORKS: CWE, OWASP Top 10 2021, CAPEC, STRIDE over live <code>cves.cwe_ids</code> with Scope filters (All / My Stack / Watchlist / KEV + severity). Counts drill to <code>example_cves</code>; unmapped bucket keeps totals honest.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: How are watchlist alerts emitted?</h4>
-        <p class="answer"><strong>A:</strong> <code>watchlist_monitor_alerts</code> scheduler job detects KEV entry or EPSS/PoC changes on pinned CVEs and fires <code>watchlist_alert</code> webhooks. Snooze was removed from UI; pin/watchlist remains.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: What is CPE catalog sync (Q3)?</h4>
-        <p class="answer"><strong>A:</strong> <code>cpe_catalog_sync</code> job (<code>CPE_CATALOG_SYNC_ENABLED=0</code> default) populates <code>software_catalog</code> from NVD CPE 2.3 API with checkpointed full then incremental sync. Powers <code>/api/stack/catalog/suggest</code> typeahead.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: What is stack backfill idempotency (IDEM-A/B)?</h4>
-        <p class="answer"><strong>A:</strong> <code>claim_run_running</code> atomic gate admits one worker; stale <code>running</code> reclaimed after <code>STACK_BACKFILL_STALE_SECONDS</code>. Procrastinate defer uses per-run <code>queueing_lock</code>; NVD 429 schedules durable resume after 180s when enabled.</p>
+        <h4>Q: What threat modeling tracks shipped (TM-0…TM-5)?</h4>
+        <p class="answer"><strong>A:</strong> Foundation for posture views, trust boundaries, attack surface enumeration—feeds Security admin and reader docs. TM-6 extends with framework workspaces over live CVE data.</p>
       </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
-        <h4>Q: Explain the API queue serialization.</h4>
-        <p class="answer"><strong>A:</strong> Outbound requests for rate-limited APIs enter a per-source queue. Health endpoint exposes task-level status. Background sync UI groups by provider and distinguishes waiting vs queued tasks.</p>
+        <h4>Q: How does live self-stack risk scoring work?</h4>
+        <p class="answer"><strong>A:</strong> Risk Register rows score structured CPE/affected_products against generated self-stack—product+version = 100, product-only fallback = 55 (version unverified). No description LIKE admission.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: How do manual refresh routes interact with locks?</h4>
-        <p class="answer"><strong>A:</strong> Admin Feed Health Sync and Scheduler Run Now call the same async locks as cron jobs so operators cannot double-run NVD or correlation jobs concurrently.</p>
+        <h4>Q: How does corpus drift detection work?</h4>
+        <p class="answer"><strong>A:</strong> Admin button + CI: regenerate generated layer, diff vs committed YAML/JSON. Catches stale job→table edges when routers change without corpus refresh.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: What is catch-up mode v1?</h4>
-        <p class="answer"><strong>A:</strong> Admin time-boxed backlog drain: raises embeddings/correlation caps + LLM pacing headroom; <code>catchup_tick</code> every 5 min nudges eligible work. Still respects <code>api_queue</code> and rate-limit floors.</p>
+        <h4>Q: How does drawer CAPEC/SSVC relate to TM-6?</h4>
+        <p class="answer"><strong>A:</strong> Drawer shows per-CVE CAPEC chips (CIRCL) and CISA SSVC (Vulnrichment). TM-6 aggregates CWE/OWASP/CAPEC/STRIDE across corpus for portfolio view—not duplicate of per-CVE drawer sections.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does ARCH link to scheduler jobs in interviews?</h4>
+        <p class="answer"><strong>A:</strong> Graph nodes like <code>job:nvd_incremental_sync</code> edge to <code>table:cves</code> and <code>ext:nvd</code>—useful to explain ingest blast radius without reading all of <code>scheduler.py</code>.</p>
       </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">
-        <h4>Q: What is feed health vs circuit health?</h4>
-        <p class="answer"><strong>A:</strong> Feed health tracks sync freshness and last success per source. Circuit breaker state tracks consecutive failures for outbound HTTP. API key health probes are separate—they do not open/clear shared circuits used by real traffic.</p>
+        <h4>Q: What is cap honesty on live self-stack?</h4>
+        <p class="answer"><strong>A:</strong> API returns <code>live_self_stack</code> stats: <code>candidate_rows</code>, <code>scored_matches</code>, <code>admitted</code>, <code>cap=50</code>. UI shows 'showing X of Y (cap 50)' when matches exceed cap—no silent truncation.</p>
       </div>
       <div class="interview-qa">
-        <h4>Q: What retention jobs run?</h4>
-        <p class="answer"><strong>A:</strong> <code>cache_retention_cleanup</code> sweeps stale <code>ioc_cache</code>/<code>feed_cache</code>, ages <code>epss_history</code>, OTX mirrors, <code>ai_operations</code> (30d), webhook logs, and crash-stranded webhook dedupe claims.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: How does OTX ingest behave on errors?</h4>
-        <p class="answer"><strong>A:</strong> OTX pulses cache in <code>feed_cache</code> and mirror tables. Upstream 4xx/5xx serves any-age stale rows without deleting cached pulses—honest degradation for analysts.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: What is honest about FEED footer refresh timing?</h4>
-        <p class="answer"><strong>A:</strong> Footer next refresh reflects <code>nvd_incremental_sync</code> only. Orphaned <code>CACHE_REFRESH_*</code> env vars are not scheduled—health <code>refresh_schedule</code> is null. No misleading auto-daily copy.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: How would you recover a stuck scheduler job?</h4>
-        <p class="answer"><strong>A:</strong> Check Application logs with <code>job_id</code> + <code>run_id</code> from Scheduler table link, verify lock holder, inspect feed health circuit state, and use admin Run after upstream recovery. For stack backfill, stale <code>running</code> reclaims after <code>STACK_BACKFILL_STALE_SECONDS</code>.</p>
+        <h4>Q: What if corpus and code disagree?</h4>
+        <p class="answer"><strong>A:</strong> Drift check fails CI/admin action; operators regenerate and commit. PRODUCT_STATUS and code win over stale graph labels in interviews.</p>
       </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">
-        <h4>Q: What does NVD incremental sync do?</h4>
-        <p class="answer"><strong>A:</strong> Pulls modified CVEs from NVD API through the resilient client with circuit breaker and <code>api_queue</code> pacing. Commits core rows before optional enrichments. Respects API key headers when <code>NVD_API_KEY</code> is set.</p>
+        <h4>Q: Is ARCH graph computed on every request?</h4>
+        <p class="answer"><strong>A:</strong> Committed generated corpus loaded from disk; drift check is explicit admin/CI action. Runtime CVE queries use normal <code>db/</code> paths—not graph generation.</p>
       </div>
+      <h4 class="interview-category">Security</h4>
       <div class="interview-qa">
-        <h4>Q: How does EPSS identity skip work?</h4>
-        <p class="answer"><strong>A:</strong> Downloads the FIRST CSV.GZ, compares SHA256 and <code>score_date</code> to <code>sync_state</code>. Unchanged file skips gunzip, parse, and upsert—saving CPU on daily runs. Force via admin EPSS force-resync.</p>
+        <h4>Q: Is the security corpus editable by analysts?</h4>
+        <p class="answer"><strong>A:</strong> No—operator/admin corpus editing removed from analyst ARCH (PM-4b). Reduces risk of unreviewed graph edits on production intel paths.</p>
       </div>
+      <h4 class="interview-category">Architecture tradeoffs</h4>
       <div class="interview-qa">
-        <h4>Q: What is catch-up mode?</h4>
-        <p class="answer"><strong>A:</strong> Admin-only time-boxed backlog drain: raises embeddings/correlation caps and LLM pacing headroom. <code>catchup_tick</code> every 5 minutes nudges eligible work. Still respects <code>api_queue</code>, Retry-After, and rate-limit floors.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: What is &lt;code&gt;sigmahq_index_sync&lt;/code&gt;?</h4>
-        <p class="answer"><strong>A:</strong> Weekly default job mirrors SigmaHQ tarball into Postgres with commit+sha256 watermark. Admin can force re-sync clearing watermark. Detect tab prefers this local index over live GitHub search.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: How does metering relate to ingest?</h4>
-        <p class="answer"><strong>A:</strong> <code>API_CALL_EVENTS_ENABLED</code> records every <code>resilient_request</code> attempt to <code>api_call_events</code> with source, latency, and actor/job IDs. Admin API keys page shows 24h breakdowns.</p>
-      </div>
-      <div class="interview-qa">
-        <h4>Q: How does EPSS identity skip save CPU?</h4>
-        <p class="answer"><strong>A:</strong> Q5: compare downloaded CSV SHA256 + <code>score_date</code> to <code>sync_state</code>; unchanged file skips gunzip/parse/upsert. Force via admin EPSS force-resync.</p>
+        <h4>Q: Why self-documenting architecture vs external CMDB?</h4>
+        <p class="answer"><strong>A:</strong> Solo/small-team ops: graph stays in-repo, regenerates from code+SQL, powers posture page without third-party sync. Tradeoff: corpus can drift until drift check runs.</p>
       </div>
     </section>
-    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-nvd-pipeline.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">NVD ingestion &amp; feed pipeline</span></a><span class="spacer"></span><a class="next" href="iv-correlation-scoring.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Correlation &amp; scoring</span></a></nav>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-security.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Security &amp; trust boundaries</span></a><span class="spacer"></span><a class="next" href="iv-backend-db.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend &amp; database</span></a></nav>
 
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

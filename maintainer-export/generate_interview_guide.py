@@ -10,6 +10,7 @@ from pathlib import Path
 from category_utils import CATEGORY_ORDER, ensure_categories
 from interview_qa_data import SEGMENTS as BASE_SEGMENTS
 from interview_qa_extra import merge_segments, wire_prev_next
+from interview_qa_gap_fill import merge_gap_questions
 
 ROOT = Path(__file__).resolve().parent
 GUIDE = ROOT / "study-guide"
@@ -227,8 +228,37 @@ def patch_all_tocs(toc_links: list[tuple[str, str]]) -> None:
 
 def prepare_segments() -> list[dict]:
     merged = merge_segments(BASE_SEGMENTS)
+    merged = merge_gap_questions(merged)
+    # Re-wire after secarch insert shifted order
+    slugs = [s["slug"] for s in merged]
+    if "iv-secarch-threatmodel" in slugs:
+        ordered = [
+            "iv-part",
+            "iv-architecture",
+            "iv-security",
+            "iv-secarch-threatmodel",
+            "iv-backend-db",
+            "iv-nvd-pipeline",
+            "iv-ingest-scheduler",
+            "iv-correlation-scoring",
+            "iv-campaign-ioc",
+            "iv-ml-embeddings",
+            "iv-detection-forge",
+            "iv-frontend-ux",
+            "iv-api-ops",
+            "iv-devops-deploy",
+            "iv-tests-docs",
+            "iv-product-behavioral",
+        ]
+        by_slug = {s["slug"]: s for s in merged}
+        merged = [by_slug[s] for s in ordered if s in by_slug]
     wired = wire_prev_next(merged)
+    chapter_idx = 0
     for seg in wired:
+        if seg["slug"] == "iv-part":
+            continue
+        chapter_idx += 1
+        seg["chapter_num"] = f"Interview · {chapter_idx}"
         if seg.get("questions"):
             seg["questions"] = ensure_categories(seg["questions"])
     return wired

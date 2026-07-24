@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-detection-forge">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 9</span>
+        <span class="chapter-num">Interview · 10</span>
         <h3>Detection &amp; Forge</h3>
         <p class="dek">SigmaHQ index, class router, DetectionContext, and Forge navigator workflows.</p>
       </div>
@@ -181,6 +181,10 @@
         <h4>Q: What tests cover detection?</h4>
         <p class="answer"><strong>A:</strong> <code>test_sigmahq_index.py</code>, <code>test_sigmahq_index_read.py</code>, class router tests, and admin job map tests ensure scheduler wiring matches <code>run_sigmahq_index_sync</code>.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What Forge views exist beyond the matrix?</h4>
+        <p class="answer"><strong>A:</strong> Threat scenarios, proof bench, KEV backlog (<code>?view=backlog</code>), hunt packs, coverage—top tabs switch views; matrix click toggles technique selection (PM-4d).</p>
+      </div>
       <h4 class="interview-category">Core implementation</h4>
       <div class="interview-qa">
         <h4>Q: Explain BRIEFR class templates.</h4>
@@ -194,6 +198,14 @@
         <h4>Q: How do artifacts merge from Nuclei?</h4>
         <p class="answer"><strong>A:</strong> <code>DETECTION_CONTEXT_NUCLEI_ENABLED=1</code> default parses Nuclei YAML on exploit sync into detection context; merges keywords/paths into emitted BRIEFR templates when present.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What did detection composer DC-1…DC-4 ship?</h4>
+        <p class="answer"><strong>A:</strong> Evidence pack + emit Sigma/SIEM/YARA via shared detection engine—no LLM required. Detect tab and Forge hunt-pack generate share the same class router and SigmaHQ index path.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does YARA generation use IOC structs?</h4>
+        <p class="answer"><strong>A:</strong> Deterministic from structured IOC type/value in detection context—<code>test_yara_generator.py</code> guards shapes. Not LLM-invented strings.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: How does Forge link to the drawer?</h4>
@@ -202,6 +214,10 @@
       <div class="interview-qa">
         <h4>Q: What SIEM outputs exist?</h4>
         <p class="answer"><strong>A:</strong> Class-aware queries selected by <code>class_router</code>—same class as Sigma and log patterns. Export paths live in detection module consumed by Detect UI and Forge hunt-pack generate.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does kev_backlog notification deep-link?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler <code>detection/backlog.py</code> emits <code>kev_backlog</code> to <code>user_notifications</code>; analyst bell opens Forge backlog view for stack coverage gaps.</p>
       </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">

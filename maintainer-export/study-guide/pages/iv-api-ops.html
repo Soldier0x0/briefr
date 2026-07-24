@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-api-ops">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 11</span>
+        <span class="chapter-num">Interview · 12</span>
         <h3>API &amp; operations</h3>
         <p class="dek">Health, admin diagnostics, webhooks, notifications, and structured logging.</p>
       </div>
@@ -186,6 +186,14 @@
         <h4>Q: How does stack catalog suggest work?</h4>
         <p class="answer"><strong>A:</strong> <code>GET /api/stack/catalog/suggest</code> (≥3 chars) typeahead from <code>software_catalog</code> when CPE catalog sync enabled—merged with curated lists in asset wizard.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: How do multi-destination webhooks work (PR12b/c)?</h4>
+        <p class="answer"><strong>A:</strong> CRUD on <code>webhook_destinations</code> (20/kind cap), per-destination event subscriptions, masked config on GET, health cards with 24h ok/fail, test POST even when disabled. Env vs DB source badges in admin UI.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is API key health vs feed circuit?</h4>
+        <p class="answer"><strong>A:</strong> Probes persist to <code>api_key_health:{provider}</code> with <code>record_circuit=False</code>—a bad probe does not open the shared circuit used by real LLM/ingest traffic.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: What does &lt;code&gt;/api/health&lt;/code&gt; expose?</h4>
@@ -207,10 +215,22 @@
         <h4>Q: How would you version breaking API changes?</h4>
         <p class="answer"><strong>A:</strong> BRIEFR favors additive JSON fields and feature flags. Breaking changes require PRODUCT_STATUS, API_REFERENCE, and frontend contract tests updates in the same PR—deploy scripts promise additive compatibility.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: How does the notification center split analyst vs admin?</h4>
+        <p class="answer"><strong>A:</strong> Analyst header bell: watchlist, IOC, <code>kev_backlog</code>. Admin StatusBar bell: job errors, unhealthy API keys, webhook delivery failures—deep-links to Scheduler/Webhooks/API keys.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is first-hour onboarding checklist?</h4>
+        <p class="answer"><strong>A:</strong> Admin System health live checklist (CVE ingest, stack, backups, feeds, posture) until dismissed or complete—reduces time-to-first-value for new operators.</p>
+      </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">
         <h4>Q: How does semantic search API behave?</h4>
         <p class="answer"><strong>A:</strong> <code>/api/search/semantic</code> accepts query plus filters; returns typed sections for techniques, campaigns, CVEs when embeddings enabled. Empty embeddings gracefully degrade.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What are crash-stranded webhook dedupe claims?</h4>
+        <p class="answer"><strong>A:</strong> IDEM-D: dedupe row without delivery log after worker crash—<code>cache_retention_cleanup</code> sweeps claims older than 1h grace so alerts are not silently suppressed forever.</p>
       </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">

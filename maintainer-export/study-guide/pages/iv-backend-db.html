@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-backend-db">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 3</span>
+        <span class="chapter-num">Interview · 4</span>
         <h3>Backend &amp; database</h3>
         <p class="dek">asyncpg, Alembic, Postgres production path, SQLite test fallback, and data model.</p>
       </div>
@@ -186,6 +186,15 @@
         <h4>Q: How are embeddings stored?</h4>
         <p class="answer"><strong>A:</strong> pgvector extension on Postgres 16 (<code>pgvector/pgvector:pg16</code> image). Entity embeddings for CVEs, techniques, and campaigns with <code>content_hash</code> drift re-embed on backfill. SQLite tests skip vector-specific paths.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What is DATABASE_POOL_COMMAND_TIMEOUT_SECONDS?</h4>
+        <p class="answer"><strong>A:</strong> SQL-only pool command timeout (default 60s)—separate from per-feed HTTP timeouts. Paired with NVD commit-before-enrich so slow HTTP enrich cannot exhaust writers' SQL budget.</p>
+      </div>
+      <h4 class="interview-category">Integration</h4>
+      <div class="interview-qa">
+        <h4>Q: How do intel snapshots support migration?</h4>
+        <p class="answer"><strong>A:</strong> <code>scripts/export_intel_snapshot.py</code> exports allowlisted tables per DATA_SNAPSHOT.md (manifest v1); <code>verify_intel_snapshot.py</code> and <code>import_intel_snapshot.py</code> for DR/migration between instances—complements pg_dump, not replacement.</p>
+      </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">
         <h4>Q: When does SQLite still appear?</h4>
@@ -194,6 +203,10 @@
       <div class="interview-qa">
         <h4>Q: What happens on first boot with an empty database?</h4>
         <p class="answer"><strong>A:</strong> If fewer than 10 CVE rows exist, startup triggers full NVD→KEV→EPSS ingest (network-heavy). Operators can seed via <code>scripts/seed_screenshot_data.py</code> for instant demo data.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What broke on SigmaHQ migration 035?</h4>
+        <p class="answer"><strong>A:</strong> Unquoted Postgres reserved word <code>references</code> in DDL—fixed with quoting/rename. <code>test_alembic_revisions.py</code> scans for this class of bug; forward-only migrations only.</p>
       </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">
@@ -239,7 +252,7 @@
         <p class="answer"><strong>A:</strong> Explicit SQL in the <code>db/</code> package keeps query shapes visible for performance tuning and dual-backend tests. FastAPI Pydantic models validate API boundaries; SQL stays close to Postgres features.</p>
       </div>
     </section>
-    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-security.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Security &amp; trust boundaries</span></a><span class="spacer"></span><a class="next" href="iv-nvd-pipeline.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">NVD ingestion &amp; feed pipeline</span></a></nav>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-secarch-threatmodel.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Security architecture &amp; threat modeling</span></a><span class="spacer"></span><a class="next" href="iv-nvd-pipeline.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">NVD ingestion &amp; feed pipeline</span></a></nav>
 
     <footer>
       Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.

@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-frontend-ux">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 10</span>
+        <span class="chapter-num">Interview · 11</span>
         <h3>Frontend &amp; UX</h3>
         <p class="dek">React 19, Radix, semantic tokens, DetailDrawer patterns, and accessibility.</p>
       </div>
@@ -202,6 +202,18 @@
         <h4>Q: How does URL state work for Forge?</h4>
         <p class="answer"><strong>A:</strong> <code>?tab=forge</code> with <code>view</code>, <code>technique</code>, <code>pack</code> params. Intentional navigations push history; cosmetic param hygiene uses replaceState.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What is the Background sync portal UI?</h4>
+        <p class="answer"><strong>A:</strong> Portaled Radix dropdown on header—groups api_queue tasks by provider, distinguishes waiting vs queued, collision-aware (Program A UX RCA). Distinct from Admin durable outbound jobs panel.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What UX RCA changed in the drawer?</h4>
+        <p class="answer"><strong>A:</strong> PR-A: Overview IA, L-edge panels, accent-ghost actions, Active Campaigns default closed, MITRE hint only when techniques exist, tabs stay mounted after first visit. PR-D: Forge matrix EmptyState, honest campaign copy.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is Track E command palette?</h4>
+        <p class="answer"><strong>A:</strong> ⌘K wayfinding—keyboard accessible, portaled. Part of UI-M design system completion alongside Radix primitives and token lint gates.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: What UI primitives are standard?</h4>
@@ -214,6 +226,10 @@
       <div class="interview-qa">
         <h4>Q: How would you add a new analyst page?</h4>
         <p class="answer"><strong>A:</strong> Follow Primitives → Composites → Features layering, reuse Radix + tokens, implement four async states, wire URL tab sync if needed, and update design-system.md if introducing a new pattern.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: How does shell URL history interact with Back button?</h4>
+        <p class="answer"><strong>A:</strong> Intentional tab/Forge/admin page/CVE drawer changes <strong>push</strong> history; cosmetic param hygiene <strong>replaces</strong>. Back closes drawer before leaving tab; Forge→CVE uses router navigate not <code>location.assign</code>.</p>
       </div>
       <h4 class="interview-category">Failure modes &amp; edge cases</h4>
       <div class="interview-qa">

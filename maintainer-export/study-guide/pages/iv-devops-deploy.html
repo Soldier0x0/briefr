@@ -149,7 +149,7 @@
   <main id="main-content">
     <section class="page active chapter" id="iv-devops-deploy">
       <div class="chapter-head">
-        <span class="chapter-num">Interview · 12</span>
+        <span class="chapter-num">Interview · 13</span>
         <h3>DevOps &amp; deploy</h3>
         <p class="dek">Production layout, verify-local, backups, migrations, and multi-worker ops.</p>
       </div>
@@ -190,6 +190,14 @@
         <h4>Q: How do deploy scripts stay safe?</h4>
         <p class="answer"><strong>A:</strong> Additive compatibility promise in ROADMAP/OPERATIONS—<code>deploy/</code> scripts run on live production boxes; changes must not break existing operator paths.</p>
       </div>
+      <div class="interview-qa">
+        <h4>Q: What did deploy #745 add?</h4>
+        <p class="answer"><strong>A:</strong> Production-zone install/deploy/service scripts under <code>deploy/</code>—additive compatibility promise for live boxes documented in OPERATIONS.md. Not a full platform docker-compose.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is corpus drift check?</h4>
+        <p class="answer"><strong>A:</strong> <code>POST /api/admin/diagnostics/corpus-drift</code> regenerates security architecture generated layer to temp dir and diffs vs committed corpus—CI also runs <code>test_security_architecture_corpus.py</code>.</p>
+      </div>
       <h4 class="interview-category">Integration</h4>
       <div class="interview-qa">
         <h4>Q: What does production deployment look like?</h4>
@@ -210,6 +218,10 @@
       <div class="interview-qa">
         <h4>Q: What about Playwright smoke?</h4>
         <p class="answer"><strong>A:</strong> Gated behind <code>PLAYWRIGHT_SMOKE=1</code> in verify-local full mode. Seeds SQLite and starts uvicorn + preview for UI smoke—optional locally.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What is support pack export?</h4>
+        <p class="answer"><strong>A:</strong> <code>GET /api/admin/diagnostics/support-pack</code> redacted health + ring-buffer logs; <code>briefr-doctor.sh</code> can download on live host—no secrets in bundle.</p>
       </div>
       <h4 class="interview-category">Performance</h4>
       <div class="interview-qa">
