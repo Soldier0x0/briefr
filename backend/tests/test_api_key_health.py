@@ -12,12 +12,23 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+def _use_sqlite_tmp_db(monkeypatch, tmp_path: Path, db_name: str) -> None:
+    """SQLite path tests must clear cached settings.database_url, not only os.environ."""
+    from monitoring.api_key_health import PROVIDER_CHECKS
+    from settings import settings as _settings
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(_settings, "database_url", "")
+    monkeypatch.setenv("DB_PATH", str(tmp_path / db_name))
+    for spec in PROVIDER_CHECKS:
+        monkeypatch.delenv(spec["env_key"], raising=False)
+
+
 def test_run_api_key_health_checks_skips_placeholders(monkeypatch, tmp_path):
     from database import get_db, init_db
     from monitoring import api_key_health as mod
 
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "health.db"))
+    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health.db")
     asyncio.run(init_db())
 
     monkeypatch.setenv("GROQ_API_KEY", "your_key_here")
@@ -45,8 +56,7 @@ def test_run_api_key_health_checks_persists_result(monkeypatch, tmp_path):
     from database import get_db, get_sync_state_value, init_db
     from monitoring import api_key_health as mod
 
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "health2.db"))
+    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health2.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
@@ -78,8 +88,7 @@ def test_build_api_key_health_payload_suffix(monkeypatch, tmp_path):
     from database import get_db, init_db, set_sync_state_value
     from monitoring.api_key_health import build_api_key_health_payload
 
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "health3.db"))
+    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health3.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GEMINI_API_KEY", "AIzaSyTestKey1234567890")
 
@@ -214,8 +223,7 @@ def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp
     from database import get_db, init_db
     from monitoring import api_key_health as mod
 
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "health4.db"))
+    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health4.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
@@ -269,8 +277,7 @@ def test_dedupe_normalizes_dynamic_content_in_error_text(monkeypatch, tmp_path):
     from monitoring import api_key_health as mod
     from resilient_client import CircuitOpenError
 
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "health5.db"))
+    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health5.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
