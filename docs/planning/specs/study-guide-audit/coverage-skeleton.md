@@ -11,7 +11,7 @@ _Regenerated 2026-07-22. Fill scores in `INTERVIEW_COVERAGE.md` (curated); this 
 | `arch-resources` | The resource-consciousness thread | 2 |  |  |  |  |  |
 | `arch-connectivity` | How the pieces connect | 1 |  |  |  |  |  |
 | `arch-ai-restraint` | Why AI is used sparingly | 3 |  |  |  |  |  |
-| `arch-license` | Why BSL-1.1 | 0 |  |  |  |  |  |
+| `arch-license` | Why Apache 2.0 | 0 |  |  |  |  |  |
 | `fe-react` | Ch 1 · Why React 19 | 3 |  |  |  |  |  |
 | `fe-design` | Ch 2 · Tokens + Radix (ADR-003) | 34 |  |  |  |  |  |
 | `fe-libs` | Ch 3 · The library registry (ADR-005) | 0 |  |  |  |  |  |

@@ -20,11 +20,11 @@ entry** → `docs/planning/SPRINT_2026-07.md` (checkboxes).
 
 ### What changed
 
-- **`LICENSE`** — replaced Business Source License 1.1 with the standard **Apache
+- **`LICENSE`** — replaced the pre-publication draft license with the standard **Apache
   License, Version 2.0** text.
 - **`NOTICE`** — added attribution file (BRIEFR, copyright Sai Harsha Vardhan,
   GitHub URL).
-- **SPDX headers** — active source trees updated from `BUSL-1.1` to
+- **SPDX headers** — active source trees updated to
   `SPDX-License-Identifier: Apache-2.0` (backend `.py`, frontend `.jsx`/`.js`,
   `scripts/snapshot_version.py`).
 - **Product surfaces** — `README.md`, `CONTRIBUTING.md`, `docs/PRODUCT_STATUS.md`,
@@ -1254,34 +1254,16 @@ auto-index ingest tails unless operator sets auto off.
 
 ---
 
-## 2026-07-19 — F2-R: license reversed from AGPL-3.0 to BSL-1.1 (pre-flip)
+## 2026-07-19 — F2-R: license reversed from AGPL-3.0 to draft source-available terms (pre-flip)
 
-**Done**
-- Reversed the 2026-07-10 Track F2 decision: project license changed from
-  AGPL-3.0-or-later to **Business Source License 1.1** — free for personal,
-  non-commercial use; a one-time paid commercial license is required for
-  use by/on behalf of a for-profit organization; each published version
-  converts to Apache-2.0 four years after its publication date.
-- `LICENSE` rewritten to the standard BSL 1.1 template (Licensor: Sai Harsha
-  Vardhan; commercial-license contact: harsha@projectjupiter.in).
-- `CONTRIBUTING.md`, `README.md` (badge + both prose mentions), and all 51
-  `SPDX-License-Identifier: AGPL-3.0-or-later` headers on active source
-  trees (backend `.py`) mechanically updated to
-  `SPDX-License-Identifier: BUSL-1.1`.
-- Docs updated: `docs/PRODUCT_STATUS.md`, `docs/planning/STRATEGY.md` §6,
-  `docs/planning/SPRINT_2026-07.md` (F2-R entry added, F2 row kept as
-  historical record), `docs/planning/PROGRAM_PRODUCT_OPEN_CORE.md`,
-  `docs/decisions/ADR-005-component-library-strategy.md`, and the 5 docs
-  sharing the boilerplate copyright/SPDX line (`ONBOARDING.md`,
-  `OPERATIONS.md`, `API_REFERENCE.md`, `SYSTEM_DESIGN.md`,
-  `planning/ROADMAP.md`).
-- **Why now, not later:** this reverses F2 (PR #423) before the actual
-  public-repo flip, while the repo is still private — no external party has
-  yet received code under the AGPL grant, so there is no legacy-grant
-  problem to manage. `frontend/src/pages/{Terms,Privacy}Page.jsx` (live at
-  `/terms` and `/privacy`) already described a BSL 1.1 commercial-paywall
-  model before this change — those pages were correct all along; the
-  `LICENSE`/SPDX/docs were the stale side of the contradiction, not them.
+> **Superseded 2026-07-24** by Apache License 2.0 (see entry above). Preserved as historical record only.
+
+**Done (historical — superseded 2026-07-24)**
+- Reversed the 2026-07-10 Track F2 decision before the public-repo flip while
+  still private — no external party had received code under the AGPL grant.
+- Draft source-available license terms were recorded in `LICENSE`, `CONTRIBUTING.md`,
+  README, and SPDX headers; UI legal pages were aligned in the same pass.
+- **Superseded:** Apache License 2.0 relicense on 2026-07-24 (see entry above).
 - Also fixed live user-facing/API surfaces the file-based SPDX sweep missed:
   `frontend/src/pages/LegalPage.jsx` footer, `AboutModal.jsx`, `App.jsx`
   footer, `utils/report.js` (x2) + `utils/exportCommon.js`
