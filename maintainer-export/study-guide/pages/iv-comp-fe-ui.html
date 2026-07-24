@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Frontend · UI primitives — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-fe-ui" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-fe-ui">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 14</span>
+        <h3>Frontend · UI primitives</h3>
+        <p class="dek">&lt;code&gt;components/ui/&lt;/code&gt; Radix-based primitives.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/AlertDialog.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix AlertDialog primitive (E3-4) — simple destructive confirmations. * Typed confirm gates should use ConfirmModal (Dialog-based).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/AsyncState.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {boolean} [props.loading=false] * @param {boolean} [props.refreshing=false] * @param {Error|string|null} [props.error] * @param {() => void} [props.onRetry] * @param {boolean} [props.empty=false] * @param {string} [props.emptyTitle] * @param {React.ReactNode} [props.emptyAction] * @param {React.ReactNode} [props.skeleton] * @param {React.ReactNode|((data: *) => React.ReactNode)} [props.children] * @param {*} [prop</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Badge.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {'neutral'|'info'|'warn'|'danger'|'success'} [props.variant='neutral'] * @param {string} props.explain - Required tooltip text (PRODUCT.md principle 1). * @param {string} [props.className] * @param {React.ReactNode} [props.children]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Button.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {'primary'|'ghost'|'danger'} [props.variant='ghost'] * @param {'default'|'sm'} [props.size='default'] * @param {boolean} [props.busy=false] * @param {string} [props.busyLabel] * @param {string} [props.className] * @param {React.ReactNode} [props.children]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Card.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Raised surface primitive (E3-7). Composes admin-card layout during migration. * @param {object} props * @param {string} [props.className] * @param {React.ReactNode} [props.children]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/ChartDataTable.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Collapsible tabular fallback for chart data (E6-5 a11y). * Screen readers and keyboard users can access the same values without the canvas.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/ChartShell.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Fixed-height chart container (E7-5). Prevents unbounded chart growth (UI-BUG-1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Checkbox.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed checkbox primitive (ADR-003 / E0-2 reference implementation). * @param {object} props * @param {boolean} [props.checked] * @param {boolean} [props.defaultChecked] * @param {(checked: boolean) => void} [props.onCheckedChange] * @param {boolean} [props.disabled] * @param {string} [props.id] * @param {string} [props.className] * @param {string} [props.label] Optional visible label (renders as sibling)</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/ConfirmModal.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {boolean} [props.open=true] * @param {string} [props.title] * @param {string} [props.message] * @param {string} [props.confirmWord] * @param {(value: string) => void} props.onConfirm * @param {() => void} props.onCancel * @param {() => void} [props.onClose] * @param {string} [props.confirmLabel='Confirm'] * @param {string} [props.cancelLabel='Cancel'] * @param {string} [props.className] * @param {string} [props.ov</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/DataGrid.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Shared table primitive: fixed layout, sticky header, sortable columns, * resize via shared <col>, optional wrap/center, persisted column prefs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/DateTimePicker.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Simple datetime picker: DD-MM-YY HH:mm:ss display with dropdown selects. * Value/onChange use datetime-local string format (second precision).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/DateTimeRangeField.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Dual-input datetime range (MUI MultiInputDateTimeRangeField layout) without MUI Pro. * Start and end fields side-by-side with a separator.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/DropdownMenu.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed dropdown menu primitive (E3-5).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/EmptyState.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {string} [props.title='No data'] * @param {React.ReactNode} [props.action] * @param {string} [props.className]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/ErrorState.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {Error|string|null} props.error * @param {() => void} [props.onRetry] * @param {boolean} [props.compact=false] * @param {string} [props.logHref] - Override log viewer href (router-free).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Modal.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed dialog primitive (E3-4). Preserves the legacy Modal API. * @param {object} props * @param {boolean} props.open * @param {() => void} props.onClose * @param {string} [props.title] * @param {string} [props.titleId] * @param {boolean} [props.busy=false] * @param {'default'|'sm'|'lg'} [props.size='default'] * @param {React.ReactNode} [props.footer] * @param {string} [props.className] * @param {string} [props.overlayClassName] * @param </p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Pill.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Toggle chip / filter pill primitive (E3-7). * @param {object} props * @param {boolean} [props.active] * @param {string} [props.className] * @param {React.ReactNode} [props.children] * @param {() => void} [props.onClick]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/ReferenceTooltip.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Long URL / reference tooltips (E2-4): portaled, viewport-clamped, word-wrapped.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Select.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed select primitive (E3-5). * @param {object} props * @param {string} [props.value] * @param {string} [props.defaultValue] * @param {(value: string) => void} [props.onValueChange] * @param {(value: string) => void} [props.onChange] Alias for onValueChange * @param {Array<{value: string, label: React.ReactNode, disabled?: boolean}>} [props.options] * @param {string} [props.placeholder] * @param {boolean} [props.disabled] * @param {stri</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Skeleton.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {object} props * @param {'text'|'block'} [props.variant='text'] * @param {string} [props.className] * @param {string} [props.style]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/SkeletonStack.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Default multi-line placeholder when AsyncState has no custom skeleton (E7-2).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Slider.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed slider primitive (E3-6). * @param {object} props * @param {number} [props.value] * @param {number} [props.defaultValue] * @param {(value: number) => void} [props.onValueChange] * @param {(value: number) => void} [props.onChange] Alias for onValueChange * @param {number} [props.min=0] * @param {number} [props.max=100] * @param {number} [props.step=1] * @param {boolean} [props.disabled] * @param {string} [props.id] * @param {string} </p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/StatCard.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Metric tile primitive (E3-7). Keeps legacy admin/ARCH class hooks during migration. * @param {object} props * @param {string} props.label * @param {React.ReactNode} props.value * @param {string} [props.subLabel] * @param {string} [props.subLabelTitle] * @param {'color-green'|'color-amber'|'color-red'} [props.colorClass] * @param {object} [props.valueStyle] * @param {boolean} [props.plain=false] ARCH overview uses plain surface without admin ski</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Switch.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed switch primitive (E3-1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Tabs.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Radix-backed tabs primitive (E3-5).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Toast.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Global toast dispatch — works outside React tree (copy/export feedback, E7-3).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/Tooltip.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Portaled tooltip primitive (E3-2): collision-aware placement, single-open coordinator. * * @param {object} props * @param {string} props.text * @param {React.ReactNode} props.children * @param {boolean} [props.asChild] - merge aria props into the child element * @param {'hover'|'hover-focus'} [props.trigger] - hover-only avoids sticky filter tooltips after click * @param {string} [props.className] - wrapper class * @param {string} [props.bubble</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/components/ui/index.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/components/ui/index.js</code> (<code>index</code>).</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-fe-admin.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Frontend · admin console</span></a><span class="spacer"></span><a class="next" href="iv-comp-fe-utils.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Frontend · utils, hooks &amp; context</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

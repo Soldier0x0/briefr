@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Frontend · utils, hooks &amp; context — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-fe-utils" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-fe-utils">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 15</span>
+        <h3>Frontend · utils, hooks &amp; context</h3>
+        <p class="dek">Shared hooks, contexts, scoring display helpers, utils.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/context/AssetProfileContext.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/context/AssetProfileContext.jsx</code> (<code>AssetProfileContext</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/context/AuthContext.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/context/AuthContext.jsx</code> (<code>AuthContext</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/context/InvestigationContext.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/context/InvestigationContext.jsx</code> (<code>InvestigationContext</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/hooks/useAsync.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Async data hook with AbortController lifecycle and stale-while-revalidate. * * @param {(signal: AbortSignal) => Promise<*>} fn - Fetcher; receives the current abort signal. * @param {unknown[]} deps - Re-run when these change (same semantics as useEffect). * @returns {{ data: *, error: Error|null, loading: boolean, refreshing: boolean, retry: () => void }}</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/hooks/useInactivityTimeout.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Idle timer for session lock UX — respects analyst security settings.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/hooks/useModalLayer.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Modal layer behavior: focus trap (Tab cycles inside the container) and * focus restore to the triggering element on close. Optionally registers in * the overlay-depth registry for overlays that own their Escape handling.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/hooks/useVisibilityAwareInterval.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Interval that pauses when the document is hidden or ``enabled`` is false. * * @param {() => void} callback * @param {number | null} delayMs * @param {{ enabled?: boolean }} [options]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/hooks/useWatchlist.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Server-backed CVE watchlist (pin only in UI). Snooze was removed from the * product surface — any legacy snooze rows are cleared once on first load.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/scoring/riskScore.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * BRIEFR Risk Score UI helpers (display-only). * * Canonical Threat / Environment / Operational Priority run on the backend: * POST /api/cves/{cve_id}/risk. DetailDrawer displays those API fields only. * Do not recompute Threat or legacy v1.1b totals for UI numbers (W2 / F1.3). * * Weights for legacy formula display come from GET /api/config/risk (cached at startup). * Correlation OP escalation may still be merged client-side until moved server-s</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/adminLinks.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Deep links into admin log / health pages for troubleshooting.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/adminMode.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/adminMode.js</code> (<code>adminMode</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/aiAssets.js` do?</h4>
+        <p class="answer"><strong>A:</strong> AI/ML asset profile helpers (session stack in localStorage).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/apiQueuePresentation.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Presentation helpers for API queue indicator — state priority and analyst copy.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/appLinks.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Instance-aware share/deep links (self-hosted or hosted).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/architectureGraphLayout.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Deterministic grid layout for architecture graph nodes. * One column per cluster, rows in server-provided order.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/architectureGraphView.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Wheel-zoom floor — users can still zoom out further via Fit.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/assetProfileIo.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Local file export/import for asset profiles — never touches localStorage or the server.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/backendRestart.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Fired when admin config save or manual restart triggers backend reload.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/campaignClusterOpen.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Prefer stack → pin → any campaign member (API returns full `members`).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/caseStudyFeed.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/caseStudyFeed.js</code> (<code>caseStudyFeed</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/chartTheme.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Read semantic chart colors from CSS custom properties.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/clearPointerState.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/clearPointerState.js</code> (<code>clearPointerState</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/correlationPresentation.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Analyst-facing copy for correlation evidence and link strength.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/cveAge.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Published-age styling — green for fresh CVEs, amber for recent, muted for older.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/cveFilters.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared CVE filter helpers (stack on server via /api/me/stack, API param mapping).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/detectLabels.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Sentence-case confidence label for generated detection hunt starters. * @param {string | null | undefined} raw e.g. LOW, MEDIUM, HIGH</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/displayPrefs.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Typography, motion, and poll-interval prefs — migrates legacy localStorage to <code>/api/me/preferences</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/displayPrefsCore.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/displayPrefsCore.js</code> (<code>displayPrefsCore</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/displayText.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Coerce API values to safe React text (objects must not be rendered as children).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/domainTermTips.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Shared plain-language tips for domain abbreviations (UX jargon sweep). * Analyst surfaces use ExplainTip / ControlTooltip; admin uses HelpTip.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/domainValidation.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Validate DNS hostnames for IOC domain detection (ASCII + IDN/punycode).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/epssSparkline.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Days of daily EPSS context when the selected change window is shorter than a week.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/exploitationDisplay.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * EPSS percentile tier — mirrors backend epss_sentence tiers without KEV caveat. * @param {number} score 0–1</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/exportCommon.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Shared jsPDF layout constants + helpers used by pdfReport.js and * investigationPdf.js. exportXlsx.js uses write-excel-file; CSV stays in exportCsv.js. * its own color/date handling — reviewed side-by-side and found no genuine * duplication with the PDF files worth extracting.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/exportCsv.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/exportCsv.js</code> (<code>exportCsv</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/exportXlsx.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Analyst-friendly Excel (.xlsx) export with formatting. * CSV export stays in exportCsv.js — separate button, plain text for integrations. * write-excel-file (sync zip) loads on first XLSX export via dynamic import.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/extractIndicatorsFromCve.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Pull analyst-reviewable observables from a CVE record (no auto-lookup). * Uses staged extraction → validation → classification → prioritization.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/feedHealthStatus.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Feed pipeline status for the main-app header dot (from GET /api/health).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/formatIntelLabel.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Display-only formatter for OTX pulse / campaign / intel titles. * * NEVER use the result as a filter key, API identity, or stored value — * matching and persistence must keep the raw feed string.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/heatmapGrid.js` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE count → heatmap fill colour (theme tokens in App.css).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/huntPackPdf.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Hunt pack PDF export (FR-3, forge-redesign.md §4/§5) — jsPDF on the same * pattern as pdfReport.js: lazy-loaded jsPDF, shared exportCommon.js layout * constants/branding, local page-layout helpers (pdfReport.js keeps its own * drawSection/drawCodeBlock private too — no shared abstraction worth * extracting for one more caller). No new dependency.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/hybridFeedSearch.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Helpers for FEED hybrid search (Embeddings E4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/intelProvenance.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * FR1 — one provenance line per intel drawer section.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/investigationActors.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Extract threat-actor-like tags from IOC enrichment tags (VT, etc.).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/investigationLabels.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Investigation thread display labels derived from item source/taxonomy.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/investigationPdf.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Investigation thread PDF (browser-side jsPDF). * jsPDF loads on first export via dynamic import.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/iocLookupMessages.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Analyst-facing IOC lookup messages (BRIEFR product voice).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/kevDeadline.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Parse YYYY-MM-DD or ISO due date at UTC noon; null when invalid.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/keyboardScope.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Returns true when the event target (or focused element) is a typing surface * where document-level navigation shortcuts must not fire (E6-4 / UI-10).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/lazyWithReload.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Error messages browsers emit when a hashed Vite chunk 404s after deploy.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/momentumCache.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Lightweight momentum score cache + pub-sub. * Lets the DetailDrawer publish momentum scores so CVECards can reactively * show the upward arrow without prop-drilling through App → CVEFeed → CVECard.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/morningBriefFormat.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * @param {number | null | undefined} hours * @returns {string} e.g. "1 hour", "24 hours"</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/motion.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Motion helpers — honor tool-wide `data-motion` toggle (E0-3) + OS preference.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/navHistory.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Shell history SSOT — intentional context changes push; cosmetic URL * cleanup replaces. Prevents Browser Back from skipping Forge/FEED and * dumping users on login (issue 21 / C13).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/notificationChime.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Short notification chime — respects mute + reduced motion prefs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/notificationsApi.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/notificationsApi.js</code> (<code>notificationsApi</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/observableExtraction.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Staged observable extraction from CVE intelligence text. * Stage 1: extract candidates → Stage 2: validate type → Stage 3: classify context → Stage 4: prioritize lookup.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/openCveDrawer.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Open a CVE in the detail drawer without reopening after the user closes * while a fetch is still in flight.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/patchReferences.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * CVE-aware remediation reference ranking. * Hostname alone does not make a vendor advisory.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/patchRemediation.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Remediation section semantics — separates vendor fix from CISA required action.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/pdfAiSummary.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Load executive summary for PDF export only (called from download handlers).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/pdfReport.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Browser-side CVE PDF reports (jsPDF + optional html2canvas capture). * Heavy PDF libs load on first export via dynamic import — not on first paint.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/personalizationCopy.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Honest personalization copy for Forge / Wallboard. * Never claim stack ranking when stack + pins are empty.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/rechartsTheme.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Pixel width for a Recharts category Y-axis from label strings (no truncation).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/referenceRows.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Semantic reference rows for analyst-readable source links.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/report.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/report.js</code> (<code>report</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/safeExternalUrl.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Allow only http(s) external links from feed/upstream data (FE-002). * Returns null for javascript:, data:, or unparseable values.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/sectionHeading.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/sectionHeading.js</code> (<code>sectionHeading</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/securityArchitecturePdf.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Security Architecture PDF export (TM-5, spec §5.16) — jsPDF on the same * pattern as huntPackPdf.js / pdfReport.js: lazy-loaded jsPDF, shared * exportCommon.js layout constants/branding, local page-layout helpers. * No new dependency, no reinvented layout helpers. * * Per-section export, not a 17-section mega-document (spec §5.16): Overview * posture snapshot, Risk register, and a selected threat scenario each get * their own "Export PDF" actio</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/severitySemantics.js` do?</h4>
+        <p class="answer"><strong>A:</strong> CVSS severity scale — shared copy for legends and portaled tooltips (E4-4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/sharedObservables.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Format shared IOC counts from correlation infrastructure rows.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/shellUrlState.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Primary navigation ↔ URL sync for analyst shell and Admin.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/stackLocalSync.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Decide whether an external `filters.stack` update should overwrite the * in-progress STACK input value. * * Debounce paths often `trim()` before committing. Replacing local "nginx " * with "nginx" resets the caret — the spacebar cursor-jump bug.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/timezone.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Fixed abbreviations (no DST).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/toggleChipSelection.js` do?</h4>
+        <p class="answer"><strong>A:</strong> If clicking the active value, clear to `cleared`; else set `next`.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/tutorial.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/tutorial.js</code> (<code>tutorial</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/typographyPrefs.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/utils/typographyPrefs.js</code> (<code>typographyPrefs</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/userPreferences.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Server-backed display preferences + timezone (Wave 2 PR 5).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/utils/userStack.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Server-backed user stack (Wave 2 PR 4 — replaces briefr_stack localStorage).</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-fe-ui.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Frontend · UI primitives</span></a><span class="spacer"></span><a class="next" href="glossary.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Glossary</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

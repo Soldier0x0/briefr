@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backend · database — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-be-db" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-be-db">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 3</span>
+        <h3>Backend · database</h3>
+        <p class="dek">All &lt;code&gt;backend/db/*.py&lt;/code&gt; modules.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/ai_operation_payloads.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Opt-in storage for failed LLM request payloads (Program E).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/ai_operations.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Persist redacted LLM operation rows (AI-1). Postgres-native with SQLite parity.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/api_metering.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Outbound API call event persistence (Q2). Failures must not break callers.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/app_settings.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Operator settings persisted in PostgreSQL/SQLite (Phase B). Keys mirror writable admin config (`config_schema.WRITABLE_CONFIG_KEYS`). Process environment variables set before startup always win over DB values.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/cache.py` do?</h4>
+        <p class="answer"><strong>A:</strong> IOC cache, feed cache, exploit storage. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/cache_retention.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Physical retention sweeps for cache and overlay tables (Sprint C3). Read paths enforce TTL via ``cached_at`` / ``fetched_at`` filters; this module deletes rows that are past their physical retention window so tables do not grow without bound. Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/config.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Owns DATABASE_URL resolution and backend detection only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/connection.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Async database connections for SQLite (default) and PostgreSQL (optional).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/correlation.py` do?</h4>
+        <p class="answer"><strong>A:</strong> OTX pulses/IOCs, correlation suppressions, prioritization, asset matching. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/cve.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE CRUD, embeddings, related-CVE lookups, and the shared change-row helpers upsert_cves needs. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/embeddings_pgvector.py` do?</h4>
+        <p class="answer"><strong>A:</strong> pgvector / embeddings helpers (E1 migrate + E2 write path). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/embeddings_search.py` do?</h4>
+        <p class="answer"><strong>A:</strong> pgvector ANN + keyword helpers for related CVEs and hybrid search (E3). Related uses stored vectors only (no request-path inference). Semantic search embeds the query once when ``EMBEDDINGS_ENABLED=1`` (design §7.1); bulk ML sweeps remain scheduler-only. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/embeddings_store.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Runtime read/write for the multi-entity ``embeddings`` table (E2/E3). Dual-writes with legacy ``cve_embeddings``. E3 related/search prefer this table (pgvector ANN on Postgres; BLOB cosine on SQLite). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/enrichment.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Enrichment: KEV/EPSS updates, change history, display-field backfills. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/errors.py` do?</h4>
+        <p class="answer"><strong>A:</strong> App-level database exceptions — dialect-neutral replacements for sqlite3/asyncpg types. Post-B Phase 2: callers outside ``db/`` must catch ``DatabaseError`` / ``DatabaseLockedError``, not ``sqlite3.*`` or ``asyncpg.*``.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/explorer.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Read-only DB explorer queries — parameterized, allowlist-only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/explorer_registry.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Read-only DB explorer allowlist — deny-by-default table registry. Only tables listed here are browsable via /api/admin/db-explorer/*. Column names, filters, and ORDER BY clauses are static; user input never becomes SQL fragments.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/init.py` do?</h4>
+        <p class="answer"><strong>A:</strong> DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): runtime fixup SQL is dialect-neutral (no placeholders); SQLite bootstrap DDL in ``init_db`` is not translated. Postgres schema is applied via Alembic in ``run_postgres_migrations``.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/integrity.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Database integrity checks — SQLite PRAGMA vs PostgreSQL pg_catalog probes.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/ioc_watchlist.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Per-user IOC watchlist (V1.5 Theme 4b).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/metadata.py` do?</h4>
+        <p class="answer"><strong>A:</strong> MITRE ATT&CK/ATLAS technique + case-study metadata, AI/ML context, analytics. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/outbound_jobs.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Read helpers for Procrastinate job rows (admin list). Postgres only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/pg_adapt.py` do?</h4>
+        <p class="answer"><strong>A:</strong> PostgreSQL SQL adaptation for legacy SQLite-oriented query strings. Internal to ``db/connection.py`` — routers and auth repos still emit ``?`` / ``datetime('now')`` SQL; ``PostgresConnection`` translates at the boundary. All ``db/*.py`` modules use native ``$n``/``?`` constants directly (Post-B Phase 1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/resource_metrics.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Resource utilization samples — storage and retention (RB-1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/search_tokens.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Search service API tokens (Embeddings E5) — bcrypt at rest, show-once plaintext. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/software_catalog.py` do?</h4>
+        <p class="answer"><strong>A:</strong> software_catalog persistence + autocomplete (Q3).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/stack_backfill.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Stack Tier-A backfill runs / checkpoints / ETA (Q4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/sync_state.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Generic sync-state key/value store plus NVD watermark helpers. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/threatfox.py` do?</h4>
+        <p class="answer"><strong>A:</strong> ThreatFox IOC mirror table (V1.5 Theme 4b).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/timeutil.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared UTC timestamp helpers for DB writes.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/txn_boundaries.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Transaction boundaries between SQL work and outbound source I/O. Postgres ``command_timeout`` (``DATABASE_POOL_COMMAND_TIMEOUT_SECONDS``) is a **single shared budget for SQL statements** on pooled connections. Feed/source HTTP timeouts are independent and intentionally different per API (CIRCL ~25s, Sploitus ~30s, ThreatFox ~120s, Nuclei/ExploitDB ~180s, …). Never nest source HTTP/DNS latency inside an open write transaction: concurrent jobs wait</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/types.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared database connection types.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/user_notifications.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Per-user in-app notifications — analyst watchlist + operator alerts.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/watchlist.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Watchlist CRUD. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/db/webhooks.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Webhook alert dedupe, delivery log, destinations. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite — no reliance on ``db/dialect.py`` regex translation for this module.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-be-core.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Backend · core &amp; infra</span></a><span class="spacer"></span><a class="next" href="iv-comp-be-feeds.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend · feeds</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

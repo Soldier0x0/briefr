@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Frontend · admin console — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-fe-admin" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-fe-admin">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 13</span>
+        <h3>Frontend · admin console</h3>
+        <p class="dek">Admin pages and shared admin composites.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/AdminPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/AdminPage.jsx</code> (<code>AdminPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/AiOperationsPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/AiOperationsPage.jsx</code> (<code>AiOperationsPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/AlertsPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/AlertsPage.jsx</code> (<code>AlertsPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/ApiKeyHealthPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/ApiKeyHealthPanel.jsx</code> (<code>ApiKeyHealthPanel</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/ApiKeysPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/ApiKeysPage.jsx</code> (<code>ApiKeysPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/AuditLogPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/AuditLogPage.jsx</code> (<code>AuditLogPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/BackupsPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/BackupsPage.jsx</code> (<code>BackupsPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/CatchupCard.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/CatchupCard.jsx</code> (<code>CatchupCard</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/ComingSoonPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/ComingSoonPage.jsx</code> (<code>ComingSoonPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/DatabasePage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/DatabasePage.jsx</code> (<code>DatabasePage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/DbExplorerPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/DbExplorerPanel.jsx</code> (<code>DbExplorerPanel</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/DisplayPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Instance typography defaults and analyst display settings admin surface.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/FeedHealthPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/FeedHealthPage.jsx</code> (<code>FeedHealthPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/IngestLogPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/IngestLogPage.jsx</code> (<code>IngestLogPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/OutboundJobsPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/OutboundJobsPanel.jsx</code> (<code>OutboundJobsPanel</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/OverviewPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/OverviewPage.jsx</code> (<code>OverviewPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/RateLimitPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/RateLimitPage.jsx</code> (<code>RateLimitPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/ResourcesPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/ResourcesPage.jsx</code> (<code>ResourcesPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/SchedulerPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/SchedulerPage.jsx</code> (<code>SchedulerPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/SearchTokensPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Embeddings E5 — Admin search service tokens (show-once plaintext on create).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/SecurityPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/SecurityPage.jsx</code> (<code>SecurityPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/SessionsPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/SessionsPage.jsx</code> (<code>SessionsPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/Sidebar.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/Sidebar.jsx</code> (<code>Sidebar</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/StatusBar.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/StatusBar.jsx</code> (<code>StatusBar</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/StoragePage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin storage metrics, backup status, and DB explorer entry point.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/WatchlistPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/WatchlistPage.jsx</code> (<code>WatchlistPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/WebhookDestinationCard.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/WebhookDestinationCard.jsx</code> (<code>WebhookDestinationCard</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/WebhooksPage.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/WebhooksPage.jsx</code> (<code>WebhooksPage</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/adminJobAck.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/adminJobAck.js</code> (<code>adminJobAck</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/aiOperationsActivityActions.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/aiOperationsActivityActions.js</code> (<code>aiOperationsActivityActions</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/catalog.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/catalog.js</code> (<code>catalog</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/catchupCopy.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/catchupCopy.js</code> (<code>catchupCopy</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/circuitLabels.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Operator-facing labels for circuit-breaker / cooldown state (UI only).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/constants.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Resolve sidebar section + page label for breadcrumbs (E8-2).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/formatters.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Scale for plotting byte series so Y-axis ticks and tooltip values share * one linear display unit. Plotting raw bytes makes Recharts pick decimal * "nice" ticks (25e6, 50e6, …) that fmtBytes turns into awkward MB labels * (23.8, 47.7, …), so a 50.3 MB point sits almost on the "47.7 MB" grid line.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/intelStatus.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Match Feed Health SigmaHQ card stale threshold (14 days).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/jobActions.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler job action matrix — shared by JobTable, Overview, Scheduler pages.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/jobStatus.js` do?</h4>
+        <p class="answer"><strong>A:</strong> True when a scheduler job is actively executing (lock held).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/needsAttention.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Aggregated operator/analyst attention items for the overview landing (E8-3). * Each item links to the admin page that best resolves it.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/outboundJobStatus.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Procrastinate queue statuses (raw DB values → operator-facing labels).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/outboundJobsCopy.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/outboundJobsCopy.js</code> (<code>outboundJobsCopy</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/rateLimits.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/rateLimits.js</code> (<code>rateLimits</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/resourceChartUtils.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Build Resource LineChart rows. HH:MM alone collides across days on * 3d/7d/30d windows and freezes the Recharts axis tooltip on the first * matching minute — use row index as the categorical X key.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/resourcesChartsRecharts.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/resourcesChartsRecharts.jsx</code> (<code>resourcesChartsRecharts</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * "You are here" trail for the admin shell (E8-2). * Admin → view mode → section → current page.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/AdminDataGrid.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Admin-styled DataGrid — thin wrapper over the shared ui/DataGrid primitive.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/AdminSkeletons.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Skeleton rows for `<tbody>` — preserves table layout while loading (E7-2).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/AsyncSection.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/AsyncSection.jsx</code> (<code>AsyncSection</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/ConfirmModal.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/ConfirmModal.jsx</code> (<code>ConfirmModal</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/DangerZone.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/DangerZone.jsx</code> (<code>DangerZone</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/DiffReviewModal.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/DiffReviewModal.jsx</code> (<code>DiffReviewModal</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/ErrorBoundary.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/ErrorBoundary.jsx</code> (<code>ErrorBoundary</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/GuardedPurgePanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/GuardedPurgePanel.jsx</code> (<code>GuardedPurgePanel</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/HelpTip.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/HelpTip.jsx</code> (<code>HelpTip</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/JobErrorsPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/JobErrorsPanel.jsx</code> (<code>JobErrorsPanel</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/JobTable.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/JobTable.jsx</code> (<code>JobTable</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/NeedsAttentionPanel.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> * Overview landing panel aggregating failures and degraded signals (E8-3).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/NotificationCenter.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin status bar — operator-scope alerts only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/OperationTracker.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/OperationTracker.jsx</code> (<code>OperationTracker</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/OpsCharts.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/OpsCharts.jsx</code> (<code>OpsCharts</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/OutboundJobStatusBadge.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/OutboundJobStatusBadge.jsx</code> (<code>OutboundJobStatusBadge</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/RestartBanner.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/RestartBanner.jsx</code> (<code>RestartBanner</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/StatCard.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/StatCard.jsx</code> (<code>StatCard</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/StatusLegend.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/StatusLegend.jsx</code> (<code>StatusLegend</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/ToggleSwitch.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/ToggleSwitch.jsx</code> (<code>ToggleSwitch</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/backupChartUtils.js` do?</h4>
+        <p class="answer"><strong>A:</strong> * Short X-axis tick for a backup archive. Prefer the timestamp embedded in * the filename so adjacent archives stay visually distinct.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/shared/opsChartsRecharts.jsx` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>frontend/src/pages/admin/shared/opsChartsRecharts.jsx</code> (<code>opsChartsRecharts</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `frontend/src/pages/admin/toastCopy.js` do?</h4>
+        <p class="answer"><strong>A:</strong> Lifecycle-aware operator/analyst toast copy for scheduler actions.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-fe-forge.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Frontend · Forge &amp; wallboard</span></a><span class="spacer"></span><a class="next" href="iv-comp-fe-ui.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Frontend · UI primitives</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

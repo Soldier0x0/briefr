@@ -11,6 +11,7 @@ from category_utils import CATEGORY_ORDER, ensure_categories
 from interview_qa_data import SEGMENTS as BASE_SEGMENTS
 from interview_qa_extra import merge_segments, wire_prev_next
 from interview_qa_gap_fill import merge_gap_questions
+from interview_qa_components import COMPONENT_SEGMENTS
 
 ROOT = Path(__file__).resolve().parent
 GUIDE = ROOT / "study-guide"
@@ -64,37 +65,81 @@ INTERVIEW_CSS = """
 """
 
 
-def build_toc_links(segments: list[dict]) -> list[tuple[str, str]]:
-    links: list[tuple[str, str]] = []
+def split_segments(segments: list[dict]) -> tuple[list[dict], list[dict]]:
+    thematic: list[dict] = []
+    components: list[dict] = []
     for seg in segments:
+        if seg["slug"].startswith("iv-comp-"):
+            components.append(seg)
+        else:
+            thematic.append(seg)
+    return thematic, components
+
+
+def build_toc_links(segments: list[dict]) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    thematic_links: list[tuple[str, str]] = []
+    component_links: list[tuple[str, str]] = []
+    thematic, components = split_segments(segments)
+    for seg in thematic:
         if seg["slug"] == "iv-part":
-            links.append((f"{seg['slug']}.html", "How to use this section"))
+            thematic_links.append((f"{seg['slug']}.html", "How to use this section"))
             continue
         num = seg["chapter_num"].replace("Interview · ", "").strip()
-        links.append((f"{seg['slug']}.html", f"{num} · {seg['title']}"))
-    return links
+        thematic_links.append((f"{seg['slug']}.html", f"{num} · {seg['title']}"))
+    for seg in components:
+        num = seg["chapter_num"].replace("Components · ", "").strip()
+        component_links.append((f"{seg['slug']}.html", f"{num} · {seg['title']}"))
+    return thematic_links, component_links
 
 
-def toc_block(links: list[tuple[str, str]]) -> str:
-    rows = "\n".join(
+def toc_block(
+    thematic_links: list[tuple[str, str]],
+    component_links: list[tuple[str, str]],
+) -> str:
+    t_rows = "\n".join(
         f'        <a class="toc-link toc-sub" href="{href}">{label}</a>'
-        for href, label in links
+        for href, label in thematic_links
+    )
+    c_rows = "\n".join(
+        f'        <a class="toc-link toc-sub" href="{href}">{label}</a>'
+        for href, label in component_links
     )
     return f"""
       <div class="toc-group">
         <div class="toc-group-title">Part VII · Interview preparation</div>
-{rows}
+{t_rows}
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+{c_rows}
       </div>
 """
 
 
-def _inject_toc(toc_inner: str, links: list[tuple[str, str]]) -> str:
-    if "Part VII · Interview preparation" in toc_inner:
+def _strip_interview_toc(toc_inner: str) -> str:
+    marker = '      <div class="toc-group">\n        <div class="toc-group-title">Reference</div>'
+    if "Part VII · Interview preparation" not in toc_inner:
         return toc_inner
-    marker = '<div class="toc-group-title">Reference</div>'
-    return toc_inner.replace(
-        f'      <div class="toc-group">\n        {marker}',
-        toc_block(links) + f'\n      <div class="toc-group">\n        {marker}',
+    head, _, tail = toc_inner.partition(marker)
+    head = re.sub(
+        r"\n      <div class=\"toc-group\">\n        <div class=\"toc-group-title\">Part VII.*$",
+        "",
+        head,
+        flags=re.DOTALL,
+    )
+    return head + marker + tail
+
+
+def _inject_toc(
+    toc_inner: str,
+    thematic_links: list[tuple[str, str]],
+    component_links: list[tuple[str, str]],
+) -> str:
+    marker = '      <div class="toc-group">\n        <div class="toc-group-title">Reference</div>'
+    cleaned = _strip_interview_toc(toc_inner)
+    return cleaned.replace(
+        marker,
+        toc_block(thematic_links, component_links) + "\n" + marker,
     )
 
 
@@ -135,9 +180,14 @@ def _shell_parts() -> tuple[str, str, str]:
     return m.group(1), m.group(2), m.group(3)
 
 
-def render_page(seg: dict, toc_inner: str, toc_links: list[tuple[str, str]]) -> str:
+def render_page(
+    seg: dict,
+    toc_inner: str,
+    thematic_links: list[tuple[str, str]],
+    component_links: list[tuple[str, str]],
+) -> str:
     head, _, main_open = _shell_parts()
-    toc = _inject_toc(toc_inner, toc_links)
+    toc = _inject_toc(toc_inner, thematic_links, component_links)
     title = html.escape(seg["title"])
     page_title = f"{title} — BRIEFR Study Guide"
     chapter = html.escape(seg.get("chapter_num", "Interview"))
@@ -210,19 +260,19 @@ def patch_nav(path: Path, *, prev: tuple[str, str] | None, next_: tuple[str, str
     path.write_text(text, encoding="utf-8")
 
 
-def patch_all_tocs(toc_links: list[tuple[str, str]]) -> None:
-    block = toc_block(toc_links)
+def patch_all_tocs(
+    thematic_links: list[tuple[str, str]],
+    component_links: list[tuple[str, str]],
+) -> None:
+    block = toc_block(thematic_links, component_links)
+    marker = '      <div class="toc-group">\n        <div class="toc-group-title">Reference</div>'
     for path in PAGES.glob("*.html"):
         text = path.read_text(encoding="utf-8")
-        if "Part VII · Interview preparation" in text:
-            continue
-        marker = '<div class="toc-group-title">Reference</div>'
         if marker not in text:
             continue
-        text = text.replace(
-            f'      <div class="toc-group">\n        {marker}',
-            block + f'\n      <div class="toc-group">\n        {marker}',
-        )
+        if "Part VII · Interview preparation" in text:
+            text = _strip_interview_toc(text)
+        text = text.replace(marker, block + "\n" + marker)
         path.write_text(text, encoding="utf-8")
 
 
@@ -261,12 +311,33 @@ def prepare_segments() -> list[dict]:
         seg["chapter_num"] = f"Interview · {chapter_idx}"
         if seg.get("questions"):
             seg["questions"] = ensure_categories(seg["questions"])
+
+    comp_wired: list[dict] = []
+    for i, seg in enumerate(COMPONENT_SEGMENTS):
+        row = dict(seg)
+        row["chapter_num"] = f"Components · {i + 1}"
+        row["questions"] = ensure_categories(row.get("questions", []))
+        comp_wired.append(row)
+    if comp_wired:
+        wired[-1]["next"] = (f"{comp_wired[0]['slug']}.html", comp_wired[0]["title"])
+        comp_wired[0]["prev"] = (f"{wired[-1]['slug']}.html", wired[-1]["title"])
+        for i in range(1, len(comp_wired)):
+            comp_wired[i]["prev"] = (
+                f"{comp_wired[i - 1]['slug']}.html",
+                comp_wired[i - 1]["title"],
+            )
+            comp_wired[i - 1]["next"] = (
+                f"{comp_wired[i]['slug']}.html",
+                comp_wired[i]["title"],
+            )
+        comp_wired[-1]["next"] = ("glossary.html", "Glossary")
+        wired.extend(comp_wired)
     return wired
 
 
 def main() -> None:
     segments = prepare_segments()
-    toc_links = build_toc_links(segments)
+    thematic_links, component_links = build_toc_links(segments)
     _, toc_inner, _ = _shell_parts()
 
     css_path = ASSETS / "book.css"
@@ -278,10 +349,13 @@ def main() -> None:
 
     for seg in segments:
         out = PAGES / f"{seg['slug']}.html"
-        out.write_text(render_page(seg, toc_inner, toc_links), encoding="utf-8")
+        out.write_text(
+            render_page(seg, toc_inner, thematic_links, component_links),
+            encoding="utf-8",
+        )
         print("wrote", out.name)
 
-    patch_all_tocs(toc_links)
+    patch_all_tocs(thematic_links, component_links)
 
     first, last = segments[0], segments[-1]
     patch_nav(PAGES / "roadmap-future.html", prev=None, next_=(f"{first['slug']}.html", first["title"]))

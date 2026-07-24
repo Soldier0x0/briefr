@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backend · scoring &amp; detection — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-be-scoring-detection" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-be-scoring-detection">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 6</span>
+        <h3>Backend · scoring &amp; detection</h3>
+        <p class="dek">Scoring, detection, matching, enrichment, brief.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/brief/service.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Server-computed morning brief (read-path only, no ingest).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/artifact_extract.py` do?</h4>
+        <p class="answer"><strong>A:</strong> LLM artifact extraction for DetectionContext (Track K4). Extracts structured ``{paths, params, keywords, method}`` artifacts from CVE description text and exploit metadata. Scheduler-side only — never on the request path. Uses the multi-provider LLM router (Groq → Cerebras → OpenRouter → Gemini).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/backlog.py` do?</h4>
+        <p class="answer"><strong>A:</strong> KEV-driven detection backlog (V1.5 Theme 3). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/class_queries.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Class-keyed SIEM query and log-pattern templates (Sprint D3). Parallel to CWE Sigma templates — used when no ATT&CK technique is mapped.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/class_router.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Unified detection class router (Sprint D3). Single resolution path for CWE/ATT&CK → stable class slug used by ``sigma_generator``, ``siem_queries``, and log-pattern output.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/composer.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Evidence-composed detection pack (DC-1) + emission (DC-2). Retrieves CVE-grounded community rules, Nuclei/context artifacts, and YARA observables, then emits Sigma/SIEM/YARA from that pack. No LLM.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/context.py` do?</h4>
+        <p class="answer"><strong>A:</strong> DetectionContext scaffold (Sprint D2). Static CVE envelope cached in ``feed_cache`` for scheduler-built detection metadata. No LLM on this path — D4 adds artifact injection later.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/context_llm_sync.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler-side LLM enrichment of DetectionContext artifacts (Track K4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/context_nuclei_sync.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler-side Nuclei artifact enrichment for DetectionContext (Sprint D4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/context_sync.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Scheduler-side DetectionContext backfill (Sprint D2). Populates ``feed_cache`` keys ``detection_ctx:{cve_id}`` from CVE row metadata. Disabled by default; never runs on the request path.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/nuclei_parser.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Deterministic Nuclei template YAML parser (Sprint D4). Extracts ``{paths, params, keywords, method}`` artifacts from Nuclei HTTP blocks without an LLM. Scheduler-side only.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/rule_sources.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Detection rule source discovery. Priority: SigmaHQ community rules → Elastic detection-rules → optional BRIEFR template (only when no community hit and not generic — see composer). All results cached 24 hours per CVE via feed_cache table. GitHub token is optional but recommended (env: GITHUB_TOKEN). Gracefully returns empty lists if the API is unavailable or rate-limited. SigmaHQ rules are under Detection Rule License (DRL) 1.1 — commercial use i</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/siem_queries.py` do?</h4>
+        <p class="answer"><strong>A:</strong> SIEM quick-search query templates for BRIEFR detection engineering. Covers Elastic KQL, Splunk SPL, Microsoft Sentinel KQL, and QRadar AQL. Placeholders use {{FIELD}} notation — analysts replace with actual field names. Common field name variations documented per platform in each query's `notes`.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/sigma_generator.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Template-based Sigma rule generator for BRIEFR. One template per major ATT&CK tactic family. Generated rules are marked experimental with a BRIEFR confidence note.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/sigmahq_index.py` do?</h4>
+        <p class="answer"><strong>A:</strong> SigmaHQ local Postgres rule index — download, parse, upsert, watermark. Scheduler job ``sigmahq_index_sync`` (U2) calls :func:`sync_sigmahq_index`. Detect/Forge read paths (U3/U4) call :func:`find_index_rules_for_cve`. Postgres-native only. No LLM. Sigma rules only (DRL-1.1 attribution).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/detection/yara_generator.py` do?</h4>
+        <p class="answer"><strong>A:</strong> YARA rule templates from OTX pulse file hashes (hash-led hunts).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/enrichment/cve.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Derive display fields from NVD/KEV/OSV source data (no LLM).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/enrichment/domain_validation.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Validate DNS hostnames for IOC domain lookups (ASCII + IDN/punycode).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/enrichment/ioc.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/enrichment/ioc.py</code> (<code>ioc</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/matching/cpe.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CPE-based asset ↔ CVE version matching.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/asset_match.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Asset profile matching for legacy Risk v1.1b and environment relevance inputs.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/environment.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Environment Relevance tiers v1.0 — categorical, never folded into Threat (ADR-002).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/priority.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Operational Priority v1.2 — rule-based P1–P4 bands (ADR-002 + W3 EPSS + W5 exposure).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/risk.py` do?</h4>
+        <p class="answer"><strong>A:</strong> BRIEFR Risk Score v1.1b — six weighted components including Momentum.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/ssvc.py` do?</h4>
+        <p class="answer"><strong>A:</strong> SSVC outcome computation (Act/Attend/Track) parallel to OP — exposed on <code>/risk</code> as <code>ssvc.outcome</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scoring/threat.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Threat Score v1.0 — asset-independent exploitation credibility (ADR-002).</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-be-correlation.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Backend · correlation</span></a><span class="spacer"></span><a class="next" href="iv-comp-be-routers.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend · routers</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backend · routers — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-be-routers" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-be-routers">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 7</span>
+        <h3>Backend · routers</h3>
+        <p class="dek">All FastAPI router modules (analyst + admin).</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/_validators.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/routers/_validators.py</code> (<code>_validators</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/ai_ops.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — AI operations and retrieval health. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/catchup.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — Catch-up mode controls. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/config.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — operator config GET/POST/apply-all. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/data_ops.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — watchlist, hunt packs, IOC cache admin. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/database.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — database engine and migration. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/diagnostics.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — logs, security, restart, audit, diagnostics, onboarding, ratelimit. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/feeds.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — feed circuit breaker and incident refresh. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/helpers.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — shared helpers and constants. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/jobs.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — scheduler jobs and outbound queue. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/router.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — shared APIRouter. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/storage.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — backups, storage, DB explorer, resources. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/system.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — system overview and correlation status. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/tokens.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — API keys health, search tokens, notifications, typography. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/webhooks.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — webhook test and destinations CRUD. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/admin/webhooks_logs.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin dashboard API — webhook delivery logs and health. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/atlas.py` do?</h4>
+        <p class="answer"><strong>A:</strong> MITRE ATLAS + Case Studies endpoints, moved verbatim from main.py (V1.2 §5.2 router split, phase 2). No behavior change; the one inline import (`fetch_all_incident_news`) was hoisted to module top per house convention. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/auth.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Built-in app login (decision 2026-06-11): /api/auth/login, /logout, /refresh, /me. The sole auth mechanism — the legacy shared admin-key header was removed in Sprint A0 (dependencies.require_admin enforces session + role). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/brief.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Morning brief endpoint (V1.3 Theme 1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/config.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Owns GET /api/config/risk (scoring weight display); not admin writable keys. GET /api/config/risk → weights dict keyed by component, version string. The frontend (frontend/src/scoring/riskScore.js) fetches weights for display only; the canonical score is computed server-side via POST /api/cves/{cve_id}/risk. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/correlation.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Correlation cluster list (Phase 4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/changes.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/common.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/detail.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/intel.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/list.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/cves/models.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/detection_backlog.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Detection backlog API (V1.5 Theme 3). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/forge.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Forge MVP (Beta V1.3 Theme 3) — detection engineering inside the intel pane. Endpoints: - GET /api/forge/coverage — MITRE coverage map: stack profile × techniques × rule status (community / yours / gap) - GET /api/hunt-packs/{technique_id} — hunt pack content for one technique (saved packs, template baseline, linked CVEs) - POST /api/hunt-packs/generate — generate + persist a CVE→pack link Everything is local and deterministic: hunt-pack generate</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/health.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Health endpoint, moved verbatim from main.py (V1.2 §5.2 router split, phase 2). No behavior change. `format_time_in_tz` lives here because `/api/health` is its primary consumer; `/api/time` (routers/meta.py) imports it from this module. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/ioc.py` do?</h4>
+        <p class="answer"><strong>A:</strong> IOC lookup + OTX pulse IOC endpoints, moved verbatim from main.py (V1.2 §5.2 router split, phase 2). The two inline imports (`greynoise_for_ip`, `lookup_otx_for_ioc`) were hoisted to module top per house convention. One robustness fix on top of the verbatim move (review finding on PR #95): the cached-hit path now commits, so the feed_cache writes made by on-demand GreyNoise/OTX enrichment are no longer rolled back on connection close. Copyright ©</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/me.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Per-user stack profile — server-backed replacement for briefr_stack localStorage. Wave 2 PR 3: terms + optional asset profile JSON keyed by user_id. Frontend migration to this API lands in Wave 2 PR 4. Wave 2 PR 5: display preferences + timezone via GET/PATCH /api/me/preferences.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/meta.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Meta endpoints (version/time/usage/AI summaries), moved verbatim from main.py (V1.2 §5.2 router split, phase 3). No behavior change. Two sub-routers because the meta routes were interleaved with the CVE group in the pre-split main.py — main.py includes them in the exact pre-split sequence so the OpenAPI route list stays byte-identical: - info_router: GET /api/version, GET /api/time - router: /api/usage/ioc, /api/ai/summary (POST+GET), /api/invest</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/notifications_me.py` do?</h4>
+        <p class="answer"><strong>A:</strong> In-app notification inbox for the signed-in user.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/proof.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Rule proof bench API (V1.5 Theme 2). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/refresh.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Manual refresh endpoints (admin-gated), moved from main.py (V1.2 §5.2 router split). One robustness fix on top of the verbatim move: spawned ingest tasks are kept strongly referenced (review finding on PR #94). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/search.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Semantic / hybrid CVE search API (Embeddings E3). ``GET /api/search/semantic`` — design §7.1. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/stack_catalog.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Software catalog autocomplete (Q3) + Tier A stack backfill (Q4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/threat_model.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Threat model read API (V1.5 Theme 1). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/wallboard.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Wallboard read-only API (Beta V1.4 Theme 4). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/routers/watchlist.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE watchlist — pin / snooze (Beta V1.3 Theme 1). Single-user for now (no user_id column). Built-in app login will add per-user keying later (ROADMAP amendment 2026-06-11). Endpoints: - GET /api/watchlist — active entries (pins + unexpired snoozes) - POST /api/watchlist — pin or snooze a CVE - DELETE /api/watchlist/snoozes — clear all snoozed rows (UI migration) - DELETE /api/watchlist/{cve_id} — remove from watchlist Copyright © 2026 Sai Harsha </p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-be-scoring-detection.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Backend · scoring &amp; detection</span></a><span class="spacer"></span><a class="next" href="iv-comp-be-ai-ops.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend · AI, ML &amp; operations</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

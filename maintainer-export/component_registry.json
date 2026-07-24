@@ -1,0 +1,2707 @@
+[
+  {
+    "kind": "backend",
+    "path": "backend/ai/gemini_client.py",
+    "blurb": "Google Gemini generateContent client."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/groq_config.py",
+    "blurb": "Shared Groq API settings for all BRIEFR LLM call sites."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/llm_pacing.py",
+    "blurb": "Shared LLM provider pacing \u2014 RPM/TPM headroom for outbound API queue spacing."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/llm_payload.py",
+    "blurb": "Outbound LLM request payload validation \u2014 skip API calls when there is nothing to send."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/llm_router.py",
+    "blurb": "Task-based multi-provider LLM router with failover (Track K2). Failover order per task \u2014 not round-robin. One attempt per provider per call; never parallel-call the same CVE on multiple providers."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/llm_session.py",
+    "blurb": "Per-job LLM provider session \u2014 skip providers that returned empty after failover."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/model_catalog.py",
+    "blurb": "Model catalog SSOT for LLM task \u2192 provider failover chains (AI-1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/openai_chat.py",
+    "blurb": "OpenAI-compatible chat completion helper (Groq, Cerebras, OpenRouter)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/operations_admin.py",
+    "blurb": "Admin payloads for AI Operations (AI-2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/operations_recorder.py",
+    "blurb": "Record LLM completion attempts to ai_operations (AI-1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/quota.py",
+    "blurb": "Advisory LLM provider quota snapshots from rate-limit response headers."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ai/summary.py",
+    "blurb": "Executive summary for PDF reports \u2014 multi-provider LLM router, template last. Called only when an analyst explicitly exports a PDF (via API from the client)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/api_metering.py",
+    "blurb": "Q2 API metering \u2014 persists every <code>resilient_request</code> attempt to <code>api_call_events</code>."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/api_queue.py",
+    "blurb": "Global outbound API request queue \u2014 wait for slots, never drop on rate limits."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/api_queue_operations.py",
+    "blurb": "Controlled operation labels and safe context for API queue task metadata."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/auth/passwords.py",
+    "blurb": "Password hashing for built-in app login (decision 2026-06-11). Plain `bcrypt` (not passlib \u2014 unmaintained, broken compat with bcrypt>=4.1). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/auth/repo.py",
+    "blurb": "DB access for built-in app login: users + sessions. Mirrors the free-function-taking-a-db-connection style used throughout database.py. Callers own the connection lifecycle (acquire, commit, close). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/auth/tokens.py",
+    "blurb": "JWT access tokens + opaque refresh tokens for built-in app login. Access tokens are stateless JWTs (cheap per-request verification). Refresh tokens are opaque random strings; only their SHA-256 hash is ever persisted (see auth/repo.py's `sessions` table) so a DB leak doesn't hand out usable tokens. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/auth/usernames.py",
+    "blurb": "Username validation for built-in app login. Usernames are normalized to lowercase on storage and lookup. Rules are intentionally strict to reduce homograph confusion and keep audit logs readable. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/auth_middleware.py",
+    "blurb": "Session gate on analyst <code>/api/*</code> routes; validates <code>briefr_at</code> cookie before handlers (#441)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/backup/__main__.py",
+    "blurb": "CLI: python -m backup [run|list|restore|verify|ensure|keygen]"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/backup/manager.py",
+    "blurb": "Database backup manager for BRIEFR (SQLite and PostgreSQL). SQLite: - Online backup via sqlite3.Connection.backup() (WAL-safe) - PRAGMA integrity_check before and after each backup - Automatic restore on startup when the live DB fails integrity check PostgreSQL (when DATABASE_URL is set): - pg_dump custom-format archive (briefr.pgdump inside the tarball) - pg_restore on manual restore (--clean --if-exists) Both backends: - Tar archives with optio"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/backup/postgres_util.py",
+    "blurb": "PostgreSQL backup helpers (pg_dump / pg_restore) for backup.manager."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/brief/service.py",
+    "blurb": "Server-computed morning brief (read-path only, no ingest)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/catchup_mode.py",
+    "blurb": "Product module <code>backend/catchup_mode.py</code> (<code>catchup_mode</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/config_schema.py",
+    "blurb": "Owns WRITABLE_CONFIG_KEYS schema for admin operator settings (single source). Replaces the three separately-maintained sets that used to live in routers/admin.py (WRITABLE_CONFIG_KEYS, INTEGER_KEYS, RESTART_REQUIRED_KEYS) with one schema carrying type, bounds, help text, and section grouping \u2014 so the frontend can render labels/help text and pre-validate without a second hand-maintained copy of the same key list, and adding a new writable key is a"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/attribution.py",
+    "blurb": "Alias-aware attribution conflict detection (CORR-PR-11)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/campaigns.py",
+    "blurb": "Pulse-centric campaign clustering (Correlation v2 Phase 1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/clusters.py",
+    "blurb": "Phase 4 cluster list for brief/feed consumers."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/confidence.py",
+    "blurb": "Deterministic confidence rules and receipt builders (Correlation v2 Phase 2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/config.py",
+    "blurb": "Correlation v2 configuration \u2014 env-backed defaults."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/confirm.py",
+    "blurb": "Enrichment confirmation from cached IOC lookups (Correlation v2 Phase 2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/engine.py",
+    "blurb": "BRIEFR Correlation Engine v2 CVE correlation analysis \u2014 DB-backed, no external API calls at on-demand time (external data is pre-cached by the nightly OTX job). Campaigns \u2014 pulse-seeded clusters expanded on-demand by shared strong IOCs (ioc_graph.py); see correlation/campaigns.py. Infrastructure \u2014 weaker shared-IOC peers that don't qualify for a campaign. Actor/Sector \u2014 ATT&CK groups using this CVE's techniques vs user sector. Temporal \u2014 vendor C"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/feedback.py",
+    "blurb": "Analyst confirm / reject feedback for correlation findings (CORR-PR-12)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/freshness.py",
+    "blurb": "Freshness decay helpers \u2014 read-time only (CORR-PR-8)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/hub_suppress.py",
+    "blurb": "Hub CVE and mega-campaign suppression (v2 Phase 1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/ioc_graph.py",
+    "blurb": "Multi-IOC infrastructure edges between CVEs (Correlation v2 Phase 2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/ioc_normalize.py",
+    "blurb": "Canonical IOC normalization for correlation ingest (v2 Phase 1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/lifecycle.py",
+    "blurb": "Campaign lifecycle computation (Correlation v2 \u00a724.10, ADR-002 C-Evolve-1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/local.py",
+    "blurb": "Local boosters (no OTX required) and stack gating \u2014 Correlation v2 Phase 3 subset."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/metrics.py",
+    "blurb": "Nightly correlation quality metrics snapshot (CORR-PR-13 / spec \u00a713)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/narrative.py",
+    "blurb": "Analyst-facing correlation narrative helpers (Correlation v2 Phase 2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/priority.py",
+    "blurb": "Combined correlation priority score (Correlation v3). Mirrors scoring/risk.py's additive-capped-contribution model: each correlation signal (campaign, infrastructure, actor, temporal) contributes up to a fixed point cap, scaled by its own confidence/strength, summed and capped at 100. Lets an analyst triage from one ranked number instead of four independent arrays."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/pulse_families.py",
+    "blurb": "Pulse family clustering for campaign dedup (CORR-PR-9)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/status.py",
+    "blurb": "Phase 5 operator diagnostics for correlation engine."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/suppressions.py",
+    "blurb": "Analyst dismiss / suppress feedback for correlation findings."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/correlation/threatfox_corroboration.py",
+    "blurb": "ThreatFox read-time corroboration for OTX IOC edges (CORR-PR-10)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/database.py",
+    "blurb": "Backward-compatibility shim \u2014 import from db.* submodules directly for new code. database.py was split into backend/db/ (Phase 3 refactor). Every function moved verbatim; this file only re-exports so the 35+ existing `from database import ...` call sites keep working unchanged. DB_PATH stays defined here (not delegated to a submodule): db/connection.py does a lazy `import database; database.DB_PATH` specifically so per-test `monkeypatch.setattr(\""
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/ai_operation_payloads.py",
+    "blurb": "Opt-in storage for failed LLM request payloads (Program E)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/ai_operations.py",
+    "blurb": "Persist redacted LLM operation rows (AI-1). Postgres-native with SQLite parity."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/api_metering.py",
+    "blurb": "Outbound API call event persistence (Q2). Failures must not break callers."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/app_settings.py",
+    "blurb": "Operator settings persisted in PostgreSQL/SQLite (Phase B). Keys mirror writable admin config (`config_schema.WRITABLE_CONFIG_KEYS`). Process environment variables set before startup always win over DB values."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/cache.py",
+    "blurb": "IOC cache, feed cache, exploit storage. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/cache_retention.py",
+    "blurb": "Physical retention sweeps for cache and overlay tables (Sprint C3). Read paths enforce TTL via ``cached_at`` / ``fetched_at`` filters; this module deletes rows that are past their physical retention window so tables do not grow without bound. Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/config.py",
+    "blurb": "Owns DATABASE_URL resolution and backend detection only."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/connection.py",
+    "blurb": "Async database connections for SQLite (default) and PostgreSQL (optional)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/correlation.py",
+    "blurb": "OTX pulses/IOCs, correlation suppressions, prioritization, asset matching. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/cve.py",
+    "blurb": "CVE CRUD, embeddings, related-CVE lookups, and the shared change-row helpers upsert_cves needs. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/embeddings_pgvector.py",
+    "blurb": "pgvector / embeddings helpers (E1 migrate + E2 write path). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/embeddings_search.py",
+    "blurb": "pgvector ANN + keyword helpers for related CVEs and hybrid search (E3). Related uses stored vectors only (no request-path inference). Semantic search embeds the query once when ``EMBEDDINGS_ENABLED=1`` (design \u00a77.1); bulk ML sweeps remain scheduler-only. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/embeddings_store.py",
+    "blurb": "Runtime read/write for the multi-entity ``embeddings`` table (E2/E3). Dual-writes with legacy ``cve_embeddings``. E3 related/search prefer this table (pgvector ANN on Postgres; BLOB cosine on SQLite). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/enrichment.py",
+    "blurb": "Enrichment: KEV/EPSS updates, change history, display-field backfills. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/errors.py",
+    "blurb": "App-level database exceptions \u2014 dialect-neutral replacements for sqlite3/asyncpg types. Post-B Phase 2: callers outside ``db/`` must catch ``DatabaseError`` / ``DatabaseLockedError``, not ``sqlite3.*`` or ``asyncpg.*``."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/explorer.py",
+    "blurb": "Read-only DB explorer queries \u2014 parameterized, allowlist-only."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/explorer_registry.py",
+    "blurb": "Read-only DB explorer allowlist \u2014 deny-by-default table registry. Only tables listed here are browsable via /api/admin/db-explorer/*. Column names, filters, and ORDER BY clauses are static; user input never becomes SQL fragments."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/init.py",
+    "blurb": "DB init/bootstrap: get_db, init_db, run_postgres_migrations. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): runtime fixup SQL is dialect-neutral (no placeholders); SQLite bootstrap DDL in ``init_db`` is not translated. Postgres schema is applied via Alembic in ``run_postgres_migrations``."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/integrity.py",
+    "blurb": "Database integrity checks \u2014 SQLite PRAGMA vs PostgreSQL pg_catalog probes."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/ioc_watchlist.py",
+    "blurb": "Per-user IOC watchlist (V1.5 Theme 4b)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/metadata.py",
+    "blurb": "MITRE ATT&CK/ATLAS technique + case-study metadata, AI/ML context, analytics. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/outbound_jobs.py",
+    "blurb": "Read helpers for Procrastinate job rows (admin list). Postgres only."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/pg_adapt.py",
+    "blurb": "PostgreSQL SQL adaptation for legacy SQLite-oriented query strings. Internal to ``db/connection.py`` \u2014 routers and auth repos still emit ``?`` / ``datetime('now')`` SQL; ``PostgresConnection`` translates at the boundary. All ``db/*.py`` modules use native ``$n``/``?`` constants directly (Post-B Phase 1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/resource_metrics.py",
+    "blurb": "Resource utilization samples \u2014 storage and retention (RB-1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/search_tokens.py",
+    "blurb": "Search service API tokens (Embeddings E5) \u2014 bcrypt at rest, show-once plaintext. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/software_catalog.py",
+    "blurb": "software_catalog persistence + autocomplete (Q3)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/stack_backfill.py",
+    "blurb": "Stack Tier-A backfill runs / checkpoints / ETA (Q4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/sync_state.py",
+    "blurb": "Generic sync-state key/value store plus NVD watermark helpers. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/threatfox.py",
+    "blurb": "ThreatFox IOC mirror table (V1.5 Theme 4b)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/timeutil.py",
+    "blurb": "Shared UTC timestamp helpers for DB writes."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/txn_boundaries.py",
+    "blurb": "Transaction boundaries between SQL work and outbound source I/O. Postgres ``command_timeout`` (``DATABASE_POOL_COMMAND_TIMEOUT_SECONDS``) is a **single shared budget for SQL statements** on pooled connections. Feed/source HTTP timeouts are independent and intentionally different per API (CIRCL ~25s, Sploitus ~30s, ThreatFox ~120s, Nuclei/ExploitDB ~180s, \u2026). Never nest source HTTP/DNS latency inside an open write transaction: concurrent jobs wait"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/types.py",
+    "blurb": "Shared database connection types."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/user_notifications.py",
+    "blurb": "Per-user in-app notifications \u2014 analyst watchlist + operator alerts."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/watchlist.py",
+    "blurb": "Watchlist CRUD. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/db/webhooks.py",
+    "blurb": "Webhook alert dedupe, delivery log, destinations. Split from database.py (Phase 3). Postgres-native (Post-B Phase 1): queries use explicit ``$n`` placeholders on Postgres and ``?`` on SQLite \u2014 no reliance on ``db/dialect.py`` regex translation for this module."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/dependencies.py",
+    "blurb": "Shared route dependencies (V1.2 \u00a75.2 router split). Session/role gates and the audit-log writer used by the admin/refresh routes. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/destructive_actions.py",
+    "blurb": "Single source of truth for confirm-gated destructive admin actions. Generalizes the confirm-text pattern that previously lived only in routers/admin.py's storage-purge map (_PURGE_CONFIRM_MAP), so every destructive action \u2014 not just storage purges \u2014 is gated the same way and the frontend can render confirm dialogs generically via GET /api/admin/destructive-actions instead of hardcoding confirm words per page. Copyright \u00a9 2026 Sai Harsha Vardhan S"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/artifact_extract.py",
+    "blurb": "LLM artifact extraction for DetectionContext (Track K4). Extracts structured ``{paths, params, keywords, method}`` artifacts from CVE description text and exploit metadata. Scheduler-side only \u2014 never on the request path. Uses the multi-provider LLM router (Groq \u2192 Cerebras \u2192 OpenRouter \u2192 Gemini)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/backlog.py",
+    "blurb": "KEV-driven detection backlog (V1.5 Theme 3). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/class_queries.py",
+    "blurb": "Class-keyed SIEM query and log-pattern templates (Sprint D3). Parallel to CWE Sigma templates \u2014 used when no ATT&CK technique is mapped."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/class_router.py",
+    "blurb": "Unified detection class router (Sprint D3). Single resolution path for CWE/ATT&CK \u2192 stable class slug used by ``sigma_generator``, ``siem_queries``, and log-pattern output."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/composer.py",
+    "blurb": "Evidence-composed detection pack (DC-1) + emission (DC-2). Retrieves CVE-grounded community rules, Nuclei/context artifacts, and YARA observables, then emits Sigma/SIEM/YARA from that pack. No LLM."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/context.py",
+    "blurb": "DetectionContext scaffold (Sprint D2). Static CVE envelope cached in ``feed_cache`` for scheduler-built detection metadata. No LLM on this path \u2014 D4 adds artifact injection later."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/context_llm_sync.py",
+    "blurb": "Scheduler-side LLM enrichment of DetectionContext artifacts (Track K4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/context_nuclei_sync.py",
+    "blurb": "Scheduler-side Nuclei artifact enrichment for DetectionContext (Sprint D4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/context_sync.py",
+    "blurb": "Scheduler-side DetectionContext backfill (Sprint D2). Populates ``feed_cache`` keys ``detection_ctx:{cve_id}`` from CVE row metadata. Disabled by default; never runs on the request path."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/nuclei_parser.py",
+    "blurb": "Deterministic Nuclei template YAML parser (Sprint D4). Extracts ``{paths, params, keywords, method}`` artifacts from Nuclei HTTP blocks without an LLM. Scheduler-side only."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/rule_sources.py",
+    "blurb": "Detection rule source discovery. Priority: SigmaHQ community rules \u2192 Elastic detection-rules \u2192 optional BRIEFR template (only when no community hit and not generic \u2014 see composer). All results cached 24 hours per CVE via feed_cache table. GitHub token is optional but recommended (env: GITHUB_TOKEN). Gracefully returns empty lists if the API is unavailable or rate-limited. SigmaHQ rules are under Detection Rule License (DRL) 1.1 \u2014 commercial use i"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/siem_queries.py",
+    "blurb": "SIEM quick-search query templates for BRIEFR detection engineering. Covers Elastic KQL, Splunk SPL, Microsoft Sentinel KQL, and QRadar AQL. Placeholders use {{FIELD}} notation \u2014 analysts replace with actual field names. Common field name variations documented per platform in each query's `notes`."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/sigma_generator.py",
+    "blurb": "Template-based Sigma rule generator for BRIEFR. One template per major ATT&CK tactic family. Generated rules are marked experimental with a BRIEFR confidence note."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/sigmahq_index.py",
+    "blurb": "SigmaHQ local Postgres rule index \u2014 download, parse, upsert, watermark. Scheduler job ``sigmahq_index_sync`` (U2) calls :func:`sync_sigmahq_index`. Detect/Forge read paths (U3/U4) call :func:`find_index_rules_for_cve`. Postgres-native only. No LLM. Sigma rules only (DRL-1.1 attribution)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/detection/yara_generator.py",
+    "blurb": "YARA rule templates from OTX pulse file hashes (hash-led hunts)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/diagnostics/support_pack.py",
+    "blurb": "Builds redacted operator support-pack ZIP (health + ring-buffer logs)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/enrichment/cve.py",
+    "blurb": "Derive display fields from NVD/KEV/OSV source data (no LLM)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/enrichment/domain_validation.py",
+    "blurb": "Validate DNS hostnames for IOC domain lookups (ASCII + IDN/punycode)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/enrichment/ioc.py",
+    "blurb": "Product module <code>backend/enrichment/ioc.py</code> (<code>ioc</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/ai_context.py",
+    "blurb": "AI/ML CVE context detection and MITRE ATLAS technique hints."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/atlas.py",
+    "blurb": "MITRE ATLAS \u2014 AI/ML adversarial threat landscape (separate from Enterprise ATT&CK)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/case_study_feed.py",
+    "blurb": "Combined Incidents & News feed \u2014 RSS + ATLAS served from a precomputed snapshot."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/cpe_catalog.py",
+    "blurb": "NVD CPE 2.3 dictionary sync \u2192 software_catalog (Q3). Runs on the scheduler (never the request path). Uses resilient_get(\"nvd\") so pacing + Q2 metering apply. Full corpus is checkpointed across runs."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/cve_record_v5.py",
+    "blurb": "Parse CVE JSON 5.x records (cvelistV5 / vulnrichment) into BRIEFR CVE dicts."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/cvelistv5.py",
+    "blurb": "cvelistV5 \u2014 CVE JSON 5.x records hours before NVD. Incremental sync via GitHub compare API; watermark stored in sync_state as ``cvelistv5_head_sha``. Only changed JSON paths are fetched each run."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/epss.py",
+    "blurb": "Product module <code>backend/feeds/epss.py</code> (<code>epss</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/errors.py",
+    "blurb": "Feed-layer errors surfaced to scheduler job status (ERR-001)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/exploit_common.py",
+    "blurb": "Shared helpers for scheduler-side exploit-availability feeds."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/exploit_sync.py",
+    "blurb": "Orchestrates ExploitDB, Metasploit, Nuclei index, and PoC-GitHub exploit feeds under <code>exploit_sources_sync</code>."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/exploitdb.py",
+    "blurb": "ExploitDB CSV snapshot sync."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/extended.py",
+    "blurb": "Extended threat-intelligence feeds \u2014 each answers a question existing sources do not. Sploitus: public exploit listings per CVE (not covered by NVD reference tags alone). GreyNoise: internet-wide scanning context for IPs (not VT/AbuseIPDB). MalwareBazaar: malware family for file hashes (not VT classification). URLhaus: URL/domain malware hosting (not VT domain stats). CIRCL CVE-Search: supplemental references, CAPEC, vendor advisories."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/file_identity.py",
+    "blurb": "Whole-file feed identity helpers (Q5). Reusable for EPSS CSV today and CTID/other bulk files later: store ``{score_date, sha256}`` in sync_state after a successful apply; matching sha256 skips decompress/parse/apply on the next run."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/github_helpers.py",
+    "blurb": "Shared GitHub API helpers for repo-based intel feeds."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/incident_news.py",
+    "blurb": "Fetches and normalizes cybersecurity RSS sources for Incidents &amp; News tab."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/incident_sources.py",
+    "blurb": "Config for Case Studies incident/news RSS sources."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/kev.py",
+    "blurb": "Product module <code>backend/feeds/kev.py</code> (<code>kev</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/metasploit_modules.py",
+    "blurb": "Metasploit module metadata snapshot sync."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/mitre.py",
+    "blurb": "MITRE ATT&CK Enterprise STIX + CTID CVE\u2192technique mappings."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/nuclei_index.py",
+    "blurb": "Nuclei templates CVE index snapshot sync."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/nvd.py",
+    "blurb": "Product module <code>backend/feeds/nvd.py</code> (<code>nvd</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/osv.py",
+    "blurb": "Product module <code>backend/feeds/osv.py</code> (<code>osv</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/otx.py",
+    "blurb": "AlienVault OTX \u2014 campaign correlation via community pulses. CVE pulses: threat intel collections referencing a vulnerability. Pulse IOCs: indicators bundled in a pulse (IPs, domains, hashes). IOC lookup: pulses referencing an indicator + CVE pivot links."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/otx_continuous.py",
+    "blurb": "Continuous OTX background sync \u2014 spends hourly API budget across the day. Runs on a short interval (default 5 min) and uses up to OTX_CONTINUOUS_BUDGET_PER_RUN API calls per invocation for CVE pulse fetch + pulse IOC prefetch. Pacing (2 req/sec) and hourly quota gates are enforced by api_queue + tracking.has_quota."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/poc_github.py",
+    "blurb": "PoC-in-GitHub index sync (nomi-sec/PoC-in-GitHub). Repo pull with commit watermark; merges exploit rows and sets has_poc additively."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/threatfox.py",
+    "blurb": "ThreatFox bulk IOC ingest (abuse.ch Auth-Key)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/vulncheck_kev.py",
+    "blurb": "VulnCheck community KEV catalog sync (V1.5 Theme 4b)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/feeds/vulnrichment.py",
+    "blurb": "CISA Vulnrichment \u2014 SSVC / CVSS / CWE / CPE for NVD-unanalyzed CVEs. Snapshot-style sync (no watermark): each run lists the repo tree and enriches CVE rows that still lack official NVD analysis fields. CISA ADP data is superseded when NVD later fills cvss_score / severity / cwe_ids."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/intel/provenance.py",
+    "blurb": "Per-section intel provenance (FR1 \u2014 review \u00a75.4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ioc/retro_match.py",
+    "blurb": "Local IOC watchlist retro-match (V1.5 Theme 4b). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/jobs/app.py",
+    "blurb": "Procrastinate App factory. No-op unless PROCRASTINATE_ENABLED=1 and Postgres."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/jobs/context.py",
+    "blurb": "Outbound attribution contextvars for metering (Q2) and job wrappers (Q1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/jobs/retry_policy.py",
+    "blurb": "Bounded retry policy for durable Procrastinate tasks."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/jobs/tasks.py",
+    "blurb": "Procrastinate task definitions (Blueprint \u2014 bound at App creation)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/jobs/worker.py",
+    "blurb": "In-process Procrastinate worker lifecycle (single-box default)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/main.py",
+    "blurb": "Product module <code>backend/main.py</code> (<code>main</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/matching/cpe.py",
+    "blurb": "CPE-based asset \u2194 CVE version matching."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/metrics/request_counter.py",
+    "blurb": "In-process HTTP request counter \u2014 read-and-reset by the resource collector."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/migration/sqlite_to_postgres.py",
+    "blurb": "One-shot SQLite -> PostgreSQL data migration, driven from the admin panel. Reuses Alembic for DDL on the target and copies rows from the on-disk SQLite file. Setting DATABASE_URL (via Admin -> Database) switches the running app to PostgreSQL; this module never writes to briefr.db after that point. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ml/embeddings.py",
+    "blurb": "CVE description embeddings \u2014 env-gated, CPU-only (V1.3 / E2\u2013E3). **Write path (E2):** dual-write to ``embeddings`` + legacy ``cve_embeddings``. **Related (E3):** request path uses stored vectors only \u2014 pgvector ANN (or SQLite BLOB cosine) on ``embeddings``, then legacy ``cve_embeddings`` NumPy scan. No model inference for related. **Semantic search (E3):** may embed a single query string when ``EMBEDDINGS_ENABLED=1`` (design \u00a77.1). Bulk corpus em"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/ml/product_extraction.py",
+    "blurb": "LLM product extraction for NVD-unanalyzed CVEs - env-gated (V1.3). Many fresh CVEs carry no CPE data for hours or days. When ``LLM_PRODUCT_EXTRACTION_ENABLED=1`` AND at least one LLM provider API key is set, a scheduler job extracts ``{vendor, product, version_range}`` from the description text and fills ``affected_products`` - ONLY while that field is empty - marking ``affected_products_source='llm'`` so the data stays distinguishable. Official "
+  },
+  {
+    "kind": "backend",
+    "path": "backend/monitoring/api_key_health.py",
+    "blurb": "Lightweight API key health pings for operator monitoring (Issue 21)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/monitoring/notifications.py",
+    "blurb": "Operator notification center \u2014 durable events from audit log and monitors."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/notifications/emit.py",
+    "blurb": "Emit in-app notifications when monitor rules fire."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/onboarding/checklist.py",
+    "blurb": "First-hour operator onboarding checklist (Wave 4). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/operator_settings.py",
+    "blurb": "Owns DB seed/hydrate of writable operator keys (env wins); does not define keys. Hydrate operator settings from DB at startup (env wins over DB over .env). Secret-typed keys in `app_settings` are encrypted at rest when `BRIEFR_SETTINGS_KEY` is set (ADR-006). Process env still wins."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/preferences/display_validate.py",
+    "blurb": "Validation for per-user display preferences and timezone."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/preferences/repo.py",
+    "blurb": "DB access for per-user stack terms and optional asset profile."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/preferences/validate.py",
+    "blurb": "Validation for per-user stack terms and asset profile JSON."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/proof/bench.py",
+    "blurb": "File-based rule proof bench (V1.5 Theme 2). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/rate_limit.py",
+    "blurb": "In-memory token-bucket rate limiting (V1.2 \u00a75.5). Protects the abuse-prone endpoints \u2014 `POST /api/ioc/lookup` (burns external API quota per miss) and `POST /api/refresh*` (kicks off heavy ingest jobs). Buckets are process-local: the deployment deliberately runs a single uvicorn worker (`--workers 1` in `deploy/briefr-backend.service`) so one process holds all buckets; adding workers would silently multiply every limit by the worker count. Revisit"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/rate_limit_store.py",
+    "blurb": "Optional shared rate-limit bucket state (Track I Phase 3b). When ``BRIEFR_RATE_LIMIT_STORE=db``, token buckets persist in ``sync_state`` so multiple uvicorn workers share limits. Default remains in-memory (single worker) for zero-config tests and dev."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/read_cache.py",
+    "blurb": "In-process TTL cache for hot read endpoints (Track I5). No Redis \u2014 dict + monotonic clock. Tests call ``clear_read_cache()`` between cases."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/redact.py",
+    "blurb": "Shared secret/url masking for admin config, audit logs, and API responses."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/resilient_client.py",
+    "blurb": "Shared resilient HTTP client for all outbound intel sources. One pooled httpx.AsyncClient + per-source retries, circuit breakers, a global API queue (rate-limit pacing \u2014 requests wait, never drop), and a health registry surfaced on /api/health."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/resource_collector.py",
+    "blurb": "Process-tree resource sampling for RB-1 (scheduler-side only)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/_validators.py",
+    "blurb": "Product module <code>backend/routers/_validators.py</code> (<code>_validators</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/ai_ops.py",
+    "blurb": "Admin dashboard API \u2014 AI operations and retrieval health. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/catchup.py",
+    "blurb": "Admin dashboard API \u2014 Catch-up mode controls. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/config.py",
+    "blurb": "Admin dashboard API \u2014 operator config GET/POST/apply-all. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/data_ops.py",
+    "blurb": "Admin dashboard API \u2014 watchlist, hunt packs, IOC cache admin. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/database.py",
+    "blurb": "Admin dashboard API \u2014 database engine and migration. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/diagnostics.py",
+    "blurb": "Admin dashboard API \u2014 logs, security, restart, audit, diagnostics, onboarding, ratelimit. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/feeds.py",
+    "blurb": "Admin dashboard API \u2014 feed circuit breaker and incident refresh. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/helpers.py",
+    "blurb": "Admin dashboard API \u2014 shared helpers and constants. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/jobs.py",
+    "blurb": "Admin dashboard API \u2014 scheduler jobs and outbound queue. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/router.py",
+    "blurb": "Admin dashboard API \u2014 shared APIRouter. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/storage.py",
+    "blurb": "Admin dashboard API \u2014 backups, storage, DB explorer, resources. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/system.py",
+    "blurb": "Admin dashboard API \u2014 system overview and correlation status. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/tokens.py",
+    "blurb": "Admin dashboard API \u2014 API keys health, search tokens, notifications, typography. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/webhooks.py",
+    "blurb": "Admin dashboard API \u2014 webhook test and destinations CRUD. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/admin/webhooks_logs.py",
+    "blurb": "Admin dashboard API \u2014 webhook delivery logs and health. Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is re-exported from `routers.admin`. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/atlas.py",
+    "blurb": "MITRE ATLAS + Case Studies endpoints, moved verbatim from main.py (V1.2 \u00a75.2 router split, phase 2). No behavior change; the one inline import (`fetch_all_incident_news`) was hoisted to module top per house convention. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/auth.py",
+    "blurb": "Built-in app login (decision 2026-06-11): /api/auth/login, /logout, /refresh, /me. The sole auth mechanism \u2014 the legacy shared admin-key header was removed in Sprint A0 (dependencies.require_admin enforces session + role). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/brief.py",
+    "blurb": "Morning brief endpoint (V1.3 Theme 1)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/config.py",
+    "blurb": "Owns GET /api/config/risk (scoring weight display); not admin writable keys. GET /api/config/risk \u2192 weights dict keyed by component, version string. The frontend (frontend/src/scoring/riskScore.js) fetches weights for display only; the canonical score is computed server-side via POST /api/cves/{cve_id}/risk. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/correlation.py",
+    "blurb": "Correlation cluster list (Phase 4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/changes.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/common.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/detail.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/intel.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/list.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/cves/models.py",
+    "blurb": "CVE router package. Split from `routers.cves` (F1.2) without changing route registration order or handler behavior. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/detection_backlog.py",
+    "blurb": "Detection backlog API (V1.5 Theme 3). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/forge.py",
+    "blurb": "Forge MVP (Beta V1.3 Theme 3) \u2014 detection engineering inside the intel pane. Endpoints: - GET /api/forge/coverage \u2014 MITRE coverage map: stack profile \u00d7 techniques \u00d7 rule status (community / yours / gap) - GET /api/hunt-packs/{technique_id} \u2014 hunt pack content for one technique (saved packs, template baseline, linked CVEs) - POST /api/hunt-packs/generate \u2014 generate + persist a CVE\u2192pack link Everything is local and deterministic: hunt-pack generate"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/health.py",
+    "blurb": "Health endpoint, moved verbatim from main.py (V1.2 \u00a75.2 router split, phase 2). No behavior change. `format_time_in_tz` lives here because `/api/health` is its primary consumer; `/api/time` (routers/meta.py) imports it from this module. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/ioc.py",
+    "blurb": "IOC lookup + OTX pulse IOC endpoints, moved verbatim from main.py (V1.2 \u00a75.2 router split, phase 2). The two inline imports (`greynoise_for_ip`, `lookup_otx_for_ioc`) were hoisted to module top per house convention. One robustness fix on top of the verbatim move (review finding on PR #95): the cached-hit path now commits, so the feed_cache writes made by on-demand GreyNoise/OTX enrichment are no longer rolled back on connection close. Copyright \u00a9"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/me.py",
+    "blurb": "Per-user stack profile \u2014 server-backed replacement for briefr_stack localStorage. Wave 2 PR 3: terms + optional asset profile JSON keyed by user_id. Frontend migration to this API lands in Wave 2 PR 4. Wave 2 PR 5: display preferences + timezone via GET/PATCH /api/me/preferences."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/meta.py",
+    "blurb": "Meta endpoints (version/time/usage/AI summaries), moved verbatim from main.py (V1.2 \u00a75.2 router split, phase 3). No behavior change. Two sub-routers because the meta routes were interleaved with the CVE group in the pre-split main.py \u2014 main.py includes them in the exact pre-split sequence so the OpenAPI route list stays byte-identical: - info_router: GET /api/version, GET /api/time - router: /api/usage/ioc, /api/ai/summary (POST+GET), /api/invest"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/notifications_me.py",
+    "blurb": "In-app notification inbox for the signed-in user."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/proof.py",
+    "blurb": "Rule proof bench API (V1.5 Theme 2). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/refresh.py",
+    "blurb": "Manual refresh endpoints (admin-gated), moved from main.py (V1.2 \u00a75.2 router split). One robustness fix on top of the verbatim move: spawned ingest tasks are kept strongly referenced (review finding on PR #94). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/search.py",
+    "blurb": "Semantic / hybrid CVE search API (Embeddings E3). ``GET /api/search/semantic`` \u2014 design \u00a77.1. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/stack_catalog.py",
+    "blurb": "Software catalog autocomplete (Q3) + Tier A stack backfill (Q4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/threat_model.py",
+    "blurb": "Threat model read API (V1.5 Theme 1). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/wallboard.py",
+    "blurb": "Wallboard read-only API (Beta V1.4 Theme 4). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/routers/watchlist.py",
+    "blurb": "CVE watchlist \u2014 pin / snooze (Beta V1.3 Theme 1). Single-user for now (no user_id column). Built-in app login will add per-user keying later (ROADMAP amendment 2026-06-11). Endpoints: - GET /api/watchlist \u2014 active entries (pins + unexpired snoozes) - POST /api/watchlist \u2014 pin or snooze a CVE - DELETE /api/watchlist/snoozes \u2014 clear all snoozed rows (UI migration) - DELETE /api/watchlist/{cve_id} \u2014 remove from watchlist Copyright \u00a9 2026 Sai Harsha "
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scheduler.py",
+    "blurb": "APScheduler owner \u2014 registers recurring ingest, correlation, backup, and hygiene jobs with per-job asyncio locks."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scheduler_locks.py",
+    "blurb": "Product module <code>backend/scheduler_locks.py</code> (<code>scheduler_locks</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/asset_match.py",
+    "blurb": "Asset profile matching for legacy Risk v1.1b and environment relevance inputs."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/environment.py",
+    "blurb": "Environment Relevance tiers v1.0 \u2014 categorical, never folded into Threat (ADR-002)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/priority.py",
+    "blurb": "Operational Priority v1.2 \u2014 rule-based P1\u2013P4 bands (ADR-002 + W3 EPSS + W5 exposure)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/risk.py",
+    "blurb": "BRIEFR Risk Score v1.1b \u2014 six weighted components including Momentum."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/ssvc.py",
+    "blurb": "SSVC outcome computation (Act/Attend/Track) parallel to OP \u2014 exposed on <code>/risk</code> as <code>ssvc.outcome</code>."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scoring/threat.py",
+    "blurb": "Threat Score v1.0 \u2014 asset-independent exploitation credibility (ADR-002)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scripts/backfill_poc.py",
+    "blurb": "One-shot backfill of has_poc from stored source_urls. Safe to run while backend is up."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scripts/create_user.py",
+    "blurb": "Create or reset a built-in app login account. Never exposed over HTTP \u2014 this is the only way accounts get provisioned (decision 2026-06-11). Usage: python3 scripts/create_user.py --username ops python3 scripts/create_user.py --username ops --password 'hunter2' --non-interactive"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scripts/delete_user.py",
+    "blurb": "Erase a built-in app login account and all data tied to it (sessions, preferences, IOC watchlist, notifications). Never exposed over HTTP \u2014 user lifecycle management is CLI-only by design (see scripts/create_user.py). This is the operational counterpart to a data-subject erasure request: an operator can run this to honor a \"delete my account\" request without a manual SQL query. Usage: python3 scripts/delete_user.py --username ops python3 scripts/"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/scripts/sync_env.py",
+    "blurb": "Sync .env with .env.example: keep existing values, add missing keys. Walks .env.example line by line (preserving its comments/section grouping and blank-line spacing) and regenerates .env, substituting in any value the user already set. Keys present in .env but not in .env.example are appended under a trailing \"Custom / not in .env.example\" section so nothing is lost."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/corpus_drift.py",
+    "blurb": "PM-3d: on-demand security architecture corpus drift check."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/corpus_loader.py",
+    "blurb": "TM-1: load + validate the Security Architecture Corpus (SAC). Schema rules (spec \u00a74.1): every entity has id/title/summary/status/owner/ origin; curated entities additionally carry review_date/evidence[]/ related_ids[]. `related_ids[]` must resolve to real ids elsewhere in the corpus -- a dangling reference is a validation error, not a warning, so the corpus can't silently rot into referencing deleted entities."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/frameworks/aggregate.py",
+    "blurb": "TM-6: project one live scoped-CWE aggregation into the four framework workspaces (CWE / OWASP / CAPEC / STRIDE). Every workspace is built from the same ``fetch_scoped_cwe_rows`` output, so all four describe the *same* live set of CVEs through four lenses. Counting rules that keep the numbers honest (spec central principle): - A CVE carrying several CWEs contributes **once** to each distinct category / pattern it maps to (distinct-CVE counts, neve"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/frameworks/reference.py",
+    "blurb": "TM-6: standard, published framework reference data. This is framework *definition* data (which CWEs belong to which OWASP category, which CAPEC patterns relate to which CWE, which STRIDE class a weakness falls under) -- not judgment about BRIEFR's own architecture, so it lives here as versioned code rather than in the curated corpus (which the loader validates against BRIEFR-record schema). Sources are cited per block. Coverage is intentionally w"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/frameworks/scope.py",
+    "blurb": "TM-6: resolve a framework Scope selector into a bounded, live query over the ingested CVE corpus. Scopes (spec reframe -- the user's own threat surface, not BRIEFR's): - ``all`` -- the whole ingested corpus - ``stack`` -- CVEs matching the user's saved asset stack (or an explicit ``stack=`` override), via the shipping ``routers.cves._stack_match_clause`` -- same matching Forge uses, no new code - ``watchlist`` -- CVEs the user is tracking (``watc"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/graphs.py",
+    "blurb": "TM-4: architecture graph loader + read-time attack-surface / node-context merges over it (spec \u00a75.2 System Architecture, \u00a75.3 Trust Boundaries, \u00a75.9 attack surface, \u00a78 TM-4). `graphs/architecture.json` (generated by scripts/generate_security_corpus.py, committed under security_architecture/corpus/graphs/) carries only code facts -- nodes (components/jobs/tables, exactly the ids already emitted in components.yaml/scheduler_jobs.yaml/db_tables.yaml"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/merge.py",
+    "blurb": "TM-3: read-time merge of the Security Architecture Corpus with live DB/API data -- MITRE coverage, control active flags, and the self-stack CVE exposure merge (spec \u00a74.5). Self-stack risk rows use the same structured CPE scorer as analyst asset matching, while threat scenarios still reuse the shipping stack query path pointed at the generated self-stack instead of a user's asset profile. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/security_architecture/routers/security_architecture.py",
+    "blurb": "Security Architecture module API (TM-1 stub + TM-2 shell + TM-3 live sections). Mounted at /api/security-architecture/*. Session auth applies globally via main.py's session_auth_middleware (this router isn't in auth_middleware.py's public/admin-exempt prefixes) -- matches spec \u00a74.4: \"All routes: session auth (analyst+)\". TM-1 shipped manifest + overview (raw counts only). TM-2 added shell UI + Overview evidence tiles + the generic `/section/{id}`"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/services/retrieval_health.py",
+    "blurb": "Admin retrieval / embeddings index health (post-E8 ops honesty). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/services/semantic_search.py",
+    "blurb": "Hybrid semantic search orchestration over embeddings + filters (E3/E8)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/services/stack_backfill_worker.py",
+    "blurb": "Process Tier A stack backfill runs (Q4). NVD keyword pages \u2192 upsert_cves \u2192 EPSS filter apply \u2192 KEV flag match. Never calls OTX / exploits / correlation."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/settings.py",
+    "blurb": "Owns process/env Settings (Pydantic BaseSettings); not admin writable keys. Application settings (V1.2 \u00a75.2 phase 1). Pydantic BaseSettings for env config. Phase 1 migrates only the variables main.py read at module import time; per-request `os.environ.get` reads elsewhere keep their current call-time semantics and move here in later router-split phases. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/settings_crypto.py",
+    "blurb": "Encrypt secret-typed operator settings at rest in `app_settings`. See docs/decisions/ADR-006-encrypted-app-settings-secrets.md."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/source_rate_limits.py",
+    "blurb": "Per-source outbound API pacing derived from official provider documentation. BRIEFR never drops requests for rate limits \u2014 callers wait in the queue until a slot opens. Intervals here are minimum spacing between requests for each pacing group (conservative defaults when docs only publish daily/monthly caps). References: - NVD: https://nvd.nist.gov/developers/start (5 req/30s w/o key, 50/30s w/ key) - Groq: https://console.groq.com/docs/rate-limit"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/storage_metrics.py",
+    "blurb": "Storage metrics helpers \u2014 table sizes, growth estimate, host disk I/O."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/structured_logging.py",
+    "blurb": "JSON structured logging with request IDs (V1.2 \u00a75.5). One JSON object per line on stderr (journald-friendly), every line carrying a `request_id` field \u2014 surfaced in the V1.4 admin log viewer via an in-process ring buffer. The request ID is set per request by the `request_context` middleware in `main.py` (contextvar), returned to clients in the `X-Request-ID` response header, and honoured when a well-formed `X-Request-ID` arrives on the request. `"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/task_registry.py",
+    "blurb": "Fire-and-forget asyncio task registry with bounded shutdown drain (PR-R1). The event loop only holds weak references to tasks, and until PR-R1 each spawn site kept its own strong-reference set that nothing awaited at shutdown (audit REST-002/REST-012): an ingest or snapshot build could be killed mid-write when uvicorn stopped. All fire-and-forget spawns register here so the lifespan shutdown can wait \u2014 bounded, never indefinitely \u2014 for them to fi"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/templates/intelligence.py",
+    "blurb": "Template-based humanized intelligence sentences (no AI API)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/threat_model/scenarios.py",
+    "blurb": "Environment threat scenarios (V1.5 Theme 1). Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/tracking.py",
+    "blurb": "Product module <code>backend/tracking.py</code> (<code>tracking</code>)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/wallboard/service.py",
+    "blurb": "Wallboard aggregated payload (Beta V1.4 Theme 4). Read-only intel posture tiles built from existing DB state and cached snapshots \u2014 no outbound HTTP, no admin data, no secrets. Copyright \u00a9 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0"
+  },
+  {
+    "kind": "backend",
+    "path": "backend/wallboard/session.py",
+    "blurb": "Signed httpOnly wallboard session cookies \u2014 never stores raw WALLBOARD_TOKEN."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/webhooks/alerts.py",
+    "blurb": "KEV-on-stack and backup dead-man alert rules (V1.3 Theme 8, V1.4 engine)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/webhooks/destinations.py",
+    "blurb": "Webhook destination configuration \u2014 env seeds plus DB overrides (V1.4)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/webhooks/engine.py",
+    "blurb": "Multi-destination webhook dispatch engine (V1.4 Theme 2)."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/webhooks/sender.py",
+    "blurb": "Send alert messages via the V1.4 webhook engine. Destinations are configured through env vars and/or the webhook_destinations table. When no destination is configured, send_alert is a no-op."
+  },
+  {
+    "kind": "backend",
+    "path": "backend/webhooks/ssrf.py",
+    "blurb": "SSRF protections for outbound webhook HTTP (V1.4 Theme 2). Validates destination hostnames/IPs before connect, pins resolved IPs on the wire (Host header preserved), allows https only, disables redirects, and never attaches internal API secrets to outbound headers."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/App.jsx",
+    "blurb": "PM-4c: legacy ARCH URL \u2192 Admin Security posture (preserve known sections)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/api.js",
+    "blurb": "Q3 CPE software catalog typeahead (requires \u22653 chars)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/apiOutboundJobs.js",
+    "blurb": "Product module <code>frontend/src/apiOutboundJobs.js</code> (<code>apiOutboundJobs</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AboutModal.jsx",
+    "blurb": "Product module <code>frontend/src/components/AboutModal.jsx</code> (<code>AboutModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ApiQueueIndicator.jsx",
+    "blurb": "Product module <code>frontend/src/components/ApiQueueIndicator.jsx</code> (<code>ApiQueueIndicator</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AppErrorBoundary.jsx",
+    "blurb": "Product module <code>frontend/src/components/AppErrorBoundary.jsx</code> (<code>AppErrorBoundary</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AssetProfileManage.jsx",
+    "blurb": "Product module <code>frontend/src/components/AssetProfileManage.jsx</code> (<code>AssetProfileManage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AssetRememberToggle.jsx",
+    "blurb": "Product module <code>frontend/src/components/AssetRememberToggle.jsx</code> (<code>AssetRememberToggle</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AssetWarning.jsx",
+    "blurb": "Product module <code>frontend/src/components/AssetWarning.jsx</code> (<code>AssetWarning</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/AssetWizard.jsx",
+    "blurb": "Product module <code>frontend/src/components/AssetWizard.jsx</code> (<code>AssetWizard</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/BriefCharts.jsx",
+    "blurb": "`/api/changes` caps `since_hours` at 168 \u2014 hide longer presets that only fail."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/CVECard.jsx",
+    "blurb": "Single CVE feed card \u2014 renders API OP/Threat/KEV fields only (W2)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/CVEFeed.jsx",
+    "blurb": "Main CVE feed list \u2014 keyset pagination, stack relevance sort, scroll isolation (Track I)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/CaseStudies.jsx",
+    "blurb": "Product module <code>frontend/src/components/CaseStudies.jsx</code> (<code>CaseStudies</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/CommandPalette.jsx",
+    "blurb": "Product module <code>frontend/src/components/CommandPalette.jsx</code> (<code>CommandPalette</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ControlTooltip.jsx",
+    "blurb": "* Accessible tooltip on the control itself. * Default trigger is hover-only so filter buttons do not stick open after click."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/CveDescriptionClamp.jsx",
+    "blurb": "* Truncate CVE description text with a line clamp (used by CVECard). * @param {{ text: string, maxLines?: number, maxChars?: number, className?: string }} props"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/CorrelationSuppressModal.jsx",
+    "blurb": "Product module <code>frontend/src/components/DetailDrawer/CorrelationSuppressModal.jsx</code> (<code>CorrelationSuppressModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/DetectTab.jsx",
+    "blurb": "Product module <code>frontend/src/components/DetailDrawer/DetectTab.jsx</code> (<code>DetectTab</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/IntelProvenanceLine.jsx",
+    "blurb": "Product module <code>frontend/src/components/DetailDrawer/IntelProvenanceLine.jsx</code> (<code>IntelProvenanceLine</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/IntelTab.jsx",
+    "blurb": "Matching/identity only \u2014 mirrors backend normalize_pulse_name (not display)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/OverviewTab.jsx",
+    "blurb": "SSVC annotation chip beside OP \u2014 display-only; does not replace P-band."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/RelatedTab.jsx",
+    "blurb": "Product module <code>frontend/src/components/DetailDrawer/RelatedTab.jsx</code> (<code>RelatedTab</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/helpers.js",
+    "blurb": "In-app Forge ATT&CK navigator deep link (PM-4e)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DetailDrawer/index.jsx",
+    "blurb": "Product module <code>frontend/src/components/DetailDrawer/index.jsx</code> (<code>index</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DigestModal.jsx",
+    "blurb": "Product module <code>frontend/src/components/DigestModal.jsx</code> (<code>DigestModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/DrawerAtlasSection.jsx",
+    "blurb": "Product module <code>frontend/src/components/DrawerAtlasSection.jsx</code> (<code>DrawerAtlasSection</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ExplainTip.jsx",
+    "blurb": "* Discoverable explanation for badges, pills, and filter controls (PRODUCT.md \u00a71)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/FeedVisibleRange.jsx",
+    "blurb": "* Leaf component: tracks visible CVE card indices on scroll without re-rendering * the feed list (Track I4)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/FilterBar.jsx",
+    "blurb": "Product module <code>frontend/src/components/FilterBar.jsx</code> (<code>FilterBar</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/Forge.jsx",
+    "blurb": "* Forge shell: top view tabs + workspace. Hunt pack docks under the ATT&CK * navigator only (coverage). Technique click toggles selection. Selection * clears when leaving coverage so the panel does not follow other views."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/Header.jsx",
+    "blurb": "Product module <code>frontend/src/components/Header.jsx</code> (<code>Header</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/HeaderClock.jsx",
+    "blurb": "Product module <code>frontend/src/components/HeaderClock.jsx</code> (<code>HeaderClock</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/Hero.jsx",
+    "blurb": "Product module <code>frontend/src/components/Hero.jsx</code> (<code>Hero</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/IOCLookup.jsx",
+    "blurb": "Product module <code>frontend/src/components/IOCLookup.jsx</code> (<code>IOCLookup</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/InvestigationPanel.jsx",
+    "blurb": "Product module <code>frontend/src/components/InvestigationPanel.jsx</code> (<code>InvestigationPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/MorningBrief.jsx",
+    "blurb": "Product module <code>frontend/src/components/MorningBrief.jsx</code> (<code>MorningBrief</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/NotificationBell.jsx",
+    "blurb": "Product module <code>frontend/src/components/NotificationBell.jsx</code> (<code>NotificationBell</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/PdfExportModal.jsx",
+    "blurb": "Product module <code>frontend/src/components/PdfExportModal.jsx</code> (<code>PdfExportModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/RequireAdmin.jsx",
+    "blurb": "Analyst-accessible admin sub-pages (operator routes require admin role)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/RequireAuth.jsx",
+    "blurb": "Product module <code>frontend/src/components/RequireAuth.jsx</code> (<code>RequireAuth</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ScrollToTop.jsx",
+    "blurb": "Product module <code>frontend/src/components/ScrollToTop.jsx</code> (<code>ScrollToTop</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/SessionIdleWarning.jsx",
+    "blurb": "Warns before session idle lock; pairs with <code>useInactivityTimeout</code>."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/SessionLockOverlay.jsx",
+    "blurb": "Full-screen lock until re-auth after idle timeout."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/SeverityLegend.jsx",
+    "blurb": "* Discoverable CVSS severity scale (E4-4). Pair with portaled tooltips on badges."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ShortcutsPanel.jsx",
+    "blurb": "Product module <code>frontend/src/components/ShortcutsPanel.jsx</code> (<code>ShortcutsPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/Sidebar.jsx",
+    "blurb": "Product module <code>frontend/src/components/Sidebar.jsx</code> (<code>Sidebar</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/StatsRow.jsx",
+    "blurb": "Product module <code>frontend/src/components/StatsRow.jsx</code> (<code>StatsRow</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/TimeWindowPicker.jsx",
+    "blurb": "@typedef {{ mode: 'preset', presetId: string, hours: number } | { mode: 'custom', since: string, until: string }} TimeWindowValue"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/TimelineHeatmap.jsx",
+    "blurb": "Product module <code>frontend/src/components/TimelineHeatmap.jsx</code> (<code>TimelineHeatmap</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/Toast.jsx",
+    "blurb": "Product module <code>frontend/src/components/Toast.jsx</code> (<code>Toast</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ToolErrorBoundary.jsx",
+    "blurb": "Product module <code>frontend/src/components/ToolErrorBoundary.jsx</code> (<code>ToolErrorBoundary</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/TutorialOverlay.jsx",
+    "blurb": "Product module <code>frontend/src/components/TutorialOverlay.jsx</code> (<code>TutorialOverlay</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/UserMenu.jsx",
+    "blurb": "Product module <code>frontend/src/components/UserMenu.jsx</code> (<code>UserMenu</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/WhatChangedPanel.jsx",
+    "blurb": "Product module <code>frontend/src/components/WhatChangedPanel.jsx</code> (<code>WhatChangedPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/briefVendorChartRecharts.jsx",
+    "blurb": "Product module <code>frontend/src/components/briefVendorChartRecharts.jsx</code> (<code>briefVendorChartRecharts</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/BacklogView.jsx",
+    "blurb": "Product module <code>frontend/src/components/forge/BacklogView.jsx</code> (<code>BacklogView</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/CampaignsView.jsx",
+    "blurb": "Product module <code>frontend/src/components/forge/CampaignsView.jsx</code> (<code>CampaignsView</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/CoverageView.jsx",
+    "blurb": "* MITRE ATT&CK navigator \u2014 tactic columns, technique id + name (matrix-style). * Click a technique to open related CVEs / hunt pack below the matrix."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/HuntPackRail.jsx",
+    "blurb": "* Persistent hunt-pack rail \u2014 mounted in every Forge view (fixes FR redesign * P2). Renders by technique_id, same fetch/renderer regardless of which view * set the selection (coverage row, scenario card, backlog item, or a * Library row's technique)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/LibraryView.jsx",
+    "blurb": "* Hunt Pack Library (FR-2, forge-redesign.md \u00a73.1): AdminDataGrid-style * table over the FR-1 list endpoint. Row click opens the pack in the * persistent Hunt Pack rail via onOpenPack."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/ScenariosView.jsx",
+    "blurb": "Product module <code>frontend/src/components/forge/ScenariosView.jsx</code> (<code>ScenariosView</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/mitreTacticOrder.js",
+    "blurb": "* Enterprise ATT&CK tactic display order (kill-chain left\u2192right). * Coverage rows use title-cased STIX phase names from feeds/mitre.py. * Unknown tactics append after this list."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/forge/shared.jsx",
+    "blurb": "Product module <code>frontend/src/components/forge/shared.jsx</code> (<code>shared</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ioc/IOCQuotaPanel.jsx",
+    "blurb": "Product module <code>frontend/src/components/ioc/IOCQuotaPanel.jsx</code> (<code>IOCQuotaPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ioc/IOCResultComponents.jsx",
+    "blurb": "Product module <code>frontend/src/components/ioc/IOCResultComponents.jsx</code> (<code>IOCResultComponents</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ioc/iocUtils.js",
+    "blurb": "Product module <code>frontend/src/components/ioc/iocUtils.js</code> (<code>iocUtils</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/statsRowDelta.js",
+    "blurb": "Product module <code>frontend/src/components/statsRowDelta.js</code> (<code>statsRowDelta</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/timeWindowDateUtils.js",
+    "blurb": "Shared datetime-local string helpers (YYYY-MM-DDTHH:mm:ss)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/AlertDialog.jsx",
+    "blurb": "* Radix AlertDialog primitive (E3-4) \u2014 simple destructive confirmations. * Typed confirm gates should use ConfirmModal (Dialog-based)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/AsyncState.jsx",
+    "blurb": "* @param {object} props * @param {boolean} [props.loading=false] * @param {boolean} [props.refreshing=false] * @param {Error|string|null} [props.error] * @param {() => void} [props.onRetry] * @param {boolean} [props.empty=false] * @param {string} [props.emptyTitle] * @param {React.ReactNode} [props.emptyAction] * @param {React.ReactNode} [props.skeleton] * @param {React.ReactNode|((data: *) => React.ReactNode)} [props.children] * @param {*} [prop"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Badge.jsx",
+    "blurb": "* @param {object} props * @param {'neutral'|'info'|'warn'|'danger'|'success'} [props.variant='neutral'] * @param {string} props.explain - Required tooltip text (PRODUCT.md principle 1). * @param {string} [props.className] * @param {React.ReactNode} [props.children]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Button.jsx",
+    "blurb": "* @param {object} props * @param {'primary'|'ghost'|'danger'} [props.variant='ghost'] * @param {'default'|'sm'} [props.size='default'] * @param {boolean} [props.busy=false] * @param {string} [props.busyLabel] * @param {string} [props.className] * @param {React.ReactNode} [props.children]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Card.jsx",
+    "blurb": "* Raised surface primitive (E3-7). Composes admin-card layout during migration. * @param {object} props * @param {string} [props.className] * @param {React.ReactNode} [props.children]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/ChartDataTable.jsx",
+    "blurb": "* Collapsible tabular fallback for chart data (E6-5 a11y). * Screen readers and keyboard users can access the same values without the canvas."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/ChartShell.jsx",
+    "blurb": "* Fixed-height chart container (E7-5). Prevents unbounded chart growth (UI-BUG-1)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Checkbox.jsx",
+    "blurb": "* Radix-backed checkbox primitive (ADR-003 / E0-2 reference implementation). * @param {object} props * @param {boolean} [props.checked] * @param {boolean} [props.defaultChecked] * @param {(checked: boolean) => void} [props.onCheckedChange] * @param {boolean} [props.disabled] * @param {string} [props.id] * @param {string} [props.className] * @param {string} [props.label] Optional visible label (renders as sibling)"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/ConfirmModal.jsx",
+    "blurb": "* @param {object} props * @param {boolean} [props.open=true] * @param {string} [props.title] * @param {string} [props.message] * @param {string} [props.confirmWord] * @param {(value: string) => void} props.onConfirm * @param {() => void} props.onCancel * @param {() => void} [props.onClose] * @param {string} [props.confirmLabel='Confirm'] * @param {string} [props.cancelLabel='Cancel'] * @param {string} [props.className] * @param {string} [props.ov"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/DataGrid.jsx",
+    "blurb": "* Shared table primitive: fixed layout, sticky header, sortable columns, * resize via shared <col>, optional wrap/center, persisted column prefs."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/DateTimePicker.jsx",
+    "blurb": "* Simple datetime picker: DD-MM-YY HH:mm:ss display with dropdown selects. * Value/onChange use datetime-local string format (second precision)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/DateTimeRangeField.jsx",
+    "blurb": "* Dual-input datetime range (MUI MultiInputDateTimeRangeField layout) without MUI Pro. * Start and end fields side-by-side with a separator."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/DropdownMenu.jsx",
+    "blurb": "* Radix-backed dropdown menu primitive (E3-5)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/EmptyState.jsx",
+    "blurb": "* @param {object} props * @param {string} [props.title='No data'] * @param {React.ReactNode} [props.action] * @param {string} [props.className]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/ErrorState.jsx",
+    "blurb": "* @param {object} props * @param {Error|string|null} props.error * @param {() => void} [props.onRetry] * @param {boolean} [props.compact=false] * @param {string} [props.logHref] - Override log viewer href (router-free)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Modal.jsx",
+    "blurb": "* Radix-backed dialog primitive (E3-4). Preserves the legacy Modal API. * @param {object} props * @param {boolean} props.open * @param {() => void} props.onClose * @param {string} [props.title] * @param {string} [props.titleId] * @param {boolean} [props.busy=false] * @param {'default'|'sm'|'lg'} [props.size='default'] * @param {React.ReactNode} [props.footer] * @param {string} [props.className] * @param {string} [props.overlayClassName] * @param "
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Pill.jsx",
+    "blurb": "* Toggle chip / filter pill primitive (E3-7). * @param {object} props * @param {boolean} [props.active] * @param {string} [props.className] * @param {React.ReactNode} [props.children] * @param {() => void} [props.onClick]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/ReferenceTooltip.jsx",
+    "blurb": "* Long URL / reference tooltips (E2-4): portaled, viewport-clamped, word-wrapped."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Select.jsx",
+    "blurb": "* Radix-backed select primitive (E3-5). * @param {object} props * @param {string} [props.value] * @param {string} [props.defaultValue] * @param {(value: string) => void} [props.onValueChange] * @param {(value: string) => void} [props.onChange] Alias for onValueChange * @param {Array<{value: string, label: React.ReactNode, disabled?: boolean}>} [props.options] * @param {string} [props.placeholder] * @param {boolean} [props.disabled] * @param {stri"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Skeleton.jsx",
+    "blurb": "* @param {object} props * @param {'text'|'block'} [props.variant='text'] * @param {string} [props.className] * @param {string} [props.style]"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/SkeletonStack.jsx",
+    "blurb": "Default multi-line placeholder when AsyncState has no custom skeleton (E7-2)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Slider.jsx",
+    "blurb": "* Radix-backed slider primitive (E3-6). * @param {object} props * @param {number} [props.value] * @param {number} [props.defaultValue] * @param {(value: number) => void} [props.onValueChange] * @param {(value: number) => void} [props.onChange] Alias for onValueChange * @param {number} [props.min=0] * @param {number} [props.max=100] * @param {number} [props.step=1] * @param {boolean} [props.disabled] * @param {string} [props.id] * @param {string} "
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/StatCard.jsx",
+    "blurb": "* Metric tile primitive (E3-7). Keeps legacy admin/ARCH class hooks during migration. * @param {object} props * @param {string} props.label * @param {React.ReactNode} props.value * @param {string} [props.subLabel] * @param {string} [props.subLabelTitle] * @param {'color-green'|'color-amber'|'color-red'} [props.colorClass] * @param {object} [props.valueStyle] * @param {boolean} [props.plain=false] ARCH overview uses plain surface without admin ski"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Switch.jsx",
+    "blurb": "* Radix-backed switch primitive (E3-1)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Tabs.jsx",
+    "blurb": "* Radix-backed tabs primitive (E3-5)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Toast.jsx",
+    "blurb": "Global toast dispatch \u2014 works outside React tree (copy/export feedback, E7-3)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/Tooltip.jsx",
+    "blurb": "* Portaled tooltip primitive (E3-2): collision-aware placement, single-open coordinator. * * @param {object} props * @param {string} props.text * @param {React.ReactNode} props.children * @param {boolean} [props.asChild] - merge aria props into the child element * @param {'hover'|'hover-focus'} [props.trigger] - hover-only avoids sticky filter tooltips after click * @param {string} [props.className] - wrapper class * @param {string} [props.bubble"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/components/ui/index.js",
+    "blurb": "Product module <code>frontend/src/components/ui/index.js</code> (<code>index</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/config/assetCatalog.js",
+    "blurb": "Curated autocomplete data \u2014 no user profile content."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/config/caseStudySources.js",
+    "blurb": "Config-driven incident/news sources for the Case Studies tab."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/context/AssetProfileContext.jsx",
+    "blurb": "Product module <code>frontend/src/context/AssetProfileContext.jsx</code> (<code>AssetProfileContext</code>)."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/context/AuthContext.jsx",
+    "blurb": "Product module <code>frontend/src/context/AuthContext.jsx</code> (<code>AuthContext</code>)."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/context/InvestigationContext.jsx",
+    "blurb": "Product module <code>frontend/src/context/InvestigationContext.jsx</code> (<code>InvestigationContext</code>)."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/hooks/useAsync.js",
+    "blurb": "* Async data hook with AbortController lifecycle and stale-while-revalidate. * * @param {(signal: AbortSignal) => Promise<*>} fn - Fetcher; receives the current abort signal. * @param {unknown[]} deps - Re-run when these change (same semantics as useEffect). * @returns {{ data: *, error: Error|null, loading: boolean, refreshing: boolean, retry: () => void }}"
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/hooks/useInactivityTimeout.js",
+    "blurb": "Idle timer for session lock UX \u2014 respects analyst security settings."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/hooks/useModalLayer.js",
+    "blurb": "* Modal layer behavior: focus trap (Tab cycles inside the container) and * focus restore to the triggering element on close. Optionally registers in * the overlay-depth registry for overlays that own their Escape handling."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/hooks/useVisibilityAwareInterval.js",
+    "blurb": "* Interval that pauses when the document is hidden or ``enabled`` is false. * * @param {() => void} callback * @param {number | null} delayMs * @param {{ enabled?: boolean }} [options]"
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/hooks/useWatchlist.js",
+    "blurb": "* Server-backed CVE watchlist (pin only in UI). Snooze was removed from the * product surface \u2014 any legacy snooze rows are cleared once on first load."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/main.jsx",
+    "blurb": "Product module <code>frontend/src/main.jsx</code> (<code>main</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/LegalPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/LegalPage.jsx</code> (<code>LegalPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/LoginPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/LoginPage.jsx</code> (<code>LoginPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/PrivacyPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/PrivacyPage.jsx</code> (<code>PrivacyPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/TermsPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/TermsPage.jsx</code> (<code>TermsPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/WallboardPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/WallboardPage.jsx</code> (<code>WallboardPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/AdminPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/AdminPage.jsx</code> (<code>AdminPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/AiOperationsPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/AiOperationsPage.jsx</code> (<code>AiOperationsPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/AlertsPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/AlertsPage.jsx</code> (<code>AlertsPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/ApiKeyHealthPanel.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/ApiKeyHealthPanel.jsx</code> (<code>ApiKeyHealthPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/ApiKeysPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/ApiKeysPage.jsx</code> (<code>ApiKeysPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/AuditLogPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/AuditLogPage.jsx</code> (<code>AuditLogPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/BackupsPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/BackupsPage.jsx</code> (<code>BackupsPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/CatchupCard.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/CatchupCard.jsx</code> (<code>CatchupCard</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/ComingSoonPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/ComingSoonPage.jsx</code> (<code>ComingSoonPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/DatabasePage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/DatabasePage.jsx</code> (<code>DatabasePage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/DbExplorerPanel.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/DbExplorerPanel.jsx</code> (<code>DbExplorerPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/DisplayPage.jsx",
+    "blurb": "Instance typography defaults and analyst display settings admin surface."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/FeedHealthPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/FeedHealthPage.jsx</code> (<code>FeedHealthPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/IngestLogPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/IngestLogPage.jsx</code> (<code>IngestLogPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/OutboundJobsPanel.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/OutboundJobsPanel.jsx</code> (<code>OutboundJobsPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/OverviewPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/OverviewPage.jsx</code> (<code>OverviewPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/RateLimitPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/RateLimitPage.jsx</code> (<code>RateLimitPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/ResourcesPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/ResourcesPage.jsx</code> (<code>ResourcesPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/SchedulerPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/SchedulerPage.jsx</code> (<code>SchedulerPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/SearchTokensPanel.jsx",
+    "blurb": "* Embeddings E5 \u2014 Admin search service tokens (show-once plaintext on create)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/SecurityPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/SecurityPage.jsx</code> (<code>SecurityPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/SecurityPosturePage.jsx",
+    "blurb": "Operator posture sections (PM-4a); stand-alone ARCH route retired in PM-4c."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/SessionsPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/SessionsPage.jsx</code> (<code>SessionsPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/Sidebar.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/Sidebar.jsx</code> (<code>Sidebar</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/StatusBar.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/StatusBar.jsx</code> (<code>StatusBar</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/StoragePage.jsx",
+    "blurb": "Admin storage metrics, backup status, and DB explorer entry point."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/WatchlistPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/WatchlistPage.jsx</code> (<code>WatchlistPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/WebhookDestinationCard.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/WebhookDestinationCard.jsx</code> (<code>WebhookDestinationCard</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/WebhooksPage.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/WebhooksPage.jsx</code> (<code>WebhooksPage</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/adminJobAck.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/adminJobAck.js</code> (<code>adminJobAck</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/aiOperationsActivityActions.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/aiOperationsActivityActions.js</code> (<code>aiOperationsActivityActions</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/catalog.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/catalog.js</code> (<code>catalog</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/catchupCopy.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/catchupCopy.js</code> (<code>catchupCopy</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/circuitLabels.js",
+    "blurb": "Operator-facing labels for circuit-breaker / cooldown state (UI only)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/constants.js",
+    "blurb": "Resolve sidebar section + page label for breadcrumbs (E8-2)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/formatters.js",
+    "blurb": "* Scale for plotting byte series so Y-axis ticks and tooltip values share * one linear display unit. Plotting raw bytes makes Recharts pick decimal * \"nice\" ticks (25e6, 50e6, \u2026) that fmtBytes turns into awkward MB labels * (23.8, 47.7, \u2026), so a 50.3 MB point sits almost on the \"47.7 MB\" grid line."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/intelStatus.js",
+    "blurb": "Match Feed Health SigmaHQ card stale threshold (14 days)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/jobActions.js",
+    "blurb": "Scheduler job action matrix \u2014 shared by JobTable, Overview, Scheduler pages."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/jobStatus.js",
+    "blurb": "True when a scheduler job is actively executing (lock held)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/needsAttention.js",
+    "blurb": "* Aggregated operator/analyst attention items for the overview landing (E8-3). * Each item links to the admin page that best resolves it."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/outboundJobStatus.js",
+    "blurb": "Procrastinate queue statuses (raw DB values \u2192 operator-facing labels)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/outboundJobsCopy.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/outboundJobsCopy.js</code> (<code>outboundJobsCopy</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/rateLimits.js",
+    "blurb": "Product module <code>frontend/src/pages/admin/rateLimits.js</code> (<code>rateLimits</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/resourceChartUtils.js",
+    "blurb": "* Build Resource LineChart rows. HH:MM alone collides across days on * 3d/7d/30d windows and freezes the Recharts axis tooltip on the first * matching minute \u2014 use row index as the categorical X key."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/resourcesChartsRecharts.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/resourcesChartsRecharts.jsx</code> (<code>resourcesChartsRecharts</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/AdminBreadcrumbs.jsx",
+    "blurb": "* \"You are here\" trail for the admin shell (E8-2). * Admin \u2192 view mode \u2192 section \u2192 current page."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/AdminDataGrid.jsx",
+    "blurb": "* Admin-styled DataGrid \u2014 thin wrapper over the shared ui/DataGrid primitive."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/AdminSkeletons.jsx",
+    "blurb": "Skeleton rows for `<tbody>` \u2014 preserves table layout while loading (E7-2)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/AsyncSection.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/AsyncSection.jsx</code> (<code>AsyncSection</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/ConfirmModal.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/ConfirmModal.jsx</code> (<code>ConfirmModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/DangerZone.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/DangerZone.jsx</code> (<code>DangerZone</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/DiffReviewModal.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/DiffReviewModal.jsx</code> (<code>DiffReviewModal</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/ErrorBoundary.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/ErrorBoundary.jsx</code> (<code>ErrorBoundary</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/GuardedPurgePanel.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/GuardedPurgePanel.jsx</code> (<code>GuardedPurgePanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/HelpTip.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/HelpTip.jsx</code> (<code>HelpTip</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/JobErrorsPanel.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/JobErrorsPanel.jsx</code> (<code>JobErrorsPanel</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/JobTable.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/JobTable.jsx</code> (<code>JobTable</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/NeedsAttentionPanel.jsx",
+    "blurb": "* Overview landing panel aggregating failures and degraded signals (E8-3)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/NotificationCenter.jsx",
+    "blurb": "Admin status bar \u2014 operator-scope alerts only."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/OperationTracker.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/OperationTracker.jsx</code> (<code>OperationTracker</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/OpsCharts.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/OpsCharts.jsx</code> (<code>OpsCharts</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/OutboundJobStatusBadge.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/OutboundJobStatusBadge.jsx</code> (<code>OutboundJobStatusBadge</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/RestartBanner.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/RestartBanner.jsx</code> (<code>RestartBanner</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/StatCard.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/StatCard.jsx</code> (<code>StatCard</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/StatusLegend.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/StatusLegend.jsx</code> (<code>StatusLegend</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/ToggleSwitch.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/ToggleSwitch.jsx</code> (<code>ToggleSwitch</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/backupChartUtils.js",
+    "blurb": "* Short X-axis tick for a backup archive. Prefer the timestamp embedded in * the filename so adjacent archives stay visually distinct."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/shared/opsChartsRecharts.jsx",
+    "blurb": "Product module <code>frontend/src/pages/admin/shared/opsChartsRecharts.jsx</code> (<code>opsChartsRecharts</code>)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/admin/toastCopy.js",
+    "blurb": "Lifecycle-aware operator/analyst toast copy for scheduler actions."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/ContextRail.jsx",
+    "blurb": "* Context rail content for a selected architecture-graph node (spec \u00a75.2 * node selection panel, \u00a78 TM-4: \"node selection populates the context * rail\"). Lives in the persistent right rail (SecurityArchitecturePage.jsx) * so selecting a node never reflows the graph/workspace panel -- the rail * is a fixed-width sticky column (playbook \u00a73 smoothness budget: \"zero * layout shift when selecting a node\")."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/GlobalSearch.jsx",
+    "blurb": "* Global search (spec \u00a75.17, \u00a78 TM-5): in-module search bar over the corpus * + live MITRE technique names + control titles + API paths (backend * merge.search_corpus / search_mitre_techniques). Arrow-key navigable, * Enter opens the section a result belongs to (\u00a75.17: \"Results grouped by * entity type; arrow-key navigable; Enter opens section + selection\")."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/SecurityArchitecturePage.jsx",
+    "blurb": "* Security Architecture shell (TM-2, threat-modeling-security-architecture.md * \u00a73.1 + \u00a78): three-panel layout mirroring Forge (FR-2) and Admin -- * left nav / center workspace / persistent context rail, all selection * state round-tripping through the URL (?section=&status=&severity=&type=) * so refresh and deep links never lose context (same fix class as FR-2 P1). * * The nav is manifest-driven (spec \u00a72.2, \u00a78): it renders whatever * `GET /api/s"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/constants.js",
+    "blurb": "* TM-2: Security Architecture nav is manifest-driven (spec \u00a72.2, \u00a78 TM-2) -- * there is no hardcoded list of sections here. `humanizeSectionId` turns a * corpus section id (e.g. `trust_boundaries`) into a nav label; the actual * set of sections rendered comes from `GET /api/security-architecture/manifest` * at runtime, so a future TM-3+ section (e.g. `mitre_attack`) appears in the * nav the moment the manifest lists it -- no frontend redeploy nee"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/AbuseCasesSection.jsx",
+    "blurb": "* Abuse Case Catalog (spec \u00a75.11, \u00a78 TM-5)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/ArchitectureGraphSection.jsx",
+    "blurb": "* System Architecture graph (spec \u00a75.2, \u00a78 TM-4): interactive pan/zoom * render of the generated `graphs/architecture.json`. * * No content-sized SVG viewBox \u2014 pan/zoom transform works in CSS pixels so * fit-to-view math stays 1:1 with the canvas (avoids double-scale / wrong zoom)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/AttackSurfaceSection.jsx",
+    "blurb": "* Attack Surface (spec \u00a78 TM-4): generated endpoint inventory \u00d7 linked controls."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/DecisionsSection.jsx",
+    "blurb": "* Security Decision Records (spec \u00a75.13, \u00a78 TM-5)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/FrameworkSection.jsx",
+    "blurb": "* TM-6: shared analyst framework workspace (CWE / OWASP / CAPEC / STRIDE). * * Every framework is one lens on the same live aggregation -- the CWE weakness * classes present in `cves.cwe_ids` across the selected Scope (All CVEs / My * Stack / Watchlist / KEV). The Scope selector is the whole point of the * reframe: the frameworks describe the *user's own* threat surface, not * BRIEFR's. Each row's count drills through to the exact `example_cves` "
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/GenericSection.jsx",
+    "blurb": "* TM-2 stub section view (spec \u00a78 TM-2: \"even if that view is just a stub * in TM-2, TM-3 builds it out\"). Shows the exact corpus rows behind an * Overview tile click via the generic GET /section/{id} endpoint -- real * data, not mocked, via the shared ArchDataGrid primitive (E5-2)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/MitreSection.jsx",
+    "blurb": "* MITRE ATT&CK section (TM-3, spec \u00a75.6). Live coverage matrix grouped by tactic."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/OverviewSection.jsx",
+    "blurb": "* Overview (spec \u00a75.1, \u00a78 TM-2): evidence tiles that are counts or ratios * whose inputs are visible server-side (backend/security_architecture/ * routers/security_architecture.py::get_overview) -- no composite grades, * no arithmetic invented here. Every tile drills through to the exact * corpus rows behind its number via `onDrill(section, filter)`. * * The \"architecture stack\" is a simplified view of the generated layer * (routers / scheduler j"
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/ReviewHistorySection.jsx",
+    "blurb": "* Review History (spec \u00a75.14, \u00a78 TM-5)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/RiskRegisterSection.jsx",
+    "blurb": "* Risk Register (spec \u00a75.12, \u00a78 TM-5): ArchDataGrid wrapper over curated + * live risk rows. Two row origins render distinctly (curated vs live, spec * \u00a75.12) and every curated row carries a visible STALE badge sourced from * the server's `stale` flag (security_architecture/merge.py::annotate_stale) * -- never recomputed here, so the badge and the Overview \"Controls Active\" * percentage math always agree on which rows are stale."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/StaleRecordsSection.jsx",
+    "blurb": "* Stale Records (spec \u00a75.1 \"Stale Records\" tile drill-through, \u00a79.6)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/ThreatScenariosSection.jsx",
+    "blurb": "* Threat Scenarios section (TM-3, spec \u00a75.10)."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/sections/TrustBoundariesSection.jsx",
+    "blurb": "* Trust Boundaries (spec \u00a75.3, \u00a78 TM-4): vertical flow cards for each * curated boundary crossing. Reads the same GET /section/trust_boundaries * endpoint GenericSection used pre-TM-4 (data shape is a plain curated * record list -- no dedicated backend endpoint needed, spec \u00a74.4's * /trust-boundaries route folds into the existing generic section read), * rendered here as the spec's \"visual vertical flows\" instead of a table."
+  },
+  {
+    "kind": "frontend",
+    "path": "frontend/src/pages/security-architecture/shared/ArchDataGrid.jsx",
+    "blurb": "ARCH workspace DataGrid \u2014 shared primitive with section-scoped styling."
+  },
+  {
+    "kind": "hook",
+    "path": "frontend/src/scoring/riskScore.js",
+    "blurb": "* BRIEFR Risk Score UI helpers (display-only). * * Canonical Threat / Environment / Operational Priority run on the backend: * POST /api/cves/{cve_id}/risk. DetailDrawer displays those API fields only. * Do not recompute Threat or legacy v1.1b totals for UI numbers (W2 / F1.3). * * Weights for legacy formula display come from GET /api/config/risk (cached at startup). * Correlation OP escalation may still be merged client-side until moved server-s"
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/adminLinks.js",
+    "blurb": "Deep links into admin log / health pages for troubleshooting."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/adminMode.js",
+    "blurb": "Product module <code>frontend/src/utils/adminMode.js</code> (<code>adminMode</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/aiAssets.js",
+    "blurb": "AI/ML asset profile helpers (session stack in localStorage)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/apiQueuePresentation.js",
+    "blurb": "Presentation helpers for API queue indicator \u2014 state priority and analyst copy."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/appLinks.js",
+    "blurb": "Instance-aware share/deep links (self-hosted or hosted)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/architectureGraphLayout.js",
+    "blurb": "* Deterministic grid layout for architecture graph nodes. * One column per cluster, rows in server-provided order."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/architectureGraphView.js",
+    "blurb": "Wheel-zoom floor \u2014 users can still zoom out further via Fit."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/assetProfileIo.js",
+    "blurb": "Local file export/import for asset profiles \u2014 never touches localStorage or the server."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/backendRestart.js",
+    "blurb": "Fired when admin config save or manual restart triggers backend reload."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/campaignClusterOpen.js",
+    "blurb": "Prefer stack \u2192 pin \u2192 any campaign member (API returns full `members`)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/caseStudyFeed.js",
+    "blurb": "Product module <code>frontend/src/utils/caseStudyFeed.js</code> (<code>caseStudyFeed</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/chartTheme.js",
+    "blurb": "Read semantic chart colors from CSS custom properties."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/clearPointerState.js",
+    "blurb": "Product module <code>frontend/src/utils/clearPointerState.js</code> (<code>clearPointerState</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/correlationPresentation.js",
+    "blurb": "* Analyst-facing copy for correlation evidence and link strength."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/cveAge.js",
+    "blurb": "Published-age styling \u2014 green for fresh CVEs, amber for recent, muted for older."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/cveFilters.js",
+    "blurb": "Shared CVE filter helpers (stack on server via /api/me/stack, API param mapping)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/detectLabels.js",
+    "blurb": "* Sentence-case confidence label for generated detection hunt starters. * @param {string | null | undefined} raw e.g. LOW, MEDIUM, HIGH"
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/displayPrefs.js",
+    "blurb": "Typography, motion, and poll-interval prefs \u2014 migrates legacy localStorage to <code>/api/me/preferences</code>."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/displayPrefsCore.js",
+    "blurb": "Product module <code>frontend/src/utils/displayPrefsCore.js</code> (<code>displayPrefsCore</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/displayText.js",
+    "blurb": "Coerce API values to safe React text (objects must not be rendered as children)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/domainTermTips.js",
+    "blurb": "* Shared plain-language tips for domain abbreviations (UX jargon sweep). * Analyst surfaces use ExplainTip / ControlTooltip; admin uses HelpTip."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/domainValidation.js",
+    "blurb": "* Validate DNS hostnames for IOC domain detection (ASCII + IDN/punycode)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/epssSparkline.js",
+    "blurb": "Days of daily EPSS context when the selected change window is shorter than a week."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/exploitationDisplay.js",
+    "blurb": "* EPSS percentile tier \u2014 mirrors backend epss_sentence tiers without KEV caveat. * @param {number} score 0\u20131"
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/exportCommon.js",
+    "blurb": "* Shared jsPDF layout constants + helpers used by pdfReport.js and * investigationPdf.js. exportXlsx.js uses write-excel-file; CSV stays in exportCsv.js. * its own color/date handling \u2014 reviewed side-by-side and found no genuine * duplication with the PDF files worth extracting."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/exportCsv.js",
+    "blurb": "Product module <code>frontend/src/utils/exportCsv.js</code> (<code>exportCsv</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/exportXlsx.js",
+    "blurb": "* Analyst-friendly Excel (.xlsx) export with formatting. * CSV export stays in exportCsv.js \u2014 separate button, plain text for integrations. * write-excel-file (sync zip) loads on first XLSX export via dynamic import."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/extractIndicatorsFromCve.js",
+    "blurb": "* Pull analyst-reviewable observables from a CVE record (no auto-lookup). * Uses staged extraction \u2192 validation \u2192 classification \u2192 prioritization."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/feedHealthStatus.js",
+    "blurb": "Feed pipeline status for the main-app header dot (from GET /api/health)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/formatIntelLabel.js",
+    "blurb": "* Display-only formatter for OTX pulse / campaign / intel titles. * * NEVER use the result as a filter key, API identity, or stored value \u2014 * matching and persistence must keep the raw feed string."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/heatmapGrid.js",
+    "blurb": "CVE count \u2192 heatmap fill colour (theme tokens in App.css)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/huntPackPdf.js",
+    "blurb": "* Hunt pack PDF export (FR-3, forge-redesign.md \u00a74/\u00a75) \u2014 jsPDF on the same * pattern as pdfReport.js: lazy-loaded jsPDF, shared exportCommon.js layout * constants/branding, local page-layout helpers (pdfReport.js keeps its own * drawSection/drawCodeBlock private too \u2014 no shared abstraction worth * extracting for one more caller). No new dependency."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/hybridFeedSearch.js",
+    "blurb": "Helpers for FEED hybrid search (Embeddings E4)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/intelProvenance.js",
+    "blurb": "* FR1 \u2014 one provenance line per intel drawer section."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/investigationActors.js",
+    "blurb": "Extract threat-actor-like tags from IOC enrichment tags (VT, etc.)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/investigationLabels.js",
+    "blurb": "Investigation thread display labels derived from item source/taxonomy."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/investigationPdf.js",
+    "blurb": "* Investigation thread PDF (browser-side jsPDF). * jsPDF loads on first export via dynamic import."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/iocLookupMessages.js",
+    "blurb": "Analyst-facing IOC lookup messages (BRIEFR product voice)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/kevDeadline.js",
+    "blurb": "Parse YYYY-MM-DD or ISO due date at UTC noon; null when invalid."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/keyboardScope.js",
+    "blurb": "* Returns true when the event target (or focused element) is a typing surface * where document-level navigation shortcuts must not fire (E6-4 / UI-10)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/lazyWithReload.js",
+    "blurb": "Error messages browsers emit when a hashed Vite chunk 404s after deploy."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/momentumCache.js",
+    "blurb": "* Lightweight momentum score cache + pub-sub. * Lets the DetailDrawer publish momentum scores so CVECards can reactively * show the upward arrow without prop-drilling through App \u2192 CVEFeed \u2192 CVECard."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/morningBriefFormat.js",
+    "blurb": "* @param {number | null | undefined} hours * @returns {string} e.g. \"1 hour\", \"24 hours\""
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/motion.js",
+    "blurb": "Motion helpers \u2014 honor tool-wide `data-motion` toggle (E0-3) + OS preference."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/navHistory.js",
+    "blurb": "* Shell history SSOT \u2014 intentional context changes push; cosmetic URL * cleanup replaces. Prevents Browser Back from skipping Forge/FEED and * dumping users on login (issue 21 / C13)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/notificationChime.js",
+    "blurb": "Short notification chime \u2014 respects mute + reduced motion prefs."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/notificationsApi.js",
+    "blurb": "Product module <code>frontend/src/utils/notificationsApi.js</code> (<code>notificationsApi</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/observableExtraction.js",
+    "blurb": "* Staged observable extraction from CVE intelligence text. * Stage 1: extract candidates \u2192 Stage 2: validate type \u2192 Stage 3: classify context \u2192 Stage 4: prioritize lookup."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/openCveDrawer.js",
+    "blurb": "* Open a CVE in the detail drawer without reopening after the user closes * while a fetch is still in flight."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/patchReferences.js",
+    "blurb": "* CVE-aware remediation reference ranking. * Hostname alone does not make a vendor advisory."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/patchRemediation.js",
+    "blurb": "* Remediation section semantics \u2014 separates vendor fix from CISA required action."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/pdfAiSummary.js",
+    "blurb": "* Load executive summary for PDF export only (called from download handlers)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/pdfReport.js",
+    "blurb": "* Browser-side CVE PDF reports (jsPDF + optional html2canvas capture). * Heavy PDF libs load on first export via dynamic import \u2014 not on first paint."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/personalizationCopy.js",
+    "blurb": "* Honest personalization copy for Forge / Wallboard. * Never claim stack ranking when stack + pins are empty."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/rechartsTheme.js",
+    "blurb": "Pixel width for a Recharts category Y-axis from label strings (no truncation)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/referenceRows.js",
+    "blurb": "* Semantic reference rows for analyst-readable source links."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/report.js",
+    "blurb": "Product module <code>frontend/src/utils/report.js</code> (<code>report</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/safeExternalUrl.js",
+    "blurb": "* Allow only http(s) external links from feed/upstream data (FE-002). * Returns null for javascript:, data:, or unparseable values."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/sectionHeading.js",
+    "blurb": "Product module <code>frontend/src/utils/sectionHeading.js</code> (<code>sectionHeading</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/securityArchitecturePdf.js",
+    "blurb": "* Security Architecture PDF export (TM-5, spec \u00a75.16) \u2014 jsPDF on the same * pattern as huntPackPdf.js / pdfReport.js: lazy-loaded jsPDF, shared * exportCommon.js layout constants/branding, local page-layout helpers. * No new dependency, no reinvented layout helpers. * * Per-section export, not a 17-section mega-document (spec \u00a75.16): Overview * posture snapshot, Risk register, and a selected threat scenario each get * their own \"Export PDF\" actio"
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/severitySemantics.js",
+    "blurb": "CVSS severity scale \u2014 shared copy for legends and portaled tooltips (E4-4)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/sharedObservables.js",
+    "blurb": "* Format shared IOC counts from correlation infrastructure rows."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/shellUrlState.js",
+    "blurb": "Primary navigation \u2194 URL sync for analyst shell and Admin."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/stackLocalSync.js",
+    "blurb": "* Decide whether an external `filters.stack` update should overwrite the * in-progress STACK input value. * * Debounce paths often `trim()` before committing. Replacing local \"nginx \" * with \"nginx\" resets the caret \u2014 the spacebar cursor-jump bug."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/timezone.js",
+    "blurb": "Fixed abbreviations (no DST)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/toggleChipSelection.js",
+    "blurb": "If clicking the active value, clear to `cleared`; else set `next`."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/tutorial.js",
+    "blurb": "Product module <code>frontend/src/utils/tutorial.js</code> (<code>tutorial</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/typographyPrefs.js",
+    "blurb": "Product module <code>frontend/src/utils/typographyPrefs.js</code> (<code>typographyPrefs</code>)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/userPreferences.js",
+    "blurb": "Server-backed display preferences + timezone (Wave 2 PR 5)."
+  },
+  {
+    "kind": "util",
+    "path": "frontend/src/utils/userStack.js",
+    "blurb": "Server-backed user stack (Wave 2 PR 4 \u2014 replaces briefr_stack localStorage)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:api_key_health_check",
+    "blurb": "Lightweight provider key probes \u2014 separate from feed circuits."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:atlas_version_check",
+    "blurb": "MITRE ATLAS version drift check for Incidents/case studies feed."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:backup_deadman_check",
+    "blurb": "Alerts when scheduled backup is stale \u2014 webhook <code>backup_deadman</code> path."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:cache_retention_cleanup",
+    "blurb": "Retention sweep for caches, AI ops, webhook logs, dedupe claims (C3, #418)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:catchup_tick",
+    "blurb": "Catch-up mode nudger \u2014 embeddings, correlation, LLM extraction, CPE catalog."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:cpe_catalog_sync",
+    "blurb": "NVD CPE 2.3 dictionary \u2192 <code>software_catalog</code> (Q3)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:cvelistv5_incremental_sync",
+    "blurb": "CVEList v5 incremental JSON sync \u2014 sibling to NVD modified feed."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:detection_context_llm",
+    "blurb": "Optional LLM artifact enrichment for DetectionContext (restart to register)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:detection_context_sync",
+    "blurb": "Backfill <code>detection_ctx:{cve_id}</code> scaffold rows (default off)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:embeddings_backfill",
+    "blurb": "pgvector embedding backfill for CVEs, techniques, campaigns (E1\u2013E8)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:epss_score_sync",
+    "blurb": "FIRST EPSS CSV ingest with Q5 identity skip on unchanged file hash."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:exploit_sources_sync",
+    "blurb": "Orchestrates exploit feeds (ExploitDB, Metasploit, Nuclei, PoC-GitHub)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:incident_feed_refresh",
+    "blurb": "Rebuild Incidents &amp; News RSS snapshot (five sources + case studies)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:ioc_retro_match",
+    "blurb": "Retro-match IOC watchlist entries against newly ingested pulses."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:kev_backlog_reconcile",
+    "blurb": "Detection backlog reconcile \u2014 emits <code>kev_backlog</code> notifications via <code>detection/backlog.py</code>."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:kev_metadata_sync",
+    "blurb": "CISA KEV catalog sync into KEV deadline tables."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:llm_product_extraction",
+    "blurb": "LLM extraction of affected products for unanalyzed CVEs; durable via Procrastinate when enabled."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:nightly_correlation",
+    "blurb": "Correlation engine v2/v3 nightly run \u2014 Postgres only, no live OTX HTTP."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:nvd_incremental_sync",
+    "blurb": "Incremental NVD 2.0 CVE ingest into <code>cves</code> with watermark; uses <code>resilient_client</code> + <code>api_queue</code>."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:otx_continuous_sync",
+    "blurb": "Registration-gated continuous OTX budget spend across the day."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:otx_nightly_correlation",
+    "blurb": "Nightly OTX pulse ingest pass feeding correlation engine input tables."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:resource_metrics_sample",
+    "blurb": "RB-1 host resource utilization sample for admin Resources page."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:scheduled_backup",
+    "blurb": "Cron database backup to configured backup path."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:session_cleanup",
+    "blurb": "Purges expired sessions and refresh tokens."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:sigmahq_index_sync",
+    "blurb": "Weekly SigmaHQ tarball mirror into Postgres rule index."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:threatfox_sync",
+    "blurb": "ThreatFox bulk IOC mirror for corroboration lanes (CORR-PR-10)."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:vulncheck_kev_sync",
+    "blurb": "VulnCheck community KEV catalog \u2014 no CISA KEV Threat floor."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:vulnrichment_snapshot_sync",
+    "blurb": "CISA Vulnrichment SSVC/CVSS snapshot for <code>/risk</code> SSVC paths."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:watchlist_monitor_alerts",
+    "blurb": "Pinned CVE KEV/EPSS/PoC change detection \u2192 <code>watchlist_alert</code> webhooks."
+  },
+  {
+    "kind": "job",
+    "path": "scheduler:weekly_mitre_refresh",
+    "blurb": "MITRE ATT&amp;CK STIX + CVE\u2192technique mapping refresh for Forge."
+  }
+]

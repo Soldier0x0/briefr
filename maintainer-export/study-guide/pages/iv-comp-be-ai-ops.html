@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backend · AI, ML &amp; operations — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-be-ai-ops" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-be-ai-ops">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 8</span>
+        <h3>Backend · AI, ML &amp; operations</h3>
+        <p class="dek">AI/ML, webhooks, wallboard, backup, monitoring, onboarding.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/gemini_client.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Google Gemini generateContent client.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/groq_config.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared Groq API settings for all BRIEFR LLM call sites.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/llm_pacing.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared LLM provider pacing — RPM/TPM headroom for outbound API queue spacing.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/llm_payload.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Outbound LLM request payload validation — skip API calls when there is nothing to send.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/llm_router.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Task-based multi-provider LLM router with failover (Track K2). Failover order per task — not round-robin. One attempt per provider per call; never parallel-call the same CVE on multiple providers.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/llm_session.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Per-job LLM provider session — skip providers that returned empty after failover.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/model_catalog.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Model catalog SSOT for LLM task → provider failover chains (AI-1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/openai_chat.py` do?</h4>
+        <p class="answer"><strong>A:</strong> OpenAI-compatible chat completion helper (Groq, Cerebras, OpenRouter).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/operations_admin.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin payloads for AI Operations (AI-2).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/operations_recorder.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Record LLM completion attempts to ai_operations (AI-1).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/quota.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Advisory LLM provider quota snapshots from rate-limit response headers.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ai/summary.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Executive summary for PDF reports — multi-provider LLM router, template last. Called only when an analyst explicitly exports a PDF (via API from the client).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/backup/__main__.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CLI: python -m backup [run|list|restore|verify|ensure|keygen]</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/backup/manager.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Database backup manager for BRIEFR (SQLite and PostgreSQL). SQLite: - Online backup via sqlite3.Connection.backup() (WAL-safe) - PRAGMA integrity_check before and after each backup - Automatic restore on startup when the live DB fails integrity check PostgreSQL (when DATABASE_URL is set): - pg_dump custom-format archive (briefr.pgdump inside the tarball) - pg_restore on manual restore (--clean --if-exists) Both backends: - Tar archives with optio</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/backup/postgres_util.py` do?</h4>
+        <p class="answer"><strong>A:</strong> PostgreSQL backup helpers (pg_dump / pg_restore) for backup.manager.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/diagnostics/support_pack.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Builds redacted operator support-pack ZIP (health + ring-buffer logs).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ml/embeddings.py` do?</h4>
+        <p class="answer"><strong>A:</strong> CVE description embeddings — env-gated, CPU-only (V1.3 / E2–E3). **Write path (E2):** dual-write to ``embeddings`` + legacy ``cve_embeddings``. **Related (E3):** request path uses stored vectors only — pgvector ANN (or SQLite BLOB cosine) on ``embeddings``, then legacy ``cve_embeddings`` NumPy scan. No model inference for related. **Semantic search (E3):** may embed a single query string when ``EMBEDDINGS_ENABLED=1`` (design §7.1). Bulk corpus em</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/ml/product_extraction.py` do?</h4>
+        <p class="answer"><strong>A:</strong> LLM product extraction for NVD-unanalyzed CVEs - env-gated (V1.3). Many fresh CVEs carry no CPE data for hours or days. When ``LLM_PRODUCT_EXTRACTION_ENABLED=1`` AND at least one LLM provider API key is set, a scheduler job extracts ``{vendor, product, version_range}`` from the description text and fills ``affected_products`` - ONLY while that field is empty - marking ``affected_products_source='llm'`` so the data stays distinguishable. Official </p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/monitoring/api_key_health.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Lightweight API key health pings for operator monitoring (Issue 21).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/monitoring/notifications.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Operator notification center — durable events from audit log and monitors.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/notifications/emit.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Emit in-app notifications when monitor rules fire.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/onboarding/checklist.py` do?</h4>
+        <p class="answer"><strong>A:</strong> First-hour operator onboarding checklist (Wave 4). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/services/retrieval_health.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Admin retrieval / embeddings index health (post-E8 ops honesty). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/services/semantic_search.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Hybrid semantic search orchestration over embeddings + filters (E3/E8).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/services/stack_backfill_worker.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Process Tier A stack backfill runs (Q4). NVD keyword pages → upsert_cves → EPSS filter apply → KEV flag match. Never calls OTX / exploits / correlation.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/wallboard/service.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Wallboard aggregated payload (Beta V1.4 Theme 4). Read-only intel posture tiles built from existing DB state and cached snapshots — no outbound HTTP, no admin data, no secrets. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/wallboard/session.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Signed httpOnly wallboard session cookies — never stores raw WALLBOARD_TOKEN.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/webhooks/alerts.py` do?</h4>
+        <p class="answer"><strong>A:</strong> KEV-on-stack and backup dead-man alert rules (V1.3 Theme 8, V1.4 engine).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/webhooks/destinations.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Webhook destination configuration — env seeds plus DB overrides (V1.4).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/webhooks/engine.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Multi-destination webhook dispatch engine (V1.4 Theme 2).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/webhooks/sender.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Send alert messages via the V1.4 webhook engine. Destinations are configured through env vars and/or the webhook_destinations table. When no destination is configured, send_alert is a no-op.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/webhooks/ssrf.py` do?</h4>
+        <p class="answer"><strong>A:</strong> SSRF protections for outbound webhook HTTP (V1.4 Theme 2). Validates destination hostnames/IPs before connect, pins resolved IPs on the wire (Host header preserved), allows https only, disables redirects, and never attaches internal API secrets to outbound headers.</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-be-routers.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Backend · routers</span></a><span class="spacer"></span><a class="next" href="iv-comp-be-misc.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend · other packages</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>

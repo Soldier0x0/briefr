@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Backend · core &amp; infra — BRIEFR Study Guide</title>
+  <link rel="stylesheet" href="../assets/book.css">
+</head>
+<body data-page-id="iv-comp-be-core" data-pages-base="" data-assets-base="../assets/">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="book-aside">☰</button>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<div class="shell">
+  <aside id="book-aside" aria-label="Table of contents">
+    <div class="brand"><span class="mark">▮</span><h1><a href="preface.html" style="color:inherit;text-decoration:none">BRIEFR — Study Guide</a></h1></div>
+    <p class="brand-sub">A full architecture textbook</p>
+    <input id="search" type="search" placeholder="Search files, functions, concepts…" autocomplete="off" aria-label="Search study guide">
+    <p id="search-empty" role="status">No matches. Try a shorter term.</p>
+    <div class="toc-progress"><span id="progress-label">0 / 0 read</span><button class="toc-reset" id="progress-reset" type="button">Reset to default</button></div>
+    <div class="toc-progress-bar"><div class="toc-progress-bar-fill" id="progress-fill"></div></div>
+    <nav id="toc" aria-label="Chapters">
+      <div class="toc-group">
+        <a class="toc-link" href="preface.html">Preface — how to use this book</a>
+        <a class="toc-link" href="system-design.html">System Design — 4 diagrams</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0 · Foundations</div>
+        <a class="toc-link toc-sub" href="primer-mechanics.html">Concepts primer</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part 0B · System architecture</div>
+        <a class="toc-link toc-sub" href="arch-monolith.html">Monolith by design</a>
+        <a class="toc-link toc-sub" href="arch-resources.html">The resource-consciousness thread</a>
+        <a class="toc-link toc-sub" href="arch-connectivity.html">How the pieces connect</a>
+        <a class="toc-link toc-sub" href="arch-ai-restraint.html">Why AI is used sparingly</a>
+        <a class="toc-link toc-sub" href="arch-license.html">Why Apache 2.0</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I · Frontend</div>
+        <a class="toc-link toc-sub" href="fe-react.html">Ch 1 · Why React 19</a>
+        <a class="toc-link toc-sub" href="fe-design.html">Ch 2 · Tokens + Radix (ADR-003)</a>
+        <a class="toc-link toc-sub" href="fe-libs.html">Ch 3 · The library registry (ADR-005)</a>
+        <a class="toc-link toc-sub" href="fe-state.html">Ch 4 · State &amp; data flow</a>
+        <a class="toc-link toc-sub" href="fe-tooling.html">Ch 5 · Fonts, exports, testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part I-B · Frontend surface</div>
+        <a class="toc-link toc-sub" href="fe-analyst-shell.html">Ch 5B · Analyst shell</a>
+        <a class="toc-link toc-sub" href="fe-admin-shell.html">Ch 5C · Admin shell</a>
+        <a class="toc-link toc-sub" href="fe-forge-wallboard.html">Ch 5D · Forge, ATLAS &amp; wallboard</a>
+        <a class="toc-link toc-sub" href="fe-shared-utils.html">Ch 5E · Hooks, utils &amp; scoring helpers</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part II · Backend foundations</div>
+        <a class="toc-link toc-sub" href="be-bootstrap.html">Ch 6 · Bootstrap &amp; lifespan</a>
+        <a class="toc-link toc-sub" href="be-config.html">Ch 7 · Config &amp; encrypted secrets</a>
+        <a class="toc-link toc-sub" href="be-shim.html">Ch 8 · The database.py shim</a>
+        <a class="toc-link toc-sub" href="be-data.html">Ch 9 · The data layer</a>
+        <a class="toc-link toc-sub" href="be-alembic.html">Ch 10 · Alembic migrations</a>
+        <a class="toc-link toc-sub" href="be-auth.html">Ch 11 · Authentication</a>
+        <a class="toc-link toc-sub" href="be-ratelimit.html">Ch 12 · Rate limiting</a>
+        <a class="toc-link toc-sub" href="be-logging.html">Ch 13 · Logging &amp; redaction</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part III · Ingest &amp; scheduling</div>
+        <a class="toc-link toc-sub" href="in-feeds.html">Ch 14 · Feed sources</a>
+        <a class="toc-link toc-sub" href="in-scheduler.html">Ch 15 · Scheduler &amp; locks</a>
+        <a class="toc-link toc-sub" href="in-queue.html">Ch 16 · Outbound queue &amp; circuit breakers</a>
+        <a class="toc-link toc-sub" href="in-jobs.html">Ch 17 · Durable jobs (Procrastinate)</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part IV · Intelligence engines</div>
+        <a class="toc-link toc-sub" href="ie-scoring.html">Ch 18 · Risk &amp; Threat scoring</a>
+        <a class="toc-link toc-sub" href="ie-matching.html">Ch 19 · Asset/CPE matching</a>
+        <a class="toc-link toc-sub" href="ie-correlation.html">Ch 20 · Correlation engine</a>
+        <a class="toc-link toc-sub" href="ie-detection.html">Ch 21 · Detection engineering</a>
+        <a class="toc-link toc-sub" href="ie-brief.html">Ch 22 · The morning brief</a>
+        <a class="toc-link toc-sub" href="ie-threatmodel.html">Ch 23 · Threat modeling &amp; provenance</a>
+        <a class="toc-link toc-sub" href="ie-ml.html">Ch 24 · ML &amp; LLM enrichment</a>
+        <a class="toc-link toc-sub" href="ie-ml-providers.html">Ch 24B · Inside the LLM chain</a>
+        <a class="toc-link toc-sub" href="ie-retrieval-ops.html">Ch 24C · Retrieval ops &amp; auto-on-ingest</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V · API surface &amp; ops</div>
+        <a class="toc-link toc-sub" href="api-routers.html">Ch 25 · Routers</a>
+        <a class="toc-link toc-sub" href="api-secarch.html">Ch 26 · Security architecture (self-doc)</a>
+        <a class="toc-link toc-sub" href="api-webhooks.html">Ch 27 · Webhooks &amp; SSRF</a>
+        <a class="toc-link toc-sub" href="api-usersettings.html">Ch 28 · User-facing settings</a>
+        <a class="toc-link toc-sub" href="api-proof.html">Ch 29 · Proof, services &amp; templates</a>
+        <a class="toc-link toc-sub" href="api-ops.html">Ch 30 · Ops &amp; observability</a>
+        <a class="toc-link toc-sub" href="api-scripts.html">Ch 31 · Scripts &amp; guardrails</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part V-B · Operations</div>
+        <a class="toc-link toc-sub" href="devops-deploy.html">Ch 32 · Deployment &amp; infrastructure</a>
+        <a class="toc-link toc-sub" href="devops-ci.html">Ch 33 · CI/CD &amp; testing</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Security posture</div>
+        <a class="toc-link toc-sub" href="sec-identity.html">1 · Identity &amp; session security</a>
+        <a class="toc-link toc-sub" href="sec-network.html">2 · Network trust boundaries</a>
+        <a class="toc-link toc-sub" href="sec-secrets.html">3 · Secrets, at rest and in logs</a>
+        <a class="toc-link toc-sub" href="sec-availability.html">4 · Availability &amp; request-path discipline</a>
+        <a class="toc-link toc-sub" href="sec-selfassess.html">5 · Self-assessment as a feature</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VI · Roadmap</div>
+        <a class="toc-link toc-sub" href="roadmap-nongoals.html">1 · Explicit non-goals</a>
+        <a class="toc-link toc-sub" href="roadmap-reversed.html">2 · Tried and reversed</a>
+        <a class="toc-link toc-sub" href="roadmap-future.html">3 · What's next &amp; open gaps</a>
+      </div>
+
+
+      <div class="toc-group">
+        <div class="toc-group-title">Part VII · Interview preparation</div>
+        <a class="toc-link toc-sub" href="iv-part.html">How to use this section</a>
+        <a class="toc-link toc-sub" href="iv-architecture.html">1 · Architecture & system design</a>
+        <a class="toc-link toc-sub" href="iv-security.html">2 · Security & trust boundaries</a>
+        <a class="toc-link toc-sub" href="iv-secarch-threatmodel.html">3 · Security architecture & threat modeling</a>
+        <a class="toc-link toc-sub" href="iv-backend-db.html">4 · Backend & database</a>
+        <a class="toc-link toc-sub" href="iv-nvd-pipeline.html">5 · NVD ingestion & feed pipeline</a>
+        <a class="toc-link toc-sub" href="iv-ingest-scheduler.html">6 · Ingest & scheduler</a>
+        <a class="toc-link toc-sub" href="iv-correlation-scoring.html">7 · Correlation & scoring</a>
+        <a class="toc-link toc-sub" href="iv-campaign-ioc.html">8 · Campaign, IOC & graph logic</a>
+        <a class="toc-link toc-sub" href="iv-ml-embeddings.html">9 · ML & embeddings</a>
+        <a class="toc-link toc-sub" href="iv-detection-forge.html">10 · Detection & Forge</a>
+        <a class="toc-link toc-sub" href="iv-frontend-ux.html">11 · Frontend & UX</a>
+        <a class="toc-link toc-sub" href="iv-api-ops.html">12 · API & operations</a>
+        <a class="toc-link toc-sub" href="iv-devops-deploy.html">13 · DevOps & deploy</a>
+        <a class="toc-link toc-sub" href="iv-tests-docs.html">14 · Tests, docs & roadmap</a>
+        <a class="toc-link toc-sub" href="iv-product-behavioral.html">15 · Product, behavioral & solo owner</a>
+      </div>
+      <div class="toc-group">
+        <div class="toc-group-title">Part VIII · Component reference</div>
+        <a class="toc-link toc-sub" href="iv-comp-scheduler.html">1 · Scheduler jobs</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-core.html">2 · Backend · core & infra</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-db.html">3 · Backend · database</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-feeds.html">4 · Backend · feeds</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-correlation.html">5 · Backend · correlation</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-scoring-detection.html">6 · Backend · scoring & detection</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-routers.html">7 · Backend · routers</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-ai-ops.html">8 · Backend · AI, ML & operations</a>
+        <a class="toc-link toc-sub" href="iv-comp-be-misc.html">9 · Backend · other packages</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-shell.html">10 · Frontend · analyst shell</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-drawer.html">11 · Frontend · DetailDrawer</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-forge.html">12 · Frontend · Forge & wallboard</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-admin.html">13 · Frontend · admin console</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-ui.html">14 · Frontend · UI primitives</a>
+        <a class="toc-link toc-sub" href="iv-comp-fe-utils.html">15 · Frontend · utils, hooks & context</a>
+      </div>
+
+      <div class="toc-group">
+        <div class="toc-group-title">Reference</div>
+        <a class="toc-link toc-sub" href="glossary-content.html">Glossary</a>
+        <a class="toc-link toc-sub" href="self-check.html">Self-check index</a>
+      </div>
+    </nav>
+  </aside>
+  <main id="main-content">
+    <section class="page active chapter" id="iv-comp-be-core">
+      <div class="chapter-head">
+        <span class="chapter-num">Components · 2</span>
+        <h3>Backend · core &amp; infra</h3>
+        <p class="dek">Entrypoint, auth, HTTP client, rate limits, settings, logging.</p>
+      </div>
+      <div class="prose">
+
+      </div>
+      <h4 class="interview-category">What it does</h4>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/api_metering.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Q2 API metering — persists every <code>resilient_request</code> attempt to <code>api_call_events</code>.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/api_queue.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Global outbound API request queue — wait for slots, never drop on rate limits.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/api_queue_operations.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Controlled operation labels and safe context for API queue task metadata.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/auth/passwords.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Password hashing for built-in app login (decision 2026-06-11). Plain `bcrypt` (not passlib — unmaintained, broken compat with bcrypt>=4.1). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/auth/repo.py` do?</h4>
+        <p class="answer"><strong>A:</strong> DB access for built-in app login: users + sessions. Mirrors the free-function-taking-a-db-connection style used throughout database.py. Callers own the connection lifecycle (acquire, commit, close). Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/auth/tokens.py` do?</h4>
+        <p class="answer"><strong>A:</strong> JWT access tokens + opaque refresh tokens for built-in app login. Access tokens are stateless JWTs (cheap per-request verification). Refresh tokens are opaque random strings; only their SHA-256 hash is ever persisted (see auth/repo.py's `sessions` table) so a DB leak doesn't hand out usable tokens. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/auth/usernames.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Username validation for built-in app login. Usernames are normalized to lowercase on storage and lookup. Rules are intentionally strict to reduce homograph confusion and keep audit logs readable. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/auth_middleware.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Session gate on analyst <code>/api/*</code> routes; validates <code>briefr_at</code> cookie before handlers (#441).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/catchup_mode.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/catchup_mode.py</code> (<code>catchup_mode</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/config_schema.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Owns WRITABLE_CONFIG_KEYS schema for admin operator settings (single source). Replaces the three separately-maintained sets that used to live in routers/admin.py (WRITABLE_CONFIG_KEYS, INTEGER_KEYS, RESTART_REQUIRED_KEYS) with one schema carrying type, bounds, help text, and section grouping — so the frontend can render labels/help text and pre-validate without a second hand-maintained copy of the same key list, and adding a new writable key is a</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/database.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Backward-compatibility shim — import from db.* submodules directly for new code. database.py was split into backend/db/ (Phase 3 refactor). Every function moved verbatim; this file only re-exports so the 35+ existing `from database import ...` call sites keep working unchanged. DB_PATH stays defined here (not delegated to a submodule): db/connection.py does a lazy `import database; database.DB_PATH` specifically so per-test `monkeypatch.setattr("</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/dependencies.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared route dependencies (V1.2 §5.2 router split). Session/role gates and the audit-log writer used by the admin/refresh routes. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/destructive_actions.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Single source of truth for confirm-gated destructive admin actions. Generalizes the confirm-text pattern that previously lived only in routers/admin.py's storage-purge map (_PURGE_CONFIRM_MAP), so every destructive action — not just storage purges — is gated the same way and the frontend can render confirm dialogs generically via GET /api/admin/destructive-actions instead of hardcoding confirm words per page. Copyright © 2026 Sai Harsha Vardhan S</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/main.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/main.py</code> (<code>main</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/operator_settings.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Owns DB seed/hydrate of writable operator keys (env wins); does not define keys. Hydrate operator settings from DB at startup (env wins over DB over .env). Secret-typed keys in `app_settings` are encrypted at rest when `BRIEFR_SETTINGS_KEY` is set (ADR-006). Process env still wins.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/rate_limit.py` do?</h4>
+        <p class="answer"><strong>A:</strong> In-memory token-bucket rate limiting (V1.2 §5.5). Protects the abuse-prone endpoints — `POST /api/ioc/lookup` (burns external API quota per miss) and `POST /api/refresh*` (kicks off heavy ingest jobs). Buckets are process-local: the deployment deliberately runs a single uvicorn worker (`--workers 1` in `deploy/briefr-backend.service`) so one process holds all buckets; adding workers would silently multiply every limit by the worker count. Revisit</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/rate_limit_store.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Optional shared rate-limit bucket state (Track I Phase 3b). When ``BRIEFR_RATE_LIMIT_STORE=db``, token buckets persist in ``sync_state`` so multiple uvicorn workers share limits. Default remains in-memory (single worker) for zero-config tests and dev.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/read_cache.py` do?</h4>
+        <p class="answer"><strong>A:</strong> In-process TTL cache for hot read endpoints (Track I5). No Redis — dict + monotonic clock. Tests call ``clear_read_cache()`` between cases.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/redact.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared secret/url masking for admin config, audit logs, and API responses.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/resilient_client.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Shared resilient HTTP client for all outbound intel sources. One pooled httpx.AsyncClient + per-source retries, circuit breakers, a global API queue (rate-limit pacing — requests wait, never drop), and a health registry surfaced on /api/health.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/resource_collector.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Process-tree resource sampling for RB-1 (scheduler-side only).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scheduler.py` do?</h4>
+        <p class="answer"><strong>A:</strong> APScheduler owner — registers recurring ingest, correlation, backup, and hygiene jobs with per-job asyncio locks.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/scheduler_locks.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/scheduler_locks.py</code> (<code>scheduler_locks</code>).</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/settings.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Owns process/env Settings (Pydantic BaseSettings); not admin writable keys. Application settings (V1.2 §5.2 phase 1). Pydantic BaseSettings for env config. Phase 1 migrates only the variables main.py read at module import time; per-request `os.environ.get` reads elsewhere keep their current call-time semantics and move here in later router-split phases. Copyright © 2026 Sai Harsha Vardhan SPDX-License-Identifier: Apache-2.0</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/settings_crypto.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Encrypt secret-typed operator settings at rest in `app_settings`. See docs/decisions/ADR-006-encrypted-app-settings-secrets.md.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/source_rate_limits.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Per-source outbound API pacing derived from official provider documentation. BRIEFR never drops requests for rate limits — callers wait in the queue until a slot opens. Intervals here are minimum spacing between requests for each pacing group (conservative defaults when docs only publish daily/monthly caps). References: - NVD: https://nvd.nist.gov/developers/start (5 req/30s w/o key, 50/30s w/ key) - Groq: https://console.groq.com/docs/rate-limit</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/storage_metrics.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Storage metrics helpers — table sizes, growth estimate, host disk I/O.</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/structured_logging.py` do?</h4>
+        <p class="answer"><strong>A:</strong> JSON structured logging with request IDs (V1.2 §5.5). One JSON object per line on stderr (journald-friendly), every line carrying a `request_id` field — surfaced in the V1.4 admin log viewer via an in-process ring buffer. The request ID is set per request by the `request_context` middleware in `main.py` (contextvar), returned to clients in the `X-Request-ID` response header, and honoured when a well-formed `X-Request-ID` arrives on the request. `</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/task_registry.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Fire-and-forget asyncio task registry with bounded shutdown drain (PR-R1). The event loop only holds weak references to tasks, and until PR-R1 each spawn site kept its own strong-reference set that nothing awaited at shutdown (audit REST-002/REST-012): an ingest or snapshot build could be killed mid-write when uvicorn stopped. All fire-and-forget spawns register here so the lifespan shutdown can wait — bounded, never indefinitely — for them to fi</p>
+      </div>
+      <div class="interview-qa">
+        <h4>Q: What does `backend/tracking.py` do?</h4>
+        <p class="answer"><strong>A:</strong> Product module <code>backend/tracking.py</code> (<code>tracking</code>).</p>
+      </div>
+    </section>
+    <nav class="page-nav" id="page-nav" aria-label="Page"><a class="prev" href="iv-comp-scheduler.html"><span class="nav-label">&larr; Previous</span><span class="nav-title">Scheduler jobs</span></a><span class="spacer"></span><a class="next" href="iv-comp-be-db.html"><span class="nav-label">Next &rarr;</span><span class="nav-title">Backend · database</span></a></nav>
+
+    <footer>
+      Built from a direct read of the BRIEFR codebase. When this disagrees with the repo, trust the repo.
+      · <a href="preface.html">Book home</a>
+      · <a href="../../learn/index.html">Learn pathways</a>
+      · Regenerate interview section: <code>maintainer-export/generate_interview_guide.py</code>
+    </footer>
+  </main>
+</div>
+<script src="../assets/book.js"></script>
+</body>
+</html>
