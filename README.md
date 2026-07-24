@@ -35,7 +35,15 @@ BRIEFR is open-source software under the **Apache License 2.0** — clone it, se
 
 ## Screenshots
 
-Committed UI screenshots are not in this tree yet. Maintainers can use [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md) and `scripts/capture_readme_screenshots.mjs` to regenerate reader-facing captures when the app is running with seeded data.
+Captured from a live BRIEFR instance backed by PostgreSQL (production-shaped data). Regenerate with [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) after seeding or restoring a database — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md).
+
+| BRIEF | FEED | CVE detail |
+|-------|------|------------|
+| ![BRIEF tab — morning stats, analyst charts, heatmap](docs/assets/screenshots/brief.png) | ![FEED tab — stack filter, CVE cards, sidebar](docs/assets/screenshots/feed.png) | ![CVE detail drawer — Intel tab](docs/assets/screenshots/detail-drawer.png) |
+
+| IOC lookup | Incidents & news | Admin security |
+|------------|------------------|----------------|
+| ![IOC LOOKUP tab](docs/assets/screenshots/ioc-lookup.png) | ![Incidents & News tab](docs/assets/screenshots/incidents-news.png) | ![Admin Security page](docs/assets/screenshots/admin-security.png) |
 
 ---
 
@@ -421,19 +429,20 @@ cd frontend && npm install
 node ../scripts/generate_system_design_pdf.mjs
 ```
 
-Regenerate screenshots (backend on `:8000`, frontend on `:5173`):
+Regenerate screenshots (backend on `:8000`, frontend on `:5173`, authenticated session):
 
 ```bash
-# 1) Seed sample CVE rows and warm RSS caches (skip CVE seed when 10+ rows exist)
-python3 scripts/seed_screenshot_data.py
+# Restore or seed a database with realistic CVE + RSS data (Postgres recommended).
+# Example: restore a pg_dump bundle, then run pending Alembic migrations.
 
-# 2) Start backend + frontend, then capture (requires network for live RSS)
+# Start backend + frontend, then capture (requires network for live RSS refresh)
 cd frontend && npm install playwright --save-dev
 npx playwright install chromium
-node ../scripts/capture_readme_screenshots.mjs
+SCREENSHOT_USERNAME=admin SCREENSHOT_PASSWORD='your-password' \
+  node ../scripts/capture_readme_screenshots.mjs
 ```
 
-Screenshots use **live RSS headlines** and a **seeded CVE database** so tabs show realistic data (not empty placeholders). The capture script preflights `/api/health` and `/api/case-studies/feed`, rejects `database is locked` feed errors, and requires CVE cards plus RSS news badges before writing images. It captures the **viewport only** (1440×900) so the BRIEF feed's infinite scroll does not produce an overly tall image, and **exits with code 1** on missing data, feed errors, or failed selectors (no silent blank captures).
+Screenshots use **live RSS headlines** and a **populated CVE database** so tabs show realistic data. The capture script logs in via `/api/auth/login`, preflights `/api/health` and `/api/case-studies/feed`, dismisses the first-run tutorial overlay, and writes both `docs/assets/screenshots/*.png` and `docs/assets/ui-*.png` aliases for [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md). It captures the **viewport only** (1440×900) and **exits with code 1** on missing data, feed errors, or failed selectors.
 
 Regenerate the technical inventory spreadsheet:
 
