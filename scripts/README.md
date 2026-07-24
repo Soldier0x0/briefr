@@ -8,7 +8,7 @@ management scripts (create user, backfill, env sync) live in `backend/scripts/`.
 |--------|---------|--------|
 | `verify-local.sh` | Local pre-merge gate mirroring CI (`--full` adds Postgres pytest, gitleaks, Playwright) | exit code |
 | `seed_screenshot_data.py` | Seed sample CVEs + warm RSS caches for local dev / captures | database rows |
-| `capture_readme_screenshots.mjs` | README screenshots via Playwright | `docs/assets/screenshots/` |
+| `capture_readme_screenshots.mjs` | README + docs UI screenshots via Playwright (requires backend `:8000`, frontend `:5173`, `SCREENSHOT_PASSWORD`) | `docs/assets/screenshots/` + `docs/assets/ui-*.png` |
 | `capture_theme_screenshots.mjs` | Theme-audit screenshots | `docs/assets/screenshots/theme-audit/` |
 | `generate_system_design_pdf.mjs` | Printable architecture doc from `docs/SYSTEM_DESIGN.md` | `SYSTEM_DESIGN.pdf` (gitignored) |
 | `generate_technical_inventory_xlsx.py` | Inventory spreadsheet (`pip install openpyxl` or `pip install -r requirements-docs.txt`) | `TECHNICAL_INVENTORY.xlsx` (gitignored) |
