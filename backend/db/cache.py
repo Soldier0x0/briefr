@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from db.cve import _SQLITE_IN_CHUNK, _insert_cve_changes_batch
 from db.timeutil import utcnow_str
 from db.types import DbConnection
+from ttl_constants import HOURS_PER_YEAR
 
 _IOC_TTL_HOURS = 6
 _CIRCL_CACHE_TTL_HOURS = 168
@@ -306,7 +307,7 @@ async def store_cve_exploits(
     db: DbConnection, cve_id: str, exploits: list[dict]
 ) -> None:
     await merge_cve_exploits(db, cve_id, exploits)
-    merged = await read_cve_exploits_from_db(db, cve_id, max_age_hours=24 * 365)
+    merged = await read_cve_exploits_from_db(db, cve_id, max_age_hours=HOURS_PER_YEAR)
     await set_feed_cache(
         db,
         f"sploitus:{cve_id.upper()}",

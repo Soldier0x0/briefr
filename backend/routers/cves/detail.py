@@ -39,6 +39,7 @@ from intel.provenance import (
 from ml.embeddings import embeddings_enabled, find_similar_cves
 from routers._validators import require_cve_id
 from scoring.risk import calculate_momentum
+from ttl_constants import HOURS_PER_YEAR
 from templates.intelligence import (
     epss_sentence_or_fallback,
     exploit_sentence,
@@ -396,7 +397,7 @@ async def _load_cve_detail_from_db(cve_key: str) -> dict:
                 cve["kev_cwes"] = parsed_cwes if isinstance(parsed_cwes, list) else []
             except (json.JSONDecodeError, TypeError):
                 cve["kev_cwes"] = []
-        ssvc_cached = await get_feed_cache(db, f"ssvc:{cve_key}", max_age_hours=24 * 365)
+        ssvc_cached = await get_feed_cache(db, f"ssvc:{cve_key}", max_age_hours=HOURS_PER_YEAR)
         if ssvc_cached and isinstance(ssvc_cached.get("decisions"), dict):
             cve["ssvc"] = ssvc_cached
         cve["techniques"] = await get_techniques_for_cve(db, cve_key)

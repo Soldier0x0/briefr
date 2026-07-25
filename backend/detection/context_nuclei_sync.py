@@ -15,6 +15,7 @@ from detection.context import (
     _parse_cwe_ids,
 )
 from detection.nuclei_parser import parse_nuclei_template_yaml
+from ttl_constants import HOURS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,7 @@ async def run_detection_context_nuclei_for_cves(
                 continue
             row = dict(rows[0])
             exploits = await read_cve_exploits_from_db(
-                db, cve_id, max_age_hours=24 * 365
+                db, cve_id, max_age_hours=HOURS_PER_YEAR
             )
             if not exploits:
                 stats["skipped"] += 1

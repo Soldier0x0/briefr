@@ -17,6 +17,7 @@ from detection.context import (
     set_detection_context,
     _parse_cwe_ids,
 )
+from ttl_constants import HOURS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ async def run_detection_context_llm_sync(
 
             async def _read_exploits(conn):
                 return await read_cve_exploits_from_db(
-                    conn, cve_id, max_age_hours=24 * 365
+                    conn, cve_id, max_age_hours=HOURS_PER_YEAR
                 )
 
             if db is not None:

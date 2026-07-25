@@ -15,6 +15,7 @@ from detection.rule_sources import find_elastic_rules, find_sigma_rules
 from detection.siem_queries import get_siem_queries
 from detection.sigma_generator import generate_sigma_rule_bundle
 from detection.yara_generator import find_yara_rules_for_cve
+from ttl_constants import HOURS_PER_YEAR
 
 __all__ = ["compose_detection_evidence", "emit_composed_detection"]
 
@@ -110,7 +111,7 @@ async def compose_detection_evidence(
         else []
     )
 
-    exploits = await read_cve_exploits_from_db(db, cve_key, max_age_hours=24 * 365) or []
+    exploits = await read_cve_exploits_from_db(db, cve_key, max_age_hours=HOURS_PER_YEAR) or []
     nuclei_urls = _nuclei_urls(exploits)
     yara_rules = await find_yara_rules_for_cve(db, cve_key)
 

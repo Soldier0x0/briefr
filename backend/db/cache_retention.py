@@ -14,12 +14,13 @@ from datetime import datetime, timedelta, timezone
 
 from db.resource_metrics import purge_old_resource_metrics
 from db.types import DbConnection
+from ttl_constants import HOURS_PER_YEAR
 
 # Physical retention >= read TTL for each key family (hours).
 IOC_CACHE_RETENTION_HOURS = 24
 
 FEED_CACHE_PREFIX_RETENTION: tuple[tuple[str, float], ...] = (
-    ("ssvc:", 24 * 365),
+    ("ssvc:", HOURS_PER_YEAR),
     ("correlation:v2:", 7 * 24),
     ("correlation:v1:", 7 * 24),
     ("circl:", 168),
