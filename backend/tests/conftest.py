@@ -481,11 +481,17 @@ def smoke_page(playwright_smoke_stack, smoke_auth_cookies, browser):
         try {
           localStorage.removeItem('briefr_theme');
           document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('briefr_tutorial_seen', '1');
         } catch {}
         """
     )
     page.goto(playwright_smoke_stack, wait_until="networkidle", timeout=120_000)
     page.wait_for_selector(".header .header-logo-btn", timeout=60_000)
+    # Belt-and-suspenders: first-visit tutorial scrim blocks pointer events in smoke.
+    tutorial = page.locator(".tutorial-overlay")
+    if tutorial.count() > 0:
+        page.get_by_role("button", name="Close tutorial (Escape)").click()
+        tutorial.wait_for(state="detached", timeout=10_000)
     yield page
     context.close()
 
