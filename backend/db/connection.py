@@ -19,6 +19,16 @@ logger = logging.getLogger(__name__)
 _pool: Any | None = None
 
 
+def _pool_loop_matches_running(pool: Any) -> bool:
+    """True when *pool* was created on the currently running event loop."""
+    try:
+        running = asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    pool_loop = getattr(pool, "_loop", None)
+    return pool_loop is running and not pool_loop.is_closed()
+
+
 class PoolExhaustedError(RuntimeError):
     """Raised when asyncpg pool.acquire() exceeds the configured timeout."""
 
@@ -181,7 +191,11 @@ async def init_pool() -> None:
     if not is_postgres():
         return
     if _pool is not None:
-        return
+        if _pool_loop_matches_running(_pool):
+            return
+        # pytest-asyncio (function scope) and run_db_test's asyncio.run() each
+        # use distinct loops — drop a pool bound to a closed/other loop.
+        _pool = None
     import asyncpg
 
     dsn = postgres_dsn()
@@ -212,15 +226,19 @@ async def init_pool() -> None:
 
 async def close_pool() -> None:
     global _pool
-    if _pool is not None:
-        try:
-            await asyncio.wait_for(_pool.close(), timeout=5.0)
-        except asyncio.TimeoutError:
-            logger.warning(
-                "db/connection.py close_pool(): timed out after 5s — "
-                "connections may still be leaked; process exit will reclaim them"
-            )
-        _pool = None
+    if _pool is None:
+        return
+    pool = _pool
+    _pool = None
+    if not _pool_loop_matches_running(pool):
+        return
+    try:
+        await asyncio.wait_for(pool.close(), timeout=5.0)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "db/connection.py close_pool(): timed out after 5s — "
+            "connections may still be leaked; process exit will reclaim them"
+        )
 
 
 async def get_connection() -> SqliteConnection | PostgresConnection:

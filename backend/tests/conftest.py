@@ -141,6 +141,7 @@ def run_db_test(coro):
     from db.connection import close_pool, init_pool
 
     async def _wrapped():
+        await close_pool()
         await init_pool()
         try:
             return await coro
