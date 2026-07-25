@@ -144,60 +144,60 @@ def test_client_key_falls_back_to_x_real_ip_then_peer():
 def test_spoofed_xff_does_not_bypass_endpoint_rate_limit():
     """TestClient's peer is not a loopback proxy, so the spoofed header is
     ignored and the drained bucket still answers 429."""
-    client = TestClient(app)
-    _drain(rate_limit.ioc_bucket)
-    try:
-        resp = client.post(
-            "/api/ioc/lookup",
-            json={"value": "1.2.3.4", "type": "ip"},
-            headers={"X-Forwarded-For": "203.0.113.77"},
-        )
-        assert resp.status_code == 429
-    finally:
-        _reset(rate_limit.ioc_bucket)
+    with TestClient(app) as client:
+        _drain(rate_limit.ioc_bucket)
+        try:
+            resp = client.post(
+                "/api/ioc/lookup",
+                json={"value": "1.2.3.4", "type": "ip"},
+                headers={"X-Forwarded-For": "203.0.113.77"},
+            )
+            assert resp.status_code == 429
+        finally:
+            _reset(rate_limit.ioc_bucket)
 
 
 # ------------------------------------------------------------ endpoint tests
 
 
 def test_ioc_lookup_returns_429_with_retry_after_when_drained():
-    client = TestClient(app)
-    _drain(rate_limit.ioc_bucket)
-    try:
-        resp = client.post(
-            "/api/ioc/lookup", json={"value": "1.2.3.4", "type": "ip"}
-        )
-        assert resp.status_code == 429
-        assert "Retry-After" in resp.headers
-        assert int(resp.headers["Retry-After"]) >= 1
-        assert "detail" in resp.json()
-    finally:
-        _reset(rate_limit.ioc_bucket)
+    with TestClient(app) as client:
+        _drain(rate_limit.ioc_bucket)
+        try:
+            resp = client.post(
+                "/api/ioc/lookup", json={"value": "1.2.3.4", "type": "ip"}
+            )
+            assert resp.status_code == 429
+            assert "Retry-After" in resp.headers
+            assert int(resp.headers["Retry-After"]) >= 1
+            assert "detail" in resp.json()
+        finally:
+            _reset(rate_limit.ioc_bucket)
 
 
 def test_ioc_lookup_not_rate_limited_under_the_limit():
     """Under the limit the handler runs (proven by its own 400 validation)."""
-    client = TestClient(app)
-    _reset(rate_limit.ioc_bucket)
-    resp = client.post("/api/ioc/lookup", json={"value": "x", "type": "bogus"})
-    assert resp.status_code == 400
-    _reset(rate_limit.ioc_bucket)
+    with TestClient(app) as client:
+        _reset(rate_limit.ioc_bucket)
+        resp = client.post("/api/ioc/lookup", json={"value": "x", "type": "bogus"})
+        assert resp.status_code == 400
+        _reset(rate_limit.ioc_bucket)
 
 
 def test_all_refresh_routes_return_429_when_drained():
-    client = TestClient(app)
-    for path in (
-        "/api/refresh",
-        "/api/refresh/nvd",
-        "/api/refresh/kev",
-        "/api/refresh/epss",
-        "/api/refresh/mitre",
-    ):
-        _drain(rate_limit.refresh_bucket)
-        resp = client.post(path)
-        assert resp.status_code == 429, path
-        assert int(resp.headers["Retry-After"]) >= 1
-    _reset(rate_limit.refresh_bucket)
+    with TestClient(app) as client:
+        for path in (
+            "/api/refresh",
+            "/api/refresh/nvd",
+            "/api/refresh/kev",
+            "/api/refresh/epss",
+            "/api/refresh/mitre",
+        ):
+            _drain(rate_limit.refresh_bucket)
+            resp = client.post(path)
+            assert resp.status_code == 429, path
+            assert int(resp.headers["Retry-After"]) >= 1
+        _reset(rate_limit.refresh_bucket)
 
 
 def test_refresh_passes_through_under_the_limit(monkeypatch, auth_token):
@@ -210,42 +210,42 @@ def test_refresh_passes_through_under_the_limit(monkeypatch, auth_token):
     monkeypatch.setattr(refresh_router, "_spawn", lambda coro: coro.close())
     monkeypatch.setattr(refresh_router, "audit", noop_audit)
 
-    client = TestClient(app)
-    client.cookies.set("briefr_at", auth_token())
-    _reset(rate_limit.refresh_bucket)
-    resp = client.post("/api/refresh/kev")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
-    _reset(rate_limit.refresh_bucket)
+    with TestClient(app) as client:
+        client.cookies.set("briefr_at", auth_token())
+        _reset(rate_limit.refresh_bucket)
+        resp = client.post("/api/refresh/kev")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+        _reset(rate_limit.refresh_bucket)
 
 
 def test_rate_limit_consumed_before_auth_check():
     """Unauthenticated bursts must not bypass the bucket."""
-    client = TestClient(app)
-    _drain(rate_limit.refresh_bucket)
-    resp = client.post("/api/refresh")
-    assert resp.status_code == 429
-    _reset(rate_limit.refresh_bucket)
+    with TestClient(app) as client:
+        _drain(rate_limit.refresh_bucket)
+        resp = client.post("/api/refresh")
+        assert resp.status_code == 429
+        _reset(rate_limit.refresh_bucket)
 
 
 def test_rate_limit_disabled_flag_bypasses_bucket(monkeypatch):
     monkeypatch.setattr(settings, "rate_limit_enabled", False)
-    client = TestClient(app)
-    _drain(rate_limit.ioc_bucket)
-    resp = client.post("/api/ioc/lookup", json={"value": "x", "type": "bogus"})
-    # 400 (handler validation) proves the request was not rejected with 429.
-    assert resp.status_code == 400
-    _reset(rate_limit.ioc_bucket)
+    with TestClient(app) as client:
+        _drain(rate_limit.ioc_bucket)
+        resp = client.post("/api/ioc/lookup", json={"value": "x", "type": "bogus"})
+        # 400 (handler validation) proves the request was not rejected with 429.
+        assert resp.status_code == 400
+        _reset(rate_limit.ioc_bucket)
 
 
 def test_other_endpoints_are_not_rate_limited():
-    client = TestClient(app)
-    _drain(rate_limit.ioc_bucket)
-    _drain(rate_limit.refresh_bucket)
-    resp = client.get("/api/config/risk")
-    assert resp.status_code == 200
-    _reset(rate_limit.ioc_bucket)
-    _reset(rate_limit.refresh_bucket)
+    with TestClient(app) as client:
+        _drain(rate_limit.ioc_bucket)
+        _drain(rate_limit.refresh_bucket)
+        resp = client.get("/api/config/risk")
+        assert resp.status_code == 200
+        _reset(rate_limit.ioc_bucket)
+        _reset(rate_limit.refresh_bucket)
 
 
 def test_get_top_consumers_includes_auth_buckets():

@@ -18,7 +18,12 @@ from database import get_db, init_db
 from tests.conftest import run_db_test
 
 
-def _utc(days_ago: float = 0):
+def _utc(days_ago: float = 0) -> str:
+    dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _history_ts(days_ago: float = 0):
     dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
     return dt if is_postgres() else dt.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -136,12 +141,12 @@ def test_purge_old_cve_change_history_round_trip(tmp_path, monkeypatch):
                     "severity",
                     "LOW",
                     "HIGH",
-                    _utc(120),
+                    _history_ts(120),
                     "CVE-2024-0002",
                     "severity",
                     "LOW",
                     "MEDIUM",
-                    _utc(1),
+                    _history_ts(1),
                 ),
             )
             await db.commit()

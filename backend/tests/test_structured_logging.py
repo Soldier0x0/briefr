@@ -84,34 +84,34 @@ def test_formatter_includes_exception_info():
 
 
 def test_every_response_carries_a_generated_request_id():
-    client = TestClient(app)
-    resp = client.get("/api/config/risk")
-    assert resp.status_code == 200
-    request_id = resp.headers.get("X-Request-ID", "")
-    assert len(request_id) == 16
-    int(request_id, 16)  # uuid4 hex prefix
+    with TestClient(app) as client:
+        resp = client.get("/api/config/risk")
+        assert resp.status_code == 200
+        request_id = resp.headers.get("X-Request-ID", "")
+        assert len(request_id) == 16
+        int(request_id, 16)  # uuid4 hex prefix
 
 
 def test_wellformed_incoming_request_id_is_echoed():
-    client = TestClient(app)
-    resp = client.get("/api/config/risk", headers={"X-Request-ID": "trace-42.A_b"})
-    assert resp.headers["X-Request-ID"] == "trace-42.A_b"
+    with TestClient(app) as client:
+        resp = client.get("/api/config/risk", headers={"X-Request-ID": "trace-42.A_b"})
+        assert resp.headers["X-Request-ID"] == "trace-42.A_b"
 
 
 def test_malformed_incoming_request_id_is_replaced():
-    client = TestClient(app)
-    resp = client.get(
-        "/api/config/risk", headers={"X-Request-ID": "bad value with spaces!"}
-    )
-    request_id = resp.headers["X-Request-ID"]
-    assert request_id != "bad value with spaces!"
-    assert len(request_id) == 16
+    with TestClient(app) as client:
+        resp = client.get(
+            "/api/config/risk", headers={"X-Request-ID": "bad value with spaces!"}
+        )
+        request_id = resp.headers["X-Request-ID"]
+        assert request_id != "bad value with spaces!"
+        assert len(request_id) == 16
 
 
 def test_access_log_line_carries_request_metadata(caplog):
-    client = TestClient(app)
-    with caplog.at_level(logging.INFO, logger="briefr.access"):
-        resp = client.get("/api/config/risk")
+    with TestClient(app) as client:
+        with caplog.at_level(logging.INFO, logger="briefr.access"):
+            resp = client.get("/api/config/risk")
     records = [r for r in caplog.records if r.name == "briefr.access"]
     assert records, "expected one briefr.access record per request"
     record = records[-1]
@@ -165,11 +165,11 @@ def test_unhandled_exception_logged_with_request_id(caplog):
 
 
 def test_429_responses_also_carry_request_id():
-    client = TestClient(app)
-    rate_limit.ioc_bucket._buckets["testclient"] = (0.0, time.monotonic())
-    try:
-        resp = client.post("/api/ioc/lookup", json={"value": "1.2.3.4", "type": "ip"})
-        assert resp.status_code == 429
-        assert resp.headers.get("X-Request-ID")
-    finally:
-        rate_limit.ioc_bucket._buckets.pop("testclient", None)
+    with TestClient(app) as client:
+        rate_limit.ioc_bucket._buckets["testclient"] = (0.0, time.monotonic())
+        try:
+            resp = client.post("/api/ioc/lookup", json={"value": "1.2.3.4", "type": "ip"})
+            assert resp.status_code == 429
+            assert resp.headers.get("X-Request-ID")
+        finally:
+            rate_limit.ioc_bucket._buckets.pop("testclient", None)
