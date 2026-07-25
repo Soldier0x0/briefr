@@ -81,6 +81,8 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 
 **Use when:** you want production-like behaviour locally (migrations, pgvector, dual-dialect tests, embeddings, SigmaHQ index).
 
+**Not for production.** This path uses the Vite dev server (`npm run dev` on `:5173`). For a permanent install with PostgreSQL and nginx serving a built SPA, use [§3 Production](#3-production-debian--systemd--nginx) — `briefr-install.sh` / `setup.sh` runs `npm run build` and systemd + nginx handle the UI.
+
 ### Prerequisites
 
 - Everything in §1, plus **Docker** (or an existing Postgres 16 server with the `vector` extension)

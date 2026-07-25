@@ -28,6 +28,13 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
 | **`/api` 404 in dev** | Start backend on `:8000` before frontend |
 | **Model download / HF warnings** | Optional: `HF_TOKEN`, `EMBEDDINGS_CACHE_DIR=/var/lib/briefr/models`; embeddings are optional |
 | **Wallboard asks for token** | Set `WALLBOARD_TOKEN`, restart backend, open `/wallboard`, enter the token once to create the read-only session cookie |
+| **Production UI blank or stale** | Production serves `frontend/dist` via nginx — not Vite. Re-run `npm run build` in `frontend/` (or `briefr-update.sh` / `briefr-deploy.sh`) after frontend changes |
+| **Installed Postgres but still on `npm run dev`** | `npm run dev` is local development only (`:5173`). Production uses [SELF_HOST §3](SELF_HOST.md#3-production-debian--systemd--nginx): `briefr-install.sh`, nginx on `:80`, `BRIEFR_ENV=production` |
+| **API keys / `.env` changes ignored** | Process env vars win over `backend/.env`, but a running backend does not reload them — **restart** `uvicorn` or `briefr-backend` after changes |
+| **First-visit tutorial blocks clicks** | Dismiss the overlay or complete the walkthrough; preference is stored in browser `localStorage` (`briefr_tutorial_seen`) |
+| **`database is locked` (SQLite dev)** | SQLite allows one writer — stop parallel pytest/dev servers or switch to Postgres ([SELF_HOST §2](SELF_HOST.md#2-local-development-with-postgresql--pgvector)) |
+| **SigmaHQ / Detect tab empty** | First sync is manual: Admin → Feed health → SigmaHQ → **Sync** (weekly job does not populate on day one) |
+| **Swagger `/api/docs` missing in production** | Expected when `BRIEFR_ENV=production` — use [`API_REFERENCE.md`](API_REFERENCE.md) or enable only in dev |
 
 ---
 

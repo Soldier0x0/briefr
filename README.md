@@ -31,15 +31,20 @@ BRIEFR aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, and optional threat f
 
 ## Screenshots
 
-PostgreSQL-backed instance (July 2026 reference data). Regenerate: [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md).
+PostgreSQL-backed instance (July 2026 reference data). Regenerate: [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md). On [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/user-guide/using-briefr), click any screenshot to expand inline.
 
-| BRIEF | FEED | CVE detail |
-|-------|------|------------|
-| ![BRIEF tab](docs/assets/screenshots/brief.png) | ![FEED tab](docs/assets/screenshots/feed.png) | ![CVE drawer](docs/assets/screenshots/detail-drawer.png) |
-
-| IOC lookup | Incidents & news | Admin |
-|------------|------------------|-------|
-| ![IOC LOOKUP](docs/assets/screenshots/ioc-lookup.png) | ![Incidents & News](docs/assets/screenshots/incidents-news.png) | ![Admin Security](docs/assets/screenshots/admin-security.png) |
+<table>
+<tr>
+<td align="center"><img src="docs/assets/screenshots/brief.png" alt="BRIEF tab" width="360" /><br><sub>BRIEF</sub></td>
+<td align="center"><img src="docs/assets/screenshots/feed.png" alt="FEED tab" width="360" /><br><sub>FEED</sub></td>
+<td align="center"><img src="docs/assets/screenshots/detail-drawer.png" alt="CVE detail drawer" width="360" /><br><sub>CVE detail</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/assets/screenshots/ioc-lookup.png" alt="IOC LOOKUP" width="360" /><br><sub>IOC LOOKUP</sub></td>
+<td align="center"><img src="docs/assets/screenshots/incidents-news.png" alt="Incidents and News" width="360" /><br><sub>Incidents &amp; News</sub></td>
+<td align="center"><img src="docs/assets/screenshots/admin-security.png" alt="Admin Security" width="360" /><br><sub>Admin</sub></td>
+</tr>
+</table>
 
 ---
 
@@ -61,7 +66,9 @@ PostgreSQL-backed instance (July 2026 reference data). Regenerate: [`scripts/cap
 
 ## Getting started
 
-**Install paths (SQLite, Postgres+pgvector, production):** [`docs/SELF_HOST.md`](docs/SELF_HOST.md)
+**Install paths (SQLite dev, Postgres dev, production):** [`docs/SELF_HOST.md`](docs/SELF_HOST.md)
+
+### Quick local development (not production)
 
 ```bash
 git clone https://github.com/Soldier0x0/briefr.git
@@ -73,10 +80,14 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ```bash
-cd ../frontend && npm install && npm run dev   # http://localhost:5173
+cd ../frontend && npm install && npm run dev   # http://localhost:5173 — dev only
 ```
 
 Open http://localhost:5173 → first-run setup creates the admin user.
+
+### Production install (PostgreSQL + nginx)
+
+For a permanent system, use [SELF_HOST §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx): provision **`pgvector/pgvector:pg16`**, then `bash deploy/briefr-install.sh` (or `deploy/setup.sh`). That runs `npm run build`, configures **systemd + nginx**, and serves the built SPA — not the Vite dev server.
 
 ```bash
 curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
