@@ -102,7 +102,7 @@ Use the local merge gate when possible:
 ./scripts/verify-local.sh
 ```
 
-That mirrors the core CI checks (backend pytest, frontend build, dependency audit, frontend unit tests). Use `./scripts/verify-local.sh --full` when Postgres, gitleaks, and Playwright smoke are available.
+That mirrors the core CI checks (backend pytest, ruff, frontend build/lint/unit tests, design-token lint, dependency audit). Use `./scripts/verify-local.sh --full` when Postgres, gitleaks, and Playwright smoke are available.
 
 Backend tests use **pytest**:
 

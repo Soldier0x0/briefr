@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Local pre-merge verification — mirrors .github/workflows when GitHub Actions
-# is unavailable (free-tier exhausted, etc.). Run from repo root:
+# Local pre-merge verification — mirrors .github/workflows/backend-tests.yml
+# (CI job names: test, test-postgres, frontend, dependency-audit, playwright-smoke,
+# plus gitleaks workflow). Run from repo root:
 #   ./scripts/verify-local.sh          # required gates (SQLite + audits + build)
 #   ./scripts/verify-local.sh --full   # also Postgres + gitleaks + Playwright smoke
 set -eu
