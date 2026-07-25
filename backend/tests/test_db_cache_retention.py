@@ -18,9 +18,9 @@ from database import get_db, init_db
 from tests.conftest import run_db_test
 
 
-def _utc(days_ago: float = 0) -> str:
+def _utc(days_ago: float = 0):
     dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
+    return dt if is_postgres() else dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def test_cache_retention_sql_uses_native_placeholders():

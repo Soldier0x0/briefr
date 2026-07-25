@@ -244,14 +244,7 @@ async def close_pool() -> None:
 async def get_connection() -> SqliteConnection | PostgresConnection:
     if is_postgres():
         if _pool is None:
-            logger.error(
-                "db/connection.py get_connection(): PostgreSQL pool is not open. "
-                "DATABASE_URL is set but main.py startup did not finish (or the backend is restarting). "
-                "Fix: systemctl restart briefr-backend and check journalctl for startup errors."
-            )
-            raise RuntimeError(
-                "PostgreSQL pool is not initialized — call init_pool() during app startup"
-            )
+            await init_pool()
         acquire_timeout = max(1.0, float(settings.database_pool_acquire_timeout_seconds))
         try:
             raw = await asyncio.wait_for(_pool.acquire(), timeout=acquire_timeout)

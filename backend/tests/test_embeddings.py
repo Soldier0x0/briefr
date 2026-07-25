@@ -21,6 +21,7 @@ import pytest
 
 import database
 import ml.embeddings as emb
+from db.config import is_postgres
 from database import init_db
 from ml.embeddings import (
     blob_to_vector,
@@ -214,6 +215,7 @@ def test_get_model_default_has_no_cache_kwargs(monkeypatch):
     assert "cache_dir" not in model.kwargs
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 3-dim vectors are incompatible with pgvector(384)")
 def test_backfill_embeds_missing_cves_with_fake_model(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "emb.db"))
     monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)

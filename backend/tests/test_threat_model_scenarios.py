@@ -8,6 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
+from db.config import is_postgres
+from tests.conftest import run_db_test
+
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
@@ -22,7 +25,6 @@ def client(tmp_path, monkeypatch):
 
 
 def _seed_mitre_cve(client):
-    import asyncio
     from database import get_db
 
     async def _run():
@@ -64,7 +66,7 @@ def _seed_mitre_cve(client):
         finally:
             await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_scenarios_empty_without_stack(client):
@@ -100,7 +102,6 @@ def test_scenarios_handles_null_epss_score(client):
     column named max_epss. Reproduced live via a throwaway Postgres
     container before fixing threat_model/scenarios.py to repeat the
     MAX(c.epss_score) aggregate instead of the alias."""
-    import asyncio
     from database import get_db
 
     async def _seed_null_epss():
@@ -127,7 +128,7 @@ def test_scenarios_handles_null_epss_score(client):
         finally:
             await db.close()
 
-    asyncio.run(_seed_null_epss())
+    run_db_test(_seed_null_epss())
 
     resp = client.get("/api/threat-model/scenarios?stack=docker")
     assert resp.status_code == 200
