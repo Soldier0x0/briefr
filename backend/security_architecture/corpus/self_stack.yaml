@@ -200,16 +200,6 @@ terms:
   source: backend/requirements.txt
   ecosystem: pypi
   version: 2.5.1
-- id: self-stack-orjson
-  title: orjson
-  summary: BRIEFR dependency term derived from backend/requirements.txt.
-  owner: platform
-  status: active
-  origin: generated
-  term: orjson
-  source: backend/requirements.txt
-  ecosystem: pypi
-  version: 3.11.9
 - id: self-stack-playwright
   title: playwright
   summary: BRIEFR dependency term derived from frontend/package.json.
