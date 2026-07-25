@@ -137,16 +137,26 @@ def run_db_test(coro):
     init_pool()/close_pool() are already dialect-aware no-ops there.
     Drop-in replacement for `asyncio.run(coro)` in direct-db-call tests —
     takes the coroutine object itself (mirrors asyncio.run's signature),
-    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`."""
+    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`.
+
+    When invoked while a TestClient lifespan pool is active (e.g. auth seed
+    inside `with TestClient(app)`), restores that pool afterward instead of
+    leaving the global handle cleared."""
     from db.connection import close_pool, init_pool
+    import db.connection as conn_mod
 
     async def _wrapped():
-        await close_pool()
+        saved_pool = conn_mod._pool
+        if saved_pool is not None and not conn_mod._pool_loop_matches_running(saved_pool):
+            conn_mod._pool = None
         await init_pool()
         try:
             return await coro
         finally:
-            await close_pool()
+            ephemeral = conn_mod._pool
+            if ephemeral is not None and conn_mod._pool_loop_matches_running(ephemeral):
+                await close_pool()
+            conn_mod._pool = saved_pool
 
     return asyncio.run(_wrapped())
 
