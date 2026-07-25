@@ -6,15 +6,15 @@ For analysts using the UI — not deploying it. Install guide: [SELF_HOST.md](SE
 
 ## Screenshots
 
+Click any image to expand inline on the docs portal. Regenerate captures: [`scripts/capture_readme_screenshots.mjs`](../scripts/capture_readme_screenshots.mjs) — see [IMAGE_BRIEFS.md](IMAGE_BRIEFS.md).
+
 | BRIEF | FEED | CVE detail |
 |-------|------|------------|
 | ![BRIEF tab](assets/ui-brief-tab.png) | ![FEED tab](assets/ui-feed-tab.png) | ![CVE drawer Intel tab](assets/ui-detail-drawer.png) |
 
-| IOC lookup | Admin security |
-|------------|----------------|
-| ![IOC LOOKUP](assets/ui-ioc-lookup.png) | ![Admin Security](assets/ui-admin-security.png) |
-
-More captures (including Incidents & News): [`assets/screenshots/`](assets/screenshots/). Regenerate: [`scripts/capture_readme_screenshots.mjs`](../scripts/capture_readme_screenshots.mjs) — see [IMAGE_BRIEFS.md](IMAGE_BRIEFS.md).
+| IOC lookup | Incidents & news | Admin |
+|------------|------------------|-------|
+| ![IOC LOOKUP](assets/ui-ioc-lookup.png) | ![Incidents and News](assets/screenshots/incidents-news.png) | ![Admin Security](assets/ui-admin-security.png) |
 
 ---
 
