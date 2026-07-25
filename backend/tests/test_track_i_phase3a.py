@@ -130,8 +130,9 @@ def test_drawer_bundle_endpoint(tmp_path, monkeypatch):
         assert "momentum" in body
 
 
-def test_default_response_is_orjson():
+def test_default_response_not_orjson():
+    """Guard: ORJSONResponse is deprecated in FastAPI 0.131+; use Pydantic JSON bytes."""
     from fastapi.responses import ORJSONResponse
     from main import app
 
-    assert app.router.default_response_class is ORJSONResponse
+    assert app.router.default_response_class is not ORJSONResponse

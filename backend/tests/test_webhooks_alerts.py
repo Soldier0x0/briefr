@@ -7,6 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import pytest
+
+from db.config import is_postgres
 from tests.conftest import run_db_test
 
 import httpx
@@ -42,6 +45,12 @@ def _setup_db(tmp_path, monkeypatch) -> Path:
 
     run_db_test(sync_env_destinations_to_db())
     return db_path
+
+
+def _history_ts(hours_ago: float):
+    """Portable detected_at for cve_change_history inserts."""
+    dt = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+    return dt if is_postgres() else dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _mock_webhooks(monkeypatch):
@@ -260,10 +269,20 @@ def test_watchlist_monitor_epss_and_poc_alerts(tmp_path, monkeypatch):
                 """
                 INSERT INTO cve_change_history (
                     cve_id, field_name, old_value, new_value, detected_at
-                ) VALUES
-                    ('CVE-2024-2003', 'epss_score', '0.05', '0.20', datetime('now', '-1 hour')),
-                    ('CVE-2024-2003', 'has_poc', '0', '1', datetime('now', '-30 minutes'))
-                """
+                ) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2003",
+                    "epss_score",
+                    "0.05",
+                    "0.20",
+                    _history_ts(1),
+                    "CVE-2024-2003",
+                    "has_poc",
+                    "0",
+                    "1",
+                    _history_ts(0.5),
+                ),
             )
             await db.commit()
         finally:
@@ -292,8 +311,15 @@ def test_watchlist_monitor_second_epss_jump_alerts(tmp_path, monkeypatch):
                 """
                 INSERT INTO cve_change_history (
                     cve_id, field_name, old_value, new_value, detected_at
-                ) VALUES ('CVE-2024-2004', 'epss_score', '0.05', '0.20', datetime('now', '-2 hour'))
-                """
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2004",
+                    "epss_score",
+                    "0.05",
+                    "0.20",
+                    _history_ts(2),
+                ),
             )
             await db.commit()
         finally:
@@ -310,8 +336,15 @@ def test_watchlist_monitor_second_epss_jump_alerts(tmp_path, monkeypatch):
                 """
                 INSERT INTO cve_change_history (
                     cve_id, field_name, old_value, new_value, detected_at
-                ) VALUES ('CVE-2024-2004', 'epss_score', '0.20', '0.40', datetime('now', '-1 hour'))
-                """
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2004",
+                    "epss_score",
+                    "0.20",
+                    "0.40",
+                    _history_ts(1),
+                ),
             )
             await db.commit()
         finally:

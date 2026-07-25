@@ -18,4 +18,11 @@ regexes = [
   '''smoke-test-password-32bytes!!''',
   '''super_secret_value''',
   '''sk-1234567890abcdef''',
+  # max_age_hours=24 * 365 and similar TTL math — not API keys (composer.py false positive)
+  '''max_age_hours=\d+ \* \d+''',
+]
+commits = [
+  # Historical false positives on exploit TTL expression (pre-constant refactor)
+  "fbb28d8f1275b65300917640d644385f4d78b127",
+  "99e1457b0e74120a4ba37d956a3822bb910eca34",
 ]

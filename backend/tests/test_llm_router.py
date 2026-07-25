@@ -12,6 +12,7 @@ from ai import llm_router as router
 from ai.llm_router import LLMCompletion, chat_completion_task
 from db.config import is_postgres
 from resilient_client import CircuitOpenError
+from tests.conftest import run_db_test
 
 
 def test_get_configured_providers_reads_env(monkeypatch):
@@ -101,7 +102,7 @@ def test_chat_completion_task_skips_empty_payload(monkeypatch):
             messages=[{"role": "system", "content": "instructions only"}],
         )
 
-    assert asyncio.run(run()) is None
+    assert run_db_test(run()) is None
     assert calls == []
 
 
@@ -125,7 +126,7 @@ def test_chat_completion_task_failover_skips_missing_keys(monkeypatch):
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    result = asyncio.run(run())
+    result = run_db_test(run())
     assert result == LLMCompletion(content="gemini answer", provider="gemini", model=router.gemini_model())
     assert calls == ["gemini"]
 
@@ -152,7 +153,7 @@ def test_chat_completion_task_failover_on_provider_error(monkeypatch):
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    result = asyncio.run(run())
+    result = run_db_test(run())
     assert result == LLMCompletion(
         content="backup answer",
         provider="gemini",
@@ -180,7 +181,7 @@ def test_chat_completion_task_failover_on_circuit_open(monkeypatch):
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    result = asyncio.run(run())
+    result = run_db_test(run())
     assert result is not None
     assert result.provider == "cerebras"
     assert result.content == "cerebras answer"
@@ -200,7 +201,7 @@ def test_chat_completion_task_returns_none_when_all_fail(monkeypatch):
             messages=[{"role": "user", "content": "hi"}],
         )
 
-    assert asyncio.run(run()) is None
+    assert run_db_test(run()) is None
 
 
 class _FakeResponse:
@@ -232,7 +233,7 @@ def test_openai_chat_skips_empty_payload(monkeypatch):
             messages=[{"role": "system", "content": "only"}],
         )
 
-    assert asyncio.run(run()) == ""
+    assert run_db_test(run()) == ""
     assert called["n"] == 0
 
 
@@ -262,7 +263,7 @@ def test_openai_chat_populates_usage_out(monkeypatch):
             usage_out=usage,
         )
 
-    content = asyncio.run(run())
+    content = run_db_test(run())
     assert content == "hello"
     assert usage == {"input_tokens": 12, "output_tokens": 5, "total_tokens": 17}
 
@@ -284,7 +285,7 @@ def test_gemini_chat_skips_empty_payload(monkeypatch):
             messages=[{"role": "user", "content": ""}],
         )
 
-    assert asyncio.run(run()) == ""
+    assert run_db_test(run()) == ""
     assert called["n"] == 0
 
 
@@ -315,7 +316,7 @@ def test_gemini_chat_populates_usage_out(monkeypatch):
             usage_out=usage,
         )
 
-    content = asyncio.run(run())
+    content = run_db_test(run())
     assert content == "hi there"
     assert usage == {"input_tokens": 8, "output_tokens": 3, "total_tokens": 11}
 
@@ -351,7 +352,7 @@ def test_chat_completion_task_records_token_usage(tmp_path, monkeypatch):
             await db.close()
         return rows
 
-    rows = asyncio.run(run())
+    rows = run_db_test(run())
     assert len(rows) == 1
     assert rows[0]["total_tokens"] == 42
     assert rows[0]["input_tokens"] == 30
@@ -393,7 +394,7 @@ def test_chat_completion_task_records_operations(tmp_path, monkeypatch):
             await db.close()
         return result, count, rows
 
-    result, count, rows = asyncio.run(run())
+    result, count, rows = run_db_test(run())
     assert result is not None
     assert result.provider == "gemini"
     assert count == 2

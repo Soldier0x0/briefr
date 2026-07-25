@@ -8,6 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from tests.conftest import run_db_test
+
 from ai import llm_router as router
 from ai.llm_router import chat_completion_task
 from db.config import is_postgres
@@ -45,7 +47,7 @@ def test_failure_payload_not_stored_when_flag_off(tmp_path, monkeypatch):
             await db.close()
         return result, op_count, rows, payload_rows
 
-    result, op_count, rows, payload_rows = asyncio.run(run())
+    result, op_count, rows, payload_rows = run_db_test(run())
     assert result is None
     assert op_count == 1
     assert rows[0]["error_class"] == "empty"
@@ -85,7 +87,7 @@ def test_failure_payload_stored_when_flag_on(tmp_path, monkeypatch):
             await db.close()
         return result, op_rows, payload_rows
 
-    result, op_rows, payload_rows = asyncio.run(run())
+    result, op_rows, payload_rows = run_db_test(run())
     assert result is None
     assert op_rows[0]["error_class"] == "empty"
     assert len(payload_rows) == 1

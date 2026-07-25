@@ -12,6 +12,7 @@ from ai import llm_router as router
 from ai.llm_router import LLMCompletion, chat_completion_task
 from ai.llm_session import llm_job_session
 from resilient_client import get_feed_health, reset_feed_health
+from tests.conftest import run_db_test
 
 
 def test_empty_response_failsover_within_single_call(monkeypatch):
@@ -36,7 +37,7 @@ def test_empty_response_failsover_within_single_call(monkeypatch):
             cve_id="CVE-2024-0001",
         )
 
-    result = asyncio.run(run())
+    result = run_db_test(run())
     assert result == LLMCompletion(
         content="gemini answer",
         provider="gemini",
@@ -76,7 +77,7 @@ def test_job_session_skips_empty_provider_on_later_calls(monkeypatch):
             )
         return first, second
 
-    first, second = asyncio.run(run())
+    first, second = run_db_test(run())
     assert first is not None
     assert second is not None
     assert first.provider == "gemini"
@@ -112,7 +113,7 @@ def test_without_job_session_retries_primary_each_call(monkeypatch):
             cve_id="CVE-2024-0002",
         )
 
-    asyncio.run(run())
+    run_db_test(run())
     assert calls == ["groq", "gemini", "groq", "gemini"]
 
 
@@ -135,7 +136,7 @@ def test_circuit_open_skips_provider_without_http(monkeypatch):
             messages=[{"role": "user", "content": "extract products from text"}],
         )
 
-    result = asyncio.run(run())
+    result = run_db_test(run())
     assert result is not None
     assert result.provider == "gemini"
     assert calls == ["gemini"]

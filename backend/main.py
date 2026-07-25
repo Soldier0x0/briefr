@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, ORJSONResponse
+from fastapi.responses import JSONResponse
 from metrics.request_counter import increment_request_count
 
 load_dotenv()
@@ -177,7 +177,6 @@ app = FastAPI(
     redoc_url=None if settings.is_production else "/api/redoc",
     openapi_url=None if settings.is_production else "/api/openapi.json",
     lifespan=lifespan,
-    default_response_class=ORJSONResponse,
 )
 
 

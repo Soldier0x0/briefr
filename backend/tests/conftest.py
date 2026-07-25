@@ -137,15 +137,26 @@ def run_db_test(coro):
     init_pool()/close_pool() are already dialect-aware no-ops there.
     Drop-in replacement for `asyncio.run(coro)` in direct-db-call tests —
     takes the coroutine object itself (mirrors asyncio.run's signature),
-    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`."""
+    so `asyncio.run(foo(x, y))` becomes `run_db_test(foo(x, y))`.
+
+    When invoked while a TestClient lifespan pool is active (e.g. auth seed
+    inside `with TestClient(app)`), restores that pool afterward instead of
+    leaving the global handle cleared."""
     from db.connection import close_pool, init_pool
+    import db.connection as conn_mod
 
     async def _wrapped():
+        saved_pool = conn_mod._pool
+        if saved_pool is not None and not conn_mod._pool_loop_matches_running(saved_pool):
+            conn_mod._pool = None
         await init_pool()
         try:
             return await coro
         finally:
-            await close_pool()
+            ephemeral = conn_mod._pool
+            if ephemeral is not None and conn_mod._pool_loop_matches_running(ephemeral):
+                await close_pool()
+            conn_mod._pool = saved_pool
 
     return asyncio.run(_wrapped())
 
@@ -481,11 +492,17 @@ def smoke_page(playwright_smoke_stack, smoke_auth_cookies, browser):
         try {
           localStorage.removeItem('briefr_theme');
           document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('briefr_tutorial_seen', '1');
         } catch {}
         """
     )
     page.goto(playwright_smoke_stack, wait_until="networkidle", timeout=120_000)
     page.wait_for_selector(".header .header-logo-btn", timeout=60_000)
+    # Belt-and-suspenders: first-visit tutorial scrim blocks pointer events in smoke.
+    tutorial = page.locator(".tutorial-overlay")
+    if tutorial.count() > 0:
+        page.get_by_role("button", name="Close tutorial (Escape)").click()
+        tutorial.wait_for(state="detached", timeout=10_000)
     yield page
     context.close()
 
