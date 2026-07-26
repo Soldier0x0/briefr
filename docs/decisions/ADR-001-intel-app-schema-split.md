@@ -1,6 +1,6 @@
 # ADR-001: Intel vs app schema split (open-core data plane)
 
-**Status:** Accepted (design phase — Wave 3 PR 8)  
+**Status:** Accepted — **implemented** (Alembic `036_intel_app_schema_split`, 2026-07-26)  
 **Date:** 2026-07-08
 
 ## Context
@@ -25,11 +25,10 @@ required for the first snapshot release.
    and `sync_state` key allowlists (implemented Wave 3 PR 8).
 2. **Export via allowlist script** (`scripts/export_intel_snapshot.py`, PR 9)
    using `pg_dump` table filters — not ad-hoc production dumps.
-3. **Defer physical `intel` / `app` schemas** to a later migration tranche after
-   Wave 2 user prefs are stable and Post-B CI is green. Until then, one
-   database, enforced export boundary in tooling.
-4. **Default deny** for `sync_state`: only ingest watermarks in the published
-   bundle; scheduler and backup keys stay operator-local.
+3. **Physical `intel` / `app` schemas** via Alembic `036_intel_app_schema_split`
+   (one-time in-place migration on upgrade; `search_path = app, intel, public`).
+4. **Default deny** for `sync_state`: ingest watermarks in `intel.sync_state`;
+   operator keys in `app.sync_state`.
 
 ## Alternatives considered
 

@@ -1,10 +1,10 @@
 # BRIEFR intel snapshot specification
 
-**Status:** Active (Wave 3 PR 8)  
+**Status:** Active (schema split Phase 0–1)  
 **Purpose:** Define which PostgreSQL tables and `sync_state` keys belong in a
-**public intel bundle** vs operator-only production data. The export script
-(`scripts/export_intel_snapshot.py`, Wave 3 PR 9) and CI restore smoke (Track J2)
-implement this spec.
+**public intel bundle** vs operator-only production data. After Alembic
+`036_intel_app_schema_split`, intel tables live in schema **`intel`** and
+operator tables in **`app`** (single Postgres database).
 
 **Related:** `docs/PRODUCT_STATUS.md` (open-core / intel snapshot program),
 `docs/decisions/ADR-001-intel-app-schema-split.md`.
@@ -78,6 +78,20 @@ the monthly open-core snapshot.
 | `cve_embeddings` | ML embedding vectors |
 | `mitre_groups` | ATT&CK group mirror |
 | `group_technique_map` | Group ↔ technique links |
+| `correlation_cve_snapshot` | Precomputed correlation payload |
+| `pulse_families` | Derived pulse clustering |
+| `ioc_degree` | Derived IOC graph metrics |
+| `software_catalog` | NVD CPE reference catalog |
+| `embeddings` | Multi-entity embedding store (pgvector) |
+| `sync_state` | Ingest watermarks only (`intel.sync_state` after schema split) |
+| `feed_cache` | Public feed cache keys only (prefix allowlist; see below) |
+
+### `feed_cache` keys (include subset)
+
+Export only keys matching publishable prefixes in
+`backend/db/schema_inventory.py` (`ssvc:`, `correlation:v1:`, `otx:cve:`, etc.).
+**Exclude** operator-derived keys: `wallboard:snapshot`, `llm_products:*`,
+`detection_ctx*`, `admin_db_integrity`, `incident_feed:snapshot`.
 
 ### `sync_state` keys (include subset)
 
@@ -87,6 +101,7 @@ Export **only** ingest watermarks and upstream version markers:
 |-------------|---------|
 | `nvd_last_mod_end` | NVD incremental watermark |
 | `epss_backfill_done` | EPSS backfill completion flag |
+| `epss_csv_file_identity` | EPSS CSV ingest watermark |
 | `atlas_upstream_version` | ATLAS upstream version |
 | `cvelistv5_head_sha` | CVEList v5 git head |
 | `poc_github_commit` | PoC GitHub mirror commit |
@@ -118,7 +133,22 @@ data. A production `pg_dump` must **never** be published as an intel bundle.
 | `webhook_alert_log` | Alert dedupe state |
 | `correlation_suppressions` | Operator suppressions |
 | `hunt_packs` | Operator-authored hunt content |
-| `alembic_version` | Instance migration pointer (re-derived on restore) |
+| `app_settings` | Operator configuration (encrypted secrets) |
+| `ioc_watchlist` | Analyst IOC watchlist |
+| `threatfox_iocs` | Analyst ThreatFox workflow |
+| `api_call_events` | API telemetry |
+| `webhook_destination_dedupe` | Webhook dedupe state |
+| `correlation_feedback` | Operator correlation feedback |
+| `detection_backlog` | Stack-specific detection gaps |
+| `user_notifications` | Per-user notifications |
+| `search_api_tokens` | API tokens |
+| `ai_operations` | AI operation log |
+| `ai_operation_payloads` | AI prompts/responses |
+| `stack_backfill_runs` | My Stack backfill jobs |
+| `stack_backfill_checkpoints` | Stack backfill checkpoints |
+| `correlation_metrics` | Correlation ops metrics |
+| `resource_metrics` | Host resource metrics |
+| `alembic_version` | Instance migration pointer |
 
 ### `sync_state` keys (exclude)
 
@@ -167,8 +197,14 @@ Do not overwrite a production operator database with an intel bundle.
 
 ---
 
-## Schema split ADR
+## Schema split (Postgres)
 
-Long-term `intel` vs `app` Postgres schemas are **design-only** in Wave 3.
-Runtime remains a single database with allowlist export until Post-B schema
-split lands. See `docs/decisions/ADR-001-intel-app-schema-split.md`.
+Physical **`intel`** and **`app`** schemas are applied by Alembic revision
+`036_intel_app_schema_split` — a **one-time** in-place `ALTER TABLE … SET SCHEMA`
+migration when upgrading to a release that includes revision `036`. It does not
+re-run on every backend start once `alembic_version` is at head.
+
+Operator runbook: `docs/INTEL_PUBLISH.md` (backup → `schema_row_counts.py` →
+upgrade → `verify_schema_split.py`).
+
+See `docs/decisions/ADR-001-intel-app-schema-split.md`.

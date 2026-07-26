@@ -37,68 +37,19 @@ from backup.postgres_util import (  # noqa: E402
     verify_pg_dump,
 )
 from db.config import postgres_dsn  # noqa: E402
+from db.schema_inventory import (  # noqa: E402
+    FORBIDDEN_EXPORT_TABLES,
+    INTEL_TABLES,
+    OPERATOR_GUARD_TABLES,
+    SYNC_STATE_INGEST_KEYS,
+    feed_cache_key_publishable,
+    table_schema,
+)
 from snapshot_version import BUNDLE_KIND, SNAPSHOT_FORMAT_VERSION  # noqa: E402
 
-INTEL_TABLES: tuple[str, ...] = (
-    "cves",
-    "kev_deadlines",
-    "epss_history",
-    "cve_change_history",
-    "mitre_techniques",
-    "cve_technique_map",
-    "atlas_techniques",
-    "atlas_case_studies",
-    "cve_atlas_map",
-    "cve_exploits",
-    "feed_cache",
-    "otx_cve_pulses",
-    "otx_pulse_iocs",
-    "otx_pulses",
-    "detection_rules",
-    "detection_rule_cves",
-    "detection_rule_techniques",
-    "correlation_actor",
-    "correlation_temporal",
-    "correlation_campaigns",
-    "correlation_campaign_members",
-    "cve_embeddings",
-    "mitre_groups",
-    "group_technique_map",
-    "sync_state",
-)
-
-OPERATOR_GUARD_TABLES: tuple[str, ...] = (
-    "users",
-    "sessions",
-    "user_preferences",
-)
-
-FORBIDDEN_TABLES: frozenset[str] = frozenset({
-    "users",
-    "sessions",
-    "user_preferences",
-    "watchlist",
-    "audit_log",
-    "ioc_cache",
-    "api_usage",
-    "webhook_destinations",
-    "webhook_delivery_log",
-    "webhook_alert_log",
-    "correlation_suppressions",
-    "hunt_packs",
-    "alembic_version",
-})
-
-SYNC_STATE_ALLOWLIST: frozenset[str] = frozenset({
-    "nvd_last_mod_end",
-    "epss_backfill_done",
-    "atlas_upstream_version",
-    "cvelistv5_head_sha",
-    "poc_github_commit",
-    "correlation_build_watermark",
-    "correlation_last_run",
-    "sigmahq_archive_identity",
-})
+# Backward-compatible re-exports for tests and importers.
+SYNC_STATE_ALLOWLIST = SYNC_STATE_INGEST_KEYS
+FORBIDDEN_TABLES = FORBIDDEN_EXPORT_TABLES
 
 
 def _alembic_head_revision() -> str:
@@ -110,36 +61,74 @@ def _alembic_head_revision() -> str:
     return head or "unknown"
 
 
+async def _schemas_split(conn) -> bool:
+    return bool(
+        await conn.fetchval(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'intel' AND table_name = 'cves'
+            )
+            """
+        )
+    )
+
+
+def _qualified_table(table: str, *, split: bool) -> str:
+    if not split:
+        return table
+    return f"{table_schema(table)}.{table}"
+
+
 async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
     import asyncpg
 
     conn = await asyncpg.connect(dsn=postgres_dsn(database_url), timeout=30)
     try:
-        if not allow_operator_seed:
-            for table in OPERATOR_GUARD_TABLES:
-                count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
-                if count:
-                    raise RuntimeError(
-                        f"operator guard table {table} has {count} rows — "
-                        "refusing intel export (use --allow-operator-seed for dev fixtures only)"
-                    )
+        split = await _schemas_split(conn)
+        for table in OPERATOR_GUARD_TABLES:
+            qualified = _qualified_table(table, split=split)
+            count = await conn.fetchval(f"SELECT COUNT(*) FROM {qualified}")
+            if count:
+                raise RuntimeError(
+                    f"operator guard table {qualified} has {count} rows — "
+                    "refusing intel export (use --allow-operator-seed for dev fixtures only)"
+                )
 
-        rows = await conn.fetch("SELECT key FROM sync_state")
+        sync_table = "intel.sync_state" if split else "sync_state"
+        rows = await conn.fetch(f"SELECT key FROM {sync_table}")
         keys = [row["key"] for row in rows]
-        forbidden_keys = [key for key in keys if key not in SYNC_STATE_ALLOWLIST]
+        forbidden_keys = [key for key in keys if key not in SYNC_STATE_INGEST_KEYS]
         if forbidden_keys:
             raise RuntimeError(
                 "forbidden sync_state keys present: "
                 + ", ".join(sorted(forbidden_keys))
             )
 
+        feed_qualified = _qualified_table("feed_cache", split=split)
+        feed_rows = await conn.fetch(f"SELECT cache_key FROM {feed_qualified}")
+        bad_feed_keys = [
+            row["cache_key"]
+            for row in feed_rows
+            if not feed_cache_key_publishable(row["cache_key"])
+        ]
+        if bad_feed_keys:
+            raise RuntimeError(
+                "non-publishable feed_cache keys present: "
+                + ", ".join(sorted(bad_feed_keys)[:20])
+                + (" …" if len(bad_feed_keys) > 20 else "")
+            )
+
         counts: dict[str, int] = {}
         for table in INTEL_TABLES:
-            counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
+            qualified = _qualified_table(table, split=split)
+            counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {qualified}"))
 
         schema_revision = None
         try:
-            schema_revision = await conn.fetchval("SELECT version_num FROM alembic_version LIMIT 1")
+            schema_revision = await conn.fetchval(
+                "SELECT version_num FROM public.alembic_version LIMIT 1"
+            )
         except asyncpg.UndefinedTableError:
             schema_revision = None
 
@@ -157,6 +146,7 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
             "bundle_kind": BUNDLE_KIND,
             "schema_revision": schema_revision,
             "alembic_head_at_export": alembic_head,
+            "schema_split": split,
             "briefr_commit": build_info.get("commit") or build_info.get("git_commit"),
             "tables": list(INTEL_TABLES),
             "row_counts": counts,
@@ -167,12 +157,13 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
         await conn.close()
 
 
-def _run_pg_dump(database_url: str, destination: Path) -> None:
+def _run_pg_dump(database_url: str, destination: Path, *, split: bool) -> None:
     params = parse_postgres_url(database_url)
     destination.parent.mkdir(parents=True, exist_ok=True)
     table_args: list[str] = []
     for table in INTEL_TABLES:
-        table_args.extend(["--table", table])
+        qualified = _qualified_table(table, split=split)
+        table_args.extend(["--table", qualified])
     cmd = _build_pg_cmd(
         "pg_dump",
         params,
@@ -197,7 +188,9 @@ def _run_pg_dump(database_url: str, destination: Path) -> None:
         raise RuntimeError(f"pg_dump failed (exit {proc.returncode}): {detail}")
 
 
-_RESTORE_LIST_TABLE_RE = re.compile(r"^\d+;\s+\d+\s+\d+\s+TABLE(?: DATA)?\s+(?:public\s+)?(\S+)\s")
+_RESTORE_LIST_TABLE_RE = re.compile(
+    r"^\d+;\s+\d+\s+\d+\s+TABLE(?: DATA)?\s+(?:(?:intel|app|public)\s+)?(\S+)\s"
+)
 
 
 def _verify_dump_tables(dump_path: Path) -> None:
@@ -212,7 +205,7 @@ def _verify_dump_tables(dump_path: Path) -> None:
         if not match:
             continue
         table_name = match.group(1)
-        if table_name in FORBIDDEN_TABLES:
+        if table_name in FORBIDDEN_EXPORT_TABLES:
             raise RuntimeError(f"forbidden table {table_name} found in dump catalog")
 
 
@@ -223,11 +216,12 @@ def export_snapshot(
     allow_operator_seed: bool = False,
 ) -> dict:
     manifest = asyncio.run(_preflight(database_url, allow_operator_seed=allow_operator_seed))
+    split = bool(manifest.get("schema_split"))
     staging = output_path.with_suffix(".pgdump")
     if staging == output_path:
         staging = output_path.parent / (output_path.name + ".staging.pgdump")
     try:
-        _run_pg_dump(database_url, staging)
+        _run_pg_dump(database_url, staging, split=split)
         ok, msg = verify_pg_dump(staging)
         if not ok:
             raise RuntimeError(f"dump verification failed: {msg}")

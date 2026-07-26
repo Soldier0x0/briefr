@@ -208,6 +208,7 @@ async def init_pool() -> None:
             max_size=max_size,
             command_timeout=command_timeout,
             max_inactive_connection_lifetime=300,
+            server_settings={"search_path": "app, intel, public"},
         )
     except Exception as exc:
         logger.error(
