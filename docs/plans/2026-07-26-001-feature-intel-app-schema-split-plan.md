@@ -5,8 +5,8 @@ product_contract_source: ce-brainstorm
 title: Intel vs App Schema Split + Public Snapshot Pipeline
 date: 2026-07-26
 status: reviewed — ready to merge (plan PR #760); implementation gated on plan merge
-last_reviewed: 2026-07-26
-reviewed_against: main @ alembic head 035, export_intel_snapshot.py, 58 Alembic tables
+last_reviewed: 2026-07-26 (audit round 2)
+reviewed_against: main @ alembic head 035, export_intel_snapshot.py, 58 Alembic tables, sync_state/feed_cache keys
 ---
 
 # Intel vs App Schema Split + Public Snapshot Pipeline — Plan
@@ -39,12 +39,28 @@ Validated against `main` before implementation:
 | Alembic tables | **58** in `public` (+ Procrastinate objects in `public`, not in Alembic table list) |
 | Cross-schema FK blockers | **None** — all 9 declared FKs are intel→intel or app→app |
 | `INTEL_TABLES` in export script | **25 tables** — missing 5 intel tables (see Appendix A) |
-| `FORBIDDEN_TABLES` in export script | **13 names** — missing ~20 app tables (export uses allowlist, but verify must tighten) |
+| `FORBIDDEN_TABLES` in export script | **13 names** — missing **15** app tables (export uses allowlist; verify must tighten in Phase 0) |
+| `SYNC_STATE_ALLOWLIST` | **8 keys** — missing **`epss_csv_file_identity`** (EPSS ingest watermark; add Phase 0) |
+| `docs/DATA_SNAPSHOT.md` intel table list | **24 tables** — stale vs **30** in Appendix A (Phase 0 doc sync is merge gate) |
+| `feed_cache` export | Whole-table `pg_dump` today — **key allowlist audit is Phase 0 merge gate** (not optional) |
 | `correlation_infrastructure` | Dropped in migration `016` — **exclude** |
 | Procrastinate (`028`) | Stays in **`public`** (tables, enums, functions) — not `intel` or `app` |
 | Production DB size (operator) | ~**115 MB** compressed backup today — plan sizing uses this, not theoretical GB |
 
 **No open PR named “escalator”.** The related Postgres draft is **#752 (SQLite removal)** — sequenced **after** this workstream, not in parallel.
+
+### Audit round 2 fixes (incorporated below)
+
+| Gap | Fix in plan |
+|-----|-------------|
+| `epss_csv_file_identity` missing from allowlist | Add to Phase 0 `SYNC_STATE_ALLOWLIST` + `DATA_SNAPSHOT.md` |
+| `FORBIDDEN_TABLES` count | Corrected to **15** missing app tables (see Phase 0) |
+| `sync_state` v1 export | Preflight blocks operator keys; dump is **whole `intel.sync_state` table** after K8 split (row filter deferred to Phase 2) |
+| `search_path` hook | Implement in **`backend/db/connection.py:init_pool()`** (asyncpg `server_settings` or post-connect `SET`) |
+| `feed_cache` operator keys | Phase 0 production key audit + publish allowlist (`wallboard:snapshot`, `llm_products:*`, etc. excluded) |
+| `verify_schema_split.py` | Explicit allowlist for `public.procrastinate_*` + extension objects |
+
+**15 app tables missing from `FORBIDDEN_TABLES` today:** `app_settings`, `ioc_watchlist`, `threatfox_iocs`, `api_call_events`, `webhook_destination_dedupe`, `correlation_feedback`, `detection_backlog`, `user_notifications`, `search_api_tokens`, `ai_operations`, `ai_operation_payloads`, `stack_backfill_runs`, `stack_backfill_checkpoints`, `correlation_metrics`, `resource_metrics`.
 
 ---
 
@@ -303,8 +319,11 @@ Today the boundary is an export **allowlist** (`scripts/export_intel_snapshot.py
 1. Create **`app.sync_state`** with same `(key, value)` shape.
 2. Migration `036` copies rows **not** in `SYNC_STATE_ALLOWLIST` from `public.sync_state` → `app.sync_state`.
 3. Remaining ingest watermarks stay in **`intel.sync_state`**.
-4. Export: `pg_dump --schema=intel` + preflight allowlist on `intel.sync_state` keys only.
+4. Export (v1): preflight asserts only allowlisted keys exist in `intel.sync_state`; `pg_dump` dumps the **whole** `intel.sync_state` table (safe after K8 split). Per-row filtered export deferred to Phase 2.
 5. Application code: `get_sync_state` / `set_sync_state` in `backend/db/` route by key prefix or allowlist.
+
+**Ingest watermark allowlist (Phase 0 — extend `SYNC_STATE_ALLOWLIST`):**  
+`nvd_last_mod_end`, `epss_backfill_done`, `epss_csv_file_identity`, `atlas_upstream_version`, `cvelistv5_head_sha`, `poc_github_commit`, `correlation_build_watermark`, `correlation_last_run`, `sigmahq_archive_identity`.
 
 ~~Option B (single table + export filter)~~ — rejected; too easy to leak operator keys.
 
@@ -366,9 +385,10 @@ flowchart TB
 - Update `docs/decisions/ADR-001-intel-app-schema-split.md` — status → implementation in progress.
 - Add `docs/INTEL_PUBLISH.md` — publisher runbook.
 - Add **`INTEL_TABLES` missing five tables** to `scripts/export_intel_snapshot.py`.
-- Extend `FORBIDDEN_TABLES` / verify to all `app` tables in Appendix A.
+- Add **`epss_csv_file_identity`** to `SYNC_STATE_ALLOWLIST` (and `DATA_SNAPSHOT.md`).
+- Extend `FORBIDDEN_TABLES` / verify to all **15** missing `app` tables in Appendix A.
 - Add `scripts/schema_row_counts.py` (pre-migration manifest for production).
-- Audit `feed_cache` keys in production; document allowlist in `DATA_SNAPSHOT.md`.
+- **Merge gate:** audit production `feed_cache` keys; implement publish allowlist (exclude `wallboard:snapshot`, `llm_products:*`, `detection_ctx*`, `admin_db_integrity`, and other operator-derived keys per `backend/db/cache_retention.py`).
 - **briefr-docs:** open tracking PR or branch for intel-snapshot page refresh (merge with Phase 2).
 
 **Files:** `docs/*`, `scripts/export_intel_snapshot.py`, `scripts/schema_row_counts.py`, `backend/tests/test_intel_snapshot_export.py`
@@ -384,7 +404,7 @@ flowchart TB
    - `ALTER TABLE public.<t> SET SCHEMA intel|app` for all Appendix A tables (order: FK parents before children within each schema).
    - Split `sync_state` per K8.
    - **No `DROP` / `TRUNCATE`** — metadata-only move.
-2. **Connection pool:** `SET search_path TO app, intel, public` on connect (`backend/db/config.py` or pool init).
+2. **Connection pool:** `SET search_path TO app, intel, public` on connect in **`backend/db/connection.py:init_pool()`** (asyncpg `server_settings` or first-use `SET` on each connection).
 3. **`alembic_version`:** move to `app` schema; set `version_table_schema = 'app'` in `alembic/env.py`.
 4. Grep `backend/db/**/*.py` for hardcoded `public.` — fix or rely on `search_path`.
 5. **SQLite:** no-op in `036` for SQLite; `search_path` skipped; tables stay unqualified.
@@ -495,7 +515,7 @@ Consider a dedicated `briefr-publisher` compose profile that runs ingest jobs bu
 
 | # | Question | Default if unanswered |
 |---|----------|----------------------|
-| Q1 | `feed_cache`: split table or key allowlist? | **Key allowlist** in export Phase 0; table split deferred |
+| Q1 | `feed_cache`: split table or key allowlist? | **Key allowlist** — **Phase 0 merge gate** (table split deferred) |
 | Q2 | GitHub Releases vs LFS vs S3? | Releases; **LFS if artifact >50 MB** (~115 MB full DB → expect ~60–90 MB intel gzip) |
 | Q3 | Merge deletes stale CVEs from consumer? | No in v1 (publisher wins on upsert only) |
 | Q4 | Publisher frequency: daily vs weekly? | Daily export; GitHub Release tag weekly optional |
@@ -535,8 +555,8 @@ Consider a dedicated `briefr-publisher` compose profile that runs ingest jobs bu
 | `pulse_families` | intel | **no — add Phase 0** |
 | `ioc_degree` | intel | **no — add Phase 0** |
 | `software_catalog` | intel | **no — add Phase 0** |
-| `feed_cache` | intel | yes (key-filtered export) |
-| `sync_state` | intel | yes (ingest keys only; operator keys → `app.sync_state`) |
+| `feed_cache` | intel | yes today (whole table); **Phase 0 key allowlist required before publish** |
+| `sync_state` | intel | yes after K8 split (preflight allowlist; whole-table dump in v1) |
 | `users` | app | forbidden |
 | `sessions` | app | forbidden |
 | `user_preferences` | app | forbidden |
