@@ -1,0 +1,3 @@
+# Example cron (publisher instance — intel-only DB, no real app.users):
+# 0 3 * * * briefr cd /opt/briefr && DATABASE_URL=... INTEL_PUBLISH_DIR=/var/lib/briefr/intel-publish \
+#   ./backend/.venv/bin/python scripts/publish_intel_snapshot.py --publisher-instance >> /var/log/briefr/intel-publish.log 2>&1

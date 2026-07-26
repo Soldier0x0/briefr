@@ -6,6 +6,7 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import DangerZone from './shared/DangerZone.jsx'
 import StatCard from './shared/StatCard.jsx'
 import DbExplorerPanel from './DbExplorerPanel.jsx'
+import IntelSnapshotPanel from './IntelSnapshotPanel.jsx'
 import { fmtBytes } from './formatters.js'
 
 // PostgreSQL connection: test target DSN, copy data into Postgres, apply DATABASE_URL + restart.
@@ -228,6 +229,11 @@ export default function DatabasePage({ toast, active = true }) {
           </span>
         </div>
       )}
+
+      {!needsPostgres && (
+        <IntelSnapshotPanel toast={toast} />
+      )}
+
       <DbExplorerPanel toast={toast} />
     </div>
   )

@@ -70,6 +70,16 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/admin/feeds.py
+- id: routers-admin-intel_snapshot
+  title: routers.admin.intel_snapshot
+  summary: FastAPI router module with 2 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 2
+  source_refs:
+  - type: file
+    ref: backend/routers/admin/intel_snapshot.py
 - id: routers-admin-jobs
   title: routers.admin.jobs
   summary: FastAPI router module with 10 endpoint(s).

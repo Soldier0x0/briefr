@@ -119,6 +119,23 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
                 + (" …" if len(bad_feed_keys) > 20 else "")
             )
 
+        if split:
+            stray = await conn.fetch(
+                """
+                SELECT table_schema, table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_type = 'BASE TABLE'
+                  AND table_name = ANY($1::text[])
+                """,
+                list(INTEL_TABLES) + list(FORBIDDEN_EXPORT_TABLES),
+            )
+            if stray:
+                names = ", ".join(f"{r['table_schema']}.{r['table_name']}" for r in stray)
+                raise RuntimeError(
+                    f"classified tables still in public schema (run alembic 036 first): {names}"
+                )
+
         counts: dict[str, int] = {}
         for table in INTEL_TABLES:
             qualified = _qualified_table(table, split=split)
@@ -141,18 +158,23 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
             except Exception:
                 build_info = {}
 
-        return {
-            "format_version": SNAPSHOT_FORMAT_VERSION,
+        manifest_version = SNAPSHOT_FORMAT_VERSION if split else 1
+        payload = {
+            "format_version": manifest_version,
             "bundle_kind": BUNDLE_KIND,
             "schema_revision": schema_revision,
             "alembic_head_at_export": alembic_head,
             "schema_split": split,
+            "merge_compatible": split,
             "briefr_commit": build_info.get("commit") or build_info.get("git_commit"),
             "tables": list(INTEL_TABLES),
             "row_counts": counts,
             "sync_state_keys": sorted(keys),
             "exported_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
+        if split:
+            payload["schema_names"] = ["intel"]
+        return payload
     finally:
         await conn.close()
 
@@ -160,22 +182,28 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
 def _run_pg_dump(database_url: str, destination: Path, *, split: bool) -> None:
     params = parse_postgres_url(database_url)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    table_args: list[str] = []
-    for table in INTEL_TABLES:
-        qualified = _qualified_table(table, split=split)
-        table_args.extend(["--table", qualified])
-    cmd = _build_pg_cmd(
-        "pg_dump",
-        params,
-        extra_args=[
+    if split:
+        extra_args = [
+            "--format=custom",
+            "--no-owner",
+            "--no-acl",
+            "--schema=intel",
+            "-f",
+            str(destination),
+        ]
+    else:
+        table_args: list[str] = []
+        for table in INTEL_TABLES:
+            table_args.extend(["--table", table])
+        extra_args = [
             "--format=custom",
             "--no-owner",
             "--no-acl",
             *table_args,
             "-f",
             str(destination),
-        ],
-    )
+        ]
+    cmd = _build_pg_cmd("pg_dump", params, extra_args=extra_args)
     proc = subprocess.run(
         cmd,
         env=_subprocess_env(params),
@@ -189,12 +217,12 @@ def _run_pg_dump(database_url: str, destination: Path, *, split: bool) -> None:
 
 
 _RESTORE_LIST_TABLE_RE = re.compile(
-    r"^\d+;\s+\d+\s+\d+\s+TABLE(?: DATA)?\s+(?:(?:intel|app|public)\s+)?(\S+)\s"
+    r"^\d+;\s+\d+\s+\d+\s+TABLE(?: DATA)?\s+(?:(?P<schema>intel|app|public)\s+)?(?P<name>\S+)"
 )
 
 
-def _verify_dump_tables(dump_path: Path) -> None:
-    """List tables in the archive; fail if a forbidden name appears."""
+def _verify_dump_tables(dump_path: Path, *, schema_split: bool) -> None:
+    """List tables in the archive; fail if a forbidden name or wrong schema appears."""
     cmd = [_pg_tool("pg_restore"), "--list", str(dump_path)]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
@@ -204,9 +232,15 @@ def _verify_dump_tables(dump_path: Path) -> None:
         match = _RESTORE_LIST_TABLE_RE.match(line)
         if not match:
             continue
-        table_name = match.group(1)
+        table_name = match.group("name")
+        schema = match.group("schema") or "public"
         if table_name in FORBIDDEN_EXPORT_TABLES:
             raise RuntimeError(f"forbidden table {table_name} found in dump catalog")
+        if schema_split and schema not in {"intel"}:
+            if table_name in INTEL_TABLES or table_name in FORBIDDEN_EXPORT_TABLES:
+                raise RuntimeError(
+                    f"expected intel schema for {table_name}, found {schema} in dump catalog"
+                )
 
 
 def export_snapshot(
@@ -225,7 +259,7 @@ def export_snapshot(
         ok, msg = verify_pg_dump(staging)
         if not ok:
             raise RuntimeError(f"dump verification failed: {msg}")
-        _verify_dump_tables(staging)
+        _verify_dump_tables(staging, schema_split=split)
         with staging.open("rb") as src, gzip.open(output_path, "wb") as dst:
             shutil.copyfileobj(src, dst)
         manifest_path = output_path.with_suffix(".manifest.json")

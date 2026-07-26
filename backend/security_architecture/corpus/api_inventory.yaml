@@ -126,6 +126,12 @@ endpoints:
 - method: POST
   path: /api/admin/incidents/refresh
   component_id: routers-admin-feeds
+- method: POST
+  path: /api/admin/intel-snapshot/import
+  component_id: routers-admin-intel_snapshot
+- method: GET
+  path: /api/admin/intel-snapshot/status
+  component_id: routers-admin-intel_snapshot
 - method: GET
   path: /api/admin/ioc-cache
   component_id: routers-admin-data_ops

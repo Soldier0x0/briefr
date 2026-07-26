@@ -1,13 +1,9 @@
-"""Intel snapshot format versioning (Wave 4 / open-core).
-
-Copyright © 2026 Sai Harsha Vardhan
-SPDX-License-Identifier: Apache-2.0
-"""
+"""Intel snapshot format versioning (Wave 4 / open-core)."""
 
 from __future__ import annotations
 
-SNAPSHOT_FORMAT_VERSION = 1
-SUPPORTED_FORMAT_VERSIONS = frozenset({1})
+SNAPSHOT_FORMAT_VERSION = 2
+SUPPORTED_FORMAT_VERSIONS = frozenset({1, 2})
 BUNDLE_KIND = "briefr-intel"
 
 

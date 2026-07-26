@@ -501,8 +501,9 @@ archives until the box is verified stable for 24h.
 |----------|------|
 | New self-host / greenfield intel DB | Import into empty Postgres, then point BRIEFR at it |
 | Dev fixture / CI | Same as greenfield (see `test_intel_snapshot_export.py`) |
-| Monthly intel refresh on a **seed** DB | `--replace-intel` on a DB with **zero** operator rows |
-| Production operator instance | **Do not import** — ingest via scheduler instead |
+| Production operator instance (catch-up) | **`--mode merge`** — upserts `intel.*` only; `app.*` (users, stack, settings, IOC cache) unchanged |
+| Production operator instance (greenfield seed) | **`--mode bootstrap`** only when operator tables are empty |
+| Monthly intel refresh on a **seed** DB | `--mode bootstrap --replace-intel` on a DB with **zero** operator rows |
 
 ### Prerequisites
 
@@ -516,8 +517,8 @@ archives until the box is verified stable for 24h.
 python3 scripts/verify_intel_snapshot.py briefr-intel-2026-07.pgdump.gz
 ```
 
-Expect `OK: snapshot verified` and `format_version: 1`. Refuse unknown format
-versions until BRIEFR release notes document an upgrade path.
+Expect `OK: snapshot verified` and `format_version` **1** or **2** (schema-scoped
+`intel` bundles use v2 after Alembic `036`).
 
 ### 2. Greenfield import
 
@@ -535,10 +536,10 @@ python3 scripts/import_intel_snapshot.py \
 The import script:
 
 1. Validates manifest + dump catalog (no forbidden operator tables).
-2. Refuses targets where `users`, `sessions`, or `user_preferences` have rows.
-3. `pg_restore`s the allowlisted tables.
-4. Runs `alembic upgrade head` so schema matches the **current** BRIEFR code
-   (required when the bundle's `schema_revision` is behind `alembic_head_at_export`).
+2. **Bootstrap:** refuses targets where `app.users`, `app.sessions`, or `app.user_preferences` have rows.
+3. **Merge:** upserts into `intel.*` via staging schema; verifies `app.*` row counts unchanged.
+4. `pg_restore` / merge engine loads allowlisted intel data.
+5. Runs `alembic upgrade head` when needed so schema matches the **current** BRIEFR code.
 
 Point BRIEFR at the database (`backend/.env`), restart, and verify:
 
@@ -547,7 +548,24 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool | grep cve_count
 bash deploy/briefr-doctor.sh
 ```
 
-### 3. Upgrade to a newer monthly snapshot (intel seed only)
+### 3. Catch-up merge (existing operator instance)
+
+When the database already has users, stack terms, and settings:
+
+```bash
+python3 scripts/import_intel_snapshot.py \
+  --input briefr-intel-2026-08.pgdump.gz \
+  --database-url "$DATABASE_URL" \
+  --mode merge
+```
+
+Merge updates CVE/correlation/embedding intel only. Operator data in `app.*`
+(users, `user_preferences`, `app_settings`, `ioc_cache`, webhooks) is untouched.
+
+Admin UI: **Database → Intel snapshot** (merge mode) or
+`POST /api/admin/intel-snapshot/import` with `confirm_text: import`.
+
+### 4. Upgrade to a newer monthly snapshot (intel seed only)
 
 On a **non-production** database that already holds intel tables but no operator
 data:
@@ -556,13 +574,14 @@ data:
 python3 scripts/import_intel_snapshot.py \
   --input briefr-intel-2026-08.pgdump.gz \
   --database-url "$DATABASE_URL" \
+  --mode bootstrap \
   --replace-intel
 ```
 
 `--replace-intel` truncates allowlisted intel tables before restore. **Never**
-use this against a database with watchlist, users, or webhook configuration.
+use bootstrap against a database with watchlist, users, or webhook configuration.
 
-### 4. Upgrade BRIEFR app version after snapshot import
+### 5. Upgrade BRIEFR app version after snapshot import
 
 Snapshot import brings **data** to the schema revision embedded in the bundle.
 When the installed BRIEFR release is newer:
