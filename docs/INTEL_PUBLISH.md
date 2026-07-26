@@ -64,6 +64,14 @@ python scripts/export_intel_snapshot.py --output /tmp/briefr-intel.pgdump.gz
 python scripts/verify_intel_snapshot.py /tmp/briefr-intel.pgdump.gz
 ```
 
+Automated publish (export + verify + `latest.json`):
+
+```bash
+python scripts/publish_intel_snapshot.py --output-dir /var/lib/briefr/intel-publish
+```
+
+See `deploy/intel-publish.cron.example` for cron wiring.
+
 ---
 
 ## Size strategy

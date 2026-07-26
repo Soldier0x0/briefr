@@ -17,7 +17,7 @@ operator tables in **`app`** (single Postgres database).
 |-------|--------|
 | Container | `briefr-intel-YYYY-MM.pgdump.gz` (gzip of custom-format `pg_dump`) |
 | Sidecar | `briefr-intel-YYYY-MM.manifest.json` (or `*.pgdump.manifest.json` next to export) |
-| `format_version` | **1** — increment when table allowlist or manifest schema changes |
+| `format_version` | **1** (legacy `public` tables) or **2** (`intel` schema bundle after Alembic `036`) |
 | `bundle_kind` | `briefr-intel` |
 | Dump scope | Allowlisted tables + filtered `sync_state` rows only |
 | Operator rows | **Zero** — verified by export script exit code + row-count guards |

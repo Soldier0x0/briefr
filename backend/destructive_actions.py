@@ -81,6 +81,10 @@ DESTRUCTIVE_ACTIONS: tuple[DestructiveAction, ...] = (
         "webhook.destination.delete", "delete",
         "Permanently removes a database-backed webhook destination.",
     ),
+    DestructiveAction(
+        "intel_snapshot.import", "import",
+        "Imports an intel snapshot bundle (merge or bootstrap). Merge updates intel tables only.",
+    ),
 )
 
 _BY_ID: dict[str, DestructiveAction] = {a.id: a for a in DESTRUCTIVE_ACTIONS}

@@ -175,6 +175,8 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/onboarding/dismiss"),
     # Rate-limit admin page: appended after diagnostics routes.
     ("GET", "/api/admin/ratelimit"),
+    ("GET", "/api/admin/intel-snapshot/status"),
+    ("POST", "/api/admin/intel-snapshot/import"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
     ("POST", "/api/wallboard/session"),
     ("DELETE", "/api/wallboard/session"),

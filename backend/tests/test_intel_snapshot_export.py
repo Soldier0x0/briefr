@@ -47,7 +47,7 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
     output = tmp_path / "briefr-intel.pgdump.gz"
     manifest = export_snapshot(database_url, output, allow_operator_seed=True)
     assert output.is_file()
-    assert manifest["format_version"] == 1
+    assert manifest["format_version"] in (1, 2)
     assert manifest["bundle_kind"] == "briefr-intel"
     assert "alembic_head_at_export" in manifest
     assert manifest["row_counts"]["cves"] >= 0

@@ -576,6 +576,19 @@
       ]
     },
     {
+      "id": "routers-admin-intel_snapshot",
+      "label": "routers.admin.intel_snapshot",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 2,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/intel_snapshot.py"
+        }
+      ]
+    },
+    {
       "id": "routers-admin-jobs",
       "label": "routers.admin.jobs",
       "kind": "component",
@@ -4121,6 +4134,54 @@
       "id": "routers-admin-feeds->table:sync_state",
       "source": "routers-admin-feeds",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:audit_log",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:cve_change_history",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:cve_exploits",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:cves",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:epss_history",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:feed_cache",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:ioc_cache",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:ioc_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:kev_deadlines",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:kev_deadlines",
       "kind": "references_table"
     },
     {
