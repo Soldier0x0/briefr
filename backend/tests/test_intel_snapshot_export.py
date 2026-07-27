@@ -90,18 +90,26 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
     async def _counts() -> dict[str, int]:
         import asyncpg
         from db.config import postgres_dsn
+        from db.schema_inventory import table_schema
 
-        conn = await asyncpg.connect(dsn=postgres_dsn(restore_url), timeout=30)
+        conn = await asyncpg.connect(
+            dsn=postgres_dsn(restore_url),
+            timeout=30,
+            server_settings={"search_path": "intel, app, public"},
+        )
         try:
             counts = {}
             for table in INTEL_TABLES:
-                counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
+                qualified = f"{table_schema(table)}.{table}"
+                counts[table] = int(
+                    await conn.fetchval(f"SELECT COUNT(*) FROM {qualified}")
+                )
             for table in OPERATOR_GUARD_TABLES:
                 exists = await conn.fetchval(
                     """
                     SELECT EXISTS (
                         SELECT 1 FROM information_schema.tables
-                        WHERE table_schema = 'public' AND table_name = $1
+                        WHERE table_schema = 'app' AND table_name = $1
                     )
                     """,
                     table,
