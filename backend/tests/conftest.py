@@ -117,10 +117,13 @@ def _postgres_test_isolation(_postgres_schema_once):
         conn = await asyncpg.connect(dsn, timeout=15)
         try:
             rows = await conn.fetch(
-                "SELECT tablename FROM pg_tables"
-                " WHERE schemaname = 'public' AND tablename != 'alembic_version'"
+                "SELECT schemaname, tablename FROM pg_tables"
+                " WHERE schemaname IN ('app', 'intel', 'public')"
+                " AND tablename != 'alembic_version'"
             )
-            tables = ", ".join(f'"{r["tablename"]}"' for r in rows)
+            tables = ", ".join(
+                f'"{r["schemaname"]}"."{r["tablename"]}"' for r in rows
+            )
             if tables:
                 await conn.execute(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE")
         finally:

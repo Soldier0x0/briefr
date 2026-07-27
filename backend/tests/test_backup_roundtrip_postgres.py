@@ -41,6 +41,9 @@ def _ensure_postgres_live():
 
 CORE_TABLES = ("cves", "kev_deadlines")
 
+# Match db.connection pool search_path after migration 036 (intel/app schema split).
+_PG_SERVER_SETTINGS = {"search_path": "app, intel, public"}
+
 
 def _backup_config(tmp_path: Path):
     from backup.manager import BackupConfig
@@ -91,12 +94,15 @@ async def _table_counts(conn) -> dict[str, int]:
     return counts
 
 
-async def _truncate_public_tables(conn) -> None:
+async def _truncate_app_tables(conn) -> None:
     rows = await conn.fetch(
-        "SELECT tablename FROM pg_tables"
-        " WHERE schemaname = 'public' AND tablename != 'alembic_version'"
+        "SELECT schemaname, tablename FROM pg_tables"
+        " WHERE schemaname IN ('app', 'intel', 'public')"
+        " AND tablename != 'alembic_version'"
     )
-    names = ", ".join(f'"{r["tablename"]}"' for r in rows)
+    names = ", ".join(
+        f'"{r["schemaname"]}"."{r["tablename"]}"' for r in rows
+    )
     if names:
         await conn.execute(f"TRUNCATE TABLE {names} RESTART IDENTITY CASCADE")
 
@@ -114,7 +120,9 @@ def test_pg_dump_restore_round_trip_core_tables(tmp_path, monkeypatch):
     async def _prepare() -> dict[str, int]:
         import asyncpg
 
-        conn = await asyncpg.connect(dsn=dsn, timeout=30)
+        conn = await asyncpg.connect(
+            dsn=dsn, timeout=30, server_settings=_PG_SERVER_SETTINGS
+        )
         try:
             await _seed_core_rows(conn)
             return await _table_counts(conn)
@@ -133,9 +141,11 @@ def test_pg_dump_restore_round_trip_core_tables(tmp_path, monkeypatch):
     async def _wipe() -> None:
         import asyncpg
 
-        conn = await asyncpg.connect(dsn=dsn, timeout=30)
+        conn = await asyncpg.connect(
+            dsn=dsn, timeout=30, server_settings=_PG_SERVER_SETTINGS
+        )
         try:
-            await _truncate_public_tables(conn)
+            await _truncate_app_tables(conn)
             wiped = await _table_counts(conn)
             assert wiped["cves"] == 0
             assert wiped["kev_deadlines"] == 0
@@ -151,7 +161,9 @@ def test_pg_dump_restore_round_trip_core_tables(tmp_path, monkeypatch):
     async def _after() -> dict[str, int]:
         import asyncpg
 
-        conn = await asyncpg.connect(dsn=dsn, timeout=30)
+        conn = await asyncpg.connect(
+            dsn=dsn, timeout=30, server_settings=_PG_SERVER_SETTINGS
+        )
         try:
             return await _table_counts(conn)
         finally:
