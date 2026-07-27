@@ -1,21 +1,27 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { activityRowHasPayload } from './aiOperationsActivityActions.js'
+import { activityRowShowsPayloadActions } from './aiOperationsActivityActions.js'
 
-describe('activityRowHasPayload', () => {
+describe('activityRowShowsPayloadActions', () => {
   it('returns false when row is missing', () => {
-    assert.equal(activityRowHasPayload(null), false)
-    assert.equal(activityRowHasPayload(undefined), false)
+    assert.equal(activityRowShowsPayloadActions(null), false)
+    assert.equal(activityRowShowsPayloadActions(undefined), false)
   })
 
-  it('returns false when payload flag is falsey', () => {
-    assert.equal(activityRowHasPayload({ has_payload: false }), false)
-    assert.equal(activityRowHasPayload({ has_payload: 0 }), false)
+  it('prefers payload_actionable when present', () => {
+    assert.equal(
+      activityRowShowsPayloadActions({ has_payload: true, payload_actionable: false }),
+      false,
+    )
+    assert.equal(
+      activityRowShowsPayloadActions({ has_payload: false, payload_actionable: true }),
+      true,
+    )
   })
 
-  it('returns true when payload flag is truthy', () => {
-    assert.equal(activityRowHasPayload({ has_payload: true }), true)
-    assert.equal(activityRowHasPayload({ has_payload: 1 }), true)
+  it('falls back to has_payload when payload_actionable is absent', () => {
+    assert.equal(activityRowShowsPayloadActions({ has_payload: false }), false)
+    assert.equal(activityRowShowsPayloadActions({ has_payload: true }), true)
   })
 })

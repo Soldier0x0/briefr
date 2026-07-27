@@ -47,12 +47,18 @@ export function bytesChartScale(valuesBytes) {
     if (!Number.isFinite(n)) return '—'
     return `${n.toFixed(1)} ${unit}`
   }
+  const formatTick = (displayVal) => {
+    const n = Number(displayVal)
+    if (!Number.isFinite(n)) return '—'
+    return `${Math.round(n)} ${unit}`
+  }
   const maxDisplay = toDisplay(maxBytes)
   return {
     unit,
     divisor,
     toDisplay,
     format,
+    formatTick,
     domainMax: niceCeil(maxDisplay),
   }
 }
@@ -118,6 +124,29 @@ export function durationChartScale(valuesSeconds) {
     toDisplay,
     format,
     domainMax: niceCeil(toDisplay(maxSec)),
+  }
+}
+
+/** Ingest duration chart — always plot seconds so sub-minute jobs are not rounded to 0.0 min. */
+export function ingestDurationChartScale(valuesSeconds) {
+  const nums = (valuesSeconds || [])
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0)
+  const maxSec = nums.length ? Math.max(...nums) : 0
+  const toDisplay = (seconds) => {
+    const n = Number(seconds)
+    if (!Number.isFinite(n) || n < 0) return 0
+    return n
+  }
+  const formatTick = (sec) => `${Math.round(Number(sec))} s`
+  const format = (sec) => fmtDur(Number(sec))
+  return {
+    unit: 's',
+    divisor: 1,
+    toDisplay,
+    format,
+    formatTick,
+    domainMax: niceCeil(maxSec > 0 ? maxSec : 1),
   }
 }
 

@@ -102,7 +102,9 @@ def test_usage_aggregates_and_activity_pagination(tmp_path, monkeypatch):
             all_rows, _ = await list_ai_operations_page(db, limit=10, offset=0)
             by_operation_id = {row["operation_id"]: row for row in all_rows}
             assert by_operation_id["u1"]["has_payload"] is True
+            assert by_operation_id["u1"]["payload_actionable"] is False
             assert by_operation_id["u2"]["has_payload"] is False
+            assert by_operation_id["u2"]["payload_actionable"] is False
             rows2, _ = await list_ai_operations_page(
                 db, limit=10, offset=0, provider="gemini"
             )
@@ -210,6 +212,68 @@ def test_activity_endpoint_includes_has_payload_boolean(admin_client):
     matching = [row for row in rows if row["operation_id"] == operation_id]
     assert matching
     assert matching[0]["has_payload"] is True
+    assert matching[0]["payload_actionable"] is True
+
+
+def test_payload_actionable_false_when_context_already_succeeded(tmp_path, monkeypatch):
+    db_path = tmp_path / "ai_ops_resolved.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    context_type = "payload"
+    context_id = "payload-hash-abc"
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation(
+                db,
+                operation_id="op-fail-provider-a",
+                request_id=None,
+                started_at="2099-01-02T00:00:00Z",
+                latency_ms=12,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="groq",
+                model="m1",
+                success=False,
+                error_class="empty",
+                context_type=context_type,
+                context_id=context_id,
+            )
+            await insert_ai_operation_payload(
+                db,
+                operation_id="op-fail-provider-a",
+                messages_json=json.dumps([{"role": "user", "content": "x"}]),
+                response_excerpt="empty",
+                task_class="product_extraction",
+                provider="groq",
+                model="m1",
+            )
+            await insert_ai_operation(
+                db,
+                operation_id="op-ok-provider-b",
+                request_id=None,
+                started_at="2099-01-02T00:00:01Z",
+                latency_ms=8,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="cerebras",
+                model="m2",
+                success=True,
+                context_type=context_type,
+                context_id=context_id,
+            )
+            await db.commit()
+            rows, _ = await list_ai_operations_page(db, limit=10, offset=0)
+            by_id = {row["operation_id"]: row for row in rows}
+            assert by_id["op-fail-provider-a"]["has_payload"] is True
+            assert by_id["op-fail-provider-a"]["payload_actionable"] is False
+            assert by_id["op-ok-provider-b"]["payload_actionable"] is False
+        finally:
+            await db.close()
+
+    run_db_test(_run())
 
 
 def test_get_payload_returns_stored_payload(admin_client):

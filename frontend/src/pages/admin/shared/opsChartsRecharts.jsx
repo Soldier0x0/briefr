@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ChartShell } from '../../../components/ui/index.js'
-import { bytesChartScale, durationChartScale } from '../formatters.js'
+import { bytesChartScale, ingestDurationChartScale } from '../formatters.js'
 import {
   axisLabelStyle,
   axisTickStyle,
@@ -40,7 +40,7 @@ function ingestScaleMax(displayValues) {
 
 export function IngestDurationChart({ rows }) {
   const theme = getRechartsTheme()
-  const scale = durationChartScale(rows.map((r) => r.seconds))
+  const scale = ingestDurationChartScale(rows.map((r) => r.seconds))
   const data = rows.map((row, index) => ({
     pointKey: index,
     label: row.label,
@@ -59,18 +59,19 @@ export function IngestDurationChart({ rows }) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={rechartsMargin({ left: 8, right: 12, top: 8, bottom: 8 })}
+          margin={rechartsMargin({ left: 8, right: 16, top: 8, bottom: 28 })}
         >
           <CartesianGrid stroke={theme.grid} horizontal={false} />
           <XAxis
             type="number"
             domain={[0, scaleMax || 'auto']}
             tick={axisTickStyle(theme)}
-            tickFormatter={(v) => scale.format(Number(v))}
+            tickFormatter={(v) => scale.formatTick(Number(v))}
+            allowDecimals={false}
             label={{
-              value: `Duration (${scale.unit})`,
+              value: 'Duration (s)',
               position: 'insideBottom',
-              offset: -2,
+              offset: -4,
               style: axisLabelStyle(theme),
             }}
           />
@@ -138,7 +139,7 @@ export function BackupSizesChart({ rows }) {
   return (
     <ChartShell height={200} ariaLabel="Backup archive sizes chart" className="admin-ops-chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={rechartsMargin({ left: 16, right: 12, top: 8, bottom: 28 })}>
+        <LineChart data={data} margin={rechartsMargin({ left: 36, right: 12, top: 12, bottom: 20 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
             type="category"
@@ -146,28 +147,23 @@ export function BackupSizesChart({ rows }) {
             allowDuplicatedCategory={false}
             tick={axisTickStyle(theme)}
             interval="preserveStartEnd"
-            minTickGap={20}
-            angle={-35}
-            textAnchor="end"
-            height={48}
+            minTickGap={12}
+            angle={0}
+            textAnchor="middle"
+            height={28}
             tickFormatter={(value) => data[Number(value)]?.tickLabel || String(value)}
-            label={{
-              value: 'Newest →',
-              position: 'insideBottom',
-              offset: -4,
-              style: axisLabelStyle(theme),
-            }}
           />
           <YAxis
-            width={72}
+            width={56}
             domain={[0, scale.domainMax]}
             tick={axisTickStyle(theme)}
-            tickFormatter={(v) => scale.format(Number(v))}
+            allowDecimals={false}
+            tickFormatter={(v) => scale.formatTick(Number(v))}
             label={{
               value: `Size (${scale.unit})`,
               angle: -90,
               position: 'insideLeft',
-              offset: 8,
+              offset: 12,
               style: axisLabelStyle(theme),
             }}
           />

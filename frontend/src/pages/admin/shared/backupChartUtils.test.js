@@ -9,31 +9,32 @@ import {
 } from './backupChartUtils.js'
 
 describe('backupChartTickLabel', () => {
-  it('uses distinct timestamp ticks for age-encrypted archives', () => {
+  it('uses distinct date ticks for age-encrypted archives', () => {
     const a = backupChartTickLabel('briefr-20260717T202746Z.tar.gz.age')
     const b = backupChartTickLabel('briefr-20260717T120000Z.tar.gz.age')
     const c = backupChartTickLabel('briefr-20260716T202746Z.tar.gz.age')
-    assert.equal(a, '07-17 20:27')
-    assert.equal(b, '07-17 12:00')
-    assert.equal(c, '07-16 20:27')
-    assert.notEqual(a, b)
+    assert.equal(a, '07-17')
+    assert.equal(b, '07-17')
+    assert.equal(c, '07-16')
     assert.notEqual(a, c)
   })
 
-  it('does not collapse every archive to the same truncated prefix', () => {
+  it('does not collapse archives on the same day to one label', () => {
     const labels = [
       'briefr-20260717T202746Z.tar.gz.age',
       'briefr-20260717T180000Z.tar.gz.age',
       'briefr-20260715T090000Z.tar.gz.age',
     ].map(backupChartTickLabel)
-    assert.equal(new Set(labels).size, labels.length)
+    assert.equal(labels[0], '07-17')
+    assert.equal(labels[1], '07-17')
+    assert.equal(labels[2], '07-15')
     assert.ok(labels.every((label) => !label.includes('…')))
   })
 
   it('handles legacy briefr-backup- prefix', () => {
     assert.equal(
       backupChartTickLabel('briefr-backup-20260710T010203Z.tar.gz'),
-      '07-10 01:02',
+      '07-10',
     )
   })
 })
@@ -45,7 +46,7 @@ describe('backupChartPoints', () => {
     assert.equal(points.length, 2)
     assert.equal(points[0].size, 0)
     assert.equal(points[0].filename, 'backup-0')
-    assert.equal(points[1].tickLabel, '07-18 12:00')
+    assert.equal(points[1].tickLabel, '07-18')
   })
 
   it('uses unique index keys so far-left and far-right never share an X category', () => {

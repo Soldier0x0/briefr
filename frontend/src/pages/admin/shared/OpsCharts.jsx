@@ -50,7 +50,7 @@ function backupSizeRows(backups) {
   const rows = Array.isArray(backups) ? backups : []
   return [...rows]
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .slice(0, 8)
+    .slice(0, 12)
     .reverse()
 }
 
@@ -153,7 +153,7 @@ export default function OpsCharts({ schedulerJobs }) {
       <div className="admin-card admin-ops-chart-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           Backup archive sizes
-          <HelpTip text="Trend of the eight most recent encrypted backup archives on disk (oldest left, newest right)." />
+          <HelpTip text="Trend of the twelve most recent encrypted backup archives on disk (oldest left, newest right). X-axis shows archive date (UTC); use the data table for exact sizes and timestamps." />
         </div>
         {backupRows.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : <AdminChartSkeleton height={160} />}</div>
