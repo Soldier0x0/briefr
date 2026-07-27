@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
 
 import pytest
@@ -14,6 +13,7 @@ from db.schema_inventory import (
     SYNC_STATE_INGEST_KEYS,
     feed_cache_key_publishable,
 )
+from tests.conftest import run_db_test
 
 
 def test_table_inventory_counts():
@@ -48,11 +48,10 @@ def test_feed_cache_publishable_rules():
 )
 def test_schema_split_after_migrations():
     async def _run() -> None:
-        from database import get_db, run_postgres_migrations
+        from database import get_db
         from db.schema_split import schemas_are_split
         from db.sync_state import get_sync_state_value, set_sync_state_value
 
-        await run_postgres_migrations()
         db = await get_db()
         try:
             split = await schemas_are_split(db)
@@ -104,4 +103,4 @@ def test_schema_split_after_migrations():
         finally:
             await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())

@@ -113,7 +113,7 @@ def test_pgvector_extension_and_embeddings_table():
             """
             SELECT column_name, data_type, udt_name
             FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = 'embeddings'
+            WHERE table_schema = 'intel' AND table_name = 'embeddings'
             ORDER BY ordinal_position
             """
         )

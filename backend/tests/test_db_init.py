@@ -36,7 +36,7 @@ def test_init_db_creates_core_tables(tmp_path, monkeypatch):
                 else """
                 SELECT tablename AS name
                 FROM pg_tables
-                WHERE schemaname = 'public'
+                WHERE schemaname IN ('intel', 'app')
                 ORDER BY tablename
                 """
             )
