@@ -120,6 +120,10 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
             )
 
         if split:
+            classified_in_public = [
+                t for t in list(INTEL_TABLES) + list(FORBIDDEN_EXPORT_TABLES)
+                if t != "alembic_version"
+            ]
             stray = await conn.fetch(
                 """
                 SELECT table_schema, table_name
@@ -128,7 +132,7 @@ async def _preflight(database_url: str, *, allow_operator_seed: bool) -> dict:
                   AND table_type = 'BASE TABLE'
                   AND table_name = ANY($1::text[])
                 """,
-                list(INTEL_TABLES) + list(FORBIDDEN_EXPORT_TABLES),
+                classified_in_public,
             )
             if stray:
                 names = ", ".join(f"{r['table_schema']}.{r['table_name']}" for r in stray)

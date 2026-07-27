@@ -31,9 +31,15 @@ def postgres_migrations():
         # Run the same schema fixup init_db() would do, via a direct
         # connection — not get_db()/init_pool(), which would bind the pool
         # to this asyncio.run() loop that's about to close.
-        conn = await asyncpg.connect(postgres_dsn(), timeout=15)
+        conn = await asyncpg.connect(
+            postgres_dsn(),
+            timeout=15,
+            server_settings={"search_path": "app, intel, public"},
+        )
         try:
-            await conn.execute("UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0")
+            await conn.execute(
+                "UPDATE cves SET epss_score = NULL WHERE epss_score = 0.0"
+            )
         finally:
             await conn.close()
 

@@ -14,8 +14,12 @@ from tests.conftest import run_db_test
 
 def test_sync_state_sql_uses_native_placeholders():
     if is_postgres():
-        assert "$1" in sync_state_mod._SELECT_VALUE_PG
-        assert "$3" in sync_state_mod._UPSERT_PG
+        select_sql = sync_state_mod._select_sql("intel.sync_state")
+        upsert_sql = sync_state_mod._upsert_sql("intel.sync_state")
+        assert "$1" in select_sql
+        assert "FROM intel.sync_state" in select_sql
+        assert "$3" in upsert_sql
+        assert "INSERT INTO intel.sync_state" in upsert_sql
     else:
         assert "?" in sync_state_mod._SELECT_VALUE_SQLITE
 

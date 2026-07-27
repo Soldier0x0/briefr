@@ -113,7 +113,7 @@ def test_pgvector_extension_and_embeddings_table():
             """
             SELECT column_name, data_type, udt_name
             FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = 'embeddings'
+            WHERE table_schema = 'intel' AND table_name = 'embeddings'
             ORDER BY ordinal_position
             """
         )
@@ -126,7 +126,7 @@ def test_pgvector_extension_and_embeddings_table():
         assert literal is not None
         await db.execute(
             """
-            INSERT INTO embeddings (
+            INSERT INTO intel.embeddings (
                 entity_type, entity_id, model, dims, embedding, content_hash
             )
             VALUES ('cve', 'CVE-2099-E1TEST', $1, $2, CAST($3 AS vector), $4)
@@ -146,7 +146,7 @@ def test_pgvector_extension_and_embeddings_table():
             """
             SELECT entity_id,
                    embedding <=> CAST($1 AS vector) AS dist
-            FROM embeddings
+            FROM intel.embeddings
             WHERE entity_type = 'cve' AND entity_id = 'CVE-2099-E1TEST'
             """,
             (literal,),

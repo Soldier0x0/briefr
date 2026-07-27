@@ -222,7 +222,41 @@
 }
 
 .admin-statusbar .api-queue-indicator {
-  margin-right: 0.25rem;
+  margin-right: var(--space-1);
+}
+
+.api-queue-indicator--admin .api-queue-btn {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-micro);
+}
+
+.admin-card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.api-queue-panel-list {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.api-queue-panel-list > li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.api-queue-panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--font-size-micro);
+  color: var(--text3);
+  margin-top: var(--space-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

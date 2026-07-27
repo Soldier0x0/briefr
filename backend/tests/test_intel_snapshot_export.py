@@ -84,24 +84,51 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
         env["PGPASSWORD"] = str(admin_params["password"])
     subprocess.run(create_cmd, env=env, check=True, capture_output=True, text=True)
 
+    ext_cmd = [
+        _pg_tool("psql"),
+        "-h",
+        str(admin_params.get("host", "127.0.0.1")),
+        "-p",
+        str(admin_params.get("port", 5432)),
+        "-U",
+        str(admin_params["user"]),
+        "-d",
+        restore_db,
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        "CREATE EXTENSION IF NOT EXISTS vector;",
+        "-c",
+        "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+    ]
+    subprocess.run(ext_cmd, env=env, check=True, capture_output=True, text=True)
+
     restore_url = urlunparse(parsed._replace(path=f"/{restore_db}"))
     run_pg_restore(restore_url, staging)
 
     async def _counts() -> dict[str, int]:
         import asyncpg
         from db.config import postgres_dsn
+        from db.schema_inventory import table_schema
 
-        conn = await asyncpg.connect(dsn=postgres_dsn(restore_url), timeout=30)
+        conn = await asyncpg.connect(
+            dsn=postgres_dsn(restore_url),
+            timeout=30,
+            server_settings={"search_path": "intel, app, public"},
+        )
         try:
             counts = {}
             for table in INTEL_TABLES:
-                counts[table] = int(await conn.fetchval(f"SELECT COUNT(*) FROM {table}"))
+                qualified = f"{table_schema(table)}.{table}"
+                counts[table] = int(
+                    await conn.fetchval(f"SELECT COUNT(*) FROM {qualified}")
+                )
             for table in OPERATOR_GUARD_TABLES:
                 exists = await conn.fetchval(
                     """
                     SELECT EXISTS (
                         SELECT 1 FROM information_schema.tables
-                        WHERE table_schema = 'public' AND table_name = $1
+                        WHERE table_schema = 'app' AND table_name = $1
                     )
                     """,
                     table,

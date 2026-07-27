@@ -17,6 +17,7 @@ import OpsCharts from './shared/OpsCharts.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import NeedsAttentionPanel from './shared/NeedsAttentionPanel.jsx'
 import JobErrorsPanel from './shared/JobErrorsPanel.jsx'
+import ApiQueuePanel from './shared/ApiQueuePanel.jsx'
 import { CIRCUIT_UI } from './circuitLabels.js'
 
 function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
@@ -152,7 +153,10 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
 
       {active_locks?.length > 0 && (
         <div className="admin-card">
-          <div className="admin-card-title">Background sync in progress</div>
+          <div className="admin-card-title">Scheduler jobs running</div>
+          <p className="admin-page-subtitle">
+            In-process ingest jobs — distinct from outbound API queue pacing.
+          </p>
           {active_locks.map(l => (
             <div key={l.job_id} style={{ fontSize: '0.8125rem', color: 'var(--text2)', padding: '0.2rem 0' }}>
               {jobLabel(l.job_id, 'analyst')} — started recently. Wait before restarting the server.
@@ -181,6 +185,8 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
         <div className="admin-card-title">Data refresh schedule</div>
         <JobTable jobs={analystScheduleJobs(scheduler_jobs)} onRunNow={runNow} mode="analyst" />
       </div>
+
+      <ApiQueuePanel apiQueue={system?.api_queue} />
 
       <JobErrorsPanel
         system={system}
@@ -437,7 +443,10 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
 
       <div className="admin-two-col">
         <div className="admin-card" style={{ flex: 1 }}>
-          <div className="admin-card-title">{termLabel('active_locks', 'operator')}</div>
+          <div className="admin-card-title">Scheduler jobs running</div>
+          <p className="admin-page-subtitle">
+            In-process ingest jobs — distinct from outbound API queue pacing.
+          </p>
           {(!active_locks || active_locks.length === 0) ? (
             <div className="admin-empty admin-empty--compact">No jobs running</div>
           ) : (
@@ -455,6 +464,8 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
           )}
         </div>
       </div>
+
+      <ApiQueuePanel apiQueue={system?.api_queue} />
 
       <JobErrorsPanel
         system={system}

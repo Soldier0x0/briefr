@@ -6,11 +6,25 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import NotificationCenter from './shared/NotificationCenter.jsx'
 import HeaderClock from '../../components/HeaderClock.jsx'
+import ApiQueueIndicator from '../../components/ApiQueueIndicator.jsx'
 import { fmtAge } from './formatters.js'
 import { worstSource } from './intelStatus.js'
 import { CIRCUIT_UI } from './circuitLabels.js'
 
-export default function StatusBar({ system, onRunIngest, onRestart, onDrainRestart, refreshInProgress, mode, setMode, lastUpdated, userMenu }) {
+export default function StatusBar({
+  system,
+  apiQueue,
+  onRunIngest,
+  onRestart,
+  onDrainRestart,
+  refreshInProgress,
+  mode,
+  setMode,
+  lastUpdated,
+  userMenu,
+  onToggleSidebar,
+  sidebarOpen,
+}) {
   const [restartMenu, setRestartMenu] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const [confirmRestart, setConfirmRestart] = useState(null) // null | 'immediate' | 'drain'
@@ -236,6 +250,7 @@ export default function StatusBar({ system, onRunIngest, onRestart, onDrainResta
         </div>
 
         <div className="sb-actions">
+          <ApiQueueIndicator apiQueue={apiQueue} className="api-queue-indicator--admin" />
           <HeaderClock className="admin-statusbar-clock" />
           <NotificationCenter />
           {userMenu}
