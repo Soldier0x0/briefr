@@ -84,6 +84,25 @@ def test_export_intel_snapshot_round_trip(tmp_path, postgres_schema):
         env["PGPASSWORD"] = str(admin_params["password"])
     subprocess.run(create_cmd, env=env, check=True, capture_output=True, text=True)
 
+    ext_cmd = [
+        _pg_tool("psql"),
+        "-h",
+        str(admin_params.get("host", "127.0.0.1")),
+        "-p",
+        str(admin_params.get("port", 5432)),
+        "-U",
+        str(admin_params["user"]),
+        "-d",
+        restore_db,
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        "CREATE EXTENSION IF NOT EXISTS vector;",
+        "-c",
+        "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+    ]
+    subprocess.run(ext_cmd, env=env, check=True, capture_output=True, text=True)
+
     restore_url = urlunparse(parsed._replace(path=f"/{restore_db}"))
     run_pg_restore(restore_url, staging)
 
