@@ -276,6 +276,64 @@ def test_payload_actionable_false_when_context_already_succeeded(tmp_path, monke
     run_db_test(_run())
 
 
+def test_payload_actionable_still_true_for_task_level_context(tmp_path, monkeypatch):
+    """Generic task context (task/product_extraction) must not hide retry on unrelated failures."""
+    db_path = tmp_path / "ai_ops_task_ctx.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation(
+                db,
+                operation_id="op-task-ok",
+                request_id=None,
+                started_at="2099-01-03T00:00:00Z",
+                latency_ms=5,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="cerebras",
+                model="m1",
+                success=True,
+                context_type="task",
+                context_id="product_extraction",
+            )
+            await insert_ai_operation(
+                db,
+                operation_id="op-task-fail",
+                request_id=None,
+                started_at="2099-01-03T00:00:01Z",
+                latency_ms=12,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="groq",
+                model="m2",
+                success=False,
+                error_class="empty",
+                context_type="task",
+                context_id="product_extraction",
+            )
+            await insert_ai_operation_payload(
+                db,
+                operation_id="op-task-fail",
+                messages_json=json.dumps([{"role": "user", "content": "y"}]),
+                response_excerpt="empty",
+                task_class="product_extraction",
+                provider="groq",
+                model="m2",
+            )
+            await db.commit()
+            rows, _ = await list_ai_operations_page(db, limit=10, offset=0)
+            by_id = {row["operation_id"]: row for row in rows}
+            assert by_id["op-task-fail"]["payload_actionable"] is True
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
 def test_get_payload_returns_stored_payload(admin_client):
     operation_id = "op-payload-1"
     _seed_failure_payload(operation_id)

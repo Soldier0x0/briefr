@@ -261,14 +261,18 @@ async def list_ai_operations_page(
                        WHERE resolved.success = 1
                          AND (
                              (
+                                 resolved.context_type = 'replay'
+                                 AND resolved.context_id = ai_operations.operation_id
+                             )
+                             OR (
                                  ai_operations.context_type IS NOT NULL
                                  AND ai_operations.context_id IS NOT NULL
                                  AND resolved.context_type = ai_operations.context_type
                                  AND resolved.context_id = ai_operations.context_id
-                             )
-                             OR (
-                                 resolved.context_type = 'replay'
-                                 AND resolved.context_id = ai_operations.operation_id
+                                 AND NOT (
+                                     ai_operations.context_type = 'task'
+                                     AND ai_operations.context_id = ai_operations.task_class
+                                 )
                              )
                          )
                    )
