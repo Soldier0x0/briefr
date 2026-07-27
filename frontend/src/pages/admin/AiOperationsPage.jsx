@@ -7,7 +7,7 @@ import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
 import { CIRCUIT_UI, LLM_ERROR_LABELS } from './circuitLabels.js'
-import { activityRowHasPayload } from './aiOperationsActivityActions.js'
+import { activityRowShowsPayloadActions } from './aiOperationsActivityActions.js'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -657,7 +657,7 @@ function ActivityTab({ toast, providerOptions }) {
                         {row.context_id || '—'}
                       </td>
                       <td className="admin-cell-nowrap">
-                        {activityRowHasPayload(row) ? (
+                        {activityRowShowsPayloadActions(row) ? (
                           <div style={{ display: 'inline-flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                             <button
                               type="button"

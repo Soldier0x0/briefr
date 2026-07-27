@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { bytesChartScale, durationChartScale, fmtBytes, fmtDur, niceCeil } from './formatters.js'
+import { bytesChartScale, durationChartScale, fmtBytes, fmtDur, ingestDurationChartScale, niceCeil } from './formatters.js'
 
 describe('fmtDur', () => {
   it('formats sub-minute durations with s unit', () => {
@@ -58,10 +58,9 @@ describe('bytesChartScale', () => {
     const scale = bytesChartScale(sizes)
     assert.equal(scale.unit, 'MB')
     assert.equal(scale.format(scale.toDisplay(sizes[0])), '50.3 MB')
+    assert.equal(scale.formatTick(scale.toDisplay(sizes[0])), '50 MB')
     assert.equal(scale.domainMax, 100)
-    // Mid-grid at domain/2 is 50.0 MB — a 50.3 MB point sits on that line,
-    // not on a misleading "47.7 MB" label from raw-byte nice ticks.
-    assert.equal(scale.format(scale.domainMax / 2), '50.0 MB')
+    assert.equal(scale.formatTick(scale.domainMax / 2), '50 MB')
     assert.ok(Math.abs(scale.toDisplay(sizes[0]) - 50.3) < 1e-9)
   })
 
@@ -70,6 +69,16 @@ describe('bytesChartScale', () => {
     assert.equal(scale.unit, 'B')
     assert.equal(scale.domainMax, 1)
     assert.equal(scale.format(0), '0.0 B')
+  })
+})
+
+describe('ingestDurationChartScale', () => {
+  it('plots seconds so sub-minute jobs are not rounded to 0.0 min', () => {
+    const scale = ingestDurationChartScale([8, 45, 612])
+    assert.equal(scale.unit, 's')
+    assert.equal(scale.formatTick(8), '8 s')
+    assert.equal(scale.formatTick(612), '612 s')
+    assert.equal(scale.format(45), '45.0 s')
   })
 })
 

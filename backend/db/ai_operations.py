@@ -247,7 +247,36 @@ async def list_ai_operations_page(
                    SELECT 1
                    FROM ai_operation_payloads payload
                    WHERE payload.operation_id = ai_operations.operation_id
-               ) AS has_payload
+               ) AS has_payload,
+               (
+                   EXISTS (
+                       SELECT 1
+                       FROM ai_operation_payloads payload
+                       WHERE payload.operation_id = ai_operations.operation_id
+                   )
+                   AND ai_operations.success = 0
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM ai_operations resolved
+                       WHERE resolved.success = 1
+                         AND (
+                             (
+                                 resolved.context_type = 'replay'
+                                 AND resolved.context_id = ai_operations.operation_id
+                             )
+                             OR (
+                                 ai_operations.context_type IS NOT NULL
+                                 AND ai_operations.context_id IS NOT NULL
+                                 AND resolved.context_type = ai_operations.context_type
+                                 AND resolved.context_id = ai_operations.context_id
+                                 AND NOT (
+                                     ai_operations.context_type = 'task'
+                                     AND ai_operations.context_id = ai_operations.task_class
+                                 )
+                             )
+                         )
+                   )
+               ) AS payload_actionable
         FROM ai_operations
         {where}
         ORDER BY id DESC
@@ -259,6 +288,7 @@ async def list_ai_operations_page(
     for row in rows:
         item = dict(row)
         item["has_payload"] = bool(item.get("has_payload"))
+        item["payload_actionable"] = bool(item.get("payload_actionable"))
         normalized_rows.append(item)
     return normalized_rows, total
 
