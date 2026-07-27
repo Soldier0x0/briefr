@@ -262,6 +262,7 @@ function AdminPageBody({ toast }) {
       )}
       <StatusBar
         system={system}
+        apiQueue={system?.api_queue}
         onRunIngest={handleRunIngest}
         refreshInProgress={system?.refresh_in_progress || false}
         mode={mode}

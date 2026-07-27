@@ -225,6 +225,40 @@
   margin-right: 0.25rem;
 }
 
+.api-queue-indicator--admin .api-queue-btn {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.admin-card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.api-queue-panel-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.api-queue-panel-list > li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.api-queue-panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-top: 0.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .api-queue-btn {
     transition: none;

@@ -77,6 +77,60 @@ export function formatElapsed(seconds) {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
 }
 
+/** Live countdown: backend retry_in_seconds minus time since the queue snapshot was received. */
+export function remainingRetrySeconds(retryInSeconds, snapshotAgeMs = 0) {
+  if (retryInSeconds == null || !Number.isFinite(Number(retryInSeconds))) return null
+  const raw = Number(retryInSeconds) - Number(snapshotAgeMs) / 1000
+  if (!Number.isFinite(raw)) return null
+  return Math.max(0, Math.min(raw, 3600))
+}
+
+function findQueueRequestForRow(apiQueue, row) {
+  const requests = apiQueue?.requests
+  if (!Array.isArray(requests) || !row?.key) return null
+  return requests.find(
+    req => req.request_id === row.key
+      || (req.request_id && String(row.key).startsWith(req.request_id)),
+  )
+}
+
+/** Rebuild row details using snapshot age so rate-limit retry lines tick between polls. */
+export function applyQueueSnapshotAge(apiQueue, snapshotAgeMs = 0) {
+  const summary = summarizeQueue(apiQueue)
+  if (!summary.rows?.length) return summary
+
+  const rows = summary.rows.map(row => {
+    const match = findQueueRequestForRow(apiQueue, row)
+    if (row.state === 'rate_limited') {
+      const retryRaw = match?.retry_in_seconds
+        ?? apiQueue?.sources?.[row.sourceKey]?.paused_for_seconds
+        ?? null
+      const live = remainingRetrySeconds(retryRaw, snapshotAgeMs)
+      if (live == null) return row
+      const waitReason = match?.wait_reason ?? null
+      return {
+        ...row,
+        detail: formatWaitDetail(waitReason, 'rate_limited', live, match?.elapsed_seconds),
+      }
+    }
+    if (row.state === 'active' && match?.elapsed_seconds != null) {
+      const liveElapsed = Number(match.elapsed_seconds) + snapshotAgeMs / 1000
+      return {
+        ...row,
+        detail: formatWaitDetail(match.wait_reason, 'active', null, liveElapsed),
+      }
+    }
+    return row
+  })
+
+  return { ...summary, rows, groups: groupQueueRows(rows) }
+}
+
+export function getLiveQueueSummary(apiQueue, nowMs, receivedAtMs) {
+  const age = Math.max(0, nowMs - receivedAtMs)
+  return applyQueueSnapshotAge(apiQueue, age)
+}
+
 export function formatSourceLabel(key) {
   const raw = String(key || '')
   const base = raw.replace(/^rss:/, '')

@@ -4,11 +4,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from './ui/index.js'
-import { summarizeQueue } from '../utils/apiQueuePresentation.js'
+import { useApiQueueLive } from '../hooks/useApiQueueLive.js'
 import './ApiQueueIndicator.css'
 
 export default function ApiQueueIndicator({ apiQueue, className = '', defaultOpen = false }) {
-  const summary = summarizeQueue(apiQueue)
+  const { summary } = useApiQueueLive(apiQueue)
   const { queued, active, count, tone, ariaLabel, groups, summaryStats } = summary
   const pending = Boolean(apiQueue?.has_pending || queued > 0 || active > 0)
 

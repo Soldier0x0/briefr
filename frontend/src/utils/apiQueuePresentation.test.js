@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  applyQueueSnapshotAge,
   buildQueueRows,
   formatSourceLabel,
   formatWaitDetail,
@@ -9,7 +10,9 @@ import {
   handleApiQueueDropdownKeyDown,
   highestQueueState,
   indicatorTone,
+  remainingRetrySeconds,
   summarizeQueue,
+  getLiveQueueSummary,
 } from './apiQueuePresentation.js'
 
 describe('apiQueuePresentation', () => {
@@ -29,6 +32,62 @@ describe('apiQueuePresentation', () => {
 
   it('formatWaitDetail rounds near minute boundaries without 60s remainder', () => {
     assert.equal(formatWaitDetail(null, 'rate_limited', 119.6, null), 'Retry in 2m')
+  })
+
+  it('remainingRetrySeconds subtracts snapshot age from backend retry_in_seconds', () => {
+    assert.equal(remainingRetrySeconds(120, 30_000), 90)
+    assert.equal(remainingRetrySeconds(10, 15_000), 0)
+    assert.equal(remainingRetrySeconds(null, 1000), null)
+  })
+
+  it('remainingRetrySeconds caps at 3600 like formatElapsed', () => {
+    assert.equal(remainingRetrySeconds(5000, 0), 3600)
+  })
+
+  it('applyQueueSnapshotAge updates rate-limited detail as age increases', () => {
+    const queue = {
+      has_pending: true,
+      total_queued: 0,
+      total_active: 1,
+      requests: [
+        {
+          request_id: 'a1',
+          source: 'openrouter',
+          operation: 'detection_context',
+          display_label: 'Extracting detection context',
+          context_id: 'detection_context',
+          state: 'rate_limited',
+          wait_reason: 'Provider rate limit',
+          retry_in_seconds: 90,
+          elapsed_seconds: 0,
+        },
+      ],
+      sources: {},
+    }
+    const fresh = applyQueueSnapshotAge(queue, 0)
+    assert.match(fresh.rows[0].detail, /Retry in 1m 30s/)
+    const aged = applyQueueSnapshotAge(queue, 30_000)
+    assert.match(aged.rows[0].detail, /Retry in 1m/)
+  })
+
+  it('getLiveQueueSummary ages rate-limited retry between snapshot and now', () => {
+    const queue = {
+      has_pending: true,
+      total_queued: 0,
+      total_active: 1,
+      requests: [
+        {
+          request_id: 'a1',
+          source: 'openrouter',
+          state: 'rate_limited',
+          retry_in_seconds: 90,
+          elapsed_seconds: 0,
+        },
+      ],
+      sources: {},
+    }
+    const summary = getLiveQueueSummary(queue, 31_000, 1_000)
+    assert.match(summary.rows[0].detail, /Retry in 1m/)
   })
 
   it('highestQueueState prioritizes rate limited over active', () => {
