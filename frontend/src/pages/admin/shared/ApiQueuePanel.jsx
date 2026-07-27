@@ -11,7 +11,7 @@ export default function ApiQueuePanel({ apiQueue }) {
       <div className="admin-card-header-row">
         <div>
           <div className="admin-card-title">Outbound API queue</div>
-          <p className="admin-page-subtitle" style={{ marginTop: '0.35rem' }}>
+          <p className="admin-page-subtitle">
             External calls wait for provider rate limits — nothing is dropped. Retry timers
             update every second.
           </p>

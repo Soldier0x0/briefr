@@ -2118,6 +2118,11 @@
   margin: 0 0 0.75rem;
 }
 
+/* Compact lede directly under an admin-card title (tokenized spacing). */
+.admin-card-title + .admin-page-subtitle {
+  margin-top: var(--space-1);
+}
+
 /* ── Two-column layout ──────────────────────────────────────────────────── */
 
 .admin-two-col {

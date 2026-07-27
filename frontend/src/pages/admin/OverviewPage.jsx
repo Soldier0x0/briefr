@@ -154,7 +154,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
       {active_locks?.length > 0 && (
         <div className="admin-card">
           <div className="admin-card-title">Scheduler jobs running</div>
-          <p className="admin-page-subtitle" style={{ marginTop: '0.35rem' }}>
+          <p className="admin-page-subtitle">
             In-process ingest jobs — distinct from outbound API queue pacing.
           </p>
           {active_locks.map(l => (
@@ -444,7 +444,7 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
       <div className="admin-two-col">
         <div className="admin-card" style={{ flex: 1 }}>
           <div className="admin-card-title">Scheduler jobs running</div>
-          <p className="admin-page-subtitle" style={{ marginTop: '0.35rem' }}>
+          <p className="admin-page-subtitle">
             In-process ingest jobs — distinct from outbound API queue pacing.
           </p>
           {(!active_locks || active_locks.length === 0) ? (
