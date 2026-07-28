@@ -109,7 +109,7 @@ terms:
   term: fastapi
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 0.139.2
+  version: 0.140.7
 - id: self-stack-fontsource-dm-sans
   title: '@fontsource/dm-sans'
   summary: BRIEFR dependency term derived from frontend/package.json.
