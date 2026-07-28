@@ -164,6 +164,57 @@ def run_db_test(coro):
     return asyncio.run(_wrapped())
 
 
+def use_sqlite_backend(monkeypatch, db_path: Path | str) -> None:
+    """Force a tmp-path SQLite DB even when DATABASE_URL/Postgres is configured.
+
+    Tests that set DB_PATH alone still resolve to Postgres in CI because
+    settings.database_url is frozen at import and takes priority over DB_PATH
+    (see db/config.py::resolve_database_url). Mirrors test_wallboard.py's
+    _use_sqlite_backend helper, centralized here for forge/security-architecture
+    live tests that seed an isolated sa_live.db via TestClient."""
+    path = str(db_path)
+    monkeypatch.setenv("DB_PATH", path)
+    monkeypatch.setattr("database.DB_PATH", path)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
+    from settings import settings as _settings
+
+    monkeypatch.setattr(_settings, "database_url", "")
+    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
+    monkeypatch.setattr(_settings, "db_path", path)
+    sqlite_url = f"sqlite+aiosqlite:///{path}"
+    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
+    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
+    monkeypatch.setattr("db.connection._pool", None)
+
+
+@pytest.fixture(autouse=True)
+def _reset_forge_security_architecture_module_caches():
+    """Drop in-process caches forge/security-architecture routes may share.
+
+    corpus_loader.get_corpus() and graphs._load_architecture_json() cache by
+    mtime across tests; a corpus-dir override in one file must not leak into
+    live MITRE/threat-scenario parity checks in another."""
+    yield
+    import security_architecture.corpus_loader as corpus_loader
+    import security_architecture.graphs as sa_graphs
+
+    corpus_loader._cache = None
+    corpus_loader._cache_mtime = None
+    sa_graphs._caches.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_db_pool_after_test():
+    """Clear a stale asyncpg pool handle so the next test's TestClient lifespan
+    re-binds to the correct DATABASE_URL/DB_PATH (loop mismatch or a prior
+    test's use_sqlite_backend monkeypatch leaving _pool set)."""
+    yield
+    import db.connection as conn_mod
+
+    conn_mod._pool = None
+
+
 @pytest.fixture(autouse=True)
 def _isolate_log_ring_buffer():
     """Clear the admin log ring buffer before each test and re-attach the

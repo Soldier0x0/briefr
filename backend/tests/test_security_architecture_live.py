@@ -27,6 +27,7 @@ from fastapi.testclient import TestClient
 
 from database import get_db
 from security_architecture import merge
+from tests.conftest import use_sqlite_backend
 
 COMMUNITY_TID = "T1190"
 
@@ -34,8 +35,7 @@ COMMUNITY_TID = "T1190"
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "sa_live.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    use_sqlite_backend(monkeypatch, db_path)
 
     from main import app
 
@@ -205,7 +205,18 @@ def test_mitre_matches_forge_coverage_output(client):
     mitre_res = client.get("/api/security-architecture/mitre")
     forge_res = client.get("/api/forge/coverage")
     assert mitre_res.status_code == 200
-    assert mitre_res.json() == forge_res.json()
+    assert forge_res.status_code == 200
+    mitre_body = mitre_res.json()
+    forge_body = forge_res.json()
+    # build_coverage_map stamps generated_at per invocation — two sequential
+    # HTTP calls can land on different seconds under CI load. Parity is the
+    # technique rows and non-timestamp meta, not the wall-clock stamp.
+    assert mitre_body["techniques"] == forge_body["techniques"]
+    mitre_meta = {k: v for k, v in mitre_body["meta"].items() if k != "generated_at"}
+    forge_meta = {k: v for k, v in forge_body["meta"].items() if k != "generated_at"}
+    assert mitre_meta == forge_meta
+    assert mitre_body["meta"]["generated_at"]
+    assert forge_body["meta"]["generated_at"]
 
 
 def test_mitre_stack_filter_narrows_results(client):
