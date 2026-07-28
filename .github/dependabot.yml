@@ -8,6 +8,11 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # eslint-plugin-react@latest peer range excludes eslint 10 (^3–^9.7 only).
+    # Remove this ignore once eslint-plugin-react adds eslint 10 support.
+    ignore:
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
     groups:
       frontend-runtime:
         patterns:
