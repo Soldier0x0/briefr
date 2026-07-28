@@ -116,4 +116,6 @@ Details: https://docs.projectjupiter.in/docs/roadmap
 | Doc structure + image briefs | Phase A SVGs shipped (`production-architecture`, `auth-layers`, `correlation-pipeline`, `ingest-pipeline`, `adr-001-intel-app-split`); UI screenshots in `docs/assets/screenshots/` (#755) |
 | Living API / architecture docs | Refreshed 2026-07-24 — reader guides, OPERATIONS link fixes, USE.md gallery |
 | Online docs | https://docs.projectjupiter.in — synced from this repo |
+| Live demo | https://briefrdemo.projectjupiter.in — static 1:1 analyst UI ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)); fixture data, no backend; Cloudflare Workers deploy |
+| Example instance | https://briefr.projectjupiter.in — full PostgreSQL-backed deployment |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |

@@ -25,7 +25,13 @@
 
 BRIEFR aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, and optional threat feeds into one searchable UI — IOC lookup, explainable correlation, detection helpers, and PDF export. Apache 2.0: clone, self-host, modify, and use commercially with attribution ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE)). Bring your own API keys for upstream feeds.
 
-**Example instance:** https://briefr.projectjupiter.in
+| Link | What it is |
+|------|------------|
+| **Live demo** | https://briefrdemo.projectjupiter.in — 1:1 analyst UI with fixture data (no install, no backend) |
+| **Example instance** | https://briefr.projectjupiter.in — full PostgreSQL-backed deployment with live feeds |
+| **Documentation** | https://docs.projectjupiter.in |
+
+The demo is a static showroom ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)): same shell as production, frozen JSON instead of a database. Forge, hunt-pack generation, and IOC enrichment are visual-only.
 
 ---
 
@@ -112,6 +118,7 @@ Optional seed data: `python scripts/seed_screenshot_data.py` from repo root.
 | Use the UI | [`docs/USE.md`](docs/USE.md) |
 | Fix a problem | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Understand internals | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) · [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) |
+| Try the UI (no install) | https://briefrdemo.projectjupiter.in |
 | Browse online | https://docs.projectjupiter.in |
 | API contract | [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) |
 | What's shipped | [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) |

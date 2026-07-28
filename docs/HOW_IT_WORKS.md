@@ -74,4 +74,5 @@ Provider pacing is separate: NVD can still return transient 503s; wait for coold
 | Doc | When |
 |-----|------|
 | [`SYSTEM_DESIGN.md`](SYSTEM_DESIGN.md) | Full architecture essay |
+| https://briefrdemo.projectjupiter.in | Live demo — 1:1 analyst UI, fixture data |
 | https://docs.projectjupiter.in | Online docs (synced from this repo) |
