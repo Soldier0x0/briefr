@@ -35,7 +35,7 @@ step "Backend ruff check F,E9 (required — F1.1 / Phase 1 W6)"
 (
   cd backend
   if ! python3 -m ruff --version >/dev/null 2>&1; then
-    python3 -m pip install -q --disable-pip-version-check "ruff==0.15.22"
+    python3 -m pip install -q --disable-pip-version-check "ruff==0.16.0"
   fi
   # Initial gate: pyflakes + syntax (F,E9). Full E/I/B/UP + ruff format --check
   # deferred to a follow-on formatting PR (see HANDOVER W6).
