@@ -127,9 +127,9 @@ async def run_detection_context_llm_sync(
                     f"DetectionContext LLM: {index + 1}/{stats['candidates']} ({cve_id})"
                 )
 
-            async def _read_exploits(conn):
+            async def _read_exploits(conn, _cve_id=cve_id):
                 return await read_cve_exploits_from_db(
-                    conn, cve_id, max_age_hours=HOURS_PER_YEAR
+                    conn, _cve_id, max_age_hours=HOURS_PER_YEAR
                 )
 
             if db is not None:

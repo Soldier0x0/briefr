@@ -485,7 +485,7 @@ def merge_circl_into_cve(cve: dict, circl: dict | None) -> dict:
             extra_refs.append(url)
             existing_urls.add(url.lower())
 
-    for key in ("refmap", "vulnerable_product"):
+    for _key in ("refmap", "vulnerable_product"):
         pass
 
     if extra_refs:

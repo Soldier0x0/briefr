@@ -32,7 +32,7 @@ async def reset_feed_circuit(source_id: str, request: Request):
     try:
         reset_circuit(source_id)
     except KeyError:
-        raise HTTPException(404, f"Source '{source_id}' not found in health registry")
+        raise HTTPException(404, f"Source '{source_id}' not found in health registry") from None
     await audit(request, f"feed.circuit_reset.{source_id}", source_id)
     return {"ok": True, "source_id": source_id}
 

@@ -167,7 +167,7 @@ async def pause_all_jobs(request: Request, body: dict | None = None):
     try:
         require_confirm("scheduler.pause_all", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
     sched = _get_scheduler_module()
     scheduler = sched._scheduler
@@ -202,7 +202,7 @@ async def resume_all_jobs(request: Request, body: dict | None = None):
     try:
         require_confirm("scheduler.resume_all", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
     sched = _get_scheduler_module()
     scheduler = sched._scheduler

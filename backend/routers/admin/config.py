@@ -284,7 +284,7 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(400, "Body must be a JSON array of {key, value} objects")
+        raise HTTPException(400, "Body must be a JSON array of {key, value} objects") from None
 
     if not isinstance(body, list):
         raise HTTPException(400, "Body must be a JSON array of {key, value} objects")

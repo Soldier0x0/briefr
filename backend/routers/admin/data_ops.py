@@ -81,7 +81,7 @@ async def clear_all_snoozes(request: Request, body: dict | None = None):
     try:
         require_confirm("watchlist.clear_snoozes", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
     db = await get_db()
     try:

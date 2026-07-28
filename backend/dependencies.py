@@ -55,14 +55,14 @@ async def require_user(request: Request) -> dict:
     try:
         payload = decode_access_token(token)
     except Exception:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated") from None
     if not payload.get("username"):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
         user_id = int(payload.get("sub") or 0)
     except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated") from None
     if user_id <= 0:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -108,7 +108,7 @@ async def require_admin(request: Request) -> dict:
         try:
             user_id = int(payload.get("sub") or 0)
         except (TypeError, ValueError):
-            raise HTTPException(status_code=401, detail="Not authenticated")
+            raise HTTPException(status_code=401, detail="Not authenticated") from None
         if user_id <= 0:
             raise HTTPException(status_code=401, detail="Not authenticated")
 

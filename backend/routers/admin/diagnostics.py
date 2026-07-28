@@ -107,7 +107,7 @@ async def restart_backend(request: Request, background_tasks: BackgroundTasks, b
     try:
         require_confirm("system.restart.drain" if drain else "system.restart", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
     await audit(request, "system.restart", "drain" if drain else "immediate")
 
