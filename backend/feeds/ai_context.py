@@ -31,7 +31,7 @@ def _haystack_text(cve: dict[str, Any]) -> str:
 def matched_ai_keywords(cve: dict[str, Any]) -> list[str]:
     text = _haystack_text(cve)
     found: list[str] = []
-    for kw, pattern in zip(AI_ML_KEYWORDS, _AI_REGEXES):
+    for kw, pattern in zip(AI_ML_KEYWORDS, _AI_REGEXES, strict=False):
         if pattern.search(text):
             found.append(kw)
     return found

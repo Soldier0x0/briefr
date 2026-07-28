@@ -214,7 +214,7 @@ async def run_embeddings_backfill(
             )
         texts = [item["embed_text"] for item in batch]
         vectors = await asyncio.to_thread(_embed_texts, model, texts)
-        for item, vector in zip(batch, vectors):
+        for item, vector in zip(batch, vectors, strict=False):
             normalized = l2_normalize(vector)
             blob = vector_to_blob(normalized)
             dims = int(normalized.size)
@@ -285,7 +285,7 @@ async def run_technique_embeddings_backfill(
             )
         texts = [item["embed_text"] for item in batch]
         vectors = await asyncio.to_thread(_embed_texts, model, texts)
-        for item, vector in zip(batch, vectors):
+        for item, vector in zip(batch, vectors, strict=False):
             normalized = l2_normalize(vector)
             blob = vector_to_blob(normalized)
             dims = int(normalized.size)
@@ -343,7 +343,7 @@ async def run_campaign_embeddings_backfill(
             )
         texts = [item["embed_text"] for item in batch]
         vectors = await asyncio.to_thread(_embed_texts, model, texts)
-        for item, vector in zip(batch, vectors):
+        for item, vector in zip(batch, vectors, strict=False):
             normalized = l2_normalize(vector)
             blob = vector_to_blob(normalized)
             dims = int(normalized.size)

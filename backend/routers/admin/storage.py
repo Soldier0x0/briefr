@@ -281,9 +281,9 @@ async def get_db_explorer_rows(
                 filter_value=filter_value,
             )
         except LookupError:
-            raise HTTPException(status_code=404, detail="Table not found")
+            raise HTTPException(status_code=404, detail="Table not found") from None
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
         await db.close()
 
@@ -320,7 +320,7 @@ async def purge_storage(request: Request, body: dict):
     try:
         require_confirm(f"storage.purge.{target}", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
 
     db = await get_db()
     try:
@@ -397,7 +397,7 @@ async def export_db(request: Request, background_tasks: BackgroundTasks):
         import logging
 
         logging.getLogger(__name__).error("Database export failed: %s", exc)
-        raise HTTPException(500, "Failed to create database export")
+        raise HTTPException(500, "Failed to create database export") from None
     finally:
         await db.close()
 

@@ -33,7 +33,7 @@ async def create_wallboard_session(request: Request, response: Response):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="JSON body required")
+        raise HTTPException(status_code=400, detail="JSON body required") from None
     token = str(body.get("token", "")).strip()
     if not wallboard_token_matches(token):
         raise HTTPException(status_code=401, detail="Invalid wallboard token")

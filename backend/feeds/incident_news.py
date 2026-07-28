@@ -381,7 +381,7 @@ async def fetch_all_incident_news_parallel(db) -> tuple[list[dict], list[dict]]:
         return_exceptions=True,
     )
 
-    for source, result in zip(to_fetch, results):
+    for source, result in zip(to_fetch, results, strict=False):
         if isinstance(result, BaseException):
             logger.warning("RSS fetch failed for %s: %s", source["label"], result)
             errors.append(

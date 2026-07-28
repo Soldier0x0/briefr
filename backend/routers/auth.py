@@ -112,7 +112,7 @@ async def login(
         username = validate_username(body.username)
     except ValueError:
         verify_password(body.password, DUMMY_HASH)
-        raise HTTPException(status_code=401, detail=_AUTH_FAILURE)
+        raise HTTPException(status_code=401, detail=_AUTH_FAILURE) from None
 
     check_login_username_rate_limit(username)
 
@@ -196,7 +196,7 @@ async def refresh(
                     str(expires_val).strip().replace("Z", "+00:00")
                 )
             except ValueError:
-                raise HTTPException(status_code=401, detail="Not authenticated")
+                raise HTTPException(status_code=401, detail="Not authenticated") from None
 
         if exp.tzinfo is None:
             exp = exp.replace(tzinfo=timezone.utc)

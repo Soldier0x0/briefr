@@ -73,7 +73,7 @@ async def start_database_migration(request: Request, background_tasks: Backgroun
     try:
         await reserve_migration_slot()
     except RuntimeError as exc:
-        raise HTTPException(409, str(exc))
+        raise HTTPException(409, str(exc)) from exc
 
     await audit(request, "database.migrate.start", re.sub(r"://[^@]+@", "://***@", database_url))
     background_tasks.add_task(run_migration, database_url, DB_PATH, _reserved=True)

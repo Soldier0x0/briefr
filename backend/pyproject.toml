@@ -36,6 +36,8 @@ ignore = [
 "alembic/**" = ["F401", "F403", "F405", "E402", "F541"]
 # Tests: unused fixtures/imports and assert patterns are common.
 "tests/**" = ["F401", "F841", "B", "S"]
+# FastAPI Depends() must live in parameter defaults (framework idiom).
+"routers/**" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"

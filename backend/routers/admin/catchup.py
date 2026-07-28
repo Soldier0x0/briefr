@@ -40,9 +40,9 @@ async def start_catchup(request: Request, body: dict[str, Any]):
             started_by=getattr(request.state, "user_username", None),
         )
     except cm.CatchupConflictError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except cm.CatchupValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     status = await cm.persist_catchup_status(status)
     await audit(request, "catchup.start", _audit_target(status))
@@ -73,7 +73,7 @@ def _duration_hours(body: dict[str, Any]) -> float | None:
     try:
         return float(value)
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="duration_hours must be a number")
+        raise HTTPException(status_code=400, detail="duration_hours must be a number") from None
 
 
 def _ends_at(body: dict[str, Any]) -> datetime | None:
@@ -85,7 +85,7 @@ def _ends_at(body: dict[str, Any]) -> datetime | None:
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
-        raise HTTPException(status_code=400, detail="ends_at must be an ISO-8601 datetime")
+        raise HTTPException(status_code=400, detail="ends_at must be an ISO-8601 datetime") from None
 
 
 def _audit_target(status: dict[str, Any]) -> str:

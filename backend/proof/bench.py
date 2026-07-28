@@ -91,7 +91,7 @@ def run_proof(
 
     non_empty = sum(1 for raw in lines if raw.strip())
     hit_count = 0
-    for idx, raw in enumerate(lines, start=1):
+    for _idx, raw in enumerate(lines, start=1):
         line = raw.rstrip("\n")
         if not line.strip():
             continue
