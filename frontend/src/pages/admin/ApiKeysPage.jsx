@@ -10,6 +10,7 @@ import SearchTokensPanel from './SearchTokensPanel.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
+import { formatMeteringActorLabel } from './catalog.js'
 
 const SECTION_EXPAND_KEY = 'briefr-config-sections'
 
@@ -75,28 +76,33 @@ function applyStrategyBadge(strategy) {
   return null
 }
 
-function MeteringColumn({ title, rows }) {
-  const max = Math.max(1, ...rows.map(r => r.calls || 0))
+function MeteringTable({ title, columns, rows }) {
   return (
     <div>
-      <p className="metering-col-title mono">{title}</p>
+      <p className="metering-col-title">{title}</p>
       {rows.length === 0 ? (
         <p className="metering-empty mono">No events yet</p>
       ) : (
-        <ul className="metering-list">
-          {rows.map(row => (
-            <li key={row.key} className="metering-row">
-              <span className="metering-row-label">
-                <span className="metering-row-name mono">{row.name}</span>
-                {row.meta && <span className="metering-row-meta">{row.meta}</span>}
-              </span>
-              <span className="metering-bar-track">
-                <span className="metering-bar-fill" style={{ width: `${((row.calls || 0) / max) * 100}%` }} />
-              </span>
-              <span className="metering-row-count mono">{row.calls || 0}</span>
-            </li>
-          ))}
-        </ul>
+        <table className="metering-table">
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th key={col.key} scope="col">{col.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row._key}>
+                {columns.map((col) => (
+                  <td key={col.key} className={col.className || ''}>
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   )
@@ -333,12 +339,12 @@ export default function ApiKeysPage({ toast }) {
 
     return (
       <div className="config-row">
-        <div className="config-row-key mono">
+        <div className="config-row-key mono admin-config-key">
           <span title={envKey}>{label}</span>
-          {helpText && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{helpText}</div>}
-          {RATE_LIMIT_HINTS[envKey] && <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 400, marginTop: '0.15rem' }}>{RATE_LIMIT_HINTS[envKey]}</div>}
+          {helpText && <div className="admin-config-help">{helpText}</div>}
+          {RATE_LIMIT_HINTS[envKey] && <div className="admin-config-help">{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
-        <div className="config-row-value">
+        <div className="config-row-value admin-config-value">
           {!isEditing ? (
             <div className="config-row-value-control">
               {field?.type === 'bool' ? (
@@ -488,21 +494,30 @@ export default function ApiKeysPage({ toast }) {
           )}
           {!meteringLoading && !meteringError && metering && (
             <div className="metering-cols">
-              <MeteringColumn
+              <MeteringTable
                 title="BY SOURCE"
-                rows={(metering.by_source || []).slice(0, 8).map(row => ({
-                  key: row.source,
-                  name: row.source,
-                  calls: row.calls,
-                  meta: row.last_called_at ? `last ${new Date(row.last_called_at).toLocaleString()}` : null,
+                columns={[
+                  { key: 'source', label: 'Source', className: 'mono admin-config-value' },
+                  { key: 'last', label: 'Last called', className: 'mono' },
+                  { key: 'calls', label: 'Calls', className: 'mono metering-table-num' },
+                ]}
+                rows={(metering.by_source || []).slice(0, 8).map((row) => ({
+                  _key: row.source,
+                  source: row.source,
+                  last: row.last_called_at ? new Date(row.last_called_at).toLocaleString() : '—',
+                  calls: row.calls ?? 0,
                 }))}
               />
-              <MeteringColumn
+              <MeteringTable
                 title="BY ACTOR"
-                rows={(metering.by_actor || []).map(row => ({
-                  key: row.actor_type,
-                  name: row.actor_type,
-                  calls: row.calls,
+                columns={[
+                  { key: 'actor', label: 'Actor', className: 'mono admin-config-value' },
+                  { key: 'calls', label: 'Calls', className: 'mono metering-table-num' },
+                ]}
+                rows={(metering.by_actor || []).map((row) => ({
+                  _key: row.actor_type,
+                  actor: formatMeteringActorLabel(row.actor_type),
+                  calls: row.calls ?? 0,
                 }))}
               />
             </div>

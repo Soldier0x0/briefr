@@ -302,7 +302,7 @@ export default function FeedHealthPage({ system, toast, mode = 'operator', onRel
                   { id: 'status', label: 'Status', defaultVisible: true, width: 100, render: () => (
                     <span className="badge badge-ok">OK</span>
                   ) },
-                  { id: 'last_success', label: 'Last check', defaultVisible: true, minWidth: 160, render: (r) => (
+                  { id: 'last_success', label: 'Last heartbeat', defaultVisible: true, minWidth: 160, render: (r) => (
                     <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
                       {r.last_success ? fmtIso(r.last_success) : 'Never succeeded'}
                     </span>

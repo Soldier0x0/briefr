@@ -4,7 +4,7 @@ import StatCard from './shared/StatCard.jsx'
 import JobTable from './shared/JobTable.jsx'
 import { fmtIso, fmtAge, ageColor, sourceLabel } from './formatters.js'
 import { overallHealth, analystScheduleJobs } from './intelStatus.js'
-import { jobLabel, statusLabel, termLabel } from './catalog.js'
+import { jobLabel, statusLabel, termLabel, termExplanation } from './catalog.js'
 import { pauseResumeAction } from './jobActions.js'
 import {
   schedulerJobManualRun,
@@ -19,6 +19,8 @@ import NeedsAttentionPanel from './shared/NeedsAttentionPanel.jsx'
 import JobErrorsPanel from './shared/JobErrorsPanel.jsx'
 import ApiQueuePanel from './shared/ApiQueuePanel.jsx'
 import { CIRCUIT_UI } from './circuitLabels.js'
+import HelpTip from './shared/HelpTip.jsx'
+import { getDisplayPrefs } from '../../utils/displayPrefs.js'
 
 function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErrorCount, jobAcks, onMarkJobErrorsRead }) {
   const [running, setRunning] = useState({})
@@ -52,11 +54,12 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
   const backupAge = system.last_backup_age_seconds
   const backupThreshold = system.backup_threshold_seconds || 43200
   const showBackupCard = backupAge != null && backupAge > backupThreshold * 0.75
+  const pollSec = getDisplayPrefs().pollIntervalSeconds ?? 30
 
   return (
     <div>
       <h1 className="admin-page-title">Intel status</h1>
-      <p className="admin-page-subtitle">Live snapshot — refreshes every 30 seconds.</p>
+      <p className="admin-page-subtitle">Live snapshot — status heartbeat every {pollSec}s.</p>
 
       <NeedsAttentionPanel
         system={system}
@@ -97,7 +100,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
              backend/routers/admin.py caches this at a 10-minute TTL and
              this page itself polls every 30s, so it's re-checked
              continuously, not once at boot. */
-          subLabel="auto-rechecked every ~10 min"
+          subLabel="integrity heartbeat ~10 min"
         />
         <StatCard
           label="SOURCES WITH ISSUES"
@@ -109,7 +112,10 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
 
       {correlationStatus?.metrics && (
         <div className="admin-card">
-          <div className="admin-card-title">Correlation quality (latest nightly snapshot)</div>
+          <div className="admin-card-title">
+            Correlation quality (latest nightly snapshot)
+            <HelpTip text="Metrics from the most recent nightly correlation job. Confirmation and rejection rates reflect evidence rules; orphan ratio counts CVEs with pulses but no campaign link." />
+          </div>
           <div className="stat-card-row" style={{ marginTop: '0.5rem' }}>
             <StatCard
               label="CONFIRMATION RATE (30D)"
@@ -119,6 +125,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
                   : '—'
               }
               subLabel={`day ${correlationStatus.metrics.day}`}
+              subLabelTitle={termExplanation('correlation_confirmation_rate')}
             />
             <StatCard
               label="REJECTION RATE (30D)"
@@ -128,6 +135,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
                   : '—'
               }
               subLabel={`${correlationStatus.metrics.campaigns_active ?? 0} active campaigns`}
+              subLabelTitle={termExplanation('correlation_rejection_rate')}
             />
             <StatCard
               label="ORPHAN CVE RATIO"
@@ -137,6 +145,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
                   : '—'
               }
               subLabel="CVEs with pulses but no campaign"
+              subLabelTitle={termExplanation('correlation_orphan_cve_ratio')}
             />
             <StatCard
               label="MEDIAN EVIDENCE AGE"
@@ -146,6 +155,7 @@ function AnalystOverview({ system, toast, setPage, ingestErrorCount, unackJobErr
                   : '—'
               }
               subLabel="OTX IOC observed/fetched timestamps"
+              subLabelTitle={termExplanation('correlation_median_evidence_age')}
             />
           </div>
         </div>

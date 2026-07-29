@@ -39,6 +39,7 @@ import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
 import AdminBreadcrumbs from './shared/AdminBreadcrumbs.jsx'
 import { buildAdminPageSearchParams } from '../../utils/shellUrlState.js'
 import { pushContext, replaceHygiene } from '../../utils/navHistory.js'
+import { scrollAdminTabToTop } from './adminScroll.js'
 import '../AdminPage.css'
 
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
@@ -67,6 +68,7 @@ function AdminPageBody({ toast }) {
   const setPage = useCallback((id) => {
     applyPageState(id)
     pushContext(setSearchParams, (prev) => buildAdminPageSearchParams(prev, id))
+    requestAnimationFrame(() => scrollAdminTabToTop(id))
   }, [applyPageState, setSearchParams])
   const [mode, setModeState] = useState(getAdminMode)
   const [system, setSystem] = useState(null)
@@ -307,7 +309,7 @@ function AdminPageBody({ toast }) {
             Object.entries(pages)
               .filter(([id]) => visitedPages.has(id))
               .map(([id, content]) => (
-                <div key={id} className="admin-page-scroll" hidden={page !== id}>
+                <div key={id} className="admin-page-scroll" data-admin-page={id} hidden={page !== id}>
                   <ErrorBoundary>{content}</ErrorBoundary>
                 </div>
               ))
