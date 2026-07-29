@@ -35,18 +35,10 @@ def test_chat_completion_failover_on_timeout(monkeypatch):
 
     async def fake_call(step, **_kwargs):
         calls.append(step.provider)
+        if step.provider == "groq":
+            raise asyncio.TimeoutError()
         return "gemini ok" if step.provider == "gemini" else ""
 
-    n = {"v": 0}
-
-    async def selective_wait_for(coro, *, timeout):
-        n["v"] += 1
-        if n["v"] == 1:
-            coro.close()
-            raise asyncio.TimeoutError()
-        return await coro
-
-    monkeypatch.setattr(router.asyncio, "wait_for", selective_wait_for)
     monkeypatch.setattr(router, "_call_provider", fake_call)
 
     async def run():
