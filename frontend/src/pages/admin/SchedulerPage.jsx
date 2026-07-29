@@ -137,6 +137,8 @@ export default function SchedulerPage({ toast, system, active = true }) {
 
   const pagedJobs = filteredJobs ? filteredJobs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : null
 
+  const stuckJobs = jobs?.filter(j => j.stuck_warning) || []
+
   return (
     <div>
       {pauseAllConfirm && (
@@ -158,6 +160,15 @@ export default function SchedulerPage({ toast, system, active = true }) {
 
       <h1 className="admin-page-title">Data refresh schedule</h1>
       <p className="admin-page-subtitle">Controls when each ingest job runs. Pausing a job stops it from running automatically until resumed — safe to pause individual jobs while debugging a feed issue.</p>
+
+      {stuckJobs.length > 0 && (
+        <div className="admin-callout admin-callout-amber" role="alert" style={{ marginBottom: '1rem' }}>
+          <strong>Stuck job warning</strong>
+          {' — '}
+          {stuckJobs.map(j => jobLabel(j.id, 'operator')).join(', ')}
+          {' '}running longer than 3× scheduled interval.
+        </div>
+      )}
 
       <CatchupCard toast={toast} />
 

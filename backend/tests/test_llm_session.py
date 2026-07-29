@@ -15,7 +15,15 @@ from resilient_client import get_feed_health, reset_feed_health
 from tests.conftest import run_db_test
 
 
+def _reset_llm_router_state(monkeypatch) -> None:
+    """Isolate tests from shared idempotency cache and rate caps."""
+    router._recent_task_context.clear()
+    monkeypatch.setenv("AI_DAILY_REQUEST_CAP", "9999")
+    monkeypatch.setenv("AI_PER_MINUTE_CAP", "9999")
+    for key in ("CUSTOM_LLM_BASE_URL", "CUSTOM_LLM_API_KEY", "CUSTOM_LLM_MODEL"):
+        monkeypatch.delenv(key, raising=False)
 def test_empty_response_failsover_within_single_call(monkeypatch):
+    _reset_llm_router_state(monkeypatch)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
     reset_feed_health()
@@ -49,6 +57,7 @@ def test_empty_response_failsover_within_single_call(monkeypatch):
 
 
 def test_job_session_skips_empty_provider_on_later_calls(monkeypatch):
+    _reset_llm_router_state(monkeypatch)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
     reset_feed_health()
@@ -87,6 +96,7 @@ def test_job_session_skips_empty_provider_on_later_calls(monkeypatch):
 
 
 def test_without_job_session_retries_primary_each_call(monkeypatch):
+    _reset_llm_router_state(monkeypatch)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
     reset_feed_health()
@@ -118,6 +128,7 @@ def test_without_job_session_retries_primary_each_call(monkeypatch):
 
 
 def test_circuit_open_skips_provider_without_http(monkeypatch):
+    _reset_llm_router_state(monkeypatch)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
     monkeypatch.setenv("GEMINI_API_KEY", "gem_test")
 

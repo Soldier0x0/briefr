@@ -1804,6 +1804,12 @@ async def run_llm_extraction_sync() -> bool:
     _start = datetime.now(timezone.utc)
     _had_error = False
     async with get_lock("llm_product_extraction"):
+        import time as _time
+        from ai.llm_job_state import record_lock_released, record_lock_started
+        from ai.llm_router import set_active_llm_job
+
+        record_lock_started("llm_product_extraction", _time.time())
+        set_active_llm_job("llm_product_extraction")
         start = _start
         logger.info("LLM product extraction started at %s", start.isoformat())
         try:
@@ -1831,6 +1837,9 @@ async def run_llm_extraction_sync() -> bool:
             _llm_error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
         else:
             _llm_error_msg = ""
+        finally:
+            set_active_llm_job(None)
+            record_lock_released("llm_product_extraction")
     await _write_job_last_run("llm_product_extraction", _start, had_error=_had_error, error_message=_llm_error_msg)
     return True
 
@@ -1965,6 +1974,12 @@ async def run_detection_context_llm_job() -> bool:
     _had_error = False
     _written = 0
     async with get_lock("detection_context_llm"):
+        import time as _time
+        from ai.llm_job_state import record_lock_released, record_lock_started
+        from ai.llm_router import set_active_llm_job
+
+        record_lock_started("detection_context_llm", _time.time())
+        set_active_llm_job("detection_context_llm")
         start = _start
         logger.info("DetectionContext LLM sync started at %s", start.isoformat())
         stats: dict = {}
@@ -1998,6 +2013,9 @@ async def run_detection_context_llm_job() -> bool:
             )[:500]
         else:
             _ctx_llm_error_msg = ""
+        finally:
+            set_active_llm_job(None)
+            record_lock_released("detection_context_llm")
     await _write_job_last_run(
         "detection_context_llm",
         _start,

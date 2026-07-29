@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -642,6 +643,81 @@ async def get_month_usage(service: str) -> int:
             if svc == service and pending_month == month
         )
     return committed + pending
+
+
+def _ai_daily_cap() -> int:
+    try:
+        return max(1, int(os.environ.get("AI_DAILY_REQUEST_CAP", "200")))
+    except ValueError:
+        return 200
+
+
+def _ai_minute_cap() -> int:
+    try:
+        return max(1, int(os.environ.get("AI_PER_MINUTE_CAP", "10")))
+    except ValueError:
+        return 10
+
+
+_QUOTA_UNAVAILABLE = -1
+
+
+async def get_ai_requests_today() -> int:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    since = f"{today} 00:00:00"
+    try:
+        from db.ai_operations import count_ai_operations_since
+        db = await get_db()
+        try:
+            return await count_ai_operations_since(db, since=since)
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Failed to read AI daily usage: %s", exc)
+        return _QUOTA_UNAVAILABLE
+
+
+async def get_ai_requests_last_minute() -> int:
+    since = (datetime.now(timezone.utc) - timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        from db.ai_operations import count_ai_operations_since
+        db = await get_db()
+        try:
+            return await count_ai_operations_since(db, since=since)
+        finally:
+            await db.close()
+    except Exception as exc:
+        logger.error("Failed to read AI minute usage: %s", exc)
+        return _QUOTA_UNAVAILABLE
+
+
+async def has_ai_request_quota() -> bool:
+    today = await get_ai_requests_today()
+    if today == _QUOTA_UNAVAILABLE:
+        return False
+    if today >= _ai_daily_cap():
+        return False
+    minute = await get_ai_requests_last_minute()
+    if minute == _QUOTA_UNAVAILABLE:
+        return False
+    return minute < _ai_minute_cap()
+
+
+async def ai_request_quota_snapshot() -> dict:
+    daily_cap = _ai_daily_cap()
+    minute_cap = _ai_minute_cap()
+    today_count = await get_ai_requests_today()
+    minute_count = await get_ai_requests_last_minute()
+    daily_used = 0 if today_count == _QUOTA_UNAVAILABLE else today_count
+    minute_used = 0 if minute_count == _QUOTA_UNAVAILABLE else minute_count
+    return {
+        "daily_cap": daily_cap,
+        "daily_used": daily_used,
+        "minute_cap": minute_cap,
+        "minute_used": minute_used,
+        "daily_remaining": max(0, daily_cap - daily_used),
+        "quota_unavailable": today_count == _QUOTA_UNAVAILABLE or minute_count == _QUOTA_UNAVAILABLE,
+    }
 
 
 async def has_quota(service: str) -> bool:

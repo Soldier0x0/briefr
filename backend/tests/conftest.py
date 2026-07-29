@@ -550,8 +550,9 @@ def smoke_page(playwright_smoke_stack, smoke_auth_cookies, browser):
         } catch {}
         """
     )
-    page.goto(playwright_smoke_stack, wait_until="networkidle", timeout=120_000)
+    page.goto(playwright_smoke_stack, wait_until="domcontentloaded", timeout=60_000)
     page.wait_for_selector(".header .header-logo-btn", timeout=60_000)
+    page.wait_for_load_state("load", timeout=30_000)
     # Belt-and-suspenders: first-visit tutorial scrim blocks pointer events in smoke.
     tutorial = page.locator(".tutorial-overlay")
     if tutorial.count() > 0:

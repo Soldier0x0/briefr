@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useBusyGuard } from '../../hooks/useBusyGuard.js'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api.js'
 import { AlertDialog, Button, Modal, Select } from '../../components/ui/index.js'
@@ -224,6 +225,11 @@ function OverviewTab({ overview, setPage, retrievalHealth, retrievalLoading, ret
       )}
       <div className="admin-stat-grid" style={{ marginBottom: '1rem' }}>
         <StatCard
+          label="AI requests today"
+          value={overview?.ai_quota?.daily_used ?? 0}
+          subLabel={`${overview?.ai_quota?.daily_remaining ?? '—'} remaining · cap ${overview?.ai_quota?.daily_cap ?? '—'}`}
+        />
+        <StatCard
           label="Providers configured"
           value={configured}
           subLabel={overview?.any_provider_configured ? 'At least one LLM key set' : 'No LLM keys — templates only'}
@@ -367,12 +373,42 @@ function ProvidersTab({ providers }) {
 
 function ModelsTab({ models }) {
   const tasks = models?.tasks || {}
+  const catalog = models?.catalog || []
   return (
-    <div className="admin-card">
-      <div className="admin-card-title">
-        Failover chains
-        <HelpTip text="Read-only catalog from model_catalog.py. Order is failover priority, not round-robin." />
+    <div>
+      <div className="admin-card" style={{ marginBottom: '1rem' }}>
+        <div className="admin-card-title">
+          Provider catalog
+          <HelpTip text="Built-in provider reference and custom OpenAI-compatible slot. Custom prepends failover when configured." />
+        </div>
+        <table className="admin-table">
+          <thead>
+            <tr><th>Provider</th><th>Base URL / model</th><th>Key env</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {catalog.map(row => (
+              <tr key={row.id}>
+                <td>{row.label}</td>
+                <td className="mono" style={{ fontSize: '0.78rem', wordBreak: 'break-all' }}>
+                  {row.base_url}
+                  <div className="admin-text-dim">{row.default_model}</div>
+                </td>
+                <td className="mono" style={{ fontSize: '0.75rem' }}>{row.env_key_field}</td>
+                <td>
+                  <span className={`badge ${row.configured ? 'badge-ok' : 'badge-muted'}`}>
+                    {row.configured ? 'configured' : 'not set'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      <div className="admin-card">
+        <div className="admin-card-title">
+          Failover chains
+          <HelpTip text="Read-only catalog from model_catalog.py. Order is failover priority." />
+        </div>
       {Object.entries(tasks).map(([task, steps]) => (
         <div key={task} style={{ marginBottom: '1rem' }}>
           <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', marginBottom: '0.35rem', color: 'var(--text2)' }}>
@@ -398,6 +434,7 @@ function ModelsTab({ models }) {
           </table>
         </div>
       ))}
+      </div>
     </div>
   )
 }
@@ -484,6 +521,7 @@ function UsageTab({ overview }) {
 }
 
 function ActivityTab({ toast, providerOptions }) {
+  const { busy: retryBusy, guard: retryGuard } = useBusyGuard(5000)
   const [rows, setRows] = useState(null)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -552,20 +590,19 @@ function ActivityTab({ toast, providerOptions }) {
   async function confirmRetryOperation() {
     if (!retryTarget) return
     const operationId = retryTarget.operationId
-    setRetryingOperationId(operationId)
     setRetryTarget(null)
-    try {
-      const { data } = await adminApi.postJson(`/ai/operations/${encodeURIComponent(operationId)}/retry`, {})
-      const message = data.success
-        ? `Retry completed via ${data.provider} (${data.model})`
-        : `Retry failed via ${data.provider} (${data.model})`
-      toast?.(message, Boolean(data.success))
-      await load()
-    } catch (e) {
-      toast?.(formatErrorWithRef(e), false)
-    } finally {
-      setRetryingOperationId('')
-    }
+    await retryGuard(async () => {
+      setRetryingOperationId(operationId)
+      try {
+        const { data } = await adminApi.postJson(`/ai/operations/${encodeURIComponent(operationId)}/retry`, {})
+        toast?.(data.success ? `Retry completed via ${data.provider}` : `Retry failed via ${data.provider}`, Boolean(data.success))
+        await load()
+      } catch (e) {
+        toast?.(formatErrorWithRef(e), false)
+      } finally {
+        setRetryingOperationId('')
+      }
+    })
   }
 
   // Reset to the first page whenever a filter narrows the result set.
@@ -669,7 +706,7 @@ function ActivityTab({ toast, providerOptions }) {
                             <button
                               type="button"
                               className="admin-btn admin-btn-ghost"
-                              disabled={retryingOperationId === row.operation_id}
+                              disabled={retryingOperationId === row.operation_id || retryBusy}
                               onClick={() => openRetryDialog(row)}
                             >
                               {retryingOperationId === row.operation_id ? 'Retrying…' : 'Retry'}

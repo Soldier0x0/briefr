@@ -35,6 +35,7 @@ from db.embeddings_store import count_embeddings_by_entity
 from dependencies import audit
 from ml.embeddings import get_embeddings_model_name
 from services.retrieval_health import build_retrieval_health
+from tracking import ai_request_quota_snapshot
 
 from .router import router
 
@@ -89,6 +90,8 @@ async def get_ai_operations_overview(request: Request):
     finally:
         await db.close()
 
+    ai_quota = await ai_request_quota_snapshot()
+
     return build_overview_payload(
         usage_24h=usage_24h,
         usage_7d=usage_7d,
@@ -96,6 +99,7 @@ async def get_ai_operations_overview(request: Request):
         embeddings_vector_count=int(live_counts.get("total") or 0),
         legacy_cve_embeddings=legacy_count,
         embeddings_counts=live_counts,
+        ai_quota=ai_quota,
     )
 
 

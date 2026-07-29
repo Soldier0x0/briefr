@@ -125,6 +125,18 @@ def _get_config_response() -> dict[str, Any]:
             "DETECTION_CONTEXT_SYNC_ENABLED": _env("DETECTION_CONTEXT_SYNC_ENABLED", "0"),
             "DETECTION_CONTEXT_LLM_ENABLED": _env("DETECTION_CONTEXT_LLM_ENABLED", "0"),
             "DETECTION_CONTEXT_NUCLEI_ENABLED": _env("DETECTION_CONTEXT_NUCLEI_ENABLED", "1"),
+            "AI_DAILY_REQUEST_CAP": _env_int("AI_DAILY_REQUEST_CAP", 200),
+            "AI_PER_MINUTE_CAP": _env_int("AI_PER_MINUTE_CAP", 10),
+            "LLM_PROVIDER_TIMEOUT_SEC": min(
+                120,
+                max(
+                    10,
+                    _env_int("LLM_PROVIDER_TIMEOUT_SEC", 0)
+                    or min(60, _env_int("SCHEDULER_LLM_TIMEOUT_SECONDS", 30)),
+                ),
+            ),
+            "CUSTOM_LLM_BASE_URL": _env("CUSTOM_LLM_BASE_URL", ""),
+            "CUSTOM_LLM_MODEL": _env("CUSTOM_LLM_MODEL", ""),
             "POC_GITHUB_SYNC_ENABLED": _env("POC_GITHUB_SYNC_ENABLED", "1"),
             "EXPLOITDB_SYNC_ENABLED": _env("EXPLOITDB_SYNC_ENABLED", "1"),
             "METASPLOIT_SYNC_ENABLED": _env("METASPLOIT_SYNC_ENABLED", "1"),
@@ -133,6 +145,8 @@ def _get_config_response() -> dict[str, Any]:
         "queue": {
             "PROCRASTINATE_ENABLED": _env("PROCRASTINATE_ENABLED", "0"),
             "API_CALL_EVENTS_ENABLED": _env("API_CALL_EVENTS_ENABLED", "1"),
+            "OUTBOUND_PACING_TIER": _env("OUTBOUND_PACING_TIER", "free"),
+            "OUTBOUND_PACING_OVERRIDES": _env("OUTBOUND_PACING_OVERRIDES", ""),
         },
         "backup": {
             "BACKUP_ENABLED": _env("BACKUP_ENABLED", "1"),
@@ -183,6 +197,11 @@ def _get_config_response() -> dict[str, Any]:
             "OTX_API_KEY": _mask_key(_env("OTX_API_KEY")),
             "CIRCL_API_KEY": _mask_key(_env("CIRCL_API_KEY")),
             "ABUSECH_AUTH_KEY": _mask_key(_env("ABUSECH_AUTH_KEY")),
+            "VULNCHECK_API_KEY": _mask_key(_env("VULNCHECK_API_KEY")),
+            "CUSTOM_LLM_API_KEY": _mask_key(_env("CUSTOM_LLM_API_KEY")),
+            "OPENAI_API_KEY": _mask_key(_env("OPENAI_API_KEY")),
+            "DEEPSEEK_API_KEY": _mask_key(_env("DEEPSEEK_API_KEY")),
+            "MOONSHOT_API_KEY": _mask_key(_env("MOONSHOT_API_KEY")),
         },
         "security": {
             "WALLBOARD_TOKEN": _mask_key(_env("WALLBOARD_TOKEN")),

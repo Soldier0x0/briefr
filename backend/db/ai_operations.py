@@ -80,6 +80,16 @@ async def insert_ai_operation(
     await db.execute(sql, params)
 
 
+async def count_ai_operations_since(db: DbConnection, *, since: str) -> int:
+    pg = _is_postgres_connection(db)
+    since_ph = "$1" if pg else "?"
+    rows = await db.execute_fetchall(
+        f"SELECT COUNT(*) AS cnt FROM ai_operations WHERE started_at >= {since_ph}",
+        (since,),
+    )
+    return int(rows[0]["cnt"]) if rows else 0
+
+
 async def count_ai_operations(db: DbConnection) -> int:
     rows = await db.execute_fetchall("SELECT COUNT(*) as cnt FROM ai_operations")
     return int(rows[0]["cnt"]) if rows else 0

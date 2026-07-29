@@ -163,6 +163,9 @@ endpoints:
   path: /api/admin/onboarding/dismiss
   component_id: routers-admin-diagnostics
 - method: GET
+  path: /api/admin/outbound-pacing
+  component_id: routers-admin-jobs
+- method: GET
   path: /api/admin/ratelimit
   component_id: routers-admin-diagnostics
 - method: GET

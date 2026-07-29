@@ -8,6 +8,7 @@ import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import ApiKeyHealthPanel from './ApiKeyHealthPanel.jsx'
 import SearchTokensPanel from './SearchTokensPanel.jsx'
 import ApiCallAuditPanel from './ApiCallAuditPanel.jsx'
+import OutboundPacingPanel from './OutboundPacingPanel.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
@@ -486,6 +487,13 @@ export default function ApiKeysPage({ toast }) {
       />
 
       <SearchTokensPanel toast={toast} />
+
+      <OutboundPacingPanel
+        config={config}
+        schema={schema}
+        onSaveKey={saveKey}
+        savingKeys={savingKeys}
+      />
 
       <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div className="admin-card-header">
