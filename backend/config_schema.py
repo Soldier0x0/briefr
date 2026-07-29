@@ -22,6 +22,7 @@ APPLY_SCHEDULER_RESCHEDULE = "scheduler_reschedule"
 APPLY_RESTART = "restart"
 
 _SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = frozenset({
+    "RESOURCE_SAMPLE_INTERVAL_SECONDS",
     "NVD_SYNC_INTERVAL_HOURS",
     "KEV_SYNC_INTERVAL_MINUTES",
     "EPSS_SYNC_INTERVAL_HOURS",
@@ -147,6 +148,19 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Enable Postgres-backed durable job queue (Procrastinate). Off = zero behavior change."),
     ConfigField("API_CALL_EVENTS_ENABLED", "queue", "bool", restart_required=True,
                 help_text="Record every outbound HTTP attempt from resilient_request into api_call_events (default on)."),
+    ConfigField("RESOURCE_SAMPLE_INTERVAL_SECONDS", "queue", "int", min=30, max=3600,
+                apply_strategy=APPLY_SCHEDULER_RESCHEDULE,
+                help_text="How often the resource metrics collector samples CPU, memory, and disk.",
+                display_label="Resource sample interval", unit="s"),
+    ConfigField("RESOURCE_METRICS_RETENTION_DAYS", "queue", "int", min=7, max=90,
+                apply_strategy=APPLY_RESTART,
+                help_text="Days of resource_metrics history to keep before nightly purge.",
+                display_label="Resource metrics retention", unit="d"),
+    ConfigField("OTX_CONTINUOUS_BUDGET_PER_RUN", "ingest", "int", min=50, max=2000,
+                help_text="Max OTX pulses fetched per continuous sync run (when enabled).",
+                display_label="OTX continuous budget per run"),
+    ConfigField("POSTGRES_VACUUM_AFTER_RETENTION", "queue", "bool", restart_required=True,
+                help_text="Run VACUUM (ANALYZE) on high-churn tables after nightly cache retention purge."),
     ConfigField("CPE_CATALOG_SYNC_ENABLED", "ingest", "bool", restart_required=True,
                 help_text="Sync NVD CPE dictionary into software_catalog for stack autocomplete (default off)."),
     ConfigField("CPE_CATALOG_SYNC_INTERVAL_HOURS", "ingest", "int", min=1,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from db.explorer_registry import (
@@ -45,6 +46,27 @@ WHERE n.nspname = 'public'
   AND c.relkind = 'r'
   AND c.relname = ANY($1::text[])
 """
+
+_CATALOG_COUNT_CACHE: dict[str, tuple[float, int]] = {}
+CATALOG_COUNT_CACHE_TTL = 300
+
+
+async def _exact_row_count(db: Any, table: str) -> int:
+    sql = (
+        _COUNT_ALL_PG if _is_postgres_connection(db) else _COUNT_ALL_SQLITE
+    ).format(table=table)
+    rows = await db.execute_fetchall(sql)
+    return int(rows[0]["cnt"]) if rows else 0
+
+
+async def _cached_exact_row_count(db: Any, table: str) -> int:
+    now = time.monotonic()
+    cached = _CATALOG_COUNT_CACHE.get(table)
+    if cached and now - cached[0] < CATALOG_COUNT_CACHE_TTL:
+        return cached[1]
+    count = await _exact_row_count(db, table)
+    _CATALOG_COUNT_CACHE[table] = (now, count)
+    return count
 
 
 def _is_postgres_connection(db: Any) -> bool:
@@ -134,27 +156,16 @@ def _row_to_dict(row: Any, spec: TableSpec) -> dict[str, Any]:
 async def fetch_table_catalog(db: Any) -> list[dict[str, Any]]:
     catalog: list[dict[str, Any]] = []
     specs = list_table_specs()
-    counts: dict[str, int] = {}
-
-    if _is_postgres_connection(db):
-        names = [spec.name for spec in specs]
-        rows = await db.execute_fetchall(_PG_CLASS_COUNTS_SQL, (names,))
-        counts = {row["name"]: int(row["cnt"]) for row in rows}
-    else:
-        for spec in specs:
-            count_rows = await db.execute_fetchall(
-                _COUNT_ALL_SQLITE.format(table=spec.name)
-            )
-            counts[spec.name] = int(count_rows[0]["cnt"]) if count_rows else 0
 
     for spec in specs:
+        count = await _cached_exact_row_count(db, spec.name)
         catalog.append(
             {
                 "name": spec.name,
                 "label": spec.label,
                 "tier": spec.tier,
-                "row_count": counts.get(spec.name, 0),
-                "row_count_estimated": _is_postgres_connection(db),
+                "row_count": count,
+                "row_count_estimated": False,
                 "columns": list(spec.columns),
                 "filter_columns": sorted(spec.filter_columns),
                 "required_filter": spec.required_filter,

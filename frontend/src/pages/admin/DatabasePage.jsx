@@ -123,6 +123,45 @@ export default function DatabasePage({ toast, active = true }) {
         {!needsPostgres && info && <StatCard label="TARGET" value={info.postgres_dsn_redacted} />}
       </div>
 
+      {info?.metrics && (
+        <>
+          {info.metrics.disk_projection?.severity && info.metrics.disk_projection.severity !== 'ok' && (
+            <div className={`intel-banner intel-banner-${info.metrics.disk_projection.severity === 'critical' ? 'red' : 'amber'}`} role="status">
+              <span>
+                Disk projection: {info.metrics.disk_projection.daily_growth_bytes != null
+                  ? `${fmtBytes(info.metrics.disk_projection.daily_growth_bytes)}/day growth`
+                  : 'insufficient samples'}
+                {info.metrics.disk_projection.projected_bytes != null && (
+                  <> — projected {fmtBytes(info.metrics.disk_projection.projected_bytes)} in 30 days</>
+                )}
+                {info.metrics.disk_projection.pct_of_partition != null && (
+                  <> ({info.metrics.disk_projection.pct_of_partition}% of partition)</>
+                )}
+              </span>
+            </div>
+          )}
+          <div className="stat-card-row admin-database-metrics-grid">
+            <StatCard label="DB SIZE" value={fmtBytes(info.metrics.db_size_bytes)} />
+            <StatCard label="CONNECTIONS" value={String(info.metrics.connections ?? '—')} />
+            <StatCard
+              label="CACHE HIT"
+              value={info.metrics.cache_hit_ratio != null ? `${info.metrics.cache_hit_ratio}%` : '—'}
+            />
+            <StatCard label="TABLES" value={String(info.metrics.table_count ?? '—')} />
+            <StatCard label="INDEXES" value={String(info.metrics.index_count ?? '—')} />
+            <StatCard
+              label="INTEGRITY"
+              value={info.metrics.integrity_ok ? 'OK' : 'FAILED'}
+              colorClass={info.metrics.integrity_ok ? 'color-green' : 'color-red'}
+              subLabel={info.metrics.integrity_checked_at ? String(info.metrics.integrity_checked_at).slice(0, 19) : null}
+            />
+            {info.metrics.wal_size_bytes > 0 && (
+              <StatCard label="WAL SIZE" value={fmtBytes(info.metrics.wal_size_bytes)} />
+            )}
+          </div>
+        </>
+      )}
+
       {info?.require_postgres && needsPostgres && (
         <div className="admin-callout admin-callout-amber" style={{ marginBottom: '1rem' }}>
           <AlertTriangle size={16} strokeWidth={2} />
@@ -234,7 +273,7 @@ export default function DatabasePage({ toast, active = true }) {
         <IntelSnapshotPanel toast={toast} />
       )}
 
-      <DbExplorerPanel toast={toast} />
+      <DbExplorerPanel toast={toast} active={active} />
     </div>
   )
 }

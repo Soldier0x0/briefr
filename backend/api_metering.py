@@ -42,28 +42,39 @@ async def record_outbound_attempt(
             actor_type = "user"
 
         from database import get_db
-        from db.api_metering import insert_api_call_event, touch_api_usage_last_called
+        from db.api_metering import insert_api_call_event, queue_api_call_event, touch_api_usage_last_called
         from tracking import record_api_call
+
+        event_fields = dict(
+            source=source,
+            method=method,
+            url=url,
+            status_code=status_code,
+            ok=ok,
+            latency_ms=latency_ms,
+            actor_type=actor_type,
+            actor_id=ctx.get("actor_id"),
+            job_id=job_id,
+            run_id=run_id,
+            queue_task=ctx.get("queue_task"),
+            request_id=request_id,
+            error_class=error_class,
+            pacing_key=source,
+        )
+        if await queue_api_call_event(**event_fields):
+            day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            db = await get_db()
+            try:
+                await touch_api_usage_last_called(db, service=source, date_utc=day)
+                await db.commit()
+            finally:
+                await db.close()
+            await record_api_call(source, 1)
+            return
 
         db = await get_db()
         try:
-            await insert_api_call_event(
-                db,
-                source=source,
-                method=method,
-                url=url,
-                status_code=status_code,
-                ok=ok,
-                latency_ms=latency_ms,
-                actor_type=actor_type,
-                actor_id=ctx.get("actor_id"),
-                job_id=job_id,
-                run_id=run_id,
-                queue_task=ctx.get("queue_task"),
-                request_id=request_id,
-                error_class=error_class,
-                pacing_key=source,
-            )
+            await insert_api_call_event(db, **event_fields)
             day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             await touch_api_usage_last_called(db, service=source, date_utc=day)
             await db.commit()

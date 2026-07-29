@@ -416,10 +416,36 @@ async def get_resources(window: str = "1d"):
     if window not in ("1d", "3d", "7d", "30d"):
         raise HTTPException(400, "window must be 1d, 3d, 7d, or 30d")
     from db.resource_metrics import fetch_resources_response
+    from host_profile import collect_host_profile
+    from db.connection import get_pool_stats
+    import database as _database
 
     db = await get_db()
     try:
-        return await fetch_resources_response(db, window)
+        result = await fetch_resources_response(db, window)
+        db_path = os.path.abspath(_database.DB_PATH)
+        db_file_bytes = 0
+        try:
+            db_file_bytes = os.path.getsize(db_path)
+        except OSError:
+            pass
+        result["host_profile"] = collect_host_profile(db_path=db_path)
+        result["pool_stats"] = get_pool_stats()
+        result["db_file_bytes"] = db_file_bytes
+        return result
+    finally:
+        await db.close()
+
+
+@router.get("/resources/efficiency")
+async def get_resources_efficiency():
+    from efficiency_audit import build_efficiency_report
+    import database as _database
+
+    db = await get_db()
+    try:
+        db_path = os.path.abspath(_database.DB_PATH)
+        return await build_efficiency_report(db, db_path=db_path)
     finally:
         await db.close()
 

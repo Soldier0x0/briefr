@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db.types import DbConnection
 
 RESOURCE_METRICS_RETENTION_DAYS = 30
+
+
+def get_resource_metrics_retention_days() -> int:
+    try:
+        return max(7, int(os.environ.get("RESOURCE_METRICS_RETENTION_DAYS", str(RESOURCE_METRICS_RETENTION_DAYS))))
+    except (TypeError, ValueError):
+        return RESOURCE_METRICS_RETENTION_DAYS
 RESOURCE_METRICS_MAX_SERIES_POINTS = 500
 
 VALID_RESOURCE_WINDOWS = frozenset({"1d", "3d", "7d", "30d"})
@@ -119,9 +127,10 @@ async def insert_resource_sample(db: DbConnection, sample: dict[str, Any]) -> No
 
 async def purge_old_resource_metrics(
     db: DbConnection,
-    retention_days: int = RESOURCE_METRICS_RETENTION_DAYS,
+    retention_days: int | None = None,
 ) -> int:
-    cutoff = _cutoff_iso(retention_days)
+    days = retention_days if retention_days is not None else get_resource_metrics_retention_days()
+    cutoff = _cutoff_iso(days)
     sql = _PURGE_RESOURCE_METRICS_PG if _is_postgres_connection(db) else _PURGE_RESOURCE_METRICS_SQLITE
     cursor = await db.execute(sql, (cutoff,))
     if hasattr(cursor, "rowcount") and cursor.rowcount is not None:

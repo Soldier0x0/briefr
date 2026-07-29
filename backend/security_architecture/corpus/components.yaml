@@ -92,11 +92,11 @@ components:
     ref: backend/routers/admin/jobs.py
 - id: routers-admin-storage
   title: routers.admin.storage
-  summary: FastAPI router module with 11 endpoint(s).
+  summary: FastAPI router module with 12 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 11
+  endpoint_count: 12
   source_refs:
   - type: file
     ref: backend/routers/admin/storage.py

@@ -26,10 +26,16 @@ from .router import router
 
 @router.get("/database")
 async def get_database_info(request: Request):
+    import os
+    import shutil
+
+    from database import get_db
     from db.config import is_postgres, resolve_database_url
+    from db.database_metrics import fetch_database_metrics
 
     current_url = resolve_database_url()
     on_postgres = is_postgres(current_url)
+    db_path = Path(DB_PATH)
     info: dict[str, Any] = {
         "engine": "postgresql" if on_postgres else "sqlite",
         "require_postgres": settings.briefr_require_postgres,
@@ -38,9 +44,26 @@ async def get_database_info(request: Request):
     if on_postgres:
         info["postgres_dsn_redacted"] = re.sub(r"://[^@]+@", "://***@", current_url)
     else:
-        db_path = Path(DB_PATH)
         info["sqlite_path"] = str(db_path)
         info["sqlite_size_bytes"] = db_path.stat().st_size if db_path.exists() else 0
+
+    partition_total = 0
+    try:
+        du = shutil.disk_usage(os.path.dirname(os.path.abspath(DB_PATH)) or ".")
+        partition_total = du.total
+    except OSError:
+        pass
+
+    db = await get_db()
+    try:
+        info["metrics"] = await fetch_database_metrics(
+            db,
+            db_path=str(db_path),
+            partition_total_bytes=partition_total,
+        )
+    finally:
+        await db.close()
+
     return info
 
 

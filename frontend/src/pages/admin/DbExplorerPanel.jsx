@@ -14,7 +14,7 @@ function cellPreview(value) {
   return text.length > PREVIEW_MAX ? `${text.slice(0, PREVIEW_MAX)}…` : text
 }
 
-export default function DbExplorerPanel({ toast }) {
+export default function DbExplorerPanel({ toast, active = true }) {
   const [catalog, setCatalog] = useState(null)
   const [catalogError, setCatalogError] = useState(null)
   const [selectedTable, setSelectedTable] = useState('')
@@ -39,6 +39,36 @@ export default function DbExplorerPanel({ toast }) {
   }, [])
 
   useEffect(() => { loadCatalog() }, [loadCatalog])
+
+  useEffect(() => {
+    if (!active) return undefined
+    loadCatalog()
+    const id = setInterval(loadCatalog, 60_000)
+    return () => clearInterval(id)
+  }, [active, loadCatalog])
+
+  useEffect(() => {
+    if (!rowsPayload?.total || !selectedTable) return
+    if (rowsPayload.filter_column) return
+    setCatalog((prev) => {
+      if (!prev?.tables) return prev
+      return {
+        ...prev,
+        tables: prev.tables.map((t) =>
+          t.name === selectedTable
+            ? { ...t, row_count: rowsPayload.total, row_count_estimated: false }
+            : t,
+        ),
+      }
+    })
+  }, [rowsPayload?.total, selectedTable])
+
+  function tableCountLabel(t) {
+    if (t.row_count_estimated) {
+      return `~${t.row_count.toLocaleString()} rows (est.)`
+    }
+    return `${t.row_count.toLocaleString()} rows`
+  }
 
   const tableMeta = catalog?.tables?.find((t) => t.name === selectedTable) || null
 
@@ -129,7 +159,7 @@ export default function DbExplorerPanel({ toast }) {
                   { value: '', label: 'Select table…' },
                   ...catalog.tables.map((t) => ({
                     value: t.name,
-                    label: `${t.label} (${t.row_count.toLocaleString()} rows)${t.tier === 2 ? ' · masked' : ''}`,
+                    label: `${t.label} (${tableCountLabel(t)})${t.tier === 2 ? ' · masked' : ''}`,
                   })),
                 ]}
               />
