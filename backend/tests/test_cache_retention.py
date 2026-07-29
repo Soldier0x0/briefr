@@ -40,7 +40,7 @@ def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
                 (
                     "ssvc:CVE-2024-0001",
                     '{"decisions": {"Exploitation": "active"}}',
-                    _utc(200),
+                    _utc(3),
                     "greynoise:1.2.3.4",
                     '{"noise": true}',
                     _utc(10),
