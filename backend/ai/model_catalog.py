@@ -8,11 +8,12 @@ from typing import Literal
 
 from ai.gemini_client import gemini_model as _gemini_model
 from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY
+from ai.provider_catalog import catalog_status_rows, custom_provider_configured, custom_provider_step
 
 LLMTask = Literal["product_extraction", "pdf_summary", "detection_context"]
 
-# Display order in admin — matches failover priority (Gemini is last resort).
 PROVIDER_ENV_KEYS = {
+    "custom": "CUSTOM_LLM_API_KEY",
     "groq": "GROQ_API_KEY",
     "cerebras": "CEREBRAS_API_KEY",
     "openrouter": "OPENROUTER_API_KEY",
@@ -52,13 +53,17 @@ def cerebras_model() -> str:
 
 
 def _scheduler_chain(task: LLMTask, *, groq_model: str) -> list[ProviderStep]:
-    """Groq/Cerebras first; Gemini last (slow free-tier fallback)."""
-    return [
+    chain: list[ProviderStep] = []
+    custom = custom_provider_step()
+    if custom:
+        chain.append(ProviderStep("custom", custom[2]))
+    chain.extend([
         ProviderStep("groq", groq_model),
         ProviderStep("cerebras", cerebras_model()),
         ProviderStep("openrouter", openrouter_model(task)),
         ProviderStep("gemini", gemini_model()),
-    ]
+    ])
+    return chain
 
 
 def task_chain(task: LLMTask) -> list[ProviderStep]:
@@ -76,9 +81,13 @@ def models_catalog_payload() -> dict:
             {"provider": step.provider, "model": step.model, "order": idx}
             for idx, step in enumerate(task_chain(task))  # type: ignore[arg-type]
         ]
+    custom = custom_provider_step()
     return {
         "providers": list(PROVIDER_ENV_KEYS.keys()),
         "tasks": tasks,
+        "catalog": catalog_status_rows(),
+        "custom_configured": custom_provider_configured(),
+        "custom_base_url": (custom[0] if custom else os.environ.get("CUSTOM_LLM_BASE_URL", "")).rstrip("/"),
         "env_keys": {
             "groq_product": "GROQ_MODEL",
             "groq_summary": "GROQ_MODEL_SUMMARY",
@@ -87,5 +96,8 @@ def models_catalog_payload() -> dict:
             "openrouter_pdf": "OPENROUTER_MODEL_PDF",
             "openrouter_product": "OPENROUTER_MODEL_PRODUCT",
             "openrouter_detection": "OPENROUTER_MODEL_DETECTION",
+            "custom_base_url": "CUSTOM_LLM_BASE_URL",
+            "custom_api_key": "CUSTOM_LLM_API_KEY",
+            "custom_model": "CUSTOM_LLM_MODEL",
         },
     }

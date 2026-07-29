@@ -37,6 +37,15 @@ logger = logging.getLogger(__name__)
 # ── Durable outbound jobs (Procrastinate / Q1) ─────────────────────────────
 
 
+@router.get("/outbound-pacing")
+async def get_outbound_pacing(request: Request):
+    from source_rate_limits import get_source_pacing, pacing_defaults_payload
+
+    defaults = pacing_defaults_payload()
+    effective = {key: get_source_pacing(key).min_interval_seconds for key in defaults.get("sources", {})}
+    return {"ok": True, **defaults, "effective_intervals": effective}
+
+
 @router.get("/api-usage/metering")
 async def get_api_usage_metering(request: Request, hours: int = 24):
     """Outbound call metering summary (Q2): by source + actor_type."""

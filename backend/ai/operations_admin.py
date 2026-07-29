@@ -46,6 +46,7 @@ def build_overview_payload(
     embeddings_vector_count: int,
     legacy_cve_embeddings: int | None = None,
     embeddings_counts: dict[str, int] | None = None,
+    ai_quota: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     providers = _provider_health_rows()
     active_circuits = sum(1 for p in providers if p["circuit_open"])
@@ -69,6 +70,7 @@ def build_overview_payload(
         "any_provider_configured": llm_available,
         "configured_provider_count": configured_count,
         "active_circuit_count": active_circuits,
+        "ai_quota": ai_quota or {},
         "usage": {
             "24h": usage_24h,
             "7d": usage_7d,

@@ -255,6 +255,13 @@ def _schedule_cadence_for_job(job: Any) -> str:
     return "Scheduled"
 
 
+def _job_interval_seconds(job: Any) -> float | None:
+    trigger = job.trigger
+    if isinstance(trigger, IntervalTrigger):
+        return float(trigger.interval.total_seconds())
+    return None
+
+
 def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     paused = job.next_run_time is None
     lock_held = _job_lock_held(job.id)
@@ -278,7 +285,26 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
     latest = history[0] if history else {}
     sched = _get_scheduler_module()
     progress = getattr(sched, "_job_progress", {}).get(job.id, "")
-    return {
+
+    stuck_warning = False
+    if lock_held:
+        from ai.llm_job_state import lock_started_at
+        started = lock_started_at(job.id)
+        if started is not None:
+            interval = _job_interval_seconds(job)
+            if interval and (time.time() - started) > 3 * interval:
+                stuck_warning = True
+
+    llm_state: dict[str, Any] = {}
+    if lock_held:
+        try:
+            from ai.llm_job_state import get_job_llm_state, is_llm_job
+            if is_llm_job(job.id):
+                llm_state = get_job_llm_state(job.id) or {}
+        except Exception:
+            pass
+
+    payload = {
         "id": job.id,
         "name": job.name,
         "schedule_cadence": _schedule_cadence_for_job(job),
@@ -287,6 +313,7 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
         "lock_held": lock_held,
         "status": status,
         "progress_message": progress,
+        "stuck_warning": stuck_warning,
         "last_run_utc": latest.get("last_run_utc") or latest.get("started_at"),
         "last_run_duration_seconds": latest.get("duration_seconds"),
         "last_run_records_upserted": latest.get("records_upserted"),
@@ -295,6 +322,10 @@ def _build_job_info(job: Any, history: list[dict]) -> dict[str, Any]:
         "last_run_id": latest.get("run_id") or "",
         "run_history": history,
     }
+    if llm_state:
+        payload["current_provider"] = llm_state.get("current_provider") or ""
+        payload["providers_attempted"] = llm_state.get("providers_attempted") or []
+    return payload
 
 
 async def _get_all_scheduler_jobs() -> list[dict[str, Any]]:

@@ -47,9 +47,11 @@ _SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = frozenset({
 class ConfigField:
     key: str
     section: str  # UI grouping: matches the admin panel's card titles
-    type: str = "str"  # "int" | "str" | "bool" | "enum" | "secret" | "url"
+    type: str = "str"  # "int" | "float" | "str" | "bool" | "enum" | "secret" | "url"
     min: int | None = None
     max: int | None = None
+    min_float: float | None = None
+    max_float: float | None = None
     enum_values: tuple[str, ...] = field(default_factory=tuple)
     help_text: str = ""
     restart_required: bool = False
@@ -161,6 +163,17 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 display_label="OTX continuous budget per run"),
     ConfigField("POSTGRES_VACUUM_AFTER_RETENTION", "queue", "bool", restart_required=True,
                 help_text="Run VACUUM (ANALYZE) on high-churn tables after nightly cache retention purge."),
+    ConfigField(
+        "OUTBOUND_PACING_TIER", "queue", "enum",
+        enum_values=("free", "premium_auto", "custom"),
+        help_text="Instance-wide outbound spacing: free defaults, premium_auto relaxes keyed sources, custom JSON overrides.",
+        display_label="Outbound pacing tier",
+    ),
+    ConfigField(
+        "OUTBOUND_PACING_OVERRIDES", "queue", "str",
+        help_text='JSON map source→min_interval_seconds for custom tier, e.g. {"nvd": 3.0}',
+        display_label="Outbound pacing overrides",
+    ),
     ConfigField("CPE_CATALOG_SYNC_ENABLED", "ingest", "bool", restart_required=True,
                 help_text="Sync NVD CPE dictionary into software_catalog for stack autocomplete (default off)."),
     ConfigField("CPE_CATALOG_SYNC_INTERVAL_HOURS", "ingest", "int", min=1,
@@ -212,6 +225,21 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
     ConfigField("DETECTION_CONTEXT_NUCLEI_ENABLED", "ml", "bool",
                 help_text="Enable deterministic Nuclei YAML artifact enrichment during exploit sync.",
                 display_label="Detection context Nuclei"),
+    ConfigField("AI_DAILY_REQUEST_CAP", "ml", "int", min=1, max=10000,
+                help_text="Max LLM API attempts per UTC day (instance-wide).",
+                display_label="AI daily request cap"),
+    ConfigField("AI_PER_MINUTE_CAP", "ml", "int", min=1, max=120,
+                help_text="Max LLM API attempts per rolling minute.",
+                display_label="AI per-minute cap"),
+    ConfigField("LLM_PROVIDER_TIMEOUT_SEC", "ml", "int", min=10, max=300,
+                help_text="Per-provider HTTP timeout before failover.",
+                display_label="LLM provider timeout", unit="s"),
+    ConfigField("CUSTOM_LLM_BASE_URL", "ml", "url",
+                help_text="OpenAI-compatible chat completions URL for custom provider slot.",
+                display_label="Custom LLM base URL"),
+    ConfigField("CUSTOM_LLM_MODEL", "ml", "str",
+                help_text="Model id for custom OpenAI-compatible provider.",
+                display_label="Custom LLM model"),
     ConfigField(
         "SIGMAHQ_INDEX_SYNC_ENABLED",
         "ml",
@@ -351,12 +379,20 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Used for MalwareBazaar, URLhaus, and ThreatFox IOC mirror sync."),
     ConfigField("VULNCHECK_API_KEY", "api_keys", "secret",
                 help_text="Optional — VulnCheck community KEV catalog for exploited-not-yet-CISA tier."),
+    ConfigField("CUSTOM_LLM_API_KEY", "api_keys", "secret",
+                help_text="API key for custom OpenAI-compatible LLM endpoint."),
+    ConfigField("OPENAI_API_KEY", "api_keys", "secret",
+                help_text="Optional catalog reference — not in default scheduler failover chain."),
+    ConfigField("DEEPSEEK_API_KEY", "api_keys", "secret",
+                help_text="Optional catalog reference for DeepSeek."),
+    ConfigField("MOONSHOT_API_KEY", "api_keys", "secret",
+                help_text="Optional catalog reference for Kimi (Moonshot)."),
 )
 
 _BY_KEY: dict[str, ConfigField] = {f.key: f for f in CONFIG_SCHEMA}
 
 WRITABLE_CONFIG_KEYS: frozenset[str] = frozenset(_BY_KEY)
-INTEGER_KEYS: frozenset[str] = frozenset(f.key for f in CONFIG_SCHEMA if f.type == "int")
+INTEGER_KEYS: frozenset[str] = frozenset(f.key for f in CONFIG_SCHEMA if f.type in ("int", "float"))
 RESTART_REQUIRED_KEYS: frozenset[str] = frozenset(f.key for f in CONFIG_SCHEMA if f.restart_required)
 SCHEDULER_RESCHEDULE_KEYS: frozenset[str] = _SCHEDULER_RESCHEDULE_KEYS
 
@@ -404,6 +440,15 @@ def validate_value(key: str, value: str) -> str | None:
             return f"Key '{key}' must be >= {field_def.min}"
         if field_def.max is not None and parsed > field_def.max:
             return f"Key '{key}' must be <= {field_def.max}"
+    elif field_def.type == "float":
+        try:
+            parsed = float(value)
+        except (ValueError, TypeError):
+            return f"Key '{key}' requires a numeric value"
+        if field_def.min_float is not None and parsed < field_def.min_float:
+            return f"Key '{key}' must be >= {field_def.min_float}"
+        if field_def.max_float is not None and parsed > field_def.max_float:
+            return f"Key '{key}' must be <= {field_def.max_float}"
     elif field_def.type == "bool":
         if value.lower() not in ("0", "1", "true", "false"):
             return f"Key '{key}' must be a boolean value ('1', '0', 'true', or 'false')"
@@ -421,6 +466,8 @@ def list_schema() -> list[dict]:
             "type": f.type,
             "min": f.min,
             "max": f.max,
+            "min_float": f.min_float,
+            "max_float": f.max_float,
             "enum_values": list(f.enum_values),
             "help_text": f.help_text,
             "restart_required": f.restart_required,

@@ -9,6 +9,19 @@ import { canPauseResume, canRunNow, nextRunCell, nextRunTitle } from '../jobActi
 import { getDisplayPrefs, setDisplayPrefs } from '../../../utils/displayPrefs.js'
 import { AdminTableBodySkeletonRows } from './AdminSkeletons.jsx'
 
+function formatLlmJobProgress(job) {
+  const base = job.progress_message || 'Running — waiting for status update…'
+  const attempted = job.providers_attempted || []
+  const current = job.current_provider
+  if (attempted.length >= 2 && current) {
+    const prev = attempted[attempted.length - 2]
+    if (prev && prev !== current) {
+      return `${base.replace(/ — [a-z].*$/i, '')} — trying ${prev} → ${current}`
+    }
+  }
+  return base
+}
+
 export function JobStatusBadge({ status, mode = 'operator' }) {
   const map = {
     ACTIVE: 'badge-ok',
@@ -99,8 +112,13 @@ export default function JobTable({ jobs, onRunNow, onPauseResume, expandErrors =
                         <div className="admin-job-progress-indeterminate" />
                       </div>
                       <div className="admin-job-progress-message">
-                        {job.progress_message || 'Running — waiting for status update…'}
+                        {formatLlmJobProgress(job)}
                       </div>
+                      {job.stuck_warning && (
+                        <div className="admin-callout admin-callout-amber" role="alert" style={{ marginTop: '0.35rem' }}>
+                          Running longer than 3× scheduled interval — check provider health or pause the job.
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <JobStatusBadge status={job.status} mode="operator" />
