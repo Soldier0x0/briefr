@@ -203,15 +203,9 @@ async def get_storage(request: Request):
     db_dir = os.path.dirname(db_path) or "."
     db_partition = _partition_stats(db_dir)
 
-    # Backup partition disk usage
+    # Backup partition disk usage — always resolve path independently (never copy db_partition metadata)
     backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
-    try:
-        if pathlib.Path(backup_dir).exists():
-            backup_partition = _partition_stats(backup_dir)
-        else:
-            backup_partition = db_partition.copy()
-    except Exception:
-        backup_partition = db_partition.copy()
+    backup_partition = _partition_stats(backup_dir)
 
     # Archive count
     archive_count = 0

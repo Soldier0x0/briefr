@@ -60,6 +60,10 @@ def test_storage_partition_includes_path_and_device(admin_client):
     assert data["db_partition"]["path"]
     assert "device_id" in data["db_partition"]
     assert data["backup_partition"]["path"]
+    assert data["backup_partition"]["path"] != data["db_partition"]["path"] or (
+        data["db_partition"]["device_id"] is not None
+        and data["backup_partition"]["device_id"] == data["db_partition"]["device_id"]
+    )
 
 
 def test_storage_disk_total_nonzero(admin_client):
