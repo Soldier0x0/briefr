@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '../../api.js'
 
+function notifyToast(toast, message, ok) {
+  if (typeof toast === 'function') {
+    toast(message, ok)
+    return
+  }
+  if (ok) toast?.success?.(message)
+  else toast?.error?.(message)
+}
+
 /**
- * Embeddings E5 — Admin search service tokens (show-once plaintext on create).
+ * Optional programmatic search access tokens (show-once plaintext on create).
  */
 export default function SearchTokensPanel({ toast }) {
   const [tokens, setTokens] = useState([])
@@ -17,7 +26,10 @@ export default function SearchTokensPanel({ toast }) {
     setError(null)
     try {
       const res = await adminApi.get('/search-tokens')
-      setTokens(res?.data || [])
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const rows = Array.isArray(data) ? data : (data?.tokens || [])
+      setTokens(rows)
     } catch (e) {
       setError(e?.message || 'Failed to load search tokens')
       setTokens([])
@@ -40,10 +52,10 @@ export default function SearchTokensPanel({ toast }) {
       })
       setOnceToken(created?.token || null)
       setName('')
-      toast?.success?.('Search token created — copy it now; it will not be shown again')
+      notifyToast(toast, 'Search token created — copy it now; it will not be shown again', true)
       await load()
     } catch (err) {
-      toast?.error?.(err?.message || 'Create failed')
+      notifyToast(toast, err?.message || 'Create failed', false)
     } finally {
       setBusy(false)
     }
@@ -54,10 +66,10 @@ export default function SearchTokensPanel({ toast }) {
     setBusy(true)
     try {
       await adminApi.delJson(`/search-tokens/${id}`)
-      toast?.success?.('Token revoked')
+      notifyToast(toast, 'Token revoked', true)
       await load()
     } catch (err) {
-      toast?.error?.(err?.message || 'Revoke failed')
+      notifyToast(toast, err?.message || 'Revoke failed', false)
     } finally {
       setBusy(false)
     }
@@ -65,12 +77,12 @@ export default function SearchTokensPanel({ toast }) {
 
   return (
     <section className="admin-panel" aria-labelledby="search-tokens-heading">
-      <h3 id="search-tokens-heading" className="mono">
-        Search API tokens
+      <h3 id="search-tokens-heading" className="admin-section-title">
+        Programmatic search access
       </h3>
-      <p className="admin-muted mono" style={{ marginBottom: 'var(--space-3)' }}>
-        Scoped Bearer tokens (<code>briefr_search_…</code>) for hybrid search, related CVEs, and
-        CVE detail. Hash stored with bcrypt; plaintext shown once at create.
+      <p className="admin-section-desc">
+        Optional Bearer tokens for automation (hybrid search, related CVEs, CVE detail API).
+        Only needed if you integrate BRIEFR search into another tool — not required for normal use.
       </p>
 
       <form className="admin-inline-form" onSubmit={handleCreate}>
@@ -102,7 +114,7 @@ export default function SearchTokensPanel({ toast }) {
             style={{ marginTop: 'var(--space-2)' }}
             onClick={() => {
               navigator.clipboard?.writeText(onceToken)
-              toast?.success?.('Copied')
+              notifyToast(toast, 'Copied', true)
             }}
           >
             Copy
@@ -119,37 +131,29 @@ export default function SearchTokensPanel({ toast }) {
       {!loading && !error && tokens.length === 0 && (
         <p className="mono admin-muted">No search tokens yet.</p>
       )}
-      {tokens.length > 0 && (
-        <table className="admin-table">
+      {!loading && !error && tokens.length > 0 && (
+        <table className="metering-table" style={{ marginTop: 'var(--space-3)' }}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Prefix</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Last used</th>
-              <th />
+              <th scope="col">Name</th>
+              <th scope="col">Created</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
             {tokens.map((t) => (
               <tr key={t.id}>
-                <td className="mono">{t.name}</td>
-                <td className="mono">{t.token_prefix}…</td>
-                <td className="mono">{t.active ? 'active' : 'revoked'}</td>
-                <td className="mono">{t.created_at || '—'}</td>
-                <td className="mono">{t.last_used_at || '—'}</td>
+                <td className="admin-config-value mono">{t.name || `Token #${t.id}`}</td>
+                <td className="mono">{t.created_at ? String(t.created_at).slice(0, 19) : '—'}</td>
                 <td>
-                  {t.active && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-danger"
-                      disabled={busy}
-                      onClick={() => handleRevoke(t.id)}
-                    >
-                      Revoke
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-ghost"
+                    disabled={busy}
+                    onClick={() => handleRevoke(t.id)}
+                  >
+                    Revoke
+                  </button>
                 </td>
               </tr>
             ))}

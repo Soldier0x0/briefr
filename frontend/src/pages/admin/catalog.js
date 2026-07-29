@@ -283,6 +283,44 @@ export const TERM_GLOSSARY = {
     operator: 'Resume retries',
     explanation: 'Clears the pause and retries the source.',
   },
+  heartbeat: {
+    analyst: 'Status heartbeat',
+    operator: 'Status heartbeat',
+    explanation: 'Periodic background check that confirms a subsystem is alive and reports fresh status.',
+  },
+  correlation_confirmation_rate: {
+    analyst: 'Confirmation rate',
+    operator: 'Confirmation rate',
+    explanation: 'Share of candidate CVE–intel links that passed evidence rules in the latest nightly correlation run.',
+  },
+  correlation_rejection_rate: {
+    analyst: 'Rejection rate',
+    operator: 'Rejection rate',
+    explanation: 'Share of candidate links rejected by correlation guardrails.',
+  },
+  correlation_orphan_cve_ratio: {
+    analyst: 'Orphan CVE ratio',
+    operator: 'Orphan CVE ratio',
+    explanation: 'CVEs with OTX pulses but no linked campaign in the nightly snapshot.',
+  },
+  correlation_median_evidence_age: {
+    analyst: 'Median evidence age',
+    operator: 'Median evidence age',
+    explanation: 'Median age of OTX IOC observed/fetched timestamps supporting correlations.',
+  },
+}
+
+const METERING_ACTOR_LABELS = {
+  job: 'Job',
+  queue: 'Queue',
+  user: 'User',
+}
+
+export function formatMeteringActorLabel(actorType) {
+  if (!actorType) return '—'
+  const key = String(actorType).toLowerCase()
+  if (METERING_ACTOR_LABELS[key]) return METERING_ACTOR_LABELS[key]
+  return String(actorType).replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 export function termLabel(key, mode = 'operator') {

@@ -4,8 +4,6 @@ import {
   Gauge, BellRing, ArrowRightLeft, Sparkles, Cpu,
 } from 'lucide-react'
 import { NAV, ANALYST_NAV } from './constants.js'
-import StatusLegend from './shared/StatusLegend.jsx'
-
 const ICONS = {
   Activity, Archive, HardDrive, Database, Bookmark, KeyRound, Clock, Webhook,
   ShieldAlert, Shield, HeartPulse, ScrollText, ClipboardList, Settings2, LogIn, Users,
@@ -54,10 +52,6 @@ export default function Sidebar({ activePage, setPage, system, ingestErrorCount,
           <span>Backups, config, logs → switch to Operator view</span>
         </button>
       )}
-      <details className="nav-status-legend">
-        <summary className="nav-status-legend-summary mono">STATUS LEGEND</summary>
-        <StatusLegend compact />
-      </details>
     </nav>
   )
 }

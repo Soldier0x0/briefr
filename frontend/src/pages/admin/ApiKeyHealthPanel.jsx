@@ -77,7 +77,7 @@ export default function ApiKeyHealthPanel({
     },
     {
       id: 'last_checked',
-      label: 'Last checked',
+      label: 'Last heartbeat',
       defaultVisible: true,
       render: (row) => <span className="mono">{fmtIso(row.last_checked_at)}</span>,
     },
@@ -140,7 +140,7 @@ export default function ApiKeyHealthPanel({
           >
             {running
               ? <><span className="admin-spinner" /> Running checks…</>
-              : <><RefreshCw size={12} style={{ marginRight: '0.35rem', verticalAlign: '-2px' }} />Run check now</>}
+              : <><RefreshCw size={12} style={{ marginRight: '0.35rem', verticalAlign: '-2px' }} />Run heartbeat now</>}
           </button>
         </div>
       </div>

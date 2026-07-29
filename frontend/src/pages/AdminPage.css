@@ -610,10 +610,76 @@
 }
 
 .metering-col-title {
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: var(--type-label, 12px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--admin-text-muted);
   margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.admin-section-title {
+  font-size: var(--type-body, 14px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.35rem;
+  color: var(--admin-text);
+}
+
+.admin-section-desc {
+  font-size: var(--type-body, 14px);
+  color: var(--admin-text-muted);
+  margin: 0 0 var(--space-3);
+  line-height: 1.45;
+}
+
+.admin-config-key {
+  color: var(--admin-text-muted);
+  font-size: var(--type-label, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-config-value {
+  color: var(--admin-text);
+  font-size: var(--type-body, 14px);
+  font-weight: 500;
+}
+
+.admin-config-help {
+  font-size: var(--type-label, 12px);
+  color: var(--admin-text-muted);
+  font-weight: 400;
+  margin-top: 0.15rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.metering-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-body, 14px);
+}
+
+.metering-table th {
+  text-align: left;
+  color: var(--admin-text-muted);
+  font-size: var(--type-label, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.metering-table td {
+  padding: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-border) 65%, transparent);
+  vertical-align: top;
+}
+
+.metering-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .metering-list {
