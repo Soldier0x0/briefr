@@ -22,6 +22,7 @@ import {
   PUBLIC_SITE_URL,
   hexToRgb,
 } from './exportCommon.js'
+import { drawPdfCodeBlock } from './pdfCodeBlock.js'
 
 const CONTENT_TOP = 18
 
@@ -115,36 +116,6 @@ function drawSection(ctx, title, bodyLines, borderRgb) {
   ctx.doc.setFontSize(9)
   ctx.doc.setTextColor(30, 30, 30)
   ctx.doc.text(lines, x + innerPad - 5, y0 + 11, { maxWidth: maxW, lineHeightFactor: 1.35 })
-  ctx.y = y0 + blockH
-}
-
-function drawCodeBlock(ctx, title, code, borderRgb) {
-  if (!code) return
-  const maxW = PAGE_W - MARGIN * 2 - 8
-  const lines = splitLines(ctx.doc, code, maxW)
-  const blockH = 12 + lines.length * 4.2 + 8
-  ensureSpace(ctx, blockH)
-
-  const x = MARGIN
-  const y0 = ctx.y
-  if (borderRgb) {
-    ctx.doc.setFillColor(...borderRgb)
-    ctx.doc.rect(x, y0, 2, blockH - 2, 'F')
-  }
-
-  ctx.doc.setFont(FONT_MONO, 'bold')
-  ctx.doc.setFontSize(8)
-  ctx.doc.setTextColor(...hexToRgb(BRAND))
-  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
-
-  ctx.doc.setFont(FONT_MONO, 'normal')
-  ctx.doc.setFontSize(7.5)
-  ctx.doc.setTextColor(40, 40, 40)
-  let y = y0 + 12
-  lines.forEach(line => {
-    ctx.doc.text(line, x + 5, y)
-    y += 4.2
-  })
   ctx.y = y0 + blockH
 }
 
@@ -406,7 +377,13 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
     drawSection(ctx, 'DETECTION OPPORTUNITIES', detectionLinesFromTechniques(techniques), border)
     const sigmaYaml = pickSigmaYaml(cve.detection)
     if (sigmaYaml) {
-      drawCodeBlock(ctx, 'SIGMA RULE (copy-ready)', sigmaYaml, border)
+      drawPdfCodeBlock(ctx, 'SIGMA RULE (copy-ready)', sigmaYaml, border, {
+        doc: ctx.doc,
+        margin: MARGIN,
+        pageW: PAGE_W,
+        ensureSpace,
+        splitLines,
+      })
     }
   } else {
     drawSection(ctx, 'MITRE ATT&CK', 'No techniques mapped.', border)

@@ -17,6 +17,7 @@ import {
   FOOTER_COPYRIGHT,
   hexToRgb,
 } from './exportCommon.js'
+import { drawPdfCodeBlock } from './pdfCodeBlock.js'
 
 const CONTENT_TOP = 18
 
@@ -76,36 +77,6 @@ function drawSection(ctx, title, bodyLines, borderRgb) {
   lines.forEach(line => {
     ctx.doc.text(line, x + 5, y)
     y += 4.5
-  })
-  ctx.y = y0 + blockH
-}
-
-function drawCodeBlock(ctx, title, code, borderRgb) {
-  if (!code) return
-  const maxW = PAGE_W - MARGIN * 2 - 8
-  const lines = splitLines(ctx.doc, code, maxW)
-  const blockH = 12 + lines.length * 4.2 + 8
-  ensureSpace(ctx, blockH)
-
-  const x = MARGIN
-  const y0 = ctx.y
-  if (borderRgb) {
-    ctx.doc.setFillColor(...borderRgb)
-    ctx.doc.rect(x, y0, 2, blockH - 2, 'F')
-  }
-
-  ctx.doc.setFont(FONT_MONO, 'bold')
-  ctx.doc.setFontSize(8)
-  ctx.doc.setTextColor(...hexToRgb(BRAND))
-  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
-
-  ctx.doc.setFont(FONT_MONO, 'normal')
-  ctx.doc.setFontSize(7.5)
-  ctx.doc.setTextColor(40, 40, 40)
-  let y = y0 + 12
-  lines.forEach(line => {
-    ctx.doc.text(line, x + 5, y)
-    y += 4.2
   })
   ctx.y = y0 + blockH
 }
@@ -200,13 +171,26 @@ export async function downloadHuntPackPdf(pack, context = {}) {
     : pack.technique_id
   drawSection(ctx, 'TECHNIQUE', techLine, hexToRgb(BRAND))
 
-  drawCodeBlock(ctx, 'SIGMA RULE (experimental)', pack.sigma_yaml, hexToRgb(BRAND))
+  drawPdfCodeBlock(ctx, 'SIGMA RULE (experimental)', pack.sigma_yaml, hexToRgb(BRAND), {
+    doc: ctx.doc,
+    margin: MARGIN,
+    pageW: PAGE_W,
+    ensureSpace,
+    splitLines,
+  })
 
   const siem = pack.siem_queries || {}
+  const codeLayout = {
+    doc: ctx.doc,
+    margin: MARGIN,
+    pageW: PAGE_W,
+    ensureSpace,
+    splitLines,
+  }
   Object.entries(SIEM_LABELS).forEach(([platform, label]) => {
     const entry = siem[platform]
     if (entry?.query) {
-      drawCodeBlock(ctx, `SIEM QUERY — ${label}`, entry.query, hexToRgb(BRAND))
+      drawPdfCodeBlock(ctx, `SIEM QUERY — ${label}`, entry.query, hexToRgb(BRAND), codeLayout)
     }
   })
 

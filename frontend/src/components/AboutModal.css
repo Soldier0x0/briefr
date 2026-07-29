@@ -65,10 +65,10 @@
 
 .about-subtitle {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm, 12px);
+  font-size: var(--font-size-base, 14px);
   color: var(--text-secondary, var(--text2));
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .about-divider {
@@ -79,9 +79,9 @@
 
 .about-description {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm, 12px);
+  font-size: var(--font-size-base, 14px);
   color: var(--text-secondary, var(--text2));
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -91,7 +91,7 @@
 
 .about-sources-label {
   display: block;
-  font-size: var(--font-size-2xs, 9px);
+  font-size: var(--font-size-xs, 11px);
   letter-spacing: 0.15em;
   color: var(--text-muted, var(--text3));
   text-transform: uppercase;
@@ -105,7 +105,7 @@
 }
 
 .about-source-tag {
-  font-size: var(--font-size-2xs, 10px);
+  font-size: var(--font-size-xs, 11px);
   letter-spacing: 0.04em;
   color: var(--text-secondary, var(--text2));
   background: var(--surface-sunken, var(--bg3));
@@ -115,7 +115,7 @@
 }
 
 .about-sources-note {
-  font-size: var(--font-size-2xs, 11px);
+  font-size: var(--font-size-sm, 12px);
   color: var(--text-muted, var(--text3));
   line-height: 1.45;
   margin: var(--space-2, 8px) 0 0;
@@ -128,7 +128,7 @@
 
 .about-scope-intro {
   font-family: var(--font-body);
-  font-size: var(--font-size-2xs, 11px);
+  font-size: var(--font-size-sm, 12px);
   color: var(--text-muted, var(--text3));
   line-height: 1.45;
   margin: 0 0 var(--space-2, 8px);
@@ -145,7 +145,7 @@
 
 .about-scope-item {
   font-family: var(--font-body);
-  font-size: var(--font-size-2xs, 11px);
+  font-size: var(--font-size-sm, 12px);
   line-height: 1.5;
   color: var(--text-secondary, var(--text2));
   padding-left: var(--space-3, 10px);
@@ -163,7 +163,7 @@
 
 .about-scope-outro {
   font-family: var(--font-body);
-  font-size: var(--font-size-2xs, 11px);
+  font-size: var(--font-size-sm, 12px);
   font-style: italic;
   color: var(--text-muted, var(--text3));
   line-height: 1.45;
@@ -186,7 +186,7 @@
 }
 
 .about-copyright {
-  font-size: var(--font-size-2xs, 10px);
+  font-size: var(--font-size-xs, 11px);
   letter-spacing: 0.04em;
   color: var(--text-muted, var(--text3));
   margin: 0;
@@ -194,7 +194,7 @@
 
 .about-built-by {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm, 12px);
+  font-size: var(--font-size-base, 14px);
   color: var(--text-secondary, var(--text2));
   margin: 0;
 }
@@ -220,7 +220,7 @@
 }
 
 .about-legal-link {
-  font-size: var(--font-size-2xs, 10px);
+  font-size: var(--font-size-xs, 11px);
   letter-spacing: 0.06em;
   color: var(--text-muted, var(--text3));
   text-decoration: none;
@@ -235,7 +235,7 @@
 }
 
 .about-dot {
-  font-size: var(--font-size-2xs, 10px);
+  font-size: var(--font-size-xs, 11px);
   color: var(--text-muted, var(--text3));
   user-select: none;
 }

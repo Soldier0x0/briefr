@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../utils/report.js'
 import { notifyCopyFailure, notifyCopySuccess } from '../Toast.jsx'
+import CodePanel from '../CodePanel.jsx'
 
 import {
   communityRulesEmptyMessage,
@@ -188,9 +189,7 @@ function SigmaRuleCard({ rule }) {
         </p>
       )}
       {open && hasContent && (
-        <div className="det-code-wrap">
-          <pre className="det-code-block">{rule.content}</pre>
-        </div>
+        <CodePanel code={rule.content} title="Sigma YAML" copyLabel="Copy" />
       )}
     </div>
   )
@@ -244,10 +243,7 @@ function SiemBlock({ platform, label, data }) {
       </button>
       {open && (
         <div className="det-siem-body">
-          <div className="det-siem-query-wrap">
-            <pre className="det-siem-query">{data.query}</pre>
-            <CopyButton text={data.query} />
-          </div>
+          <CodePanel code={data.query} title={label} copyLabel="Copy query" maxHeight={240} />
           {data.notes && (
             <p className="det-siem-notes mono">{data.notes}</p>
           )}
@@ -302,9 +298,8 @@ function GeneratedSigmaSection({
           Experimental hunt starter — tune fields and test in your SIEM before production use.
         </p>
       </ControlTooltip>
-      <div className="det-code-wrap">
+      <div className="det-generated-code">
         <div className="det-code-actions">
-          <CopyButton text={generatedSigma} label="Copy YAML" />
           <button
             type="button"
             className="det-copy-btn mono"
@@ -313,7 +308,11 @@ function GeneratedSigmaSection({
             Download .yml
           </button>
         </div>
-        <pre className="det-code-block">{generatedSigma}</pre>
+        <CodePanel
+          code={generatedSigma}
+          title="Hunt starter YAML"
+          copyLabel="Copy YAML"
+        />
       </div>
     </section>
   )

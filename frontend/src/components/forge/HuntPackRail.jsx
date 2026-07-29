@@ -6,6 +6,7 @@ import Tooltip from '../ui/Tooltip.jsx'
 import { ingestLogUrl } from '../../utils/adminLinks.js'
 import { useInvestigationOptional } from '../../context/InvestigationContext.jsx'
 import { CopyButton, SkeletonRows, StatusChip } from './shared.jsx'
+import CodePanel from '../CodePanel.jsx'
 
 const SIEM_PLATFORMS = [
   ['elastic_kql', 'Elastic KQL'],
@@ -18,11 +19,7 @@ function SiemQueryBlock({ platform, label, entry }) {
   if (!entry?.query) return null
   return (
     <div className="fg-siem-block" key={platform}>
-      <div className="fg-siem-head">
-        <span className="fg-siem-label mono">{label}</span>
-        <CopyButton text={entry.query} />
-      </div>
-      <pre className="fg-code mono">{entry.query}</pre>
+      <CodePanel code={entry.query} title={label} copyLabel="Copy query" maxHeight={280} />
       {entry.notes && <p className="fg-siem-notes">{entry.notes}</p>}
     </div>
   )
@@ -279,7 +276,7 @@ function SavedPack({ pack, defaultOpen, onExportPdf, exporting }) {
             <CopyButton text={pack.sigma_yaml} />
           </div>
         </div>
-        <pre className="fg-code mono">{pack.sigma_yaml}</pre>
+        <CodePanel code={pack.sigma_yaml} title="Sigma rule" copyLabel="Copy YAML" />
       </div>
     </details>
   )
