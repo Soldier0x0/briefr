@@ -593,7 +593,7 @@
       "label": "routers.admin.jobs",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 12,
+      "endpoint_count": 13,
       "source_refs": [
         {
           "type": "file",
@@ -3780,6 +3780,12 @@
       "id": "routers-admin-ai_ops->table:ai_operations",
       "source": "routers-admin-ai_ops",
       "target": "table:ai_operations",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-ai_ops->table:api_usage",
+      "source": "routers-admin-ai_ops",
+      "target": "table:api_usage",
       "kind": "references_table"
     },
     {
