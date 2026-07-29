@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchStatsTimeline, fetchTopTechniques } from '../api.js'
+import { fetchTopTechniques } from '../api.js'
 import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { getSavedStack } from '../utils/cveFilters.js'
+import { useStatsTimeline } from '../hooks/useStatsTimeline.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import ExplainTip from './ExplainTip.jsx'
 import Switch from './ui/Switch.jsx'
@@ -132,65 +133,25 @@ export default function Sidebar({ filters, onFiltersChange }) {
   const [techniquesLoading, setTechniquesLoading] = useState(true)
   const [techniquesError, setTechniquesError] = useState(null)
   const [techniquesErrorRequestId, setTechniquesErrorRequestId] = useState(null)
-  const [sparkBars, setSparkBars] = useState([])
-  const [sparkLoading, setSparkLoading] = useState(true)
-  const [sparkError, setSparkError] = useState(null)
-  const [sparkErrorRequestId, setSparkErrorRequestId] = useState(null)
   const savedStack = getSavedStack()
 
-  const loadSparkline = useCallback((useCache = true) => {
-    if (useCache) {
-      const hit = getCached('spark-v2')
-      if (hit !== undefined) {
-        setSparkBars(hit)
-        setSparkLoading(false)
-        setSparkError(null)
-        setSparkErrorRequestId(null)
-        return
-      }
-    }
-    let cancelled = false
-    setSparkLoading(true)
-    setSparkError(null)
-    setSparkErrorRequestId(null)
-    fetchStatsTimeline(SPARKLINE_DAYS)
-      .then(data => {
-        if (cancelled) return
-        const bars = Array.isArray(data) && data.length ? data.map(d => d.count || 0) : []
-        if (!bars.length) {
-          setSparkError('Publication data unavailable — check that the backend is running.')
-          setSparkBars([])
-          return
-        }
-        setCached('spark-v2', bars)
-        setSparkBars(bars)
-      })
-      .catch(err => {
-        if (!cancelled) {
-          setSparkError(err?.message || 'Could not load publications — is the backend running?')
-          setSparkErrorRequestId(err?.requestId || null)
-          setSparkBars([])
-          notifyApiError(err)
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSparkLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [])
+  const {
+    timeline,
+    loading: sparkLoading,
+    error: sparkError,
+    errorRequestId: sparkErrorRequestId,
+    reload: reloadSparkline,
+  } = useStatsTimeline(SPARKLINE_DAYS)
 
-  useEffect(() => {
-    const cleanup = loadSparkline(true)
-    return cleanup
-  }, [loadSparkline])
+  const sparkBars = timeline.length ? timeline.map(d => d.count || 0) : []
 
   useEffect(() => {
     function onFocus() {
-      loadSparkline(true)
+      reloadSparkline(true)
     }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [loadSparkline])
+  }, [reloadSparkline])
 
   const loadTopTechniques = useCallback((useCache = true) => {
     if (useCache) {
@@ -316,10 +277,7 @@ export default function Sidebar({ filters, onFiltersChange }) {
           loading={sparkLoading}
           error={sparkError}
           errorRequestId={sparkErrorRequestId}
-          onRetry={() => {
-            sidebarCache.delete('spark-v2')
-            loadSparkline(false)
-          }}
+          onRetry={() => reloadSparkline(false)}
         />
       </section>
 

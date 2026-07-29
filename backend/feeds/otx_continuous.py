@@ -81,20 +81,19 @@ async def run_otx_continuous_sync(api_key: str) -> dict:
                 stats["cve_pulses_stored"] += len(pulses)
             except Exception as exc:
                 logger.warning("OTX continuous CVE skip %s: %s", cve_id, exc)
+
+        ioc_budget = min(
+            get_otx_ioc_sync_max_per_run(),
+            budget - stats["api_calls"],
+        )
+        if ioc_budget > 0 and await has_quota("otx"):
+            fetched = await prefetch_pulse_iocs_for_nightly(
+                api_key, max_pulses=min(ioc_budget, 200), db=db
+            )
+            stats["pulse_iocs_fetched"] = fetched
+            stats["api_calls"] += fetched
     finally:
         await db.close()
-
-    ioc_budget = min(
-        get_otx_ioc_sync_max_per_run(),
-        budget - stats["api_calls"],
-    )
-    if ioc_budget > 0 and await has_quota("otx"):
-        # prefetch_pulse_iocs_for_nightly tracks its own API calls via fetch_pulse_iocs
-        fetched = await prefetch_pulse_iocs_for_nightly(
-            api_key, max_pulses=min(ioc_budget, 200)
-        )
-        stats["pulse_iocs_fetched"] = fetched
-        stats["api_calls"] += fetched
 
     if stats["api_calls"] < budget and await has_quota("otx"):
         stats["stop_reason"] = "work_queue_empty"

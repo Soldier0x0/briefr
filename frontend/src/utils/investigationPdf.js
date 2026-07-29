@@ -18,6 +18,7 @@ import {
   FONT_BODY,
   FONT_MONO,
   FOOTER_COPYRIGHT,
+  PUBLIC_SITE_URL,
   hexToRgb,
 } from './exportCommon.js'
 import { techniquePdfSectionTitle } from './investigationLabels.js'
@@ -60,7 +61,7 @@ function applyFooters(doc, meta) {
       { align: 'center' },
     )
     doc.text(
-      `BRIEFR — projectjupiter.in | Generated ${meta.timestamp} | Page ${p} of ${total}`,
+      `BRIEFR — ${PUBLIC_SITE_URL} | Generated ${meta.timestamp} | Page ${p} of ${total}`,
       PAGE_W / 2,
       FOOTER_Y,
       { align: 'center' },

@@ -16,6 +16,10 @@ def collect_host_profile(db_path: str = "") -> dict[str, Any]:
     path = os.path.abspath(db_path) if db_path else "."
     disk_dir = os.path.dirname(path) or "."
     vm = psutil.virtual_memory()
+    try:
+        cpu_percent = float(psutil.cpu_percent(interval=None))
+    except Exception:
+        cpu_percent = 0.0
     disk_total = 0
     disk_used = 0
     try:
@@ -27,6 +31,7 @@ def collect_host_profile(db_path: str = "") -> dict[str, Any]:
     return {
         "cpu_count": psutil.cpu_count(logical=False) or 1,
         "cpu_count_logical": psutil.cpu_count(logical=True) or 1,
+        "cpu_percent": round(cpu_percent, 1),
         "memory_total_bytes": vm.total,
         "memory_available_bytes": vm.available,
         "disk_total_bytes": disk_total,

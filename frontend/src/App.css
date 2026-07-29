@@ -1,6 +1,13 @@
 /* Design tokens live in frontend/src/styles/tokens.css (imported before this file).
  * App.css retains layout, reset, and component-global rules only. */
 
+:root {
+  --shell-control-height: clamp(40px, 5vh, 48px);
+  --shell-font-body: clamp(13px, 1.6vw, 15px);
+  --shell-font-label: clamp(11px, 1.4vw, 13px);
+  --shell-gap: clamp(8px, 1.2vw, 16px);
+}
+
 /* ── Reset ─────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -165,6 +172,22 @@ textarea:focus-visible {
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1400px) {
+  .app-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .control-toolbar--fields {
+    gap: var(--shell-gap, 12px);
+  }
+
+  .header-tab {
+    min-height: var(--shell-control-height, 40px);
+    font-size: var(--shell-font-label, 12px);
   }
 }
 

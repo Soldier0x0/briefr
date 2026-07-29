@@ -4,6 +4,7 @@ import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 import { inboundBucketTip } from '../../utils/domainTermTips.js'
+import { formatClientAddressLabel } from '../../utils/ipDisplay.js'
 
 function BucketRow({ bucket, expanded, onToggle }) {
   const tip = inboundBucketTip(bucket.name)
@@ -29,8 +30,8 @@ function BucketRow({ bucket, expanded, onToggle }) {
       </tr>
       {expanded && bucket.top_consumers.map(c => (
         <tr key={c.key} style={{ background: 'var(--bg3)' }}>
-          <td colSpan={3} style={{ paddingLeft: '2rem', fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--fg2)' }}>
-            {c.key}
+          <td colSpan={3} style={{ paddingLeft: '2rem', fontFamily: 'monospace', fontSize: 'var(--shell-font-body, 0.8125rem)', color: 'var(--fg2)' }}>
+            {formatClientAddressLabel(c.key)}
           </td>
           <td colSpan={2} style={{ fontSize: '0.78rem', color: 'var(--fg2)' }}>
             {c.hits.toLocaleString()} hits

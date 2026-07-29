@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { fetchStatsTimeline } from '../api.js'
-import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
+import { useStatsTimeline } from '../hooks/useStatsTimeline.js'
 import {
   buildHeatmapGrid,
   heatmapColor,
@@ -36,21 +35,25 @@ function formatTooltipDate(isoDate) {
 }
 
 export default function TimelineHeatmap({ filters, onFiltersChange, fetchEnabled = true }) {
-  const [timeline, setTimeline] = useState([])
-  const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches
   )
   const [hovered, setHovered] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
-  const [error, setError] = useState(null)
-  const [errorRequestId, setErrorRequestId] = useState(null)
   const wrapRef = useRef(null)
 
   const displayDays = isMobile ? MOBILE_DAYS : DESKTOP_DAYS
   const weekCount = weekCountForDays(displayDays)
   const cellSize = isMobile ? 10 : 12
+
+  const {
+    timeline,
+    loading,
+    error,
+    errorRequestId,
+    reload: loadTimeline,
+  } = useStatsTimeline(displayDays, { enabled: fetchEnabled })
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_MQ)
@@ -58,36 +61,6 @@ export default function TimelineHeatmap({ filters, onFiltersChange, fetchEnabled
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-
-  const loadTimeline = useCallback(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setErrorRequestId(null)
-    fetchStatsTimeline(DESKTOP_DAYS)
-      .then(data => {
-        if (!cancelled) setTimeline(Array.isArray(data) ? data : [])
-      })
-      .catch(err => {
-        if (!cancelled) {
-          setTimeline([])
-          setError(err?.message || 'Failed to load activity timeline.')
-          setErrorRequestId(err?.requestId || null)
-          notifyApiError(err)
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!fetchEnabled) return undefined
-    return loadTimeline()
-  }, [loadTimeline, fetchEnabled])
 
   const slicedTimeline = useMemo(() => {
     if (!timeline.length) return []
@@ -171,7 +144,7 @@ export default function TimelineHeatmap({ filters, onFiltersChange, fetchEnabled
                   </>
                 )}
               </span>
-              <button type="button" className="timeline-heatmap-retry" onClick={loadTimeline}>
+              <button type="button" className="timeline-heatmap-retry" onClick={() => loadTimeline(false)}>
                 Retry
               </button>
             </div>

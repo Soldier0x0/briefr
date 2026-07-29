@@ -3,13 +3,13 @@
  * Heavy PDF libs load on first export via dynamic import — not on first paint.
  */
 import { fetchCVE, fetchCVECorrelation, fetchCVEDetection, fetchCVESentences } from '../api.js'
-import { appOrigin } from './appLinks.js'
 import {
   aiFooterNoteForSource,
   formatExecutiveSummaryBody,
   loadPdfExecutiveSummary,
 } from './pdfAiSummary.js'
 import { getReportTimestamp } from './timezone.js'
+import { sanitizePdfText, pdfContentWidth } from './pdfText.js'
 import {
   BRAND,
   PAGE_W,
@@ -19,6 +19,7 @@ import {
   FONT_BODY,
   FONT_MONO,
   FOOTER_COPYRIGHT,
+  PUBLIC_SITE_URL,
   hexToRgb,
 } from './exportCommon.js'
 
@@ -55,7 +56,7 @@ function severityBorderColor(sev) {
 
 function splitLines(doc, text, maxWidth) {
   if (!text) return []
-  return doc.splitTextToSize(String(text).replace(/\r\n/g, '\n'), maxWidth)
+  return doc.splitTextToSize(sanitizePdfText(text), maxWidth)
 }
 
 function ensureSpace(ctx, needed) {
@@ -79,7 +80,7 @@ function applyFootersAndStripes(doc, meta) {
       FOOTER_Y - 3,
       { align: 'center' },
     )
-    const footer = `BRIEFR — ${appOrigin() || 'self-hosted'} | Generated ${meta.timestamp} | Page ${p} of ${total}`
+    const footer = `BRIEFR — ${PUBLIC_SITE_URL} | Generated ${meta.timestamp} | Page ${p} of ${total}`
     doc.text(footer, PAGE_W / 2, FOOTER_Y, { align: 'center' })
     if (meta.aiFooterNote) {
       doc.setFontSize(6)
@@ -90,9 +91,12 @@ function applyFootersAndStripes(doc, meta) {
 }
 
 function drawSection(ctx, title, bodyLines, borderRgb) {
-  const maxW = PAGE_W - MARGIN * 2 - 4
-  const lines = Array.isArray(bodyLines) ? bodyLines : splitLines(ctx.doc, bodyLines, maxW)
-  const blockH = 10 + lines.length * 4.5 + 6
+  const innerPad = 10
+  const maxW = pdfContentWidth(PAGE_W, MARGIN, innerPad)
+  const body = Array.isArray(bodyLines) ? bodyLines.join('\n\n') : bodyLines
+  const lines = splitLines(ctx.doc, body, maxW)
+  const lineH = 4.5
+  const blockH = 9 + lines.length * lineH + 4
   ensureSpace(ctx, blockH)
 
   const x = MARGIN
@@ -105,16 +109,12 @@ function drawSection(ctx, title, bodyLines, borderRgb) {
   ctx.doc.setFont(FONT_MONO, 'bold')
   ctx.doc.setFontSize(8)
   ctx.doc.setTextColor(...hexToRgb(BRAND))
-  ctx.doc.text(`// ${title}`, x + 5, y0 + 5)
+  ctx.doc.text(`// ${title}`, x + innerPad - 5, y0 + 5)
 
   ctx.doc.setFont(FONT_BODY, 'normal')
   ctx.doc.setFontSize(9)
   ctx.doc.setTextColor(30, 30, 30)
-  let y = y0 + 11
-  lines.forEach(line => {
-    ctx.doc.text(line, x + 5, y)
-    y += 4.5
-  })
+  ctx.doc.text(lines, x + innerPad - 5, y0 + 11, { maxWidth: maxW, lineHeightFactor: 1.35 })
   ctx.y = y0 + blockH
 }
 
@@ -221,13 +221,17 @@ function drawPageHeader(doc, meta, cve, isFirstPageOfCve = true) {
 
     doc.setFontSize(8)
     badges.forEach(b => {
-      const w = doc.getTextWidth(b) + 6
+      const padX = 3
+      const padY = 1.5
+      const textW = doc.getTextWidth(b)
+      const boxW = textW + padX * 2
+      const boxH = 5
       doc.setDrawColor(...hexToRgb(BRAND))
       doc.setLineWidth(0.3)
-      doc.rect(badgeX, badgeY - 4, w, 6)
+      doc.rect(badgeX, badgeY - boxH + padY, boxW, boxH)
       doc.setTextColor(...hexToRgb(BRAND))
-      doc.text(b, badgeX + 3, badgeY)
-      badgeX += w + 4
+      doc.text(b, badgeX + padX, badgeY)
+      badgeX += boxW + 4
     })
     return 38
   }

@@ -584,6 +584,7 @@
 .chart-data-table {
   margin-top: 0.5rem;
   border-top: 1px solid var(--border-subtle, var(--border));
+  contain: layout style;
 }
 
 .chart-data-table-summary {
@@ -615,11 +616,15 @@
   display: none;
 }
 
-.chart-data-table-summary:hover,
+.chart-data-table-summary:hover {
+  color: var(--text-secondary, var(--text2));
+}
+
 .chart-data-table-summary:focus-visible {
   color: var(--text-secondary, var(--text2));
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .chart-data-table-wrap {

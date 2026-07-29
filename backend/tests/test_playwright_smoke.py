@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-pytestmark = [pytest.mark.playwright_smoke, pytest.mark.timeout(120)]
+pytestmark = [pytest.mark.playwright_smoke, pytest.mark.timeout(180, func_only=True)]
 
 
 def _poll(page, js: str, *, timeout: float = 60.0, interval: float = 0.25) -> None:

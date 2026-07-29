@@ -13,6 +13,8 @@ def test_collect_host_profile_returns_psutil_values(monkeypatch, tmp_path):
     db_path.write_bytes(b"x")
     profile = collect_host_profile(db_path=str(db_path))
     assert profile["cpu_count"] >= 1
+    assert "cpu_percent" in profile
+    assert 0 <= profile["cpu_percent"] <= 100
     assert profile["memory_total_bytes"] > 0
     assert profile["disk_total_bytes"] > 0
     assert profile["disk_path"]

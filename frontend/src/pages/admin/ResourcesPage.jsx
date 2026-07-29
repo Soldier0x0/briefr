@@ -15,6 +15,7 @@ const ResourceLineChart = lazy(() =>
 )
 
 const WINDOWS = ['1d', '3d', '7d', '30d']
+const HOST_PROFILE_POLL_MS = 15_000
 
 function fmtSavings(rec) {
   const parts = []
@@ -54,10 +55,27 @@ function SubsystemTable({ rows }) {
 function RecommendationRow({ rec, onApply }) {
   const savings = fmtSavings(rec)
   const severity = rec.severity || 'info'
+  const confidence = rec.confidence || 'medium'
   return (
     <div className={`admin-efficiency-rec admin-efficiency-rec-${severity}`}>
-      <div className="admin-efficiency-rec-title">{rec.title}</div>
+      <div className="admin-efficiency-rec-title">
+        {rec.title}
+        {rec.confidence && (
+          <span className="admin-efficiency-rec-confidence mono">{confidence} confidence</span>
+        )}
+      </div>
       <p className="admin-efficiency-rec-desc">{rec.description}</p>
+      {rec.basis && (
+        <p className="admin-efficiency-rec-meta">
+          <strong>Based on:</strong> {rec.basis}
+        </p>
+      )}
+      {rec.impact_risk && (
+        <p className="admin-efficiency-rec-meta">
+          <strong>If applied:</strong> {rec.impact_risk}
+          {rec.reversible === false ? ' Not easily reversible.' : rec.reversible ? ' Reversible via config.' : ''}
+        </p>
+      )}
       {savings && <p className="mono admin-efficiency-rec-savings">{savings}</p>}
       {rec.config_key && rec.suggested_value != null && (
         <button
@@ -78,8 +96,13 @@ function EfficiencyPanel({ report, onApplyConfig }) {
     <div className="admin-card admin-efficiency-panel">
       <div className="admin-card-title">
         Efficiency recommendations
-        <HelpTip text="Live analysis of disk, memory, DB, and API overhead. Suggestions preserve functionality — review before applying." />
+        <HelpTip text="Rule-based analysis of disk, memory, DB tables, API metering, and pool usage. Each suggestion shows the measured basis and expected side effects. Apply opens a diff review — nothing changes until you confirm. Auto-scaling is not enabled; these are manual config tunings only." />
       </div>
+      <p className="admin-efficiency-panel-lede">
+        Recommendations are generated from live host metrics (psutil), table sizes, and 24h API event counts.
+        They target overhead — not core CVE ingest. Review the basis and impact before applying; we do not
+        auto-apply or auto-scale resources.
+      </p>
       <SubsystemTable rows={report.subsystems} />
       {report.recommendations?.length > 0 ? (
         <div className="admin-efficiency-rec-list">
@@ -110,15 +133,38 @@ function CapacityBar({ label, used, total, sub }) {
   )
 }
 
-function HostCapacityCard({ profile }) {
+function PercentCapacityBar({ label, percent, sub }) {
+  const pct = Math.min(100, Math.max(0, Math.round(Number(percent) || 0)))
+  return (
+    <div className="admin-capacity-bar-wrap">
+      <div className="admin-capacity-bar-header">
+        <span>{label}</span>
+        <span className="mono">{pct}%</span>
+      </div>
+      <div className="disk-bar">
+        <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(pct)}`} style={{ width: `${pct}%` }} />
+      </div>
+      {sub && <p className="admin-capacity-bar-sub mono">{sub}</p>}
+    </div>
+  )
+}
+
+function HostCapacityCard({ profile, live = false }) {
   if (!profile?.memory_total_bytes) return null
   const memUsed = profile.memory_total_bytes - profile.memory_available_bytes
+  const sampledAt = profile.sampled_at ? fmtIsoMono(profile.sampled_at) : null
   return (
     <div className="admin-card admin-host-capacity">
       <div className="admin-card-title">
         Host capacity
-        <HelpTip text="Live hardware limits from this server (psutil). Consumption includes all processes on the host, not only BRIEFR." />
+        {live && <span className="admin-host-live-badge mono" aria-live="polite">● live</span>}
+        <HelpTip text="Polled every 15s from this server via psutil. Bars show total host CPU and memory — all processes, not only BRIEFR. Disk is the DB data volume path." />
       </div>
+      <PercentCapacityBar
+        label="CPU (host)"
+        percent={profile.cpu_percent ?? 0}
+        sub={`${profile.cpu_count_logical ?? profile.cpu_count ?? '?'} logical CPUs`}
+      />
       <CapacityBar
         label="Memory"
         used={memUsed}
@@ -131,7 +177,8 @@ function HostCapacityCard({ profile }) {
         sub={profile.disk_path}
       />
       <p className="mono admin-host-meta">
-        {profile.hostname} · {profile.cpu_count_logical} logical CPUs
+        {profile.hostname}
+        {sampledAt ? ` · updated ${sampledAt}` : ''}
       </p>
     </div>
   )
@@ -264,6 +311,7 @@ export default function ResourcesPage({ toast, active = true }) {
   const windowKey = WINDOWS.includes(searchParams.get('window')) ? searchParams.get('window') : '1d'
   const [payload, setPayload] = useState(null)
   const [efficiency, setEfficiency] = useState(null)
+  const [liveHostProfile, setLiveHostProfile] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [pendingConfig, setPendingConfig] = useState(null)
   const [applyingConfig, setApplyingConfig] = useState(false)
@@ -292,6 +340,25 @@ export default function ResourcesPage({ toast, active = true }) {
   }, [windowKey, active])
 
   useEffect(() => { load() }, [load])
+
+  const refreshHostProfile = useCallback(async () => {
+    if (!active) return
+    try {
+      const res = await adminApi.get('/resources/host-profile')
+      if (res.ok) setLiveHostProfile(await res.json())
+    } catch {
+      /* keep last snapshot */
+    }
+  }, [active])
+
+  useEffect(() => {
+    if (!active) return undefined
+    refreshHostProfile()
+    const timer = setInterval(refreshHostProfile, HOST_PROFILE_POLL_MS)
+    return () => clearInterval(timer)
+  }, [active, refreshHostProfile])
+
+  const hostProfile = liveHostProfile || payload?.host_profile
 
   function applyConfig(key, value) {
     setPendingConfig({ [key]: String(value) })
@@ -425,7 +492,7 @@ export default function ResourcesPage({ toast, active = true }) {
               </div>
             )}
 
-            <HostCapacityCard profile={payload?.host_profile} />
+            <HostCapacityCard profile={hostProfile} live={Boolean(liveHostProfile)} />
             <PoolStatsCard poolStats={payload?.pool_stats} />
             <EfficiencyPanel report={efficiency} onApplyConfig={applyConfig} />
 
@@ -437,7 +504,7 @@ export default function ResourcesPage({ toast, active = true }) {
                   fields={section.fields}
                   labels={section.labels}
                   tableTitle={section.label}
-                  hostProfile={payload?.host_profile}
+                  hostProfile={hostProfile}
                 />
               </div>
             ))}

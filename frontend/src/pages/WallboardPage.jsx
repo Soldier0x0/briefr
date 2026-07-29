@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import useVisibilityAwareInterval from '../hooks/useVisibilityAwareInterval.js'
 import { useSearchParams } from 'react-router-dom'
 import useModalLayer from '../hooks/useModalLayer.js'
 import {
@@ -358,12 +359,12 @@ export default function WallboardPage() {
   useEffect(() => {
     cancelledRef.current = false
     load()
-    const poll = setInterval(load, POLL_MS)
     return () => {
       cancelledRef.current = true
-      clearInterval(poll)
     }
   }, [load])
+
+  useVisibilityAwareInterval(load, POLL_MS)
 
   useEffect(() => {
     const rotate = setInterval(() => {

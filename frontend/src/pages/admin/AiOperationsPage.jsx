@@ -803,7 +803,7 @@ export default function AiOperationsPage({ toast, setPage }) {
   const [loadError, setLoadError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [retrievalHealth, setRetrievalHealth] = useState(null)
-  const [retrievalLoading, setRetrievalLoading] = useState(true)
+  const [retrievalLoading, setRetrievalLoading] = useState(false)
   const [retrievalError, setRetrievalError] = useState(null)
 
   const loadRetrieval = useCallback(async () => {
@@ -840,7 +840,12 @@ export default function AiOperationsPage({ toast, setPage }) {
   }, [])
 
   useEffect(() => { loadCore() }, [loadCore])
-  useEffect(() => { loadRetrieval() }, [loadRetrieval])
+
+  useEffect(() => {
+    if (tab === 'overview' && retrievalHealth == null && !retrievalLoading) {
+      loadRetrieval()
+    }
+  }, [tab, retrievalHealth, retrievalLoading, loadRetrieval])
 
   return (
     <div>

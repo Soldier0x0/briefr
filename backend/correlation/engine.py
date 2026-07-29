@@ -654,7 +654,9 @@ async def run_nightly_correlation(db, progress_cb=None) -> dict:
 
 
 async def prefetch_pulse_iocs_for_nightly(
-    api_key: str, max_pulses: int | None = None
+    api_key: str,
+    max_pulses: int | None = None,
+    db: Any | None = None,
 ) -> int:
     """
     Pre-fetch IOC data for pulses not yet in otx_pulse_iocs.
@@ -669,7 +671,10 @@ async def prefetch_pulse_iocs_for_nightly(
     if max_pulses is None:
         max_pulses = get_otx_ioc_sync_max_per_run()
 
-    db = await get_db()
+    own_db = db is None
+    if own_db:
+        db = await get_db()
+
     try:
         missing_rows = await db.execute_fetchall(
             """
@@ -691,23 +696,24 @@ async def prefetch_pulse_iocs_for_nightly(
         """,
             (max_pulses,),
         )
-    finally:
-        await db.close()
 
-    fetched = 0
-    for row in missing_rows:
-        pulse_id = row["pulse_id"]
-        try:
-            iocs = await fetch_pulse_iocs(pulse_id, api_key)
-            if not iocs:
-                continue
-            db = await get_db()
+        fetched = 0
+        for index, row in enumerate(missing_rows):
+            pulse_id = row["pulse_id"]
             try:
+                iocs = await fetch_pulse_iocs(pulse_id, api_key)
+                if not iocs:
+                    continue
                 await store_otx_pulse_iocs(db, pulse_id, iocs)
-                await db.commit()
                 fetched += 1
-            finally:
-                await db.close()
-        except Exception as exc:
-            logger.warning("IOC prefetch failed for pulse %s: %s", pulse_id, exc)
-    return fetched
+                if (index + 1) % 10 == 0:
+                    await db.commit()
+            except Exception as exc:
+                logger.warning("IOC prefetch failed for pulse %s: %s", pulse_id, exc)
+
+        if fetched:
+            await db.commit()
+        return fetched
+    finally:
+        if own_db:
+            await db.close()

@@ -437,6 +437,16 @@ async def get_resources(window: str = "1d"):
         await db.close()
 
 
+@router.get("/resources/host-profile")
+async def get_resources_host_profile():
+    """Lightweight live host snapshot for admin capacity bars (poll every ~15s)."""
+    from host_profile import collect_host_profile
+    import database as _database
+
+    db_path = os.path.abspath(_database.DB_PATH)
+    return collect_host_profile(db_path=db_path)
+
+
 @router.get("/resources/efficiency")
 async def get_resources_efficiency():
     from efficiency_audit import build_efficiency_report
