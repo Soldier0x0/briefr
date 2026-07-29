@@ -138,8 +138,9 @@ export function BackupSizesChart({ rows }) {
 
   return (
     <ChartShell height={200} ariaLabel="Backup archive sizes chart" className="admin-ops-chart-wrap">
+      <p className="admin-chart-axis-caption mono">Size ({scale.unit})</p>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={rechartsMargin({ left: 36, right: 12, top: 12, bottom: 20 })}>
+        <LineChart data={data} margin={rechartsMargin({ left: 48, right: 12, top: 28, bottom: 20 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
             type="category"
@@ -154,18 +155,11 @@ export function BackupSizesChart({ rows }) {
             tickFormatter={(value) => data[Number(value)]?.tickLabel || String(value)}
           />
           <YAxis
-            width={56}
+            width={48}
             domain={[0, scale.domainMax]}
             tick={axisTickStyle(theme)}
             allowDecimals={false}
             tickFormatter={(v) => scale.formatTick(Number(v))}
-            label={{
-              value: `Size (${scale.unit})`,
-              angle: -90,
-              position: 'insideLeft',
-              offset: 12,
-              style: axisLabelStyle(theme),
-            }}
           />
           <Tooltip
             cursor={tooltipCursorStyle(theme)}
@@ -204,8 +198,9 @@ export function WebhookDeliveriesChart({ buckets }) {
 
   return (
     <ChartShell height={200} ariaLabel="Webhook deliveries chart" className="admin-ops-chart-wrap">
+      <p className="admin-chart-axis-caption mono">Deliveries (count)</p>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={rechartsMargin({ left: 8, right: 12, bottom: 24 })}>
+        <BarChart data={data} margin={rechartsMargin({ left: 48, right: 12, top: 28, bottom: 24 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
           <XAxis
             type="category"
@@ -221,14 +216,9 @@ export function WebhookDeliveriesChart({ buckets }) {
             }}
           />
           <YAxis
+            width={48}
             tick={axisTickStyle(theme)}
             allowDecimals={false}
-            label={{
-              value: 'Deliveries',
-              angle: -90,
-              position: 'insideLeft',
-              style: axisLabelStyle(theme),
-            }}
           />
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
