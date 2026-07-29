@@ -24,6 +24,13 @@ describe('formatClientAddresses', () => {
     })
   })
 
+  it('rejects malformed IPv4-mapped keys', () => {
+    assert.deepEqual(formatClientAddresses('::ffff:99'), {
+      ipv4: 'N/A',
+      ipv6: '::ffff:99',
+    })
+  })
+
   it('returns N/A for empty input', () => {
     assert.deepEqual(formatClientAddresses(''), { ipv4: 'N/A', ipv6: 'N/A' })
     assert.deepEqual(formatClientAddresses(null), { ipv4: 'N/A', ipv6: 'N/A' })

@@ -16,7 +16,7 @@ export function formatClientAddresses(raw) {
   if (!key) return { ipv4: 'N/A', ipv6: 'N/A' }
 
   const mapped = key.match(IPV4_MAPPED_RE)
-  if (mapped) {
+  if (mapped && IPV4_RE.test(mapped[1])) {
     return { ipv4: mapped[1], ipv6: 'N/A' }
   }
 

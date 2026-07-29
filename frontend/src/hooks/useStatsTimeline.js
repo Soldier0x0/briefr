@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchStatsTimeline } from '../api.js'
 
 const cache = new Map()
@@ -33,9 +33,15 @@ export function useStatsTimeline(days, options = {}) {
   const [loading, setLoading] = useState(() => enabled && !getCached(days))
   const [error, setError] = useState(null)
   const [errorRequestId, setErrorRequestId] = useState(null)
+  const cancelRef = useRef(null)
 
   const reload = useCallback((useCache = true) => {
     if (!enabled) return undefined
+
+    if (cancelRef.current) {
+      cancelRef.current()
+      cancelRef.current = null
+    }
 
     if (useCache) {
       const hit = getCached(days)
@@ -49,6 +55,9 @@ export function useStatsTimeline(days, options = {}) {
     }
 
     let cancelled = false
+    cancelRef.current = () => {
+      cancelled = true
+    }
     setLoading(true)
     setError(null)
     setErrorRequestId(null)
@@ -69,6 +78,7 @@ export function useStatsTimeline(days, options = {}) {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+        if (cancelRef.current) cancelRef.current = null
       })
 
     return () => {
@@ -81,7 +91,14 @@ export function useStatsTimeline(days, options = {}) {
       setLoading(false)
       return undefined
     }
-    return reload(true)
+    const cleanup = reload(true)
+    return () => {
+      if (cleanup) cleanup()
+      if (cancelRef.current) {
+        cancelRef.current()
+        cancelRef.current = null
+      }
+    }
   }, [enabled, reload])
 
   return {

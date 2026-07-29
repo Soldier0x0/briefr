@@ -31,5 +31,6 @@ Manual pass after Phase F responsive token work. Run with two snapped browser wi
 
 ## Regression
 
+- [ ] `./scripts/verify-local.sh` green (full local merge gate)
 - [ ] `npm run test:unit` green
 - [ ] `npm run build` green
