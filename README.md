@@ -9,7 +9,7 @@
 <p align="center">
   <img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-blue.svg">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue.svg">
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.139-009688.svg">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.140-009688.svg">
   <img alt="React 19" src="https://img.shields.io/badge/React-19.2-61DAFB.svg?logo=react&logoColor=white">
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-336791.svg?logo=postgresql&logoColor=white">
   <img alt="Self-hosted" src="https://img.shields.io/badge/Self--hosted-yes-success.svg">
