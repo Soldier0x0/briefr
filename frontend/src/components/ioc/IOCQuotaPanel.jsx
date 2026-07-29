@@ -58,7 +58,7 @@ function quotaChipFillClass(warning) {
 }
 
 function serviceDisplayName(svc) {
-  if (svc.service === 'greynoise') return 'GreyNoise — optional, per lookup'
+  if (svc.service === 'greynoise') return 'GreyNoise'
   return svc.name
 }
 
@@ -154,14 +154,14 @@ export default function IOCQuotaPanel() {
                 <div key={svc.service} className="ioc-quota-chip">
                   <span className="ioc-quota-chip-name mono">{serviceDisplayName(svc)}</span>
                   <span className="ioc-quota-chip-val mono">{quotaChipSummary(svc)}</span>
-                  {pct != null && (
-                    <div className="ioc-quota-chip-bar" aria-hidden="true">
+                  <div className="ioc-quota-chip-bar" aria-hidden={pct == null}>
+                    {pct != null && (
                       <div
                         className={`ioc-quota-chip-fill ${quotaChipFillClass(svc.warning)}`}
                         style={{ width: `${Math.min(pct, 100)}%` }}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )
             })}

@@ -1,4 +1,5 @@
 import { fetchAiSummary } from '../api.js'
+import { sanitizePdfText } from './pdfText.js'
 
 /**
  * Load executive summary for PDF export only (called from download handlers).
@@ -45,5 +46,5 @@ export function formatExecutiveSummaryBody(summaryData) {
   if (Array.isArray(findings) && findings.length) {
     parts.push('\n\nKey findings:\n' + findings.map(f => `• ${f}`).join('\n'))
   }
-  return parts.join('')
+  return sanitizePdfText(parts.join(''))
 }
