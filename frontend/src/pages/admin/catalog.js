@@ -329,19 +329,6 @@ export const TERM_GLOSSARY = {
   },
 }
 
-const METERING_ACTOR_LABELS = {
-  job: 'Job',
-  queue: 'Queue',
-  user: 'User',
-}
-
-export function formatMeteringActorLabel(actorType) {
-  if (!actorType) return '—'
-  const key = String(actorType).toLowerCase()
-  if (METERING_ACTOR_LABELS[key]) return METERING_ACTOR_LABELS[key]
-  return String(actorType).replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
 export function termLabel(key, mode = 'operator') {
   const entry = TERM_GLOSSARY[key]
   if (!entry) return key

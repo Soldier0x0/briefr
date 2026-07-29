@@ -25,6 +25,12 @@ endpoints:
   path: /api/admin/api-keys/health/run
   component_id: routers-admin-tokens
 - method: GET
+  path: /api/admin/api-usage/events
+  component_id: routers-admin-jobs
+- method: GET
+  path: /api/admin/api-usage/events/export
+  component_id: routers-admin-jobs
+- method: GET
   path: /api/admin/api-usage/metering
   component_id: routers-admin-jobs
 - method: GET
