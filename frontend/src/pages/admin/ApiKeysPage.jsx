@@ -493,7 +493,6 @@ export default function ApiKeysPage({ toast }) {
         schema={schema}
         onSaveKey={saveKey}
         savingKeys={savingKeys}
-        toast={toast}
       />
 
       <div className="admin-card" style={{ marginBottom: 'var(--space-4)' }}>

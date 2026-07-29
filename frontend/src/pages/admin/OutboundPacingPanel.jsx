@@ -9,10 +9,11 @@ const TIER_OPTIONS = [
   { value: 'custom', label: 'Custom per-source overrides' },
 ]
 
-export default function OutboundPacingPanel({ config, schema, onSaveKey, savingKeys, toast }) {
+export default function OutboundPacingPanel({ config, schema, onSaveKey, savingKeys }) {
   const [pacingMeta, setPacingMeta] = useState(null)
   const [overrides, setOverrides] = useState({})
   const [loadError, setLoadError] = useState(null)
+  const [pacingLoading, setPacingLoading] = useState(true)
 
   const queue = config?.queue || {}
   const tier = queue.OUTBOUND_PACING_TIER || 'free'
@@ -20,6 +21,7 @@ export default function OutboundPacingPanel({ config, schema, onSaveKey, savingK
   const overridesField = useMemo(() => (schema || []).find(f => f.key === 'OUTBOUND_PACING_OVERRIDES'), [schema])
 
   const loadPacing = useCallback(async () => {
+    setPacingLoading(true)
     try {
       const res = await adminApi.get('/outbound-pacing')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -34,6 +36,8 @@ export default function OutboundPacingPanel({ config, schema, onSaveKey, savingK
       }
     } catch (e) {
       setLoadError(e?.message || 'Pacing metadata unavailable')
+    } finally {
+      setPacingLoading(false)
     }
   }, [queue.OUTBOUND_PACING_OVERRIDES])
 
@@ -47,9 +51,8 @@ export default function OutboundPacingPanel({ config, schema, onSaveKey, savingK
 
   async function saveOverrides() {
     if (!overridesField) return
-    await onSaveKey('OUTBOUND_PACING_OVERRIDES', JSON.stringify(overrides), overridesField)
-    toast?.('Outbound pacing overrides saved', true)
-    loadPacing()
+    const ok = await onSaveKey('OUTBOUND_PACING_OVERRIDES', JSON.stringify(overrides), overridesField)
+    if (ok) loadPacing()
   }
 
   const sources = pacingMeta?.sources || {}
@@ -60,7 +63,13 @@ export default function OutboundPacingPanel({ config, schema, onSaveKey, savingK
         Outbound API pacing
         <HelpTip text="Instance-wide minimum spacing between outbound HTTP calls. BRIEFR queues requests instead of dropping them." />
       </div>
+      {pacingLoading && !pacingMeta && (
+        <p className="metering-empty">Loading pacing metadata…</p>
+      )}
       {loadError && <p className="metering-empty mono" style={{ color: 'var(--status-error)' }}>{loadError}</p>}
+      {!pacingLoading && !loadError && pacingMeta && Object.keys(sources).length === 0 && (
+        <p className="metering-empty">No outbound pacing sources configured.</p>
+      )}
       <div className="config-grid" style={{ marginTop: '0.5rem' }}>
         <div className="config-row">
           <div className="config-row-label">
