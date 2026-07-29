@@ -28,7 +28,7 @@ BRIEFR aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, and optional threat f
 | Link | What it is |
 |------|------------|
 | **Live demo** | https://briefrdemo.projectjupiter.in — 1:1 analyst UI with fixture data (no install, no backend) |
-| **Example instance** | https://briefr.projectjupiter.in — full PostgreSQL-backed deployment with live feeds |
+| **Self-host** | [docs/SELF_HOST.md](docs/SELF_HOST.md) — install your own PostgreSQL-backed deployment |
 | **Documentation** | https://docs.projectjupiter.in |
 
 The demo is a static showroom ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)): same shell as production, frozen JSON instead of a database. Forge, hunt-pack generation, and IOC enrichment are visual-only.
@@ -37,7 +37,7 @@ The demo is a static showroom ([`briefr-demo`](https://github.com/Soldier0x0/bri
 
 ## Screenshots
 
-PostgreSQL-backed instance (July 2026 reference data). Regenerate: [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md). On [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/user-guide/using-briefr), click any screenshot to expand inline.
+Reference screenshots from a self-hosted PostgreSQL deployment (July 2026). Regenerate: [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md). On [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/user-guide/using-briefr), click any screenshot to expand inline.
 
 <table>
 <tr>
