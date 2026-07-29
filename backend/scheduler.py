@@ -2105,12 +2105,14 @@ async def run_api_key_health_check() -> bool:
         from monitoring.api_key_health import run_api_key_health_checks
 
         stats = await run_api_key_health_checks(db)
+        keys_checked = int(stats.get("checked", 0))
+        keys_healthy = int(stats.get("healthy", 0))
         logger.info(
             "API key health check complete: %d configured keys checked, %d healthy",
-            stats.get("checked", 0),
-            stats.get("healthy", 0),
+            keys_checked,
+            keys_healthy,
         )
-        return stats.get("checked", 0) > 0
+        return keys_checked > 0
     except Exception as exc:
         logger.error(
             "API key health check failed: %s",

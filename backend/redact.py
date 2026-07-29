@@ -110,6 +110,20 @@ def mask_audit_log_target(action: str, target: str | None) -> str:
 
 
 _WEBHOOK_ERROR_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+_LOG_URL_RE = re.compile(r"https?://[^\s\"']+", re.IGNORECASE)
+_LOG_BEARER_RE = re.compile(r"Bearer\s+[A-Za-z0-9._~+/=-]+", re.IGNORECASE)
+
+
+def scrub_log_text(text: str | None) -> str:
+    """Redact URLs, bearer tokens, and secret-shaped values from log export text."""
+    if not text:
+        return ""
+    cleaned = str(text)
+    cleaned = _LOG_BEARER_RE.sub("Bearer [redacted]", cleaned)
+    cleaned = _LOG_URL_RE.sub("[redacted-url]", cleaned)
+    if _looks_like_secret_value(cleaned):
+        return "[redacted]"
+    return cleaned
 
 
 def mask_webhook_delivery_error(error: str | None) -> str | None:

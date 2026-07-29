@@ -36,7 +36,7 @@ SyslogIdentifier=briefr-backend
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ReadWritePaths=/opt/briefr/backend /var/lib/briefr/backups -/var/lib/briefr/models
+ReadWritePaths=/opt/briefr/backend /var/lib/briefr/backups /var/lib/briefr/intel-publish -/var/lib/briefr/models
 ReadOnlyPaths=/opt/briefr/venv
 
 [Install]

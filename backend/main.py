@@ -9,6 +9,8 @@ from auth_middleware import session_auth_middleware
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -191,6 +193,41 @@ async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
     return JSONResponse(
         status_code=503,
         content={"detail": "Server is busy — please retry in a few seconds."},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    request_id = request_id_var.get() or ""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "request_id": request_id},
+        headers={"X-Request-ID": request_id} if request_id else {},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    request_id = request_id_var.get() or ""
+    headers = dict(exc.headers or {})
+    if request_id:
+        headers["X-Request-ID"] = request_id
+    detail = exc.detail
+    if isinstance(detail, (dict, list)):
+        content = {"detail": detail, "request_id": request_id}
+    else:
+        content = {"detail": detail, "request_id": request_id}
+    return JSONResponse(status_code=exc.status_code, content=content, headers=headers)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = request_id_var.get() or ""
+    headers = {"X-Request-ID": request_id} if request_id else {}
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "request_id": request_id},
+        headers=headers,
     )
 
 

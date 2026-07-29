@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,8 @@ from fastapi import BackgroundTasks, HTTPException, Request
 from database import get_db
 from dependencies import audit
 from destructive_actions import require_confirm
+from http_errors import admin_error_detail
+from path_safety import PathValidationError, resolve_intel_snapshot_bundle
 
 from .router import router
 
@@ -43,11 +46,15 @@ async def get_intel_snapshot_status(request: Request) -> dict[str, Any]:
     }
 
 
-def _run_import(path: str, mode: str, database_url: str, replace_intel: bool) -> None:
-    import sys
-
+def _repo_scripts_path() -> Path:
     repo = Path(__file__).resolve().parents[3]
-    sys.path.insert(0, str(repo.parent / "scripts"))
+    return repo / "scripts"
+
+
+def _run_import(path: str, mode: str, database_url: str, replace_intel: bool) -> None:
+    scripts_dir = str(_repo_scripts_path())
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
     from import_intel_snapshot import import_snapshot
 
     import_snapshot(
@@ -71,16 +78,17 @@ async def start_intel_snapshot_import(
     try:
         require_confirm("intel_snapshot.import", confirm_text)
     except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
+        raise HTTPException(400, admin_error_detail(exc)) from exc
     mode = str(body.get("mode", "merge")).strip().lower()
     if mode not in {"bootstrap", "merge"}:
         raise HTTPException(400, "mode must be bootstrap or merge")
     input_path = str(body.get("input_path", "")).strip()
     if not input_path:
         raise HTTPException(400, "input_path is required (server-local bundle path)")
-    path = Path(input_path)
-    if not path.is_file():
-        raise HTTPException(400, f"bundle not found: {input_path}")
+    try:
+        path = resolve_intel_snapshot_bundle(input_path)
+    except PathValidationError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     database_url = str(body.get("database_url") or resolve_database_url()).strip()
     if not is_postgres(database_url):
@@ -93,7 +101,7 @@ async def start_intel_snapshot_import(
     await audit(request, "intel_snapshot.import.start", f"{mode}:{path.name}")
     background_tasks.add_task(
         _run_import,
-        str(path.resolve()),
+        str(path),
         mode,
         database_url,
         replace_intel,

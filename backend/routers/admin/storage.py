@@ -20,6 +20,8 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from path_safety import PathValidationError, resolve_backup_archive
+
 from fastapi import BackgroundTasks, Depends, HTTPException, Query, Request, UploadFile, File
 from fastapi.responses import FileResponse
 
@@ -77,7 +79,10 @@ async def list_backups_endpoint(request: Request):
 async def verify_backup(filename: str, request: Request):
     await audit(request, "backup.verify", filename)
     backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
-    safe_path = pathlib.Path(backup_dir).resolve() / pathlib.Path(filename).name
+    try:
+        safe_path = resolve_backup_archive(filename, backup_dir=backup_dir)
+    except PathValidationError as exc:
+        raise HTTPException(400, str(exc)) from exc
     if not safe_path.exists():
         raise HTTPException(404, "Backup file not found")
     try:
@@ -92,8 +97,12 @@ async def verify_backup(filename: str, request: Request):
                     "details": f"Manifest parsed. integrity={manifest.get('integrity', 'unknown')}",
                 }
         return {"ok": True, "filename": filename, "details": "Archive opened successfully"}
-    except Exception as exc:
-        return {"ok": False, "filename": filename, "details": str(exc)[:300]}
+    except Exception:
+        return {
+            "ok": False,
+            "filename": filename,
+            "details": "Backup verification failed. Check server logs for details.",
+        }
 
 
 @router.post("/backups/run")
