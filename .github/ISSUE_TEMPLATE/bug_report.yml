@@ -1,0 +1,37 @@
+name: Bug report
+description: Something is broken — reproducible defect in BRIEFR
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    value: |
+      **Questions and install help** belong in [Discussions → Q&A](https://github.com/Soldier0x0/briefr/discussions/new?category=q-a), not here.
+
+      **Security issues:** see [SECURITY.md](https://github.com/Soldier0x0/briefr/blob/main/SECURITY.md) — email **harsha@projectjupiter.in**.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. …\n2. …\n3. …"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: BRIEFR version/commit, OS, Postgres vs SQLite, browser if UI-related
+      placeholder: main @ abc1234, Debian 12, Postgres 16 + pgvector, Chrome 138
+    validations:
+      required: true

@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    value: |
+      For open-ended ideas and early feedback, [Discussions → Ideas](https://github.com/Soldier0x0/briefr/discussions/new?category=ideas) works too.
+
+      Check [`docs/PRODUCT_STATUS.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/PRODUCT_STATUS.md) and open PRs before duplicating known work.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What analyst or operator workflow does this unblock?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

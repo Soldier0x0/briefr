@@ -1,0 +1,39 @@
+title: Question
+labels: []
+body:
+  - type: markdown
+    value: |
+      Use this template for **install, config, and usage questions**.
+
+      - **Bugs with a repro** → [open an issue](https://github.com/Soldier0x0/briefr/issues/new/choose) instead
+      - **Security vulnerabilities** → email **harsha@projectjupiter.in** (see [SECURITY.md](https://github.com/Soldier0x0/briefr/blob/main/SECURITY.md)) — do not post here
+
+      **Before asking:** check [docs.projectjupiter.in](https://docs.projectjupiter.in) and [`docs/TROUBLESHOOTING.md`](https://github.com/Soldier0x0/briefr/blob/main/docs/TROUBLESHOOTING.md).
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: One clear question. Include BRIEFR version or commit if you know it.
+      placeholder: e.g. Hybrid search returns no semantic hits after enabling embeddings on Postgres 16…
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What have you tried?
+      description: Install path (SQLite / Postgres / production), relevant `.env` keys (no secrets), logs or health output.
+      placeholder: SELF_HOST §2, EMBEDDINGS_ENABLED=1, curl /api/health shows…
+    validations:
+      required: true
+  - type: dropdown
+    id: install_path
+    attributes:
+      label: Install path
+      options:
+        - SQLite dev (not production)
+        - Postgres + pgvector dev
+        - Production (systemd + nginx)
+        - Demo only (briefrdemo.projectjupiter.in)
+        - Not installed yet
+    validations:
+      required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & help (Discussions)
+    url: https://github.com/Soldier0x0/briefr/discussions/new?category=q-a
+    about: Install, config, and "is this expected?" — use Q&A, not issues
+  - name: Security vulnerability (private)
+    url: https://github.com/Soldier0x0/briefr/blob/main/SECURITY.md
+    about: Do not open public issues for security reports — email the maintainer

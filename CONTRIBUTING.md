@@ -65,9 +65,24 @@ Use `--full` when Postgres and optional tools are available.
 - Light-theme or component-library rewrites (dark terminal aesthetic is intentional)
 - STIX export / V2.0 platform scope (parked per roadmap)
 
+## Questions and community help
+
+Use [GitHub Discussions](https://github.com/Soldier0x0/briefr/discussions) for
+install, configuration, and “is this expected?” questions — start with
+[**Q&A**](https://github.com/Soldier0x0/briefr/discussions/new?category=q-a).
+
+| Channel | Use for |
+|---------|---------|
+| [Discussions → Q&A](https://github.com/Soldier0x0/briefr/discussions/new?category=q-a) | Install, config, usage help |
+| [Discussions → Ideas](https://github.com/Soldier0x0/briefr/discussions/new?category=ideas) | Early feature feedback |
+| [Issues](https://github.com/Soldier0x0/briefr/issues/new/choose) | Reproducible bugs and scoped feature requests |
+| [docs.projectjupiter.in](https://docs.projectjupiter.in) | Official documentation |
+
+Read the pinned [**Read this first**](https://github.com/Soldier0x0/briefr/discussions/categories/announcements) post before opening a thread.
+
 ## Security issues
 
-See [`SECURITY.md`](SECURITY.md) — **do not** open public issues for
+See [`SECURITY.md`](SECURITY.md) — **do not** open public issues or Discussions for
 vulnerabilities. Email **harsha@projectjupiter.in**.
 
 ## Code of conduct
