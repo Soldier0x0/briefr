@@ -49,6 +49,7 @@ export default function DbExplorerPanel({ toast, active = true }) {
 
   useEffect(() => {
     if (!rowsPayload?.total || !selectedTable) return
+    if (rowsPayload.filter_column) return
     setCatalog((prev) => {
       if (!prev?.tables) return prev
       return {
