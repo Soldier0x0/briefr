@@ -606,7 +606,7 @@
       "label": "routers.admin.storage",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 12,
+      "endpoint_count": 13,
       "source_refs": [
         {
           "type": "file",
