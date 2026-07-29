@@ -3,6 +3,7 @@ import { AlertTriangle, ExternalLink } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
 import StatCard from './shared/StatCard.jsx'
+import { formatClientAddressLabel } from '../../utils/ipDisplay.js'
 
 export default function SecurityPage() {
   const [security, setSecurity] = useState(null)
@@ -64,7 +65,9 @@ export default function SecurityPage() {
             <tbody>
               {security.top_rate_limit_consumers.map((row, i) => (
                 <tr key={`${row.key}-${row.bucket}-${i}`}>
-                  <td className="mono" style={{ fontSize: '0.75rem' }}>{row.key || '—'}</td>
+                  <td className="mono" style={{ fontSize: 'var(--shell-font-body, 0.8125rem)' }}>
+                    {row.key ? formatClientAddressLabel(row.key) : '—'}
+                  </td>
                   <td className="mono" style={{ fontSize: '0.75rem' }}>{row.bucket || '—'}</td>
                   <td>{row.hits ?? '—'}</td>
                 </tr>

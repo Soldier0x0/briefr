@@ -128,7 +128,7 @@ export default memo(function CVECard({
 
   function handleWatchlistPin(e) {
     e.stopPropagation()
-    onWatchlistPin?.()
+    onWatchlistPin?.(cve.cve_id)
   }
 
   const isPinned = watchlistState === 'pin'

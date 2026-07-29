@@ -346,21 +346,47 @@ export default function IOCLookup({ prefill }) {
         <label htmlFor="ioc-value-input" className="ioc-input-label">
           {formatSectionHeading('// INDICATOR')}
         </label>
-        <textarea
-          id="ioc-value-input"
-          className="ioc-value-input mono"
-          value={value}
-          onChange={handleValueChange}
-          onPaste={handlePaste}
-          onKeyDown={handleKeyDown}
-          placeholder="e.g. 8.8.8.8"
-          aria-label="Enter IOC value — IP address, file hash, or domain"
-          rows={1}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck="false"
-        />
+        <div className="ioc-search-row">
+          <textarea
+            id="ioc-value-input"
+            className="ioc-value-input ioc-search-input mono"
+            value={value}
+            onChange={handleValueChange}
+            onPaste={handlePaste}
+            onKeyDown={handleKeyDown}
+            placeholder="e.g. 8.8.8.8"
+            aria-label="Enter IOC value — IP address, file hash, or domain"
+            rows={1}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+          />
+          <div className="ioc-search-actions">
+            <button
+              type="button"
+              className="ioc-clear-btn mono"
+              onClick={clearLookup}
+              disabled={loading || !hasLookupState}
+              aria-label="Clear IOC lookup input and results"
+            >
+              CLEAR
+            </button>
+            <button
+              type="button"
+              className="ioc-lookup-btn ioc-btn-lookup"
+              onClick={() => runLookup()}
+              disabled={loading || !value.trim() || !detectedType}
+              aria-label="Run IOC lookup"
+            >
+              {loading ? (
+                <span className="btn-loading" aria-label="Searching...">
+                  <span /><span /><span />
+                </span>
+              ) : 'LOOKUP'}
+            </button>
+          </div>
+        </div>
 
         <div className="ioc-controls">
           {detectedType && (
@@ -377,27 +403,6 @@ export default function IOCLookup({ prefill }) {
               className="ioc-greynoise-opt mono"
             />
           )}
-          <button
-            className="ioc-lookup-btn"
-            onClick={() => runLookup()}
-            disabled={loading || !value.trim() || !detectedType}
-            aria-label="Run IOC lookup"
-          >
-            {loading ? (
-              <span className="btn-loading" aria-label="Searching...">
-                <span /><span /><span />
-              </span>
-            ) : 'LOOKUP'}
-          </button>
-          <button
-            type="button"
-            className="ioc-clear-btn mono"
-            onClick={clearLookup}
-            disabled={loading || !hasLookupState}
-            aria-label="Clear IOC lookup input and results"
-          >
-            CLEAR
-          </button>
         </div>
 
         {/* QA-P2-5: the old placeholder crammed all 3 example formats into

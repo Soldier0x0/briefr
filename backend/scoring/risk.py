@@ -475,31 +475,19 @@ def calculate_risk_score(
 
 # ── Momentum (v1.1b) ─────────────────────────────────────
 
-async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
-    """
-    Compute momentum score (0–1) from EPSS trend history and OTX pulse recency.
-    Signals:
-      - EPSS rising: score increase over last 14 snapshots
-      - New OTX pulse: within 24h (+0.5), within 7 days (+0.3)
-      - Recently added to CISA KEV: within 7 days (+0.4)
-      - Rapid exploitation: KEV within 30 days of publication (+0.3)
-    """
-    cve_upper = cve_id.upper()
+def _momentum_from_prefetched(
+    cve_upper: str,
+    epss_rows: list[Any],
+    otx_created_date: str | None,
+    cve_row: dict[str, Any] | None,
+    *,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Compute momentum from pre-fetched EPSS, OTX, and CVE/KEV rows."""
     signals: list[dict] = []
     total = 0.0
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
 
-    # ── Signal 1: EPSS trend ─────────────────────────────
-    epss_rows = await db.execute_fetchall(
-        """
-        SELECT score, recorded_date
-        FROM epss_history
-        WHERE cve_id = ?
-        ORDER BY recorded_date DESC
-        LIMIT 14
-        """,
-        (cve_upper,),
-    )
     if len(epss_rows) >= 2:
         latest = float(epss_rows[0]["score"] or 0)
         oldest = float(epss_rows[-1]["score"] or 0)
@@ -529,21 +517,8 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
             })
             total += 0.10
 
-    # ── Signal 2: New OTX pulse (observation time, not ingest fetch time) ──
-    otx_rows = await db.execute_fetchall(
-        """
-        SELECT created_date
-        FROM otx_cve_pulses
-        WHERE cve_id = ?
-          AND created_date IS NOT NULL
-          AND created_date != ''
-        ORDER BY created_date DESC
-        LIMIT 1
-        """,
-        (cve_upper,),
-    )
-    if otx_rows:
-        observed_str = str(otx_rows[0]["created_date"] or "").strip()
+    if otx_created_date:
+        observed_str = str(otx_created_date or "").strip()
         try:
             text = observed_str
             if text.endswith("Z"):
@@ -577,21 +552,10 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
                 exc_info=True,
             )
 
-    # ── Signal 3: Recent KEV addition + rapid exploitation ─
-    row_list = await db.execute_fetchall(
-        """
-        SELECT c.published, c.is_kev, k.date_added AS kev_date_added
-        FROM cves c
-        LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
-        WHERE c.cve_id = ?
-        """,
-        (cve_upper,),
-    )
-    if row_list:
-        row = row_list[0]
-        is_kev = bool(row["is_kev"])
-        kev_str = (row["kev_date_added"] or "").strip()
-        pub_str = (row["published"] or "").strip()
+    if cve_row:
+        is_kev = bool(cve_row.get("is_kev"))
+        kev_str = (cve_row.get("kev_date_added") or "").strip()
+        pub_str = (cve_row.get("published") or "").strip()
 
         if is_kev and kev_str:
             try:
@@ -640,3 +604,83 @@ async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
         "momentum_score": round(min(1.0, total), 3),
         "momentum_signals": signals,
     }
+
+
+async def calculate_momentum_batch(
+    cve_ids: list[str], db: Any
+) -> dict[str, dict[str, Any]]:
+    """Batch momentum for multiple CVEs — same results as calculate_momentum per id."""
+    if not cve_ids:
+        return {}
+
+    cve_upper = [c.upper() for c in cve_ids]
+    unique = list(dict.fromkeys(cve_upper))
+    placeholders = ",".join("?" * len(unique))
+    now = datetime.now(timezone.utc)
+
+    epss_rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, score, recorded_date
+        FROM epss_history
+        WHERE cve_id IN ({placeholders})
+        ORDER BY cve_id, recorded_date DESC
+        """,
+        tuple(unique),
+    )
+    epss_by_cve: dict[str, list[Any]] = {cid: [] for cid in unique}
+    for row in epss_rows:
+        cid = row["cve_id"]
+        if len(epss_by_cve[cid]) < 14:
+            epss_by_cve[cid].append(row)
+
+    otx_rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, created_date
+        FROM otx_cve_pulses
+        WHERE cve_id IN ({placeholders})
+          AND created_date IS NOT NULL
+          AND created_date != ''
+        ORDER BY cve_id, created_date DESC
+        """,
+        tuple(unique),
+    )
+    otx_by_cve: dict[str, str | None] = {cid: None for cid in unique}
+    for row in otx_rows:
+        cid = row["cve_id"]
+        if otx_by_cve[cid] is None:
+            otx_by_cve[cid] = row["created_date"]
+
+    cve_rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id, c.published, c.is_kev, k.date_added AS kev_date_added
+        FROM cves c
+        LEFT JOIN kev_deadlines k ON k.cve_id = c.cve_id
+        WHERE c.cve_id IN ({placeholders})
+        """,
+        tuple(unique),
+    )
+    cve_by_id = {row["cve_id"]: dict(row) for row in cve_rows}
+
+    return {
+        cid: _momentum_from_prefetched(
+            cid,
+            epss_by_cve.get(cid, []),
+            otx_by_cve.get(cid),
+            cve_by_id.get(cid),
+            now=now,
+        )
+        for cid in unique
+    }
+
+
+async def calculate_momentum(cve_id: str, db: Any) -> dict[str, Any]:
+    """
+    Compute momentum score (0–1) from EPSS trend history and OTX pulse recency.
+    Signals:
+      - EPSS rising: score increase over last 14 snapshots
+      - New OTX pulse: within 24h (+0.5), within 7 days (+0.3)
+      - Recently added to CISA KEV: within 7 days (+0.4)
+      - Rapid exploitation: KEV within 30 days of publication (+0.3)
+    """
+    batch = await calculate_momentum_batch([cve_id], db)
+    return batch[cve_id.upper()]

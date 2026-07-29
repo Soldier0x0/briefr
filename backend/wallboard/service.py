@@ -23,7 +23,7 @@ from routers.forge import _coverage_status
 from scheduler import get_ingest_status, refresh_in_progress
 from scoring.environment import classify_environment
 from scoring.priority import derive_operational_priority, operational_priority_sort_key
-from scoring.risk import calculate_momentum
+from scoring.risk import calculate_momentum_batch
 from scoring.threat import calculate_threat_score
 
 WALLBOARD_CACHE_KEY = "wallboard:snapshot"
@@ -236,11 +236,16 @@ async def _top_risk_tile(db: Any, stack: str = "") -> dict[str, Any]:
     )
 
     scored: list[dict[str, Any]] = []
+    cve_dicts = []
     for raw in rows:
         cve = _row_to_cve_dict(raw)
         if "is_vulncheck_exploited" in cve:
             cve["is_vulncheck_exploited"] = bool(cve.get("is_vulncheck_exploited"))
-        momentum = await calculate_momentum(cve["cve_id"], db)
+        cve_dicts.append(cve)
+
+    momenta = await calculate_momentum_batch([cve["cve_id"] for cve in cve_dicts], db)
+    for cve in cve_dicts:
+        momentum = momenta.get(cve["cve_id"].upper(), {})
         item = score_cve_for_top_risk(
             cve, momentum_score=momentum.get("momentum_score", 0.0)
         )

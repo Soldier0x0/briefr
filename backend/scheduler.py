@@ -1436,14 +1436,14 @@ async def run_nightly_correlation() -> bool:
         )
 
         api_key = os.environ.get("OTX_API_KEY", "")
-        if api_key:
-            _job_progress["nightly_correlation"] = "Pre-fetching OTX pulse IOCs to warm Level 1 infrastructure correlation…"
-            ioc_count = await prefetch_pulse_iocs_for_nightly(api_key)
-            if ioc_count:
-                logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
-
         db = await get_db()
         try:
+            if api_key:
+                _job_progress["nightly_correlation"] = "Pre-fetching OTX pulse IOCs to warm Level 1 infrastructure correlation…"
+                ioc_count = await prefetch_pulse_iocs_for_nightly(api_key, db=db)
+                if ioc_count:
+                    logger.info("Pre-fetched IOCs for %d pulses", ioc_count)
+
             def _corr_progress(msg: str) -> None:
                 _job_progress["nightly_correlation"] = msg
             stats = await _run_correlation(db, progress_cb=_corr_progress)

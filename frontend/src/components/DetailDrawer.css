@@ -540,8 +540,8 @@
 }
 
 .drawer-tab {
-  min-height: 36px;
-  font-size: var(--type-micro);
+  min-height: var(--shell-control-height, 40px);
+  font-size: var(--shell-font-label, var(--type-micro));
   letter-spacing: 0.1em;
   color: var(--text2);
   background: none;

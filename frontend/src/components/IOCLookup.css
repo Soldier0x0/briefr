@@ -84,6 +84,30 @@
   margin-bottom: 32px;
 }
 
+.ioc-search-row {
+  display: flex;
+  gap: var(--shell-gap, 12px);
+  align-items: stretch;
+}
+
+.ioc-search-input {
+  flex: 1;
+  min-height: var(--shell-control-height, 44px);
+  font-size: var(--shell-font-body, 15px);
+}
+
+.ioc-search-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: stretch;
+}
+
+.ioc-btn-lookup {
+  min-height: var(--shell-control-height, 44px);
+  min-width: 100px;
+}
+
 .ioc-input-label {
   display: block;
   font-family: var(--font-mono);
@@ -97,15 +121,15 @@
   display: block;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: var(--shell-font-body, 1rem);
   color: var(--text);
   background: var(--bg2);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border);
   padding: 12px 18px 12px 16px;
   resize: none;
-  min-height: 48px;
-  max-height: 48px;
+  min-height: var(--shell-control-height, 48px);
+  max-height: var(--shell-control-height, 48px);
   overflow: hidden;
   line-height: 1.4;
   transition: border-color 0.12s, border-left-color 0.12s;
@@ -129,15 +153,14 @@
   margin: 4px 0 0;
 }
 
-/* ── Controls: type selector + lookup button ─────────────── */
+/* ── Controls: type selector + optional GreyNoise ────────── */
 .ioc-controls {
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
   gap: 0;
-  margin-top: -1px;
+  margin-top: 10px;
   border: 1px solid var(--border);
-  border-top: none;
   background: var(--bg3);
 }
 
@@ -240,16 +263,16 @@
 
 .ioc-clear-btn {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--shell-font-label, 0.6875rem);
   letter-spacing: 0.08em;
   color: var(--text2);
-  background: transparent;
-  border: none;
-  border-left: 1px solid var(--border);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   padding: 0 20px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: color var(--motion-fast), background-color var(--motion-fast);
+  min-height: var(--shell-control-height, 44px);
+  transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
 }
 
 .ioc-clear-btn:hover:not(:disabled) {
@@ -1033,7 +1056,7 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
-  font-size: 0.75rem;
+  font-size: var(--shell-font-body, 0.75rem);
   color: var(--text);
 }
 
@@ -1056,14 +1079,14 @@
 }
 
 .quota-meter-label {
-  font-size: 0.625rem;
+  font-size: var(--shell-font-label, 0.625rem);
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .quota-meter-val {
-  font-size: 0.625rem;
+  font-size: var(--shell-font-body, 0.625rem);
   color: var(--text2);
 }
 
@@ -1176,6 +1199,14 @@
     margin-right: 0;
   }
 
+  .ioc-search-row {
+    flex-direction: column;
+  }
+
+  .ioc-search-actions {
+    width: 100%;
+  }
+
   .ioc-controls {
     flex-direction: column;
     align-items: stretch;
@@ -1187,8 +1218,17 @@
     padding: 10px 14px;
   }
 
-  .ioc-lookup-btn {
-    width: 100%;
+  .ioc-btn-lookup,
+  .ioc-clear-btn {
+    flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 1400px) {
+  .ioc-lookup {
+    max-width: none;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

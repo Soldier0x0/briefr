@@ -47,8 +47,12 @@ def test_prefetch_pulse_iocs_query_runs_on_sqlite(tmp_path, monkeypatch):
             return []
 
         monkeypatch.setattr("feeds.otx.fetch_pulse_iocs", _noop_fetch)
-        count = await prefetch_pulse_iocs_for_nightly("fake-key", max_pulses=5)
-        assert count == 0
+        db = await database.get_db()
+        try:
+            count = await prefetch_pulse_iocs_for_nightly("fake-key", max_pulses=5, db=db)
+            assert count == 0
+        finally:
+            await db.close()
 
     run_db_test(run())
 

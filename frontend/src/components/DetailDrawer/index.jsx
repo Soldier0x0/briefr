@@ -121,10 +121,12 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const assetCtx = useAssetProfileOptional()
 
   useEffect(() => {
-    if (!cve?.cve_id) {
-      setRiskScore(null)
-      setRiskLoading(false)
-      setRiskError(null)
+    if (!cve?.cve_id || activeTab !== 'overview') {
+      if (!cve?.cve_id) {
+        setRiskScore(null)
+        setRiskLoading(false)
+        setRiskError(null)
+      }
       return
     }
     let cancelled = false
@@ -172,7 +174,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     return () => {
       cancelled = true
     }
-  }, [cve?.cve_id, assetCtx?.profile, assetCtx?.isLoaded])
+  }, [cve?.cve_id, assetCtx?.profile, assetCtx?.isLoaded, activeTab])
 
   useEffect(() => {
     investigation?.clearPivotNotice?.()

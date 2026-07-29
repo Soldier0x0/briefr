@@ -209,6 +209,14 @@ export default function CVEFeed({
     investigation?.pivotToIocFromCve?.(c)
   }, [investigation])
 
+  const handleWatchlistPin = useCallback((cveId) => {
+    onWatchlistChange?.(cveId, 'pin')
+  }, [onWatchlistChange])
+
+  const setCardRef = useCallback((index, el) => {
+    cardRefs.current[index] = el
+  }, [])
+
   const loadPage = useCallback(async (pageNum, append) => {
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
@@ -622,7 +630,7 @@ export default function CVEFeed({
             isOpened={openedCveId === cve.cve_id}
             navSelected={selectedIndex === idx}
             isNew={isNewSinceVisit(cve)}
-            cardRef={el => { cardRefs.current[idx] = el }}
+            cardRef={(el) => setCardRef(idx, el)}
             inThread={investigation?.isCveInThread?.(cve.cve_id)}
             onInvestigate={investigation ? handleInvestigate : undefined}
             onLookupIoc={investigation ? handleLookupIoc : undefined}
@@ -630,7 +638,7 @@ export default function CVEFeed({
             watchlistState={
               watchlist?.getState(cve.cve_id) || cve.watchlist_state || null
             }
-            onWatchlistPin={onWatchlistChange ? () => onWatchlistChange(cve.cve_id, 'pin') : undefined}
+            onWatchlistPin={onWatchlistChange ? handleWatchlistPin : undefined}
           />
         ))}
       </div>

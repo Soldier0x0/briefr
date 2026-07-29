@@ -47,7 +47,8 @@
 
 .wallboard-page-btn {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--shell-font-label, 0.7rem);
+  min-height: var(--shell-control-height, 40px);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.25rem 0.5rem;

@@ -90,30 +90,19 @@ def _apply_artifacts_to_context(
 
 
 async def run_detection_context_llm_sync(
-    db: aiosqlite.Connection | None = None,
+    db: aiosqlite.Connection,
     progress_cb=None,
 ) -> dict:
     """Scheduler job: LLM-extract artifacts into DetectionContext cache."""
     from ai.llm_session import llm_job_session
-    from database import get_db
 
     stats = {"candidates": 0, "extracted": 0, "written": 0, "errors": 0, "skipped": 0}
     retry_hours = get_detection_context_llm_retry_hours()
     limit = get_detection_context_llm_max_per_run()
 
-    async def _load_candidates(conn):
-        return await get_cves_for_detection_context_llm(
-            conn, limit=limit, retry_hours=retry_hours
-        )
-
-    if db is not None:
-        candidates = await _load_candidates(db)
-    else:
-        conn = await get_db()
-        try:
-            candidates = await _load_candidates(conn)
-        finally:
-            await conn.close()
+    candidates = await get_cves_for_detection_context_llm(
+        db, limit=limit, retry_hours=retry_hours
+    )
 
     stats["candidates"] = len(candidates)
     if not candidates:
@@ -127,19 +116,9 @@ async def run_detection_context_llm_sync(
                     f"DetectionContext LLM: {index + 1}/{stats['candidates']} ({cve_id})"
                 )
 
-            async def _read_exploits(conn, _cve_id=cve_id):
-                return await read_cve_exploits_from_db(
-                    conn, _cve_id, max_age_hours=HOURS_PER_YEAR
-                )
-
-            if db is not None:
-                exploits = await _read_exploits(db)
-            else:
-                conn = await get_db()
-                try:
-                    exploits = await _read_exploits(conn)
-                finally:
-                    await conn.close()
+            exploits = await read_cve_exploits_from_db(
+                db, cve_id, max_age_hours=HOURS_PER_YEAR
+            )
 
             if not exploits:
                 stats["skipped"] += 1
@@ -157,23 +136,12 @@ async def run_detection_context_llm_sync(
 
             if len(source_text) < 40:
                 stats["skipped"] += 1
-
-                async def _cache_skip(conn, _cve_id=cve_id):
-                    await set_feed_cache(
-                        conn,
-                        f"{LLM_CACHE_PREFIX}{_cve_id.upper()}",
-                        {"artifacts": [], "provider": "", "model": "", "skipped": "short_text"},
-                    )
-                    await conn.commit()
-
-                if db is not None:
-                    await _cache_skip(db)
-                else:
-                    conn = await get_db()
-                    try:
-                        await _cache_skip(conn)
-                    finally:
-                        await conn.close()
+                await set_feed_cache(
+                    db,
+                    f"{LLM_CACHE_PREFIX}{cve_id.upper()}",
+                    {"artifacts": [], "provider": "", "model": "", "skipped": "short_text"},
+                )
+                await db.commit()
                 continue
 
             try:
@@ -206,50 +174,33 @@ async def run_detection_context_llm_sync(
             if artifacts:
                 stats["extracted"] += 1
 
-            async def _persist(
-                conn,
-                _cve_id=cve_id,
-                _row=row,
-                _artifacts=artifacts,
-                _completion=completion,
-            ):
-                nonlocal stats
-                existing = await get_detection_context(conn, _cve_id)
-                if existing:
-                    base_ctx = existing
-                else:
-                    base_ctx = build_detection_context(
-                        cve_id=_cve_id,
-                        cwe_ids=_parse_cwe_ids(_row.get("cwe_ids")),
-                        technique_id=_row.get("mitre_technique") or "",
-                        affected_products=_row.get("affected_products"),
-                    )
-                enriched = _apply_artifacts_to_context(
-                    base_ctx,
-                    _artifacts,
-                    provider=_completion.provider,
-                    model=_completion.model,
-                )
-                await set_detection_context(conn, _cve_id, enriched)
-                stats["written"] += 1
-                await set_feed_cache(
-                    conn,
-                    f"{LLM_CACHE_PREFIX}{_cve_id.upper()}",
-                    {
-                        "artifacts": _artifacts,
-                        "provider": _completion.provider,
-                        "model": _completion.model,
-                    },
-                )
-                await conn.commit()
-
-            if db is not None:
-                await _persist(db)
+            existing = await get_detection_context(db, cve_id)
+            if existing:
+                base_ctx = existing
             else:
-                conn = await get_db()
-                try:
-                    await _persist(conn)
-                finally:
-                    await conn.close()
+                base_ctx = build_detection_context(
+                    cve_id=cve_id,
+                    cwe_ids=_parse_cwe_ids(row.get("cwe_ids")),
+                    technique_id=row.get("mitre_technique") or "",
+                    affected_products=row.get("affected_products"),
+                )
+            enriched = _apply_artifacts_to_context(
+                base_ctx,
+                artifacts,
+                provider=completion.provider,
+                model=completion.model,
+            )
+            await set_detection_context(db, cve_id, enriched)
+            stats["written"] += 1
+            await set_feed_cache(
+                db,
+                f"{LLM_CACHE_PREFIX}{cve_id.upper()}",
+                {
+                    "artifacts": artifacts,
+                    "provider": completion.provider,
+                    "model": completion.model,
+                },
+            )
+            await db.commit()
 
     return stats
