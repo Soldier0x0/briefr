@@ -5,14 +5,94 @@ import { ChartDataTable } from '../../components/ui/index.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
+import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import { AdminChartSkeleton } from './shared/AdminSkeletons.jsx'
 import { fmtBytes, fmtIsoMono, diskBarColor } from './formatters.js'
+import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 
 const ResourceLineChart = lazy(() =>
   import('./resourcesChartsRecharts.jsx').then((mod) => ({ default: mod.ResourceLineChart })),
 )
 
 const WINDOWS = ['1d', '3d', '7d', '30d']
+
+function fmtSavings(rec) {
+  const parts = []
+  const est = rec?.estimated_savings || {}
+  if (est.bytes) parts.push(`~${fmtBytes(est.bytes)} disk`)
+  if (est.rows) parts.push(`~${Number(est.rows).toLocaleString()} fewer rows`)
+  if (est.requests_per_day) parts.push(`~${Number(est.requests_per_day).toLocaleString()} fewer API writes/day`)
+  return parts.length ? parts.join(' · ') : null
+}
+
+function SubsystemTable({ rows }) {
+  if (!rows?.length) return <p className="admin-empty">No subsystem data</p>
+  return (
+    <table className="metering-table admin-efficiency-subsystems">
+      <thead>
+        <tr>
+          <th scope="col">Subsystem</th>
+          <th scope="col">Size</th>
+          <th scope="col">Rows</th>
+          <th scope="col">API / day</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.id}>
+            <td>{row.label}</td>
+            <td className="mono">{row.bytes != null ? fmtBytes(row.bytes) : '—'}</td>
+            <td className="mono">{row.rows != null ? Number(row.rows).toLocaleString() : '—'}</td>
+            <td className="mono">{row.requests_per_day != null ? Number(row.requests_per_day).toLocaleString() : '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function RecommendationRow({ rec, onApply }) {
+  const savings = fmtSavings(rec)
+  const severity = rec.severity || 'info'
+  return (
+    <div className={`admin-efficiency-rec admin-efficiency-rec-${severity}`}>
+      <div className="admin-efficiency-rec-title">{rec.title}</div>
+      <p className="admin-efficiency-rec-desc">{rec.description}</p>
+      {savings && <p className="mono admin-efficiency-rec-savings">{savings}</p>}
+      {rec.config_key && rec.suggested_value != null && (
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost admin-efficiency-apply"
+          onClick={() => onApply(rec.config_key, rec.suggested_value)}
+        >
+          Apply {rec.config_key} = {rec.suggested_value}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function EfficiencyPanel({ report, onApplyConfig }) {
+  if (!report) return null
+  return (
+    <div className="admin-card admin-efficiency-panel">
+      <div className="admin-card-title">
+        Efficiency recommendations
+        <HelpTip text="Live analysis of disk, memory, DB, and API overhead. Suggestions preserve functionality — review before applying." />
+      </div>
+      <SubsystemTable rows={report.subsystems} />
+      {report.recommendations?.length > 0 ? (
+        <div className="admin-efficiency-rec-list">
+          {report.recommendations.map((rec) => (
+            <RecommendationRow key={rec.id} rec={rec} onApply={onApplyConfig} />
+          ))}
+        </div>
+      ) : (
+        <p className="admin-empty" role="status">No recommendations — footprint looks healthy.</p>
+      )}
+    </div>
+  )
+}
 
 function CapacityBar({ label, used, total, sub }) {
   const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
@@ -112,7 +192,7 @@ function seriesHasPlottableData(series, fields) {
   )
 }
 
-function ResourceChartSection({ series, fields, labels, tableTitle }) {
+function ResourceChartSection({ series, fields, labels, tableTitle, hostProfile }) {
   const hasData = seriesHasPlottableData(series, fields)
 
   const tableRows = useMemo(() => {
@@ -167,6 +247,7 @@ function ResourceChartSection({ series, fields, labels, tableTitle }) {
           fields={fields}
           labels={labels}
           tableTitle={tableTitle}
+          hostProfile={hostProfile}
         />
       </Suspense>
       <ChartDataTable
@@ -178,11 +259,14 @@ function ResourceChartSection({ series, fields, labels, tableTitle }) {
   )
 }
 
-export default function ResourcesPage() {
+export default function ResourcesPage({ toast, active = true }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const windowKey = WINDOWS.includes(searchParams.get('window')) ? searchParams.get('window') : '1d'
   const [payload, setPayload] = useState(null)
+  const [efficiency, setEfficiency] = useState(null)
   const [loadError, setLoadError] = useState(null)
+  const [pendingConfig, setPendingConfig] = useState(null)
+  const [applyingConfig, setApplyingConfig] = useState(false)
 
   const setWindow = useCallback((next) => {
     const params = new URLSearchParams(searchParams)
@@ -192,17 +276,45 @@ export default function ResourcesPage() {
   }, [searchParams, setSearchParams])
 
   const load = useCallback(async () => {
+    if (!active) return
     try {
-      const res = await adminApi.get(`/resources?window=${windowKey}`)
+      const [res, effRes] = await Promise.all([
+        adminApi.get(`/resources?window=${windowKey}`),
+        adminApi.get('/resources/efficiency'),
+      ])
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setPayload(await res.json())
+      if (effRes.ok) setEfficiency(await effRes.json())
       setLoadError(null)
     } catch (e) {
       setLoadError(e)
     }
-  }, [windowKey])
+  }, [windowKey, active])
 
   useEffect(() => { load() }, [load])
+
+  function applyConfig(key, value) {
+    setPendingConfig({ [key]: String(value) })
+  }
+
+  async function confirmApplyConfig() {
+    if (!pendingConfig) return
+    setApplyingConfig(true)
+    try {
+      const body = Object.entries(pendingConfig).map(([key, value]) => ({ key, value }))
+      const { data } = await adminApi.postJson('/config/apply-all', body)
+      if (data?.restart_required ?? data?.warning_restart_required) {
+        notifyBackendRestarting()
+      }
+      toast?.(data?.message || 'Configuration applied', true)
+      setPendingConfig(null)
+      load()
+    } catch (e) {
+      toast?.(e?.message || 'Apply failed', false)
+    } finally {
+      setApplyingConfig(false)
+    }
+  }
 
   const series = payload?.series || []
   const summary = payload?.summary || {}
@@ -269,6 +381,17 @@ export default function ResourcesPage() {
 
   return (
     <div className="admin-resources-page">
+      {pendingConfig && (
+        <DiffReviewModal
+          title="Apply efficiency recommendation"
+          changes={pendingConfig}
+          applying={applyingConfig}
+          applyLabel="Apply change"
+          onApply={confirmApplyConfig}
+          onDiscard={() => setPendingConfig(null)}
+          onClose={() => setPendingConfig(null)}
+        />
+      )}
       <h1 className="admin-page-title">Resources</h1>
       <p className="admin-page-subtitle">
         BRIEFR and PostgreSQL utilization sampled every minute. Peaks and averages are computed over raw rows in the selected window.
@@ -304,6 +427,7 @@ export default function ResourcesPage() {
 
             <HostCapacityCard profile={payload?.host_profile} />
             <PoolStatsCard poolStats={payload?.pool_stats} />
+            <EfficiencyPanel report={efficiency} onApplyConfig={applyConfig} />
 
             {chartSections.map(section => (
               <div className="admin-card admin-resources-chart-card" key={section.id}>
@@ -313,6 +437,7 @@ export default function ResourcesPage() {
                   fields={section.fields}
                   labels={section.labels}
                   tableTitle={section.label}
+                  hostProfile={payload?.host_profile}
                 />
               </div>
             ))}

@@ -2,6 +2,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -32,7 +33,7 @@ function fmtMetric(field, value) {
   return Number(value).toFixed(2)
 }
 
-export function ResourceLineChart({ series, fields, labels, tableTitle }) {
+export function ResourceLineChart({ series, fields, labels, tableTitle, hostProfile }) {
   const theme = getRechartsTheme()
   const anim = chartAnimationDuration()
 
@@ -51,8 +52,10 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
     )
   }
 
-  const { data, scale } = resourceChartPoints(plottable, fields)
+  const { data, scale, ceilingLine } = resourceChartPoints(plottable, fields, hostProfile)
   const lineColors = [theme.accent, theme.chart2, theme.textSecondary]
+  const allPct = fields.every((field) => field.endsWith('_pct'))
+  const pctTickFormatter = (v) => `${Math.round(Number(v))}%`
 
   return (
     <ChartShell
@@ -60,6 +63,9 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
       ariaLabel={tableTitle || 'Resource utilization chart'}
       className="admin-resources-chart-wrap"
     >
+      {tableTitle && (
+        <p className="admin-chart-caption">{tableTitle}</p>
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={rechartsMargin({ left: 8, right: 12 })}>
           <CartesianGrid stroke={theme.grid} vertical={false} />
@@ -75,9 +81,23 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
           <YAxis
             tick={axisTickStyle(theme)}
             allowDecimals={false}
-            domain={scale ? [0, scale.domainMax] : ['auto', 'auto']}
-            tickFormatter={scale ? (v) => scale.formatTick(Number(v)) : undefined}
+            domain={scale ? [0, scale.domainMax] : allPct ? [0, 100] : ['auto', 'auto']}
+            tickFormatter={
+              scale
+                ? (v) => scale.formatTick(Number(v))
+                : allPct
+                  ? pctTickFormatter
+                  : (v) => String(Math.round(Number(v)))
+            }
           />
+          {ceilingLine != null && (
+            <ReferenceLine
+              y={ceilingLine}
+              stroke={theme.textSecondary}
+              strokeDasharray="4 4"
+              label={{ value: 'Host ceiling', position: 'insideTopRight', fill: theme.textSecondary, fontSize: 11 }}
+            />
+          )}
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}
             labelStyle={tooltipLabelStyle(theme)}

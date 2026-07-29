@@ -436,3 +436,16 @@ async def get_resources(window: str = "1d"):
     finally:
         await db.close()
 
+
+@router.get("/resources/efficiency")
+async def get_resources_efficiency():
+    from efficiency_audit import build_efficiency_report
+    import database as _database
+
+    db = await get_db()
+    try:
+        db_path = os.path.abspath(_database.DB_PATH)
+        return await build_efficiency_report(db, db_path=db_path)
+    finally:
+        await db.close()
+

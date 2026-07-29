@@ -14,13 +14,12 @@ from datetime import datetime, timedelta, timezone
 
 from db.resource_metrics import purge_old_resource_metrics
 from db.types import DbConnection
-from ttl_constants import HOURS_PER_YEAR
 
 # Physical retention >= read TTL for each key family (hours).
 IOC_CACHE_RETENTION_HOURS = 24
 
 FEED_CACHE_PREFIX_RETENTION: tuple[tuple[str, float], ...] = (
-    ("ssvc:", HOURS_PER_YEAR),
+    ("ssvc:", 168),
     ("correlation:v2:", 7 * 24),
     ("correlation:v1:", 7 * 24),
     ("circl:", 168),
@@ -419,8 +418,10 @@ async def purge_old_api_call_events(
 
 async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
     """Sweep stale cache/overlay rows. Caller commits."""
+    from db.resource_metrics import get_resource_metrics_retention_days, purge_old_resource_metrics
+
     otx = await purge_stale_otx_tables(db)
-    return {
+    stats = {
         "ioc_cache": await purge_stale_ioc_cache(db),
         "feed_cache": await purge_stale_feed_cache(db),
         "epss_history": await purge_old_epss_history(db),
@@ -431,6 +432,27 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "webhook_dedupe_stranded": await purge_stranded_webhook_dedupe(db),
         "audit_log": await purge_old_audit_log(db),
         "api_call_events": await purge_old_api_call_events(db),
-        "resource_metrics": await purge_old_resource_metrics(db),
+        "resource_metrics": await purge_old_resource_metrics(
+            db, retention_days=get_resource_metrics_retention_days()
+        ),
         **otx,
     }
+    await _maybe_vacuum_after_retention(db)
+    return stats
+
+
+async def _maybe_vacuum_after_retention(db: DbConnection) -> None:
+    import os
+
+    from db.config import is_postgres
+
+    if not is_postgres():
+        return
+    raw = os.environ.get("POSTGRES_VACUUM_AFTER_RETENTION", "0").strip().lower()
+    if raw not in ("1", "true", "yes", "on"):
+        return
+    for table in ("api_call_events", "feed_cache", "ioc_cache"):
+        try:
+            await db.execute(f'VACUUM (ANALYZE) "{table}"')
+        except Exception:
+            pass

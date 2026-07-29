@@ -451,49 +451,34 @@ async def _run_nvd_incremental_sync() -> None:
                 await db.close()
 
         if updated_ids and embeddings_auto_on_ingest_enabled():
-            _job_progress["nvd_incremental_sync"] = (
-                f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
-            )
-            db = await get_db()
+            from ml.embeddings import embeddings_ingest_backlog_should_skip
+
+            db_check = await get_db()
             try:
+                skip_tail = await embeddings_ingest_backlog_should_skip(db_check)
+            finally:
+                await db_check.close()
+            if skip_tail:
+                logger.info(
+                    "Skipping embeddings ingest tail — backfill queue above EMBEDDINGS_INGEST_SKIP_QUEUE_DEPTH"
+                )
+            else:
+                _job_progress["nvd_incremental_sync"] = (
+                    f"Embedding up to {len(updated_ids)} ingested CVE descriptions…"
+                )
+                db = await get_db()
                 try:
-                    emb_stats = await run_embeddings_backfill(
-                        db,
-                        cve_id_filter={cid.upper() for cid in updated_ids},
-                    )
-                    if emb_stats.get("embedded"):
-                        logger.info(
-                            "Embeddings ingest tail: embedded %d CVE(s) with %s",
-                            emb_stats.get("embedded", 0),
-                            emb_stats.get("model", ""),
+                    try:
+                        emb_stats = await run_embeddings_backfill(
+                            db,
+                            cve_id_filter={cid.upper() for cid in updated_ids},
                         )
-                    await set_sync_state_value(
-                        db,
-                        INGEST_TAIL_SYNC_KEY,
-                        json.dumps(
-                            {
-                                "last_run_utc": datetime.now(timezone.utc).isoformat(
-                                    timespec="seconds"
-                                ),
-                                "embedded": int(emb_stats.get("embedded") or 0),
-                                "had_error": False,
-                                "error_message": "",
-                                "model": emb_stats.get("model") or "",
-                            }
-                        ),
-                    )
-                    await db.commit()
-                except Exception as emb_exc:
-                    # Fail-safe: never fail NVD ingest because the index tail broke.
-                    logger.exception(
-                        "Embeddings ingest tail failed (NVD sync continues): %s",
-                        emb_exc,
-                    )
-                    try:
-                        await db.rollback()
-                    except Exception:
-                        pass
-                    try:
+                        if emb_stats.get("embedded"):
+                            logger.info(
+                                "Embeddings ingest tail: embedded %d CVE(s) with %s",
+                                emb_stats.get("embedded", 0),
+                                emb_stats.get("model", ""),
+                            )
                         await set_sync_state_value(
                             db,
                             INGEST_TAIL_SYNC_KEY,
@@ -502,19 +487,46 @@ async def _run_nvd_incremental_sync() -> None:
                                     "last_run_utc": datetime.now(timezone.utc).isoformat(
                                         timespec="seconds"
                                     ),
-                                    "embedded": 0,
-                                    "had_error": True,
-                                    "error_message": str(emb_exc)[:500],
+                                    "embedded": int(emb_stats.get("embedded") or 0),
+                                    "had_error": False,
+                                    "error_message": "",
+                                    "model": emb_stats.get("model") or "",
                                 }
                             ),
                         )
                         await db.commit()
-                    except Exception:
+                    except Exception as emb_exc:
+                        # Fail-safe: never fail NVD ingest because the index tail broke.
                         logger.exception(
-                            "Failed to persist embeddings ingest-tail error state"
+                            "Embeddings ingest tail failed (NVD sync continues): %s",
+                            emb_exc,
                         )
-            finally:
-                await db.close()
+                        try:
+                            await db.rollback()
+                        except Exception:
+                            pass
+                        try:
+                            await set_sync_state_value(
+                                db,
+                                INGEST_TAIL_SYNC_KEY,
+                                json.dumps(
+                                    {
+                                        "last_run_utc": datetime.now(timezone.utc).isoformat(
+                                            timespec="seconds"
+                                        ),
+                                        "embedded": 0,
+                                        "had_error": True,
+                                        "error_message": str(emb_exc)[:500],
+                                    }
+                                ),
+                            )
+                            await db.commit()
+                        except Exception:
+                            logger.exception(
+                                "Failed to persist embeddings ingest-tail error state"
+                            )
+                finally:
+                    await db.close()
 
         mode = "incremental (lastMod)" if used_incremental else "full (published window)"
         logger.info("NVD sync complete (%s): %d CVEs upserted", mode, new_or_updated)
@@ -2626,6 +2638,7 @@ _CONFIG_KEY_TO_JOBS: dict[str, tuple[str, ...]] = {
     "LLM_PRODUCT_EXTRACTION_INTERVAL_HOURS": ("llm_product_extraction",),
     "SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS": ("sigmahq_index_sync",),
     "BACKUP_INTERVAL_HOURS": ("scheduled_backup", "backup_deadman_check"),
+    "RESOURCE_SAMPLE_INTERVAL_SECONDS": ("resource_metrics_sample",),
 }
 
 
@@ -2699,6 +2712,12 @@ def _trigger_for_job(job_id: str) -> IntervalTrigger | CronTrigger | None:
     if job_id == "backup_deadman_check":
         hours = max(1, get_backup_interval_hours() // 2)
         return IntervalTrigger(hours=hours, timezone=sched_tz)
+    if job_id == "resource_metrics_sample":
+        seconds = max(
+            30,
+            int(os.environ.get("RESOURCE_SAMPLE_INTERVAL_SECONDS", "60")),
+        )
+        return IntervalTrigger(seconds=seconds, timezone=sched_tz)
     return None
 
 

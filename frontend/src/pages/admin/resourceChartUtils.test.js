@@ -23,9 +23,19 @@ describe('resourceChartPoints', () => {
       { ts: '2026-07-18T10:00:00Z', briefr_cpu_pct: 12.5 },
       { ts: '2026-07-18T10:01:00Z', briefr_cpu_pct: 18.0 },
     ]
-    const { data, scale } = resourceChartPoints(series, ['briefr_cpu_pct'])
+    const { data, scale, ceilingLine } = resourceChartPoints(series, ['briefr_cpu_pct'])
     assert.equal(scale, null)
+    assert.equal(ceilingLine, 100)
     assert.equal(data[0].briefr_cpu_pct, 12.5)
     assert.equal(data[1].briefr_cpu_pct, 18.0)
+  })
+
+  it('adds memory ceiling line for byte series when host profile present', () => {
+    const series = [
+      { ts: '2026-07-18T10:00:00Z', briefr_rss_bytes: 512 * 1024 * 1024 },
+    ]
+    const hostProfile = { memory_total_bytes: 8 * 1024 * 1024 * 1024 }
+    const { ceilingLine } = resourceChartPoints(series, ['briefr_rss_bytes'], hostProfile)
+    assert.ok(ceilingLine > 0)
   })
 })

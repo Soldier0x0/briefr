@@ -21,7 +21,7 @@ import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 const STATUS_FILTERS = ['ACTIVE', 'PAUSED', 'LOCKED', 'DISABLED']
 const PAGE_SIZE = 10
 
-export default function SchedulerPage({ toast, system }) {
+export default function SchedulerPage({ toast, system, active = true }) {
   const { runAction } = useOperations()
   const [jobs, setJobs] = useState(null)
   const [running, setRunning] = useState({})
@@ -41,11 +41,12 @@ export default function SchedulerPage({ toast, system }) {
   useEffect(() => { loadJobs() }, [])
 
   useEffect(() => {
+    if (!active) return undefined
     const locked = jobs?.some((j) => j.status === 'LOCKED')
     if (!locked) return undefined
     const id = setInterval(loadJobs, 3000)
     return () => clearInterval(id)
-  }, [jobs])
+  }, [jobs, active])
 
   async function runNow(jobId, { retry = false } = {}) {
     setRunning(r => ({ ...r, [jobId]: true }))

@@ -93,6 +93,18 @@ def get_embeddings_ingest_max_per_run() -> int:
     return int(os.environ.get("EMBEDDINGS_INGEST_MAX_PER_RUN", "25"))
 
 
+def get_embeddings_ingest_skip_queue_depth() -> int:
+    return int(os.environ.get("EMBEDDINGS_INGEST_SKIP_QUEUE_DEPTH", "10000"))
+
+
+async def embeddings_ingest_backlog_should_skip(db) -> bool:
+    """Skip NVD ingest-tail embed when the backfill queue is deep."""
+    from db.embeddings_store import count_embeddings_pending_missing
+
+    pending = await count_embeddings_pending_missing(db, get_embeddings_model_name())
+    return int(pending.get("total") or 0) > get_embeddings_ingest_skip_queue_depth()
+
+
 def get_embeddings_model_name() -> str:
     return (
         os.environ.get("EMBEDDINGS_MODEL", DEFAULT_EMBEDDINGS_MODEL).strip()

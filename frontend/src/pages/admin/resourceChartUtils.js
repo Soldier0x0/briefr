@@ -5,13 +5,22 @@ import { bytesChartScale } from './formatters.js'
  * 3d/7d/30d windows and freezes the Recharts axis tooltip on the first
  * matching minute — use row index as the categorical X key.
  */
-export function resourceChartPoints(plottable, fields) {
+export function resourceChartPoints(plottable, fields, hostProfile = null) {
   const allBytes = fields.length > 0 && fields.every((field) => field.endsWith('_bytes'))
+  const allPct = fields.length > 0 && fields.every((field) => field.endsWith('_pct'))
   const scale = allBytes
     ? bytesChartScale(
       plottable.flatMap((row) => fields.map((field) => Number(row[field]) || 0)),
     )
     : null
+
+  let ceilingLine = null
+  if (hostProfile?.memory_total_bytes && allBytes && fields.includes('briefr_rss_bytes')) {
+    const memScale = bytesChartScale([hostProfile.memory_total_bytes])
+    ceilingLine = memScale.toDisplay(hostProfile.memory_total_bytes)
+  } else if (allPct) {
+    ceilingLine = 100
+  }
 
   const data = plottable.map((row, index) => {
     const entry = {
@@ -30,5 +39,5 @@ export function resourceChartPoints(plottable, fields) {
     return entry
   })
 
-  return { data, scale }
+  return { data, scale, ceilingLine }
 }
