@@ -671,6 +671,12 @@
   border-bottom: 1px solid var(--admin-border);
 }
 
+.metering-table th.metering-table-num,
+.metering-table td.metering-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .metering-table td {
   padding: 8px;
   border-bottom: 1px solid color-mix(in srgb, var(--admin-border) 65%, transparent);
@@ -770,6 +776,12 @@
   letter-spacing: 0.04em;
   padding: 6px 8px;
   border-bottom: 1px solid var(--admin-border);
+}
+
+.metering-table th.metering-table-num,
+.metering-table td.metering-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .metering-table td {

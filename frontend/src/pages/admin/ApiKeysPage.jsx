@@ -88,7 +88,13 @@ function MeteringTable({ title, columns, rows }) {
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.key} scope="col">{col.label}</th>
+                <th
+                  key={col.key}
+                  scope="col"
+                  className={col.headerClassName || (col.className?.includes('metering-table-num') ? 'metering-table-num' : '')}
+                >
+                  {col.label}
+                </th>
               ))}
             </tr>
           </thead>
