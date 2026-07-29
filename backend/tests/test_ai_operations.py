@@ -207,7 +207,7 @@ def test_usage_since_excludes_circuit_open_from_failure_rate(tmp_path, monkeypat
 
 def test_models_catalog_payload_structure():
     payload = models_catalog_payload()
-    assert payload["providers"] == ["groq", "cerebras", "openrouter", "gemini"]
+    assert payload["providers"] == ["custom", "groq", "cerebras", "openrouter", "gemini"]
     assert set(payload["tasks"]) == {
         "product_extraction",
         "pdf_summary",

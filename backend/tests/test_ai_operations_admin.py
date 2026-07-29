@@ -40,10 +40,10 @@ def admin_client(tmp_path, monkeypatch, auth_token):
         yield client
 
 
-def test_providers_payload_lists_four_providers():
+def test_providers_payload_lists_five_providers():
     payload = build_providers_payload()
     names = [p["provider"] for p in payload["providers"]]
-    assert names == ["groq", "cerebras", "openrouter", "gemini"]
+    assert names == ["custom", "groq", "cerebras", "openrouter", "gemini"]
     assert all("configured" in p for p in payload["providers"])
 
 
@@ -129,7 +129,7 @@ def test_admin_ai_operations_endpoints(admin_client, monkeypatch):
 
     providers = admin_client.get("/api/admin/ai/operations/providers")
     assert providers.status_code == 200
-    assert len(providers.json()["providers"]) == 4
+    assert len(providers.json()["providers"]) == 5
 
     activity = admin_client.get("/api/admin/ai/operations/activity?limit=10&offset=0")
     assert activity.status_code == 200
