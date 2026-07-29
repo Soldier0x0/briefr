@@ -41,7 +41,7 @@ import logging
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from database import get_db
 from routers.forge import build_coverage_map, count_coverage_summary
