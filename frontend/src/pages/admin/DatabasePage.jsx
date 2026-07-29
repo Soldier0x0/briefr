@@ -234,7 +234,7 @@ export default function DatabasePage({ toast, active = true }) {
         <IntelSnapshotPanel toast={toast} />
       )}
 
-      <DbExplorerPanel toast={toast} />
+      <DbExplorerPanel toast={toast} active={active} />
     </div>
   )
 }

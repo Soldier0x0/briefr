@@ -74,8 +74,9 @@ export function ResourceLineChart({ series, fields, labels, tableTitle }) {
           />
           <YAxis
             tick={axisTickStyle(theme)}
+            allowDecimals={false}
             domain={scale ? [0, scale.domainMax] : ['auto', 'auto']}
-            tickFormatter={scale ? (v) => scale.format(Number(v)) : undefined}
+            tickFormatter={scale ? (v) => scale.formatTick(Number(v)) : undefined}
           />
           <Tooltip
             contentStyle={tooltipContentStyle(theme)}

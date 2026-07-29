@@ -3623,6 +3623,36 @@
 }
 
 /* ── Resources page (RB-2) ─────────────────────────────────────────────── */
+.admin-host-capacity,
+.admin-pool-stats {
+  margin-bottom: 1rem;
+}
+
+.admin-capacity-bar-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.admin-capacity-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8125rem;
+  color: var(--text2);
+  margin-bottom: 0.25rem;
+}
+
+.admin-capacity-bar-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.68rem;
+  color: var(--text3);
+}
+
+.admin-host-meta {
+  margin: 0.5rem 0 0;
+  font-size: 0.7rem;
+  color: var(--text3);
+}
+
 .admin-resources-window-row {
   display: flex;
   flex-wrap: wrap;

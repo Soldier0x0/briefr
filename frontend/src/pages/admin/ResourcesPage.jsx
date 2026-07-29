@@ -6,13 +6,73 @@ import AsyncSection from './shared/AsyncSection.jsx'
 import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import { AdminChartSkeleton } from './shared/AdminSkeletons.jsx'
-import { fmtBytes, fmtIsoMono } from './formatters.js'
+import { fmtBytes, fmtIsoMono, diskBarColor } from './formatters.js'
 
 const ResourceLineChart = lazy(() =>
   import('./resourcesChartsRecharts.jsx').then((mod) => ({ default: mod.ResourceLineChart })),
 )
 
 const WINDOWS = ['1d', '3d', '7d', '30d']
+
+function CapacityBar({ label, used, total, sub }) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
+  return (
+    <div className="admin-capacity-bar-wrap">
+      <div className="admin-capacity-bar-header">
+        <span>{label}</span>
+        <span className="mono">{fmtBytes(used)} / {fmtBytes(total)} ({pct}%)</span>
+      </div>
+      <div className="disk-bar">
+        <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(pct)}`} style={{ width: `${pct}%` }} />
+      </div>
+      {sub && <p className="admin-capacity-bar-sub mono">{sub}</p>}
+    </div>
+  )
+}
+
+function HostCapacityCard({ profile }) {
+  if (!profile?.memory_total_bytes) return null
+  const memUsed = profile.memory_total_bytes - profile.memory_available_bytes
+  return (
+    <div className="admin-card admin-host-capacity">
+      <div className="admin-card-title">
+        Host capacity
+        <HelpTip text="Live hardware limits from this server (psutil). Consumption includes all processes on the host, not only BRIEFR." />
+      </div>
+      <CapacityBar
+        label="Memory"
+        used={memUsed}
+        total={profile.memory_total_bytes}
+      />
+      <CapacityBar
+        label="Disk (DB volume)"
+        used={profile.disk_used_bytes}
+        total={profile.disk_total_bytes}
+        sub={profile.disk_path}
+      />
+      <p className="mono admin-host-meta">
+        {profile.hostname} · {profile.cpu_count_logical} logical CPUs
+      </p>
+    </div>
+  )
+}
+
+function PoolStatsCard({ poolStats }) {
+  if (!poolStats?.size) return null
+  const inUse = poolStats.in_use ?? 0
+  const size = poolStats.max ?? poolStats.size
+  const pct = size > 0 ? Math.min(100, Math.round((inUse / size) * 100)) : 0
+  return (
+    <div className="admin-card admin-pool-stats">
+      <div className="admin-card-title">
+        Connection pool
+        <HelpTip text="PostgreSQL asyncpg pool counters. SQLite dev mode has no pool." />
+      </div>
+      <CapacityBar label="Connections in use" used={inUse} total={size} />
+      <p className="mono admin-host-meta">{inUse} in use · {poolStats.idle ?? 0} idle · max {size}</p>
+    </div>
+  )
+}
 
 function fmtMetric(field, value) {
   if (value == null || Number.isNaN(value)) return '—'
@@ -64,7 +124,9 @@ function ResourceChartSection({ series, fields, labels, tableTitle }) {
           return v != null && !Number.isNaN(Number(v))
         }),
       )
-      .slice(-48)
+      .slice()
+      .reverse()
+      .slice(0, 48)
       .map((row, index) => {
         const entry = {
           _key: row.ts || index,
@@ -239,6 +301,9 @@ export default function ResourcesPage() {
                 <span>Collecting baseline samples — charts improve after about an hour of data.</span>
               </div>
             )}
+
+            <HostCapacityCard profile={payload?.host_profile} />
+            <PoolStatsCard poolStats={payload?.pool_stats} />
 
             {chartSections.map(section => (
               <div className="admin-card admin-resources-chart-card" key={section.id}>
