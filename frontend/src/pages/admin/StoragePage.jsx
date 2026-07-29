@@ -75,6 +75,14 @@ export default function StoragePage({ toast }) {
           <>
             <div className="admin-card">
               <div className="admin-card-title">Disk usage</div>
+              {dbPartition.device_id != null
+                && backupPartition.device_id != null
+                && dbPartition.device_id === backupPartition.device_id && (
+                <p className="admin-storage-mount-note">
+                  DB and backups are on the same filesystem ({dbPartition.path}).
+                  Partition totals will match; database file size is shown separately below.
+                </p>
+              )}
               <div className="admin-two-col" style={{ gap: '1.5rem', marginBottom: '0.75rem' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.25rem' }}>DB partition</div>
@@ -85,6 +93,9 @@ export default function StoragePage({ toast }) {
                     <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(dbPct)}`} style={{ width: `${dbPct}%` }} />
                   </div>
                   <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
+                    Filesystem for {dbPartition.path || storage.db_path}
+                  </div>
+                  <div style={{ marginTop: '0.15rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
                     Database: {storage.db_path} ({fmtBytes(storage.db_size_bytes)})
                   </div>
                 </div>
@@ -97,6 +108,9 @@ export default function StoragePage({ toast }) {
                     <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(backupPct)}`} style={{ width: `${backupPct}%` }} />
                   </div>
                   <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
+                    Filesystem for {backupPartition.path || storage.backup_dir}
+                  </div>
+                  <div style={{ marginTop: '0.15rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
                     {storage.archive_count ?? 0} archives in {storage.backup_dir}
                   </div>
                 </div>

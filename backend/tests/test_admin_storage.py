@@ -42,7 +42,6 @@ def test_storage_returns_partition_info(admin_client):
     resp = admin_client.get("/api/admin/storage")
     assert resp.status_code == 200
     data = resp.json()
-    # Must return structured partition objects
     assert "db_partition" in data
     assert "backup_partition" in data
     assert "table_sizes" in data
@@ -54,12 +53,20 @@ def test_storage_returns_partition_info(admin_client):
     assert "used" in db_part
 
 
+def test_storage_partition_includes_path_and_device(admin_client):
+    resp = admin_client.get("/api/admin/storage")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["db_partition"]["path"]
+    assert "device_id" in data["db_partition"]
+    assert data["backup_partition"]["path"]
+
+
 def test_storage_disk_total_nonzero(admin_client):
     resp = admin_client.get("/api/admin/storage")
     assert resp.status_code == 200
     data = resp.json()
     db_part = data["db_partition"]
-    # total must be > 0 — the NaN bug must be fixed
     assert db_part["total"] > 0, "disk_total must be non-zero (NaN bug fix)"
 
 

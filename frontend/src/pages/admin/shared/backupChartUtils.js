@@ -1,20 +1,24 @@
+/** 1-based ordinal X-axis label (no dates on the chart axis). */
+export function backupChartOrdinalLabel(index, total) {
+  const n = Number(index)
+  if (!Number.isFinite(n) || n < 0) return ''
+  return String(n + 1)
+}
+
+export const BACKUP_CHART_LIMIT = 30
+
 /**
- * Short X-axis tick for a backup archive. Prefer the timestamp embedded in
- * the filename so adjacent archives stay visually distinct.
+ * Split backup rows for chart (oldest→newest, left→right) vs table (newest first).
  */
-export function backupChartTickLabel(filename) {
-  const raw = String(filename || '')
-  const stamp = raw.match(/(\d{8}T\d{6}Z?)/)?.[1]
-  if (stamp) {
-    const m = stamp.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/)
-    if (m) return `${m[2]}-${m[3]}`
-    return stamp
-  }
-  const name = raw
-    .replace(/^briefr-backup-/, '')
-    .replace(/\.tar\.gz(?:\.age)?$/i, '')
-  if (!name) return 'backup'
-  return name.length > 12 ? `${name.slice(0, 12)}…` : name
+export function backupSizeRows(backups) {
+  const rows = Array.isArray(backups) ? backups : []
+  const newestFirst = [...rows].sort((a, b) =>
+    String(b.created_at).localeCompare(String(a.created_at)),
+  )
+  const limited = newestFirst.slice(0, BACKUP_CHART_LIMIT)
+  const chartRows = [...limited].reverse()
+  const tableRows = limited
+  return { chartRows, tableRows }
 }
 
 /**
@@ -26,11 +30,12 @@ export function backupChartTickLabel(filename) {
  * Use the row index as pointKey; keep filename only for display/tooltip.
  */
 export function backupChartPoints(rows, scale) {
+  const total = (rows || []).length
   return (rows || []).map((row, index) => {
     const filename = row?.filename || `backup-${index}`
     return {
       pointKey: index,
-      tickLabel: backupChartTickLabel(filename),
+      tickLabel: backupChartOrdinalLabel(index, total),
       size: scale.toDisplay(row?.size_bytes || 0),
       filename,
       created_at: row?.created_at,

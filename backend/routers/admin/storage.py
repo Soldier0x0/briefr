@@ -157,6 +157,18 @@ _STORAGE_TABLES = [
 ]
 
 
+def _partition_stats(dir_path: str) -> dict[str, Any]:
+    path = os.path.abspath(dir_path)
+    out: dict[str, Any] = {"free": 0, "total": 0, "used": 0, "path": path, "device_id": None}
+    try:
+        du = shutil.disk_usage(path)
+        out.update({"free": du.free, "total": du.total, "used": du.used})
+        out["device_id"] = os.stat(path).st_dev
+    except OSError:
+        pass
+    return out
+
+
 @router.get("/storage")
 async def get_storage(request: Request):
     from storage_metrics import (
@@ -189,22 +201,14 @@ async def get_storage(request: Request):
 
     # DB partition disk usage
     db_dir = os.path.dirname(db_path) or "."
-    db_partition: dict[str, Any] = {"free": 0, "total": 0, "used": 0}
-    try:
-        du = shutil.disk_usage(db_dir)
-        db_partition = {"free": du.free, "total": du.total, "used": du.used}
-    except Exception:
-        pass
+    db_partition = _partition_stats(db_dir)
 
     # Backup partition disk usage
     backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
-    backup_partition: dict[str, Any] = {"free": 0, "total": 0, "used": 0}
     try:
         if pathlib.Path(backup_dir).exists():
-            du2 = shutil.disk_usage(backup_dir)
-            backup_partition = {"free": du2.free, "total": du2.total, "used": du2.used}
+            backup_partition = _partition_stats(backup_dir)
         else:
-            # Fall back to the same partition as the DB
             backup_partition = db_partition.copy()
     except Exception:
         backup_partition = db_partition.copy()

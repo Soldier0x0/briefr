@@ -4,6 +4,7 @@ import { ChartDataTable } from '../../../components/ui/index.js'
 import HelpTip from './HelpTip.jsx'
 import { jobLabel } from '../catalog.js'
 import { fmtBytes, fmtDur } from '../formatters.js'
+import { backupSizeRows } from './backupChartUtils.js'
 import { AdminChartSkeleton } from './AdminSkeletons.jsx'
 
 const IngestDurationChart = lazy(() =>
@@ -46,14 +47,6 @@ function ingestDurationRows(schedulerJobs) {
     .slice(0, 8)
 }
 
-function backupSizeRows(backups) {
-  const rows = Array.isArray(backups) ? backups : []
-  return [...rows]
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .slice(0, 12)
-    .reverse()
-}
-
 function webhookDayBuckets(rows) {
   const buckets = new Map()
   for (const row of rows || []) {
@@ -64,7 +57,7 @@ function webhookDayBuckets(rows) {
     else cur.failed += 1
     buckets.set(day, cur)
   }
-  const days = [...buckets.keys()].sort().slice(-7)
+  const days = [...buckets.keys()].sort()
   return days.map(day => ({
     day,
     ok: buckets.get(day)?.ok || 0,
@@ -86,8 +79,15 @@ export default function OpsCharts({ schedulerJobs }) {
   const [extraLoaded, setExtraLoaded] = useState(false)
 
   const ingestRows = useMemo(() => ingestDurationRows(schedulerJobs), [schedulerJobs])
-  const backupRows = useMemo(() => backupSizeRows(backups), [backups])
+  const { chartRows: backupChartRows, tableRows: backupTableRows } = useMemo(
+    () => backupSizeRows(backups),
+    [backups],
+  )
   const whBuckets = useMemo(() => webhookDayBuckets(webhookRows), [webhookRows])
+  const whTableRows = useMemo(
+    () => [...whBuckets].reverse(),
+    [whBuckets],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -95,7 +95,7 @@ export default function OpsCharts({ schedulerJobs }) {
       try {
         const [backRes, whRes] = await Promise.all([
           adminApi.get('/backups'),
-          adminApi.get('/webhooks/delivery-log?limit=200'),
+          adminApi.get('/webhooks/delivery-log?limit=500'),
         ])
         if (cancelled) return
         setBackups(backRes.ok ? await backRes.json() : [])
@@ -153,23 +153,24 @@ export default function OpsCharts({ schedulerJobs }) {
       <div className="admin-card admin-ops-chart-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           Backup archive sizes
-          <HelpTip text="Trend of the twelve most recent encrypted backup archives on disk (oldest left, newest right). X-axis shows archive date (UTC); use the data table for exact sizes and timestamps." />
+          <HelpTip text="Thirty most recent archives (oldest left, newest right). X-axis is archive index; exact filenames and timestamps are in the data table." />
         </div>
-        {backupRows.length === 0 ? (
+        {backupChartRows.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No backups listed yet' : <AdminChartSkeleton height={160} />}</div>
         ) : (
           <>
             <ChartSuspense>
-              <BackupSizesChart rows={backupRows} />
+              <BackupSizesChart rows={backupChartRows} />
             </ChartSuspense>
             <ChartDataTable
               title="Backup archive sizes"
               columns={[
+                { key: 'rank', label: '#', className: 'mono', render: (_row, i) => i + 1 },
                 { key: 'filename', label: 'Archive' },
                 { key: 'size', label: 'Size', className: 'mono' },
                 { key: 'created_at', label: 'Created (UTC)', className: 'mono' },
               ]}
-              rows={backupRows.map((row) => ({
+              rows={backupTableRows.map((row) => ({
                 _key: row.filename,
                 filename: row.filename,
                 size: fmtBytes(row.size_bytes || 0),
@@ -182,8 +183,8 @@ export default function OpsCharts({ schedulerJobs }) {
 
       <div className="admin-card admin-ops-chart-card">
         <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          Webhook deliveries (7d)
-          <HelpTip text="Daily count of successful vs failed webhook delivery attempts from the delivery log (last 200 rows)." />
+          Webhook deliveries
+          <HelpTip text="Daily count of successful vs failed webhook delivery attempts from the delivery log (last 500 rows)." />
         </div>
         {whBuckets.length === 0 ? (
           <div className="admin-empty admin-ops-chart-empty">{extraLoaded ? 'No webhook deliveries yet' : <AdminChartSkeleton height={160} />}</div>
@@ -193,13 +194,13 @@ export default function OpsCharts({ schedulerJobs }) {
               <WebhookDeliveriesChart buckets={whBuckets} />
             </ChartSuspense>
             <ChartDataTable
-              title="Webhook deliveries (7d)"
+              title="Webhook deliveries"
               columns={[
                 { key: 'day', label: 'Day (UTC)', className: 'mono' },
                 { key: 'ok', label: 'Delivered', className: 'mono' },
                 { key: 'failed', label: 'Failed', className: 'mono' },
               ]}
-              rows={whBuckets.map((row) => ({
+              rows={whTableRows.map((row) => ({
                 _key: row.day,
                 day: row.day,
                 ok: row.ok,

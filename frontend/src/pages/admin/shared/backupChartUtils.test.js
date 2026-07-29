@@ -3,39 +3,47 @@ import assert from 'node:assert/strict'
 
 import { bytesChartScale } from '../formatters.js'
 import {
+  backupChartOrdinalLabel,
   backupChartPoints,
-  backupChartTickLabel,
+  backupSizeRows,
   backupTooltipModel,
 } from './backupChartUtils.js'
 
-describe('backupChartTickLabel', () => {
-  it('uses distinct date ticks for age-encrypted archives', () => {
-    const a = backupChartTickLabel('briefr-20260717T202746Z.tar.gz.age')
-    const b = backupChartTickLabel('briefr-20260717T120000Z.tar.gz.age')
-    const c = backupChartTickLabel('briefr-20260716T202746Z.tar.gz.age')
-    assert.equal(a, '07-17')
-    assert.equal(b, '07-17')
-    assert.equal(c, '07-16')
-    assert.notEqual(a, c)
+describe('backupChartOrdinalLabel', () => {
+  it('returns 1-based index without dates', () => {
+    assert.equal(backupChartOrdinalLabel(0, 30), '1')
+    assert.equal(backupChartOrdinalLabel(29, 30), '30')
+  })
+})
+
+describe('backupSizeRows', () => {
+  it('table rows are newest-first while chart rows are oldest-first', () => {
+    const backups = [
+      { filename: 'a', created_at: '2026-07-20T00:00:00Z', size_bytes: 1 },
+      { filename: 'b', created_at: '2026-07-23T00:00:00Z', size_bytes: 2 },
+    ]
+    const { chartRows, tableRows } = backupSizeRows(backups)
+    assert.equal(tableRows[0].filename, 'b')
+    assert.equal(chartRows[0].filename, 'a')
   })
 
-  it('does not collapse archives on the same day to one label', () => {
-    const labels = [
-      'briefr-20260717T202746Z.tar.gz.age',
-      'briefr-20260717T180000Z.tar.gz.age',
-      'briefr-20260715T090000Z.tar.gz.age',
-    ].map(backupChartTickLabel)
-    assert.equal(labels[0], '07-17')
-    assert.equal(labels[1], '07-17')
-    assert.equal(labels[2], '07-15')
-    assert.ok(labels.every((label) => !label.includes('…')))
+  it('limits chart to 30 archives', () => {
+    const backups = Array.from({ length: 40 }, (_, i) => ({
+      filename: `briefr-${i}.tar.gz`,
+      created_at: `2026-07-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+      size_bytes: 1024,
+    }))
+    const { chartRows, tableRows } = backupSizeRows(backups)
+    assert.equal(chartRows.length, 30)
+    assert.equal(tableRows.length, 30)
   })
+})
 
-  it('handles legacy briefr-backup- prefix', () => {
-    assert.equal(
-      backupChartTickLabel('briefr-backup-20260710T010203Z.tar.gz'),
-      '07-10',
-    )
+describe('backup chart scale ticks', () => {
+  it('formats Y ticks as integers', () => {
+    const scale = bytesChartScale([50.3 * 1024 * 1024, 95.4 * 1024 * 1024])
+    assert.equal(scale.formatTick(50.3), '50 MB')
+    assert.ok(!scale.formatTick(50.3).includes('.0'))
   })
 })
 
@@ -46,7 +54,8 @@ describe('backupChartPoints', () => {
     assert.equal(points.length, 2)
     assert.equal(points[0].size, 0)
     assert.equal(points[0].filename, 'backup-0')
-    assert.equal(points[1].tickLabel, '07-18')
+    assert.equal(points[0].tickLabel, '1')
+    assert.equal(points[1].tickLabel, '2')
   })
 
   it('uses unique index keys so far-left and far-right never share an X category', () => {
@@ -59,9 +68,9 @@ describe('backupChartPoints', () => {
     const points = backupChartPoints(rows, scale)
 
     assert.deepEqual(points.map((p) => p.pointKey), [0, 1, 2])
+    assert.deepEqual(points.map((p) => p.tickLabel), ['1', '2', '3'])
     assert.equal(new Set(points.map((p) => p.pointKey)).size, rows.length)
 
-    // Simulate Recharts axis tooltip payload for far-left vs far-right.
     const leftTip = backupTooltipModel([{ payload: points[0] }])
     const rightTip = backupTooltipModel([{ payload: points[2] }])
     assert.equal(leftTip.filename, rows[0].filename)
