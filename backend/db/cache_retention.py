@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from db.resource_metrics import purge_old_resource_metrics
+from db.resource_metrics import get_resource_metrics_retention_days, purge_old_resource_metrics
 from db.types import DbConnection
 
 # Physical retention >= read TTL for each key family (hours).
