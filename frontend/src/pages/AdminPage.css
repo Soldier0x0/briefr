@@ -2316,9 +2316,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
+  align-items: start;
 }
 
-.admin-ops-chart-card { min-width: 0; }
+.admin-ops-chart-card {
+  min-width: 0;
+  align-self: start;
+}
 
 .admin-ops-chart-wrap {
   position: relative;
@@ -3769,6 +3773,44 @@
   font-size: var(--type-label, 12px);
   color: var(--admin-text, var(--text));
   margin: 0 0 0.5rem;
+}
+
+.admin-efficiency-rec-meta {
+  font-size: var(--type-meta, 12px);
+  color: var(--admin-text-muted, var(--text3));
+  margin: 0 0 0.35rem;
+  line-height: 1.45;
+}
+
+.admin-efficiency-rec-meta strong {
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.admin-efficiency-rec-confidence {
+  display: inline-block;
+  font-size: var(--type-micro, 11px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.admin-efficiency-panel-lede {
+  font-size: var(--type-meta, 12px);
+  color: var(--admin-text-muted, var(--text3));
+  margin: 0 0 0.75rem;
+  line-height: 1.45;
+}
+
+.admin-host-live-badge {
+  font-size: var(--type-micro, 11px);
+  color: var(--green);
+  letter-spacing: 0.06em;
+  margin-left: 0.35rem;
 }
 
 .admin-efficiency-apply {

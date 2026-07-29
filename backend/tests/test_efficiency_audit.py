@@ -26,6 +26,12 @@ def test_efficiency_report_includes_subsystems_and_recommendations(tmp_path, mon
             assert any(s["id"] == "api_call_events" for s in report["subsystems"])
             assert isinstance(report["recommendations"], list)
             assert report["host_profile"]["memory_total_bytes"] > 0
+            for rec in report["recommendations"]:
+                assert "basis" in rec
+                assert rec["confidence"] in ("low", "medium", "high")
+                assert "impact_risk" in rec
+                assert "reversible" in rec
+                assert rec["auto_scalable"] is False
         finally:
             await db.close()
 

@@ -606,6 +606,7 @@
   text-transform: uppercase;
   color: var(--text2);
   margin-bottom: 8px;
+  overflow-wrap: anywhere;
 }
 
 /* QA-U2: one deliberate accent anchor per drawer tab — signature gold without decoration spread */
@@ -1242,6 +1243,7 @@ a.drawer-related-news-title:focus-visible {
   flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .product-tag {
@@ -1251,6 +1253,10 @@ a.drawer-related-news-title:focus-visible {
   background: var(--bg3);
   border: 1px solid var(--border2);
   padding: 3px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cwe-list {
@@ -3353,10 +3359,9 @@ a.drawer-related-news-title:focus-visible {
 /* Task 3 — Overview IA twin, panel chrome, accent-ghost, correlation polish */
 .drawer-panel {
   background: var(--surface-sunken);
-  border-top: 1px solid var(--border-active);
+  border-top: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-inset-indicator-start);
 }
 
 @media (min-width: 1024px) {
@@ -3380,6 +3385,7 @@ a.drawer-related-news-title:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
+  align-items: start;
 }
 
 @media (max-width: 959px) {
@@ -3395,11 +3401,8 @@ a.drawer-related-news-title:focus-visible {
 .drawer-otx-item,
 .corr-finding {
   background: var(--surface-sunken);
-  border-top: 1px solid var(--border-active);
-  border-right: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
-  border-left: none;
-  box-shadow: var(--shadow-inset-indicator-start);
+  border: 1px solid var(--border-subtle);
+  box-shadow: none;
 }
 
 .drawer-overview-twin-cell,

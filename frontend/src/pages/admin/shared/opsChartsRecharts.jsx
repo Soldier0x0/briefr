@@ -59,7 +59,7 @@ export function IngestDurationChart({ rows }) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={rechartsMargin({ left: 8, right: 16, top: 8, bottom: 28 })}
+          margin={rechartsMargin({ left: 8, right: 28, top: 8, bottom: 28 })}
         >
           <CartesianGrid stroke={theme.grid} horizontal={false} />
           <XAxis

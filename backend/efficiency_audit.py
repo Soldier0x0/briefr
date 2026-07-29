@@ -91,6 +91,23 @@ def _pct_of(part: int, whole: int) -> float | None:
     return round(part / whole * 100, 2)
 
 
+def _rec_detail(
+    *,
+    basis: str,
+    confidence: str,
+    impact_risk: str,
+    reversible: bool,
+) -> dict[str, Any]:
+    """Operator-facing metadata for efficiency suggestions."""
+    return {
+        "basis": basis,
+        "confidence": confidence,
+        "impact_risk": impact_risk,
+        "reversible": reversible,
+        "auto_scalable": False,
+    }
+
+
 async def build_efficiency_report(
     db: DbConnection,
     *,
@@ -245,6 +262,18 @@ def _build_recommendations(
             "current_value": os.environ.get("API_CALL_EVENTS_ENABLED", "1"),
             "suggested_value": "0",
             "estimated_savings": {"bytes": est_saved, "requests_per_day": api_rpd},
+            **_rec_detail(
+                basis=(
+                    f"api_call_events table is {api_bytes / (1024 * 1024):.0f} MB "
+                    f"with ~{api_rpd:,} events in the last 24h."
+                ),
+                confidence="high",
+                impact_risk=(
+                    "Disabling API_CALL_EVENTS stops new metering rows and hides per-key "
+                    "usage history in Admin → API Keys. Live CVE feeds and IOC lookups are unaffected."
+                ),
+                reversible=True,
+            ),
         })
 
     retention = _env_int("BACKUP_RETENTION_COUNT", 30)
@@ -261,6 +290,15 @@ def _build_recommendations(
             "current_value": str(retention),
             "suggested_value": "30",
             "estimated_savings": {"bytes": max(0, (archive_count - 30) * (disk_used // max(archive_count, 1)))},
+            **_rec_detail(
+                basis=f"{archive_count} archives on disk at {disk_pct:.0f}% capacity (psutil).",
+                confidence="medium",
+                impact_risk=(
+                    "Lowering BACKUP_RETENTION_COUNT deletes oldest archives on the next backup run. "
+                    "You lose restore points beyond the new limit; live DB and feeds are unaffected."
+                ),
+                reversible=True,
+            ),
         })
 
     sample_interval = _env_int("RESOURCE_SAMPLE_INTERVAL_SECONDS", 60)
@@ -279,6 +317,18 @@ def _build_recommendations(
             "current_value": str(sample_interval),
             "suggested_value": "120",
             "estimated_savings": {"rows": saved_writes * 30},
+            **_rec_detail(
+                basis=(
+                    f"RESOURCE_SAMPLE_INTERVAL_SECONDS={sample_interval} and "
+                    f"{resource_metrics_rows:,} resource_metrics rows on disk."
+                ),
+                confidence="high",
+                impact_risk=(
+                    "Admin Resources charts update less frequently (120s vs current interval). "
+                    "No impact on CVE ingest, detection, or API traffic."
+                ),
+                reversible=True,
+            ),
         })
 
     from feeds.otx_continuous import get_otx_continuous_budget_per_run, otx_continuous_enabled
@@ -298,6 +348,18 @@ def _build_recommendations(
             "current_value": str(current_budget),
             "suggested_value": str(suggested),
             "estimated_savings": {"requests_per_day": max(0, api_rpd // 4)},
+            **_rec_detail(
+                basis=(
+                    f"OTX continuous enabled, budget {current_budget}/run, "
+                    f"~{api_rpd:,} api_call_events in 24h."
+                ),
+                confidence="medium",
+                impact_risk=(
+                    "Fewer OTX pulses per scheduler run — campaign correlation may lag on "
+                    "high-churn threat feeds. Ingest and NVD sync are unaffected."
+                ),
+                reversible=True,
+            ),
         })
 
     pool_size = _env_int("DATABASE_POOL_SIZE", 10)
@@ -318,6 +380,15 @@ def _build_recommendations(
                 "current_value": str(pool_size),
                 "suggested_value": str(suggested_pool),
                 "estimated_savings": {},
+                **_rec_detail(
+                    basis=f"Pool snapshot: {in_use} in use of max {pool_max} (asyncpg counters).",
+                    confidence="low",
+                    impact_risk=(
+                        "Under heavy concurrent load, a smaller pool can queue requests. "
+                        "Only apply if peak usage stays well below the suggested size."
+                    ),
+                    reversible=True,
+                ),
             })
 
     metrics_retention = _env_int("RESOURCE_METRICS_RETENTION_DAYS", 30)
@@ -334,6 +405,15 @@ def _build_recommendations(
             "current_value": str(metrics_retention),
             "suggested_value": "14",
             "estimated_savings": {"rows": resource_metrics_rows // 2},
+            **_rec_detail(
+                basis=f"{resource_metrics_rows:,} resource_metrics rows; retention {metrics_retention} days.",
+                confidence="high",
+                impact_risk=(
+                    "Admin Resources history older than 14 days is pruned on the next retention job. "
+                    "Live monitoring and alerts are unaffected."
+                ),
+                reversible=True,
+            ),
         })
 
     if mem_total > 0:
@@ -352,6 +432,18 @@ def _build_recommendations(
                 "current_value": None,
                 "suggested_value": None,
                 "estimated_savings": {},
+                **_rec_detail(
+                    basis=(
+                        f"psutil reports {mem_used_pct:.0f}% RAM used; "
+                        f"api_call_events is {api_bytes / (1024 * 1024):.0f} MB."
+                    ),
+                    confidence="medium",
+                    impact_risk=(
+                        "Informational only — no one-click apply. Review linked recommendations "
+                        "(metering, retention) before changing config."
+                    ),
+                    reversible=True,
+                ),
             })
 
     return recs
