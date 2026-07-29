@@ -13,6 +13,7 @@ import json
 import logging
 
 from fastapi import HTTPException, Request
+from fastapi.responses import StreamingResponse
 from procrastinate.exceptions import AlreadyEnqueued
 
 from database import get_db, set_sync_state_value
@@ -49,6 +50,64 @@ async def get_api_usage_metering(request: Request, hours: int = 24):
     finally:
         await db.close()
     return {"ok": True, **summary, "usage_rollups": usage}
+
+
+@router.get("/api-usage/events")
+async def get_api_usage_events(
+    request: Request,
+    hours: int = 24,
+    source: str | None = None,
+    actor_type: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """Paginated outbound API call audit trail from api_call_events."""
+    from db.api_metering import query_api_call_events
+
+    db = await get_db()
+    try:
+        return await query_api_call_events(
+            db,
+            hours=hours,
+            source=source or None,
+            actor_type=actor_type or None,
+            limit=limit,
+            offset=offset,
+        )
+    finally:
+        await db.close()
+
+
+@router.get("/api-usage/events/export")
+async def export_api_usage_events(
+    request: Request,
+    hours: int = 24,
+    source: str | None = None,
+    actor_type: str | None = None,
+):
+    """CSV export of outbound API call events (retained 30d in DB)."""
+    from db.api_metering import iter_api_call_events_csv
+
+    async def _stream():
+        db = await get_db()
+        try:
+            async for chunk in iter_api_call_events_csv(
+                db,
+                hours=hours,
+                source=source or None,
+                actor_type=actor_type or None,
+            ):
+                yield chunk
+        finally:
+            await db.close()
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="api-call-events.csv"',
+        },
+    )
 
 
 @router.get("/jobs/outbound")

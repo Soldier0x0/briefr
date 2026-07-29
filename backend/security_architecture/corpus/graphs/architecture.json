@@ -593,7 +593,7 @@
       "label": "routers.admin.jobs",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 10,
+      "endpoint_count": 12,
       "source_refs": [
         {
           "type": "file",
@@ -4182,6 +4182,12 @@
       "id": "routers-admin-intel_snapshot->table:kev_deadlines",
       "source": "routers-admin-intel_snapshot",
       "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-jobs->table:api_call_events",
+      "source": "routers-admin-jobs",
+      "target": "table:api_call_events",
       "kind": "references_table"
     },
     {

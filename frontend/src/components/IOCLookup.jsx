@@ -313,7 +313,7 @@ export default function IOCLookup({ prefill }) {
         <h1 className="ioc-page-title">IOC LOOKUP</h1>
         <p className="ioc-page-sub">
           Check whether an IP, file hash, or domain appears in threat feeds. Paste a full URL or hostname — not filenames.
-          GreyNoise is optional for IP lookups (50 calls/week).
+          GreyNoise is optional — per lookup when you opt in (50 calls/week shared quota).
         </p>
       </div>
 
@@ -373,7 +373,7 @@ export default function IOCLookup({ prefill }) {
               id="ioc-include-greynoise"
               checked={includeGreynoise}
               onCheckedChange={setIncludeGreynoise}
-              label="Include GreyNoise (uses weekly quota)"
+              label="GreyNoise — optional, per lookup (uses weekly quota)"
               className="ioc-greynoise-opt mono"
             />
           )}

@@ -262,7 +262,26 @@ export function statusHint(status) {
   return STATUS_CATALOG[status]?.hint || ''
 }
 
+const METERING_ACTOR_LABELS = {
+  job: 'Job',
+  queue: 'Queue',
+  user: 'User',
+}
+
+export function formatMeteringActorLabel(actorType) {
+  if (!actorType) return '—'
+  const key = String(actorType).toLowerCase()
+  if (METERING_ACTOR_LABELS[key]) return METERING_ACTOR_LABELS[key]
+  return String(actorType).replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export const TERM_GLOSSARY = {
+  api_audit_greynoise: {
+    analyst: 'GreyNoise audit',
+    operator: 'GreyNoise opt-in',
+    explanation:
+      'GreyNoise is only called when an analyst opts in during IOC Lookup (IP) or loads scanning context in a CVE drawer — not on every sync. Filter Source = greynoise to see user lookups vs background jobs.',
+  },
   db_integrity: {
     analyst: 'Database health',
     operator: 'DB integrity',
@@ -308,19 +327,6 @@ export const TERM_GLOSSARY = {
     operator: 'Median evidence age',
     explanation: 'Median age of OTX IOC observed/fetched timestamps supporting correlations.',
   },
-}
-
-const METERING_ACTOR_LABELS = {
-  job: 'Job',
-  queue: 'Queue',
-  user: 'User',
-}
-
-export function formatMeteringActorLabel(actorType) {
-  if (!actorType) return '—'
-  const key = String(actorType).toLowerCase()
-  if (METERING_ACTOR_LABELS[key]) return METERING_ACTOR_LABELS[key]
-  return String(actorType).replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 export function termLabel(key, mode = 'operator') {
