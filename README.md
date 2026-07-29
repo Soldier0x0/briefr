@@ -120,6 +120,7 @@ Optional seed data: `python scripts/seed_screenshot_data.py` from repo root.
 | Understand internals | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) · [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md) |
 | Try the UI (no install) | https://briefrdemo.projectjupiter.in |
 | Browse online | https://docs.projectjupiter.in |
+| Ask for help | [GitHub Discussions → Q&A](https://github.com/Soldier0x0/briefr/discussions/new?category=q-a) |
 | API contract | [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) |
 | What's shipped | [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md) |
 | Contribute | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`docs/ONBOARDING.md`](docs/ONBOARDING.md) |

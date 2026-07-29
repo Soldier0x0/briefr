@@ -43,4 +43,6 @@ Find your **symptom** → try the **fix**. No need to read other docs first.
 - [`SELF_HOST.md`](SELF_HOST.md) — install paths and verification checklist
 - [PRODUCT_STATUS.md](PRODUCT_STATUS.md) — what's supposed to work today
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md) — architecture if you need context
-- GitHub issues on the repo
+- [Official docs](https://docs.projectjupiter.in) — user guide, FAQ, integrations
+- [GitHub Discussions → Q&A](https://github.com/Soldier0x0/briefr/discussions/new?category=q-a) — community help (preferred over issues for questions)
+- [GitHub issues](https://github.com/Soldier0x0/briefr/issues/new/choose) — reproducible bugs only
