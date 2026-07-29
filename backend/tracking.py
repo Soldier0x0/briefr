@@ -659,6 +659,9 @@ def _ai_minute_cap() -> int:
         return 10
 
 
+_QUOTA_UNAVAILABLE = -1
+
+
 async def get_ai_requests_today() -> int:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     since = f"{today} 00:00:00"
@@ -671,7 +674,7 @@ async def get_ai_requests_today() -> int:
             await db.close()
     except Exception as exc:
         logger.error("Failed to read AI daily usage: %s", exc)
-        return 0
+        return _QUOTA_UNAVAILABLE
 
 
 async def get_ai_requests_last_minute() -> int:
@@ -685,13 +688,19 @@ async def get_ai_requests_last_minute() -> int:
             await db.close()
     except Exception as exc:
         logger.error("Failed to read AI minute usage: %s", exc)
-        return 0
+        return _QUOTA_UNAVAILABLE
 
 
 async def has_ai_request_quota() -> bool:
-    if await get_ai_requests_today() >= _ai_daily_cap():
+    today = await get_ai_requests_today()
+    if today == _QUOTA_UNAVAILABLE:
         return False
-    return await get_ai_requests_last_minute() < _ai_minute_cap()
+    if today >= _ai_daily_cap():
+        return False
+    minute = await get_ai_requests_last_minute()
+    if minute == _QUOTA_UNAVAILABLE:
+        return False
+    return minute < _ai_minute_cap()
 
 
 async def ai_request_quota_snapshot() -> dict:
@@ -699,12 +708,15 @@ async def ai_request_quota_snapshot() -> dict:
     minute_cap = _ai_minute_cap()
     today_count = await get_ai_requests_today()
     minute_count = await get_ai_requests_last_minute()
+    daily_used = 0 if today_count == _QUOTA_UNAVAILABLE else today_count
+    minute_used = 0 if minute_count == _QUOTA_UNAVAILABLE else minute_count
     return {
         "daily_cap": daily_cap,
-        "daily_used": today_count,
+        "daily_used": daily_used,
         "minute_cap": minute_cap,
-        "minute_used": minute_count,
-        "daily_remaining": max(0, daily_cap - today_count),
+        "minute_used": minute_used,
+        "daily_remaining": max(0, daily_cap - daily_used),
+        "quota_unavailable": today_count == _QUOTA_UNAVAILABLE or minute_count == _QUOTA_UNAVAILABLE,
     }
 
 

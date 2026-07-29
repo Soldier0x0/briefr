@@ -12,6 +12,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +33,7 @@ jobs:
 
   test-postgres:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -129,6 +131,7 @@ jobs:
 
   playwright-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -155,4 +158,4 @@ jobs:
       - name: Run Playwright smoke (pytest)
         env:
           PLAYWRIGHT_SMOKE: "1"
-        run: cd backend && pytest tests/test_playwright_smoke.py -q
+        run: cd backend && timeout 600 pytest tests/test_playwright_smoke.py -q

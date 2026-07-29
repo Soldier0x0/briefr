@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import logging
 import os
@@ -48,7 +49,10 @@ _PROVIDER_ENV_KEYS = {
 
 _IDEMPOTENCY_WINDOW_SEC = 30.0
 _recent_task_context: dict[tuple[str, str], float] = {}
-_active_job_id: str | None = None
+_active_job_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "active_llm_job_id",
+    default=None,
+)
 
 
 @dataclass(frozen=True)
@@ -59,15 +63,14 @@ class LLMCompletion:
 
 
 def set_active_llm_job(job_id: str | None) -> None:
-    global _active_job_id
-    _active_job_id = job_id
+    _active_job_id.set(job_id)
 
 
 def llm_provider_timeout() -> float:
     raw = os.environ.get("LLM_PROVIDER_TIMEOUT_SEC", "").strip()
     if raw:
         try:
-            return max(10.0, float(raw))
+            return min(120.0, max(10.0, float(raw)))
         except ValueError:
             pass
     return min(60.0, scheduler_llm_timeout())
@@ -100,20 +103,25 @@ def get_configured_providers() -> list[str]:
     return [provider for provider in _PROVIDER_ENV_KEYS if _api_key(provider)]
 
 
-def _check_idempotency(task: str, context_type: str, context_id: str) -> bool:
+def _idempotency_blocked(task: str, context_type: str, context_id: str) -> bool:
     if context_type != "cve" or not context_id:
-        return True
+        return False
     key = (task, context_id)
     now = time.time()
     last = _recent_task_context.get(key)
-    if last is not None and (now - last) < _IDEMPOTENCY_WINDOW_SEC:
-        return False
+    return last is not None and (now - last) < _IDEMPOTENCY_WINDOW_SEC
+
+
+def _record_idempotency(task: str, context_type: str, context_id: str) -> None:
+    if context_type != "cve" or not context_id:
+        return
+    key = (task, context_id)
+    now = time.time()
     _recent_task_context[key] = now
     if len(_recent_task_context) > 256:
         cutoff = now - _IDEMPOTENCY_WINDOW_SEC
         for stale in [k for k, ts in _recent_task_context.items() if ts < cutoff]:
             _recent_task_context.pop(stale, None)
-    return True
 
 
 def _api_key(provider: str) -> str:
@@ -320,7 +328,7 @@ async def chat_completion_task(
         logger.warning("Skipping LLM task %s — instance AI request cap reached", task)
         return None
 
-    if not _check_idempotency(task, queue_context_type, queue_context_id):
+    if _idempotency_blocked(task, queue_context_type, queue_context_id):
         logger.info(
             "Skipping duplicate LLM task %s for %s within %ss",
             task,
@@ -364,10 +372,10 @@ async def chat_completion_task(
                 on_provider_attempt(step.provider)
             except Exception:
                 pass
-        if _active_job_id:
+        if _active_job_id.get() is not None:
             try:
                 from ai.llm_job_state import update_job_llm_provider
-                update_job_llm_provider(_active_job_id, step.provider)
+                update_job_llm_provider(_active_job_id.get(), step.provider)
             except Exception:
                 pass
         timer = AttemptTimer()
@@ -403,6 +411,7 @@ async def chat_completion_task(
                     fallback_from_model=last_failed_model,
                     usage=usage,
                 )
+                _record_idempotency(task, queue_context_type, queue_context_id)
                 return LLMCompletion(content=content, provider=step.provider, model=step.model)
             logger.warning("LLM %s returned empty content for task %s", step.provider, task)
             mark_provider_empty_response(step.provider)

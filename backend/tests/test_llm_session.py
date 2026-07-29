@@ -20,6 +20,8 @@ def _reset_llm_router_state(monkeypatch) -> None:
     router._recent_task_context.clear()
     monkeypatch.setenv("AI_DAILY_REQUEST_CAP", "9999")
     monkeypatch.setenv("AI_PER_MINUTE_CAP", "9999")
+    for key in ("CUSTOM_LLM_BASE_URL", "CUSTOM_LLM_API_KEY", "CUSTOM_LLM_MODEL"):
+        monkeypatch.delenv(key, raising=False)
 def test_empty_response_failsover_within_single_call(monkeypatch):
     _reset_llm_router_state(monkeypatch)
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")

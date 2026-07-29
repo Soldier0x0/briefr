@@ -115,7 +115,8 @@ def catalog_status_rows() -> list[dict[str, Any]]:
                 "env_key_field": entry.env_key_field,
                 "openai_compatible": entry.openai_compatible,
                 "configured": configured,
-                "notes": entry.notes,
+                "in_failover_chain": False,
+                "notes": entry.notes or "Reference catalog only — not in scheduler failover chain.",
             }
         )
     custom = custom_provider_configured()

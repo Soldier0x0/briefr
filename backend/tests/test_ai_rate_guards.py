@@ -83,3 +83,53 @@ def test_daily_cap_blocks_llm_calls(monkeypatch, tmp_path):
         )
 
     assert run_db_test(run()) is None
+
+
+def test_idempotency_allows_retry_after_failed_attempt(monkeypatch):
+    router._recent_task_context.clear()
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setenv("AI_DAILY_REQUEST_CAP", "9999")
+    monkeypatch.setenv("AI_PER_MINUTE_CAP", "9999")
+    calls = {"n": 0}
+
+    async def fake_call(step, **_kwargs):
+        calls["n"] += 1
+        return ""
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        await init_db()
+        first = await chat_completion_task(
+            "product_extraction",
+            messages=[{"role": "user", "content": "hi"}],
+            cve_id="CVE-2024-0002",
+        )
+        second = await chat_completion_task(
+            "product_extraction",
+            messages=[{"role": "user", "content": "hi"}],
+            cve_id="CVE-2024-0002",
+        )
+        return first, second, calls["n"]
+
+    first, second, n = run_db_test(run())
+    assert first is None
+    assert second is None
+    assert n >= 2
+
+
+def test_quota_fail_closed_when_usage_unreadable(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setenv("AI_DAILY_REQUEST_CAP", "9999")
+    monkeypatch.setenv("AI_PER_MINUTE_CAP", "9999")
+
+    async def fail_count(*_args, **_kwargs):
+        raise RuntimeError("db unavailable")
+
+    monkeypatch.setattr("db.ai_operations.count_ai_operations_since", fail_count)
+
+    async def run():
+        from tracking import has_ai_request_quota
+        return await has_ai_request_quota()
+
+    assert run_db_test(run()) is False

@@ -127,7 +127,14 @@ def _get_config_response() -> dict[str, Any]:
             "DETECTION_CONTEXT_NUCLEI_ENABLED": _env("DETECTION_CONTEXT_NUCLEI_ENABLED", "1"),
             "AI_DAILY_REQUEST_CAP": _env_int("AI_DAILY_REQUEST_CAP", 200),
             "AI_PER_MINUTE_CAP": _env_int("AI_PER_MINUTE_CAP", 10),
-            "LLM_PROVIDER_TIMEOUT_SEC": _env_int("LLM_PROVIDER_TIMEOUT_SEC", 0) or min(60, _env_int("SCHEDULER_LLM_TIMEOUT_SECONDS", 30)),
+            "LLM_PROVIDER_TIMEOUT_SEC": min(
+                120,
+                max(
+                    10,
+                    _env_int("LLM_PROVIDER_TIMEOUT_SEC", 0)
+                    or min(60, _env_int("SCHEDULER_LLM_TIMEOUT_SECONDS", 30)),
+                ),
+            ),
             "CUSTOM_LLM_BASE_URL": _env("CUSTOM_LLM_BASE_URL", ""),
             "CUSTOM_LLM_MODEL": _env("CUSTOM_LLM_MODEL", ""),
             "POC_GITHUB_SYNC_ENABLED": _env("POC_GITHUB_SYNC_ENABLED", "1"),
