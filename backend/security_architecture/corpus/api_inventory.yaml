@@ -168,6 +168,9 @@ endpoints:
 - method: GET
   path: /api/admin/resources
   component_id: routers-admin-storage
+- method: GET
+  path: /api/admin/resources/efficiency
+  component_id: routers-admin-storage
 - method: POST
   path: /api/admin/restart
   component_id: routers-admin-diagnostics
