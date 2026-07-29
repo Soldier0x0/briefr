@@ -158,4 +158,4 @@ jobs:
       - name: Run Playwright smoke (pytest)
         env:
           PLAYWRIGHT_SMOKE: "1"
-        run: cd backend && timeout 600 pytest tests/test_playwright_smoke.py -q
+        run: cd backend && timeout 420 pytest tests/test_playwright_smoke.py -q --timeout=120
