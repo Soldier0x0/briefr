@@ -37,6 +37,7 @@ SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from typing import Any
 
@@ -50,6 +51,18 @@ from security_architecture.frameworks import aggregate as fw_aggregate
 from security_architecture.frameworks import scope as fw_scope
 from security_architecture.graphs import ArchitectureGraphError
 from threat_model.scenarios import build_threat_scenarios
+
+logger = logging.getLogger(__name__)
+
+_CORPUS_UNAVAILABLE = (
+    "Security corpus is invalid or unavailable. Regenerate the security corpus or check server logs."
+)
+
+
+def _raise_corpus_unavailable(exc: Exception) -> None:
+    logger.exception("Security corpus validation failed")
+    raise HTTPException(status_code=500, detail=_CORPUS_UNAVAILABLE) from exc
+
 
 router = APIRouter(prefix="/api/security-architecture")
 
@@ -96,7 +109,7 @@ async def get_manifest():
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     manifest = corpus["manifest"]
     return {
@@ -114,7 +127,7 @@ async def get_overview():
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     components = _rows(corpus, "components", "components")
     endpoints = _rows(corpus, "api_inventory", "endpoints")
@@ -273,7 +286,7 @@ async def get_threat_scenarios(
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     effective_stack = merge.self_stack_query(corpus) if self_stack else stack
 
@@ -363,7 +376,11 @@ async def get_architecture_graph():
     try:
         return graphs.get_architecture_graph()
     except ArchitectureGraphError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Architecture graph unavailable")
+        raise HTTPException(
+            status_code=500,
+            detail="Architecture graph is unavailable. Regenerate the security corpus or check server logs.",
+        ) from exc
 
 
 @router.get("/graph/attack-surface")
@@ -376,7 +393,7 @@ async def get_attack_surface():
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
     return graphs.build_attack_surface(corpus)
 
 
@@ -393,7 +410,11 @@ async def get_node_context(node_id: str):
         corpus = get_corpus()
         graph = graphs.get_architecture_graph()
     except (CorpusValidationError, ArchitectureGraphError) as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Security architecture context unavailable")
+        raise HTTPException(
+            status_code=500,
+            detail="Security architecture context is unavailable. Check server logs.",
+        ) from exc
 
     context = graphs.build_node_context(node_id, corpus, graph)
     if context is None:
@@ -428,7 +449,7 @@ async def get_section(
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     rows = _rows(corpus, corpus_key, list_key)
     live_self_stack = None
@@ -515,7 +536,7 @@ async def get_stale_records():
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     rows = merge.annotate_stale(_all_curated_rows_by_section(corpus))
     stale_rows = [r for r in rows if r.get("stale")]
@@ -535,7 +556,7 @@ async def search(q: str = Query(default="", max_length=200)):
     try:
         corpus = get_corpus()
     except CorpusValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Corpus invalid: {exc}") from exc
+        _raise_corpus_unavailable(exc)
 
     results = merge.search_corpus(corpus, q)
 

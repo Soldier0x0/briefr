@@ -23,6 +23,7 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any
 
+from redact import scrub_log_text
 from settings import settings
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
@@ -97,7 +98,7 @@ def _record_to_entry(record: logging.LogRecord, *, include_category: bool) -> di
         ),
         "level": record.levelname,
         "logger": record.name,
-        "message": record.getMessage(),
+        "message": scrub_log_text(record.getMessage()),
         "request_id": getattr(record, "request_id", "") or request_id_var.get(),
     }
     job_id = getattr(record, "job_id", "") or job_id_var.get()
@@ -114,9 +115,9 @@ def _record_to_entry(record: logging.LogRecord, *, include_category: bool) -> di
         if key not in _STANDARD_ATTRS and key not in entry:
             entry[key] = "[REDACTED]" if _should_redact_field(key) else value
     if record.exc_info:
-        entry["exc_info"] = logging.Formatter().formatException(record.exc_info)
+        entry["exc_info"] = scrub_log_text(logging.Formatter().formatException(record.exc_info))
     if record.stack_info:
-        entry["stack_info"] = logging.Formatter().formatStack(record.stack_info)
+        entry["stack_info"] = scrub_log_text(logging.Formatter().formatStack(record.stack_info))
     return entry
 
 

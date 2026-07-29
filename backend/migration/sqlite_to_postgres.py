@@ -138,8 +138,9 @@ async def test_connection(database_url: str) -> dict[str, Any]:
         finally:
             await conn.close()
         return {"ok": True, "server_version": version}
-    except Exception as exc:  # noqa: BLE001 - surfacing the driver error to the operator
-        return {"ok": False, "error": str(exc)}
+    except Exception:  # noqa: BLE001 - operator-facing connection probe
+        logger.exception("Database connection test failed")
+        return {"ok": False, "error": "Could not connect to the database. Check DATABASE_URL and server logs."}
 
 
 async def _apply_schema(database_url: str) -> None:

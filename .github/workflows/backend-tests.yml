@@ -5,12 +5,17 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 # GitHub-hosted action runners are migrating off Node 20 (deprecated mid-2026).
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -32,6 +37,8 @@ jobs:
         run: cd backend && pytest tests/ -q
 
   test-postgres:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 35
     services:
@@ -74,6 +81,8 @@ jobs:
         run: cd backend && pytest tests/ -q
 
   frontend:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,6 +115,8 @@ jobs:
         run: ./scripts/lint-design-tokens.sh
 
   dependency-audit:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,6 +141,8 @@ jobs:
           npm run audit:ci
 
   playwright-smoke:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

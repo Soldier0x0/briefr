@@ -160,7 +160,9 @@ The deploy file rotates `/var/lib/briefr/logs/*.log` daily (14 generations, comp
 - **Ring buffer:** in-process, last 500 `INFO+` JSON log lines (`structured_logging._RingBufferHandler`); no `journalctl` from the app.
 - **API:** `GET /api/admin/logs` — admin-gated, refresh rate-limited; filters: `level`, `logger`, `request_id`, `category`.
 - **Categories:** Application, Scheduler, Backup, Webhooks, Security (derived from logger name).
-- **Redaction:** secret-like `extra` keys (`password`, `api_key`, `*_TOKEN`, etc.) stored as `[REDACTED]` in buffer entries.
+- **Redaction:** secret-like `extra` keys (`password`, `api_key`, `*_TOKEN`, etc.) stored as `[REDACTED]` in buffer entries; log `message` / `exc_info` text is scrubbed for URLs and bearer tokens before export.
+- **Client correlation:** every API response carries `X-Request-ID`; unhandled **500** responses also include `request_id` in the JSON body (`{"detail":"Internal server error","request_id":"..."}`).
+- **Operator rule:** never log raw API keys or webhook URLs in free-form log messages — use structured fields with redactable names or omit secrets.
 - **UI:** Admin pane → **Application logs** — tail, filter, auto-refresh (10s), NDJSON export.
 - Support pack export: health JSON + version + truncated logs (future)
 

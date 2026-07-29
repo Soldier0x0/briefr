@@ -9,6 +9,7 @@ from typing import Literal
 from ai.gemini_client import gemini_model as _gemini_model
 from ai.groq_config import GROQ_MODEL, GROQ_MODEL_SUMMARY
 from ai.provider_catalog import catalog_status_rows, custom_provider_configured, custom_provider_step
+from redact import mask_url_value
 
 LLMTask = Literal["product_extraction", "pdf_summary", "detection_context"]
 
@@ -82,12 +83,13 @@ def models_catalog_payload() -> dict:
             for idx, step in enumerate(task_chain(task))  # type: ignore[arg-type]
         ]
     custom = custom_provider_step()
+    custom_url = (custom[0] if custom else os.environ.get("CUSTOM_LLM_BASE_URL", "")).rstrip("/")
     return {
         "providers": list(PROVIDER_ENV_KEYS.keys()),
         "tasks": tasks,
         "catalog": catalog_status_rows(),
         "custom_configured": custom_provider_configured(),
-        "custom_base_url": (custom[0] if custom else os.environ.get("CUSTOM_LLM_BASE_URL", "")).rstrip("/"),
+        "custom_base_url": mask_url_value(custom_url),
         "env_keys": {
             "groq_product": "GROQ_MODEL",
             "groq_summary": "GROQ_MODEL_SUMMARY",

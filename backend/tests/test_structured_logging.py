@@ -126,6 +126,18 @@ def test_access_log_line_carries_request_metadata(caplog):
     assert entry["status"] == 200
 
 
+def test_formatter_scrubs_urls_and_bearer_tokens():
+    entry = json.loads(
+        _format_record(
+            msg="failed https://hooks.slack.com/services/SECRET/path Bearer sk-testtoken1234567890",
+            args=(),
+        )
+    )
+    assert "hooks.slack.com" not in entry["message"]
+    assert "sk-testtoken" not in entry["message"]
+    assert "[redacted-url]" in entry["message"]
+
+
 def test_unhandled_exception_logged_with_request_id(caplog):
     """Review finding: uvicorn logs tracebacks after the contextvar reset,
     so the middleware itself must emit an error line while the ID is set."""
@@ -162,6 +174,36 @@ def test_unhandled_exception_logged_with_request_id(caplog):
     assert "ValueError: boom" in entry["exc_info"]
     # The contextvar must still have been reset after the failure.
     assert request_id_var.get() == ""
+
+
+def test_unhandled_exception_returns_request_id_in_body():
+    from main import unhandled_exception_handler
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "path": "/api/synthetic",
+        "raw_path": b"/api/synthetic",
+        "query_string": b"",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("203.0.113.5", 1234),
+        "headers": [],
+    }
+    request = Request(scope)
+    token = request_id_var.set("req-body-1")
+    try:
+        response = asyncio.run(
+            unhandled_exception_handler(request, RuntimeError("synthetic failure"))
+        )
+    finally:
+        request_id_var.reset(token)
+    assert response.status_code == 500
+    body = json.loads(response.body.decode())
+    assert body["detail"] == "Internal server error"
+    assert body["request_id"] == "req-body-1"
+    assert response.headers["X-Request-ID"] == "req-body-1"
 
 
 def test_429_responses_also_carry_request_id():
