@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-<<<<<<< HEAD
 import csv
 import io
-=======
->>>>>>> 7288a21f (feat(admin): Phase C efficiency audit, database metrics, optimizations)
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -142,14 +139,9 @@ def reset_api_call_event_buffer_for_tests() -> None:
 
 
 async def flush_api_call_event_buffer() -> int:
-<<<<<<< HEAD
     async with _buffer_lock:
         batch = list(_event_buffer)
         _event_buffer.clear()
-=======
-    batch = list(_event_buffer)
-    _event_buffer.clear()
->>>>>>> 7288a21f (feat(admin): Phase C efficiency audit, database metrics, optimizations)
     if not batch:
         return 0
     from database import get_db
@@ -180,12 +172,8 @@ async def queue_api_call_event(**fields: Any) -> bool:
     batch_ms = api_call_events_batch_ms()
     if batch_ms <= 0:
         return False
-<<<<<<< HEAD
     async with _buffer_lock:
         _event_buffer.append(fields)
-=======
-    _event_buffer.append(fields)
->>>>>>> 7288a21f (feat(admin): Phase C efficiency audit, database metrics, optimizations)
     await _schedule_buffered_flush(batch_ms)
     return True
 
