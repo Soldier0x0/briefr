@@ -418,8 +418,6 @@ async def purge_old_api_call_events(
 
 async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
     """Sweep stale cache/overlay rows. Caller commits."""
-    from db.resource_metrics import get_resource_metrics_retention_days, purge_old_resource_metrics
-
     otx = await purge_stale_otx_tables(db)
     stats = {
         "ioc_cache": await purge_stale_ioc_cache(db),
