@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import csv
+import io
 import logging
+import os
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, AsyncIterator
 from urllib.parse import urlparse
 
 from db.config import is_postgres
@@ -112,6 +116,66 @@ async def insert_api_call_event(
     )
     sql = _INSERT_PG if is_postgres() else _INSERT_SQLITE
     await db.execute(sql, params)
+
+
+_event_buffer: list[dict[str, Any]] = []
+_buffer_lock = asyncio.Lock()
+_flush_task: asyncio.Task[None] | None = None
+
+
+def api_call_events_batch_ms() -> int:
+    try:
+        return max(0, int(os.environ.get("API_CALL_EVENTS_BATCH_MS", "0")))
+    except (TypeError, ValueError):
+        return 0
+
+
+def reset_api_call_event_buffer_for_tests() -> None:
+    global _flush_task
+    _event_buffer.clear()
+    if _flush_task is not None and not _flush_task.done():
+        _flush_task.cancel()
+    _flush_task = None
+
+
+async def flush_api_call_event_buffer() -> int:
+    async with _buffer_lock:
+        batch = list(_event_buffer)
+        _event_buffer.clear()
+    if not batch:
+        return 0
+    from database import get_db
+
+    db = await get_db()
+    try:
+        for item in batch:
+            await insert_api_call_event(db, **item)
+        await db.commit()
+    finally:
+        await db.close()
+    return len(batch)
+
+
+async def _schedule_buffered_flush(batch_ms: int) -> None:
+    global _flush_task
+
+    async def _run() -> None:
+        await asyncio.sleep(batch_ms / 1000.0)
+        await flush_api_call_event_buffer()
+
+    if _flush_task is None or _flush_task.done():
+        _flush_task = asyncio.create_task(_run())
+
+
+async def queue_api_call_event(**fields: Any) -> bool:
+    """Buffer an event when batching is enabled. Returns True if buffered."""
+    batch_ms = api_call_events_batch_ms()
+    if batch_ms <= 0:
+        return False
+    async with _buffer_lock:
+        _event_buffer.append(fields)
+    await _schedule_buffered_flush(batch_ms)
+    return True
 
 
 async def touch_api_usage_last_called(
@@ -222,3 +286,239 @@ async def metering_summary(db: DbConnection, *, hours: int = 24) -> dict[str, An
         _as_dict(r, ["actor_type", "calls"]) for r in (actor_rows or [])
     ]
     return {"hours": hours, "by_source": sources, "by_actor": actors}
+
+
+_EVENT_SELECT_COLUMNS = """
+    ts, source, method, host, path_template, status_code, latency_ms,
+    actor_type, actor_id, job_id, run_id, request_id
+"""
+
+_CSV_HEADER = [
+    "ts",
+    "source",
+    "method",
+    "host",
+    "path_template",
+    "status_code",
+    "latency_ms",
+    "actor_type",
+    "actor_id",
+    "job_id",
+    "run_id",
+    "request_id",
+]
+
+
+def _clamp_hours(hours: int) -> int:
+    return max(1, min(int(hours), 168))
+
+
+def _clamp_limit(limit: int) -> int:
+    return max(1, min(int(limit), 500))
+
+
+def _clamp_offset(offset: int) -> int:
+    return max(0, int(offset))
+
+
+def _build_events_filters(
+    *,
+    hours: int,
+    source: str | None,
+    actor_type: str | None,
+) -> tuple[str, list[Any]]:
+    """Return WHERE clause (without leading WHERE) and bind params."""
+    hours = _clamp_hours(hours)
+    clauses: list[str] = []
+    params: list[Any] = []
+
+    if is_postgres():
+        clauses.append(f"ts >= NOW() - (${len(params) + 1}::text || ' hours')::interval")
+        params.append(str(hours))
+        if source:
+            clauses.append(f"source = ${len(params) + 1}")
+            params.append(source)
+        if actor_type:
+            clauses.append(f"COALESCE(actor_type, 'unknown') = ${len(params) + 1}")
+            params.append(actor_type)
+    else:
+        clauses.append("ts >= datetime('now', ?)")
+        params.append(f"-{hours} hours")
+        if source:
+            clauses.append("source = ?")
+            params.append(source)
+        if actor_type:
+            clauses.append("COALESCE(actor_type, 'unknown') = ?")
+            params.append(actor_type)
+
+    return " AND ".join(clauses), params
+
+
+def _row_to_event_dict(row: Any) -> dict[str, Any]:
+    try:
+        data = dict(row)
+    except Exception:
+        keys = [
+            "ts",
+            "source",
+            "method",
+            "host",
+            "path_template",
+            "status_code",
+            "latency_ms",
+            "actor_type",
+            "actor_id",
+            "job_id",
+            "run_id",
+            "request_id",
+        ]
+        data = {key: (row[i] if i < len(row) else None) for i, key in enumerate(keys)}
+
+    ts = data.get("ts")
+    if hasattr(ts, "isoformat"):
+        ts = ts.isoformat()
+
+    return {
+        "ts": ts,
+        "source": data.get("source"),
+        "method": data.get("method"),
+        "host": data.get("host"),
+        "path_template": data.get("path_template"),
+        "status": data.get("status_code"),
+        "latency_ms": data.get("latency_ms"),
+        "actor_type": data.get("actor_type"),
+        "actor_id": data.get("actor_id"),
+        "job_id": data.get("job_id"),
+        "run_id": data.get("run_id"),
+        "request_id": data.get("request_id"),
+    }
+
+
+def _row_to_csv_dict(row: Any) -> dict[str, Any]:
+    try:
+        data = dict(row)
+    except Exception:
+        data = {key: None for key in _CSV_HEADER}
+    ts = data.get("ts")
+    if hasattr(ts, "isoformat"):
+        data["ts"] = ts.isoformat()
+    return {key: data.get(key) for key in _CSV_HEADER}
+
+
+async def query_api_call_events(
+    db: DbConnection,
+    *,
+    hours: int = 24,
+    source: str | None = None,
+    actor_type: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """Paginated audit trail for outbound API call events."""
+    hours = _clamp_hours(hours)
+    limit = _clamp_limit(limit)
+    offset = _clamp_offset(offset)
+    where_sql, params = _build_events_filters(
+        hours=hours,
+        source=source,
+        actor_type=actor_type,
+    )
+
+    if is_postgres():
+        count_sql = f"SELECT COUNT(*)::int AS total FROM api_call_events WHERE {where_sql}"
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}"
+        )
+        list_params = [*params, limit, offset]
+    else:
+        count_sql = f"SELECT COUNT(*) AS total FROM api_call_events WHERE {where_sql}"
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC LIMIT ? OFFSET ?"
+        )
+        list_params = [*params, limit, offset]
+
+    count_rows = await db.execute_fetchall(count_sql, tuple(params))
+    count_row = count_rows[0] if count_rows else None
+    total = int((count_row["total"] if count_row else 0) or 0)
+    rows = await db.execute_fetchall(list_sql, tuple(list_params))
+    events = [_row_to_event_dict(row) for row in (rows or [])]
+
+    actor_breakdown: list[dict[str, Any]] = []
+    if source:
+        breakdown_where, breakdown_params = _build_events_filters(
+            hours=hours,
+            source=source,
+            actor_type=None,
+        )
+        breakdown_sql = (
+            "SELECT COALESCE(actor_type, 'unknown') AS actor_type, COUNT(*) AS calls "
+            f"FROM api_call_events WHERE {breakdown_where} GROUP BY 1 ORDER BY calls DESC"
+        )
+        breakdown_rows = await db.execute_fetchall(breakdown_sql, tuple(breakdown_params))
+        for row in breakdown_rows or []:
+            try:
+                item = dict(row)
+            except Exception:
+                item = {"actor_type": row[0], "calls": row[1]}
+            actor_breakdown.append(
+                {
+                    "actor_type": item.get("actor_type"),
+                    "calls": int(item.get("calls") or 0),
+                }
+            )
+
+    return {
+        "hours": hours,
+        "events": events,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "actor_breakdown": actor_breakdown,
+    }
+
+
+async def iter_api_call_events_csv(
+    db: DbConnection,
+    *,
+    hours: int = 24,
+    source: str | None = None,
+    actor_type: str | None = None,
+) -> AsyncIterator[str]:
+    """Stream CSV rows for audit export (header included)."""
+    hours = _clamp_hours(hours)
+    where_sql, params = _build_events_filters(
+        hours=hours,
+        source=source,
+        actor_type=actor_type,
+    )
+
+    if is_postgres():
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC"
+        )
+    else:
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC"
+        )
+
+    def _emit(rows: list[Any]) -> str:
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=_CSV_HEADER, extrasaction="ignore")
+        if not rows:
+            return ""
+        for row in rows:
+            writer.writerow(_row_to_csv_dict(row))
+        return buf.getvalue()
+
+    header_buf = io.StringIO()
+    csv.writer(header_buf).writerow(_CSV_HEADER)
+    yield header_buf.getvalue()
+
+    rows = await db.execute_fetchall(list_sql, tuple(params))
+    chunk = _emit(rows or [])
+    if chunk:
+        yield chunk

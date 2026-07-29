@@ -57,6 +57,11 @@ function quotaChipFillClass(warning) {
   return ''
 }
 
+function serviceDisplayName(svc) {
+  if (svc.service === 'greynoise') return 'GreyNoise — optional, per lookup'
+  return svc.name
+}
+
 function quotaChipSummary(svc) {
   if (svc.this_week?.limit != null) {
     const u = svc.this_week.used ?? 0
@@ -147,7 +152,7 @@ export default function IOCQuotaPanel() {
               const pct = quotaChipPercent(svc)
               return (
                 <div key={svc.service} className="ioc-quota-chip">
-                  <span className="ioc-quota-chip-name mono">{svc.name}</span>
+                  <span className="ioc-quota-chip-name mono">{serviceDisplayName(svc)}</span>
                   <span className="ioc-quota-chip-val mono">{quotaChipSummary(svc)}</span>
                   {pct != null && (
                     <div className="ioc-quota-chip-bar" aria-hidden="true">
@@ -178,7 +183,7 @@ export default function IOCQuotaPanel() {
             {services.map(svc => (
               <div key={svc.service} className="quota-service-block">
                 <div className="quota-service-title">
-                  <span className="mono">{svc.name}</span>
+                  <span className="mono">{serviceDisplayName(svc)}</span>
                   {svc.rate_limit && (
                     <span className="quota-rate mono">{svc.rate_limit}</span>
                   )}

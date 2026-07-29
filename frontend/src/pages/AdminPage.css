@@ -743,6 +743,99 @@
   margin: 0;
 }
 
+.admin-config-key {
+  color: var(--admin-text-muted);
+  font-size: var(--type-label, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-config-value {
+  color: var(--admin-text);
+  font-size: var(--type-body, 14px);
+  font-weight: 500;
+}
+
+.metering-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-body, 14px);
+}
+
+.metering-table th {
+  text-align: left;
+  color: var(--admin-text-muted);
+  font-size: var(--type-label, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.metering-table td {
+  padding: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-border) 65%, transparent);
+  vertical-align: top;
+}
+
+.metering-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.api-audit-collapse {
+  border: none;
+}
+
+.api-audit-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+.api-audit-summary::-webkit-details-marker {
+  display: none;
+}
+
+.api-audit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.api-audit-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.api-audit-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-audit-greynoise-breakdown {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: color-mix(in srgb, var(--admin-surface) 80%, transparent);
+}
+
+.admin-section-desc {
+  font-size: var(--type-body, 14px);
+  color: var(--admin-text-muted);
+  margin: 0 0 var(--space-3);
+  line-height: 1.45;
+}
+
 /* Operator sub-tabs */
 .admin-subtabs {
   display: flex;

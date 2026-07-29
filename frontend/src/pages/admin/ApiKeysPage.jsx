@@ -7,6 +7,7 @@ import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import ApiKeyHealthPanel from './ApiKeyHealthPanel.jsx'
 import SearchTokensPanel from './SearchTokensPanel.jsx'
+import ApiCallAuditPanel from './ApiCallAuditPanel.jsx'
 import { AdminPageSkeleton } from './shared/AdminSkeletons.jsx'
 import { TIMEZONES_BY_CONTINENT } from '../../utils/timezone.js'
 import { RATE_LIMIT_HINTS } from './rateLimits.js'
@@ -524,6 +525,8 @@ export default function ApiKeysPage({ toast }) {
           )}
         </div>
       </div>
+
+      <ApiCallAuditPanel sourceOptions={metering?.by_source || []} />
 
       {SECTIONS.map(section => {
         const fields = fieldsBySection[section.id] || []
