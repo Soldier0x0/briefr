@@ -11,7 +11,7 @@ Pick **one** guide — you do not need to read everything unless something break
 | **Understand how it works** | [How it works](HOW_IT_WORKS.md) | Overview |
 | **Change the code** | [Onboarding](ONBOARDING.md) | **Authoritative** |
 | **Try the UI (no install)** | https://briefrdemo.projectjupiter.in | Static demo — 1:1 analyst shell, fixture data ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)) |
-| **See a full deployment** | https://briefr.projectjupiter.in | PostgreSQL-backed example instance |
+| **Self-host BRIEFR** | [Self-host guide](SELF_HOST.md) | PostgreSQL-backed deployment on your infrastructure |
 | **Learn architecture online** | https://docs.projectjupiter.in | Synced from this repo |
 | **Internal maintainer docs** | [Maintainer migration](MAINTAINER_MIGRATION.md) | Planning, HANDOVER, archive (private repo) |
 

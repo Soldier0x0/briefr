@@ -2,7 +2,7 @@
 
 For analysts using the UI — not deploying it. Install guide: [SELF_HOST.md](SELF_HOST.md).
 
-**Try it first:** https://briefrdemo.projectjupiter.in — the live demo is a 1:1 copy of the analyst shell with fixture data (no login, no database). Buttons that need a backend (hunt-pack generation, live IOC enrichment) are visual-only. For a full deployment with live feeds, see https://briefr.projectjupiter.in or [SELF_HOST.md](SELF_HOST.md).
+**Try it first:** https://briefrdemo.projectjupiter.in — the live demo is a 1:1 copy of the analyst shell with fixture data (no login, no database). Buttons that need a backend (hunt-pack generation, live IOC enrichment) are visual-only. For a full deployment with live feeds, follow [SELF_HOST.md](SELF_HOST.md).
 
 ---
 

@@ -118,6 +118,6 @@ Details: https://docs.projectjupiter.in/docs/roadmap
 | Living API / architecture docs | Refreshed 2026-07-24 — reader guides, OPERATIONS link fixes, USE.md gallery |
 | Online docs | https://docs.projectjupiter.in — synced from this repo |
 | Live demo | https://briefrdemo.projectjupiter.in — static 1:1 analyst UI ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)); fixture data, no backend; Cloudflare Workers deploy |
-| Example instance | https://briefr.projectjupiter.in — full PostgreSQL-backed deployment |
+| Self-host | [SELF_HOST.md](SELF_HOST.md) — install your own PostgreSQL-backed deployment |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
 | Security hardening (CodeQL triage) | **Done** — CI workflow least-privilege permissions; intel snapshot import path allowlist (`INTEL_SNAPSHOT_IMPORT_DIRS` / `INTEL_PUBLISH_DIR`); admin URL masking + generic 500 responses with `request_id`; log message scrubbing |
