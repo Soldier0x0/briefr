@@ -8,7 +8,7 @@ import {
 } from '../api.js'
 import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
 import { notifyApiError } from './Toast.jsx'
-import { toApiCveParams } from '../utils/cveFilters.js'
+import { toApiCveParams, filtersPatchChanged } from '../utils/cveFilters.js'
 import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import { formatSectionHeading } from '../utils/sectionHeading.js'
@@ -18,7 +18,6 @@ import { nextLocalStack } from '../utils/stackLocalSync.js'
 import {
   parseFeedQuery,
   parsedQueryToFilters,
-  toggleQueryToken,
 } from '../utils/feedQueryParser.js'
 import { VENDORS } from '../utils/vendorList.js'
 import ParsedQueryChips from './ParsedQueryChips.jsx'
@@ -238,24 +237,71 @@ export default function FilterBar({
     })
   }
 
+  function clearSearchQueryState() {
+    return {
+      feed_query: '',
+      search: '',
+      parsed_chips: [],
+      vendors: '',
+      exclude_vendors: '',
+      severity_list: '',
+      technique: '',
+      published_on: '',
+      epss_min: null,
+    }
+  }
+
+  function applyQuickFilter(patch) {
+    setLocalSearch('')
+    onFiltersChange({
+      ...clearSearchQueryState(),
+      kev_only: false,
+      kev_overdue_only: false,
+      poc_only: false,
+      patch_only: false,
+      watchlist_only: false,
+      severity: null,
+      ...patch,
+    })
+  }
+
   function handleQuickFilter(id) {
     if (id === 'all') {
-      setLocalSearch('')
-      applyParsedSearch('')
+      applyQuickFilter({})
       return
     }
-    const tokenMap = {
-      watchlist: 'watchlist',
-      kev: 'kev',
-      kev_overdue: 'overdue',
-      critical: 'critical',
-      high: 'high',
-      medium: 'medium',
-      poc: 'poc',
+
+    const active = deriveActive(filters)
+    if (active === id) {
+      applyQuickFilter({})
+      return
     }
-    const nextSearch = toggleQueryToken(localSearch, tokenMap[id] || id)
-    setLocalSearch(nextSearch)
-    applyParsedSearch(nextSearch)
+
+    switch (id) {
+      case 'watchlist':
+        applyQuickFilter({ watchlist_only: true })
+        break
+      case 'kev':
+        applyQuickFilter({ kev_only: true })
+        break
+      case 'kev_overdue':
+        applyQuickFilter({ kev_overdue_only: true })
+        break
+      case 'critical':
+        applyQuickFilter({ severity: 'CRITICAL' })
+        break
+      case 'high':
+        applyQuickFilter({ severity: 'HIGH' })
+        break
+      case 'medium':
+        applyQuickFilter({ severity: 'MEDIUM' })
+        break
+      case 'poc':
+        applyQuickFilter({ poc_only: true })
+        break
+      default:
+        break
+    }
   }
 
   function handleSearchChange(e) {
