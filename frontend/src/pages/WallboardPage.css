@@ -19,11 +19,18 @@
 }
 
 .wallboard-brand {
-  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wallboard-wordmark {
+  font-family: var(--font-display);
   font-size: clamp(1.25rem, 2.5vw, 2rem);
-  letter-spacing: 0.12em;
-  color: var(--accent);
+  letter-spacing: 0.04em;
+  color: var(--text-heading, var(--text));
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .wallboard-header-stack {
@@ -379,7 +386,7 @@
   gap: 0.35rem 0.75rem;
 }
 
-.wallboard-page--compact .wallboard-brand {
+.wallboard-page--compact .wallboard-wordmark {
   font-size: clamp(1rem, 1.8vw, 1.35rem);
 }
 

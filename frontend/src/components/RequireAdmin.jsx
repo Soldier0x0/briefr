@@ -1,4 +1,5 @@
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import LogoMark from './LogoMark.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 /** Analyst-accessible admin sub-pages (operator routes require admin role). */
@@ -13,7 +14,7 @@ export default function RequireAdmin({ children }) {
   if (status === 'loading') {
     return (
       <div className="app-auth-loading" role="status" aria-label="Checking session">
-        <span className="app-auth-loading-dot" />
+        <LogoMark size="md" className="app-auth-loading-mark" />
       </div>
     )
   }

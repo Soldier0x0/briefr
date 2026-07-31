@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import LogoMark from '../components/LogoMark.jsx'
 import { Checkbox } from '../components/ui/index.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import './LoginPage.css'
@@ -54,7 +55,10 @@ export default function LoginPage() {
         onAnimationEnd={() => setShake(false)}
       >
         <div className="login-brand">
-          <span className="login-wordmark">BRIEFR</span>
+          <div className="login-brand-lockup">
+            <LogoMark size="lg" />
+            <span className="login-wordmark">BRIEFR</span>
+          </div>
           <span className="login-tagline mono">
             {setupRequired ? 'Create your admin account' : 'CVE intelligence'}
           </span>

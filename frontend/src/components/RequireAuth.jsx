@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import LogoMark from './LogoMark.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function RequireAuth({ children }) {
@@ -8,7 +9,7 @@ export default function RequireAuth({ children }) {
   if (status === 'loading') {
     return (
       <div className="app-auth-loading" role="status" aria-label="Checking session">
-        <span className="app-auth-loading-dot" />
+        <LogoMark size="md" className="app-auth-loading-mark" />
       </div>
     )
   }

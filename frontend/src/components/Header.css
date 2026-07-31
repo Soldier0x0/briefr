@@ -26,16 +26,23 @@
 }
 
 .header-logo-btn {
-  font-family: var(--font-mono);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--accent-primary);
-  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--text-heading);
+  letter-spacing: 0.02em;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   transition: color var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.header-wordmark {
+  line-height: 1;
 }
 
 .header-logo-btn:hover { color: var(--text); }

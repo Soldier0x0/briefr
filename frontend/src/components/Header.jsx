@@ -7,6 +7,7 @@ import UserMenu from './UserMenu.jsx'
 import ApiQueueIndicator from './ApiQueueIndicator.jsx'
 import NotificationBell from './NotificationBell.jsx'
 import HeaderClock from './HeaderClock.jsx'
+import LogoMark from './LogoMark.jsx'
 import './Header.css'
 import { feedHealthLevel, feedHealthLabel } from '../utils/feedHealthStatus.js'
 
@@ -50,7 +51,8 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
             onClick={onLogoClick || (() => onTabChange?.('brief'))}
             aria-label="Go to morning brief"
           >
-            BRIEFR
+            <LogoMark size="sm" />
+            <span className="header-wordmark">BRIEFR</span>
           </button>
           <span className="header-divider" aria-hidden="true">//</span>
           <span className="header-tagline">CVE intelligence</span>
