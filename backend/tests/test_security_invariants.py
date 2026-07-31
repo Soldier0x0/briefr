@@ -166,7 +166,9 @@ def test_login_failure_body_stays_generic(client):
         json={"username": "ghost", "password": "definitely-wrong-password"},
     )
     assert resp.status_code == 401
-    assert resp.json() == {"detail": "Invalid username or password"}
+    body = resp.json()
+    assert body["detail"] == "Invalid username or password"
+    assert body.get("request_id")
 
 
 @pytest.mark.parametrize("method,path", ANALYST_SAMPLE_ROUTES)
