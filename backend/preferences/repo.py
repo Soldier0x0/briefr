@@ -10,10 +10,12 @@ from db.timeutil import utcnow_str
 from preferences.display_validate import (
     DEFAULT_DISPLAY_PREFS,
     INSTANCE_TYPOGRAPHY_SETTING_KEY,
+    INSTANCE_UI_VARIANT_SETTING_KEY,
     encode_display_prefs,
     merge_display_prefs,
     sanitize_display_prefs,
     sanitize_typography_px,
+    sanitize_ui_variant,
     validate_timezone,
 )
 from preferences.validate import encode_profile, sanitize_profile
@@ -23,20 +25,25 @@ def _decode_display_prefs(
     raw: str | None,
     *,
     instance_typography: dict | None = None,
+    instance_ui_variant: str | None = None,
 ) -> dict:
+    fallback_ui_variant = sanitize_ui_variant(instance_ui_variant)
     if not raw:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        prefs["ui_variant"] = fallback_ui_variant
         return prefs
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        prefs["ui_variant"] = fallback_ui_variant
         return prefs
     if not isinstance(data, dict):
         prefs = dict(DEFAULT_DISPLAY_PREFS)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        prefs["ui_variant"] = fallback_ui_variant
         return prefs
     try:
         prefs = sanitize_display_prefs(data)
@@ -49,6 +56,8 @@ def _decode_display_prefs(
             prefs["typography_px"] = sanitize_typography_px(instance_typography)
     else:
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+    if "ui_variant" not in data:
+        prefs["ui_variant"] = fallback_ui_variant
     return prefs
 
 
@@ -77,6 +86,26 @@ async def set_instance_typography_default(db: Any, typography_px: dict) -> dict:
         INSTANCE_TYPOGRAPHY_SETTING_KEY,
         json.dumps(sanitized, separators=(",", ":"), sort_keys=True),
     )
+    return sanitized
+
+
+async def get_instance_ui_variant_default(db: Any) -> str | None:
+    from db.app_settings import get_app_setting
+
+    raw = await get_app_setting(db, INSTANCE_UI_VARIANT_SETTING_KEY)
+    if not raw:
+        return None
+    try:
+        return sanitize_ui_variant(raw)
+    except ValueError:
+        return None
+
+
+async def set_instance_ui_variant_default(db: Any, ui_variant: str) -> str:
+    from db.app_settings import set_app_setting
+
+    sanitized = sanitize_ui_variant(ui_variant)
+    await set_app_setting(db, INSTANCE_UI_VARIANT_SETTING_KEY, sanitized)
     return sanitized
 
 
@@ -180,6 +209,7 @@ async def get_effective_stack_terms(db: Any) -> str:
 
 async def get_user_preferences(db: Any, user_id: int) -> dict:
     instance_typography = await get_instance_typography_default(db)
+    instance_ui_variant = await get_instance_ui_variant_default(db)
     rows = await db.execute_fetchall(
         """
         SELECT display_prefs_json, timezone, remember_profile_on_server, updated_at
@@ -191,17 +221,20 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
     if not rows:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+        prefs["ui_variant"] = sanitize_ui_variant(instance_ui_variant)
         return {
             **prefs,
             "timezone": "UTC",
             "remember_profile_on_server": False,
             "updated_at": None,
             "instance_typography_default": instance_typography,
+            "instance_ui_variant_default": instance_ui_variant,
         }
     row = rows[0]
     prefs = _decode_display_prefs(
         row["display_prefs_json"],
         instance_typography=instance_typography,
+        instance_ui_variant=instance_ui_variant,
     )
     try:
         tz = validate_timezone(row["timezone"] or "UTC")
@@ -213,6 +246,7 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
         "remember_profile_on_server": bool(row["remember_profile_on_server"]),
         "updated_at": row["updated_at"],
         "instance_typography_default": instance_typography,
+        "instance_ui_variant_default": instance_ui_variant,
     }
 
 
@@ -266,4 +300,5 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
         "remember_profile_on_server": remember,
         "updated_at": updated_at,
         "instance_typography_default": current.get("instance_typography_default"),
+        "instance_ui_variant_default": current.get("instance_ui_variant_default"),
     }

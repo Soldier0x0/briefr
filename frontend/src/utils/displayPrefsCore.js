@@ -46,6 +46,9 @@ export function toDisplayPrefs(data = {}) {
     instanceTypographyDefault: data.instance_typography_default
       || data.instanceTypographyDefault
       || null,
+    instanceUiVariantDefault: data.instance_ui_variant_default
+      || data.instanceUiVariantDefault
+      || null,
   }
 }
 

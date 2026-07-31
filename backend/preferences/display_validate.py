@@ -36,6 +36,16 @@ TYPOGRAPHY_ROLES = frozenset(DEFAULT_TYPOGRAPHY_PX)
 MIN_TYPOGRAPHY_PX = 9
 MAX_TYPOGRAPHY_PX = 20
 INSTANCE_TYPOGRAPHY_SETTING_KEY = "display_typography_default"
+INSTANCE_UI_VARIANT_SETTING_KEY = "display_ui_variant_default"
+
+
+def sanitize_ui_variant(value: object | None) -> str:
+    if value is None:
+        return DEFAULT_DISPLAY_PREFS["ui_variant"]
+    token = str(value).strip()
+    if token not in UI_VARIANTS:
+        raise ValueError("ui_variant is invalid")
+    return token
 
 
 def sanitize_typography_px(data: dict | None) -> dict:

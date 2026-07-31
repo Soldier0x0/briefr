@@ -83,6 +83,7 @@ function fromApi(data) {
     remember_profile_on_server: !!data?.remember_profile_on_server,
     updated_at: data?.updated_at || null,
     instanceTypographyDefault: data?.instance_typography_default || null,
+    instanceUiVariantDefault: data?.instance_ui_variant_default || null,
   }
 }
 
