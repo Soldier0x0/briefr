@@ -20,6 +20,7 @@ ensure_app_home() {
     "${APP_HOME}/.cache/pip" \
     "${APP_HOME}/.npm" \
     "${APP_HOME}/backups/logs" \
+    "${APP_HOME}/intel-publish" \
     "${APP_HOME}/keys" \
     "${APP_HOME}/models"
   chmod 700 "${APP_HOME}/keys"
