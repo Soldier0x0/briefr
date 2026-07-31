@@ -20,7 +20,7 @@ DEFAULT_DISPLAY_PREFS = {
     "utc_time": False,
     "reduce_motion": False,
     "notification_sound": True,
-    "ui_variant": "default",
+    "ui_variant": "pitch",
 }
 
 DEFAULT_TYPOGRAPHY_PX = {

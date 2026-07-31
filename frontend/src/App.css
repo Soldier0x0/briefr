@@ -139,7 +139,7 @@ textarea:focus-visible {
   }
 
   .brief-intel-row > .timeline-heatmap {
-    flex: 0 0 212px; /* row labels 12px + gap 6px + 14 week cols × 12px + 13 gaps × 2px */
+    flex: 0 0 244px; /* row labels 12px + gap 6px + 14 week cols × 14px + 13 gaps × 2px */
     border-bottom: none;
   }
 
