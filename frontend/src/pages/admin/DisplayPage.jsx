@@ -52,7 +52,10 @@ export default function DisplayPage() {
   }
 
   function updateTypographyRole(role, px) {
-    setTypographyDraft(prev => normalizeTypographyPx({ ...prev, [role]: px }))
+    const next = normalizeTypographyPx({ ...typographyDraft, [role]: px })
+    setTypographyDraft(next)
+    setTypographyPreview(next)
+    applyDisplayPrefs({ ...getDisplayPrefs(), typographyPx: next })
   }
 
   function applyTypography() {
@@ -139,7 +142,7 @@ export default function DisplayPage() {
       <Card>
         <CardTitle>Typography (px)</CardTitle>
         <p style={{ fontSize: 'var(--type-meta)', color: 'var(--text3)', margin: '0 0 0.75rem' }}>
-          Set pixel sizes per text role. Apply previews in this browser session; Save stores your profile; admins can also set the instance default for users who have not customized typography.
+          Set pixel sizes per text role. Changes preview live in this browser session; Save stores your profile; admins can also set the instance default for users who have not customized typography.
         </p>
         <div className="display-typography-grid">
           {TYPOGRAPHY_ROLES.map(role => (

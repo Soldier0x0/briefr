@@ -1,5 +1,5 @@
 .cve-card {
-  padding: 14px 100px 14px 36px;
+  padding: 14px 100px 14px 44px;
   border-bottom: 1px solid var(--border);
   border-left: 3px solid var(--border);
   background: var(--bg);
@@ -242,7 +242,7 @@
 
 .cve-id {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--type-id, 0.8125rem);
   font-weight: 500;
   color: var(--text);
   letter-spacing: 0.02em;
@@ -504,7 +504,7 @@
 
 @media (min-width: 641px) and (max-width: 1024px) {
   .cve-card {
-    padding: 20px 40px 20px 36px;
+    padding: 20px 40px 20px 44px;
   }
 }
 

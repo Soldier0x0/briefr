@@ -1,5 +1,28 @@
 /** Helpers for FEED hybrid search (Embeddings E4). */
 
+import { parseFeedQuery } from './feedQueryParser.js'
+
+const STRUCTURED_QUERY_RE = /\b(vendor:|v:|is:|sev:|severity:|cve:|technique:|t:|epss:|stack:|product:|published:|date:)/i
+
+/** Raw analyst query string (full input) or parsed free-text fallback. */
+export function getHybridSearchQuery(filters) {
+  return (filters?.feed_query || filters?.search || '').trim()
+}
+
+function hasExplicitStructuredSyntax(query) {
+  return STRUCTURED_QUERY_RE.test(query)
+}
+
+function isMultiTokenNaturalQuery(query) {
+  return query.split(/[\s+]+/).filter(Boolean).length > 1
+}
+
+/** True when the parser left free-text tokens (e.g. "amazon kv" → search "kv"). */
+function hasUnparsedFreeText(query) {
+  const parsed = parseFeedQuery(query)
+  return Boolean(parsed.search?.trim())
+}
+
 /**
  * Use /api/search/semantic when the query is the primary retrieval signal.
  * Fall back to /api/cves?search= when list filters need fields hybrid cannot
@@ -9,14 +32,20 @@
  * Severity / KEV chips also stay on hybrid (API + client filter).
  */
 export function shouldUseHybridSearch(filters) {
-  const q = (filters?.search || '').trim()
+  const q = getHybridSearchQuery(filters)
   if (!q) return false
   if (filters?.poc_only || filters?.kev_overdue_only || filters?.watchlist_only) return false
-  if (filters?.vendors) return false
   if (filters?.exclude_vendors) return false
   if (filters?.severity_list) return false
   if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
   if (filters?.technique || filters?.published_on) return false
+  if (hasExplicitStructuredSyntax(q)) return false
+  if (isMultiTokenNaturalQuery(q)) {
+    // Natural language with leftover text (e.g. "amazon kv") → hybrid semantic search.
+    // Fully parsed multi-token filters (e.g. "amazon + kev") → /api/cves structured path.
+    return hasUnparsedFreeText(q)
+  }
+  if (filters?.vendors) return false
   return true
 }
 

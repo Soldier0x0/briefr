@@ -1106,10 +1106,10 @@
 
 .quota-meter-note,
 .quota-service-note {
-  font-size: 0.5625rem;
+  font-size: var(--type-meta, 0.8125rem);
   color: var(--text3);
   margin: 4px 0 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .quota-track {
