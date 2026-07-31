@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import LogoMark from './LogoMark.jsx'
 import './SessionLockOverlay.css'
 
 export default function SessionLockOverlay({ onLoadProfile, onContinueWithoutStack }) {
@@ -23,7 +24,10 @@ export default function SessionLockOverlay({ onLoadProfile, onContinueWithoutSta
   return (
     <div className="session-lock-overlay" role="dialog" aria-modal="true">
       <div className="session-lock-inner">
-        <p className="session-lock-logo">BRIEFR</p>
+        <div className="session-lock-logo">
+          <LogoMark size="md" />
+          <span className="session-lock-wordmark">BRIEFR</span>
+        </div>
         <p className="session-lock-cleared mono">Session cleared for security</p>
         <p className="session-lock-hint mono">
           Reload your saved My Stack file, or continue without personalized scoring.

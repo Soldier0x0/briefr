@@ -10,6 +10,7 @@ import {
   setWallboardToken,
 } from '../api.js'
 import { formatIntelLabelText } from '../utils/formatIntelLabel.js'
+import LogoMark from '../components/LogoMark.jsx'
 import { wallboardCoverageEmpty } from '../utils/personalizationCopy.js'
 import './WallboardPage.css'
 
@@ -401,7 +402,10 @@ export default function WallboardPage() {
   return (
     <div className={`wallboard-page${compact ? ' wallboard-page--compact' : ''}`}>
       <header className="wallboard-header">
-        <div className="wallboard-brand mono">BRIEFR</div>
+        <div className="wallboard-brand">
+          <LogoMark size="sm" />
+          <span className="wallboard-wordmark">BRIEFR</span>
+        </div>
         <div className="wallboard-header-stack mono">
           stack:
           {' '}

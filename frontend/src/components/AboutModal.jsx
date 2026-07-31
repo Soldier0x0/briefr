@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import LogoMark from './LogoMark.jsx'
 import useModalLayer from '../hooks/useModalLayer.js'
 import './AboutModal.css'
 
@@ -87,7 +88,10 @@ export default function AboutModal({ onClose }) {
 
         <div className="about-header">
           <div>
-            <div className="about-logo" id="about-title">BRIEFR</div>
+            <div className="about-logo-lockup" id="about-title">
+              <LogoMark size="md" />
+              <span className="about-logo">BRIEFR</span>
+            </div>
             <div className="about-subtitle">CVE Intelligence &amp; Threat Investigation</div>
           </div>
           <p className="about-description">

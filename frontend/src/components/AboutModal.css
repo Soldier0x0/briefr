@@ -54,13 +54,20 @@
   padding-right: var(--space-8, 32px);
 }
 
-.about-logo {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-2xl, 24px);
-  font-weight: 600;
-  color: var(--accent-primary, var(--accent));
-  letter-spacing: 0.06em;
+.about-logo-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: var(--space-1, 4px);
+}
+
+.about-logo {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl, 24px);
+  font-weight: 400;
+  color: var(--text-heading, var(--text));
+  letter-spacing: 0.04em;
+  margin: 0;
 }
 
 .about-subtitle {
