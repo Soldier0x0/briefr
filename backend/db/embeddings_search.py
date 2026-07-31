@@ -142,6 +142,7 @@ WHERE (
     OR LOWER(cve_id) LIKE ?
     OR LOWER(description) LIKE ?
     OR LOWER(COALESCE(summary, '')) LIKE ?
+    OR LOWER(COALESCE(affected_products, '')) LIKE ?
 )
 ORDER BY
   CASE WHEN UPPER(cve_id) = ? THEN 0 ELSE 1 END,
@@ -158,11 +159,12 @@ WHERE (
     OR LOWER(cve_id) LIKE $2
     OR LOWER(description) LIKE $3
     OR LOWER(COALESCE(summary, '')) LIKE $4
+    OR LOWER(COALESCE(affected_products, '')) LIKE $5
 )
 ORDER BY
   CASE WHEN UPPER(cve_id) = $1 THEN 0 ELSE 1 END,
   published DESC
-LIMIT $5
+LIMIT $6
 """
 
 
@@ -393,11 +395,11 @@ async def keyword_search_cves(
     pg = _is_postgres_connection(db)
     if pg:
         rows = await db.execute_fetchall(
-            _KEYWORD_SEARCH_PG, (exact, like, like, like, limit)
+            _KEYWORD_SEARCH_PG, (exact, like, like, like, like, limit)
         )
     else:
         rows = await db.execute_fetchall(
-            _KEYWORD_SEARCH_SQLITE, (exact, like, like, like, exact, limit)
+            _KEYWORD_SEARCH_SQLITE, (exact, like, like, like, like, exact, limit)
         )
     out: list[dict] = []
     for row in rows:

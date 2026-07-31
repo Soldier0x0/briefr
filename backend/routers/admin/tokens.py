@@ -16,7 +16,7 @@ from db.search_tokens import create_search_token, list_search_tokens, revoke_sea
 from dependencies import audit
 from monitoring.api_key_health import build_api_key_health_payload, run_api_key_health_checks
 from monitoring.notifications import build_operator_notifications
-from preferences.display_validate import sanitize_typography_px, sanitize_ui_variant
+from preferences.display_validate import DEFAULT_DISPLAY_PREFS, sanitize_typography_px, sanitize_ui_variant
 from preferences.repo import (
     get_instance_typography_default,
     get_instance_ui_variant_default,
@@ -149,7 +149,7 @@ async def read_instance_ui_variant_default():
     db = await get_db()
     try:
         ui_variant = await get_instance_ui_variant_default(db)
-        return {"ui_variant": ui_variant or "default"}
+        return {"ui_variant": ui_variant or DEFAULT_DISPLAY_PREFS["ui_variant"]}
     finally:
         await db.close()
 

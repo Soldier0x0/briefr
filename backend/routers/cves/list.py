@@ -388,6 +388,23 @@ def _framework_match_clause(frameworks: str | None) -> tuple[str, list]:
     return "(" + " OR ".join(parts) + ")", params
 
 
+def _parse_severity_values(
+    severity: str | None,
+    severity_list: str | None,
+) -> list[str]:
+    raw: list[str] = []
+    if severity_list:
+        raw.extend(part.strip().upper() for part in severity_list.split(",") if part.strip())
+    elif severity:
+        raw.append(severity.strip().upper())
+    allowed = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+    out: list[str] = []
+    for token in raw:
+        if token in allowed and token not in out:
+            out.append(token)
+    return out
+
+
 def _build_cve_filters(
     severity: str | None,
     kev_only: bool,
@@ -405,16 +422,20 @@ def _build_cve_filters(
     frameworks: str | None = None,
     watchlist_only: bool = False,
     hide_snoozed: bool = True,
+    severity_list: str | None = None,
+    exclude_vendors: str | None = None,
 ) -> tuple[list[str], list, list[str]]:
     conditions: list[str] = []
     params: list = []
 
-    if severity:
-        severity_upper = severity.upper()
-        if severity_upper not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-            raise HTTPException(status_code=400, detail="Invalid severity value")
+    severities = _parse_severity_values(severity, severity_list)
+    if len(severities) == 1:
         conditions.append("c.severity = ?")
-        params.append(severity_upper)
+        params.append(severities[0])
+    elif len(severities) > 1:
+        placeholders = ", ".join("?" for _ in severities)
+        conditions.append(f"c.severity IN ({placeholders})")
+        params.extend(severities)
 
     if kev_only:
         conditions.append("c.is_kev = 1")
@@ -446,10 +467,11 @@ def _build_cve_filters(
             params.append(search_stripped.upper())
         else:
             conditions.append(
-                "(LOWER(c.cve_id) LIKE ? OR LOWER(c.description) LIKE ? OR LOWER(c.summary) LIKE ?)"
+                "(LOWER(c.cve_id) LIKE ? OR LOWER(c.description) LIKE ? "
+                "OR LOWER(c.summary) LIKE ? OR LOWER(c.affected_products) LIKE ?)"
             )
             search_term = f"%{search_stripped.lower()}%"
-            params.extend([search_term, search_term, search_term])
+            params.extend([search_term, search_term, search_term, search_term])
 
     stack_clause, stack_params, stack_products = _stack_match_clause(stack)
     if stack_clause:
@@ -462,6 +484,11 @@ def _build_cve_filters(
         if vendor_clause:
             conditions.append(vendor_clause)
             params.extend(vendor_params)
+
+    if exclude_vendors:
+        for term in [v.strip() for v in exclude_vendors.split(",") if v.strip()]:
+            conditions.append("LOWER(COALESCE(c.affected_products, '')) NOT LIKE ?")
+            params.append(f"%{term.lower()}%")
 
     if technique:
         tid = technique.strip().upper()
@@ -551,6 +578,8 @@ async def list_cves(
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
+    exclude_vendors: str | None = Query(default=None, max_length=500),
+    severity_list: str | None = Query(default=None, max_length=64),
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
@@ -586,6 +615,8 @@ async def list_cves(
         frameworks,
         watchlist_only=watchlist_only,
         hide_snoozed=not watchlist_only,
+        severity_list=severity_list,
+        exclude_vendors=exclude_vendors,
     )
 
     where_clause = ""
@@ -695,6 +726,8 @@ async def export_cves(
     search: str | None = Query(default=None, max_length=200),
     stack: str | None = Query(default=None, max_length=500),
     vendors: str | None = Query(default=None, max_length=500),
+    exclude_vendors: str | None = Query(default=None, max_length=500),
+    severity_list: str | None = Query(default=None, max_length=64),
     technique: str | None = Query(default=None, max_length=32),
     published_on: str | None = Query(default=None, max_length=10),
     summary_only: bool = Query(default=False),
@@ -721,6 +754,8 @@ async def export_cves(
         frameworks,
         watchlist_only=watchlist_only,
         hide_snoozed=not watchlist_only,
+        severity_list=severity_list,
+        exclude_vendors=exclude_vendors,
     )
 
     where_clause = ""

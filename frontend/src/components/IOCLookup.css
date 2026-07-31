@@ -704,7 +704,7 @@
 
 .ioc-quota-chip-name {
   display: block;
-  font-size: 0.5625rem;
+  font-size: var(--type-meta);
   letter-spacing: 0.08em;
   color: var(--text3);
   margin: 0;
@@ -717,7 +717,8 @@
 
 .ioc-quota-chip-val {
   display: block;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
   color: var(--text);
   line-height: 1.2;
   margin: 0;
@@ -997,7 +998,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.625rem;
+  font-size: var(--type-meta);
   letter-spacing: 0.08em;
   color: var(--text3);
   padding: 4px 0;
@@ -1027,7 +1028,7 @@
 .ioc-quota-loading,
 .ioc-quota-error,
 .ioc-quota-asof {
-  font-size: 0.625rem;
+  font-size: var(--font-size-sm);
   color: var(--text3);
   margin: 0 0 10px;
 }
@@ -1038,7 +1039,7 @@
 
 .ioc-quota-retry-btn {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: var(--type-meta);
   color: var(--text2);
   background: transparent;
   border: 1px solid var(--border);

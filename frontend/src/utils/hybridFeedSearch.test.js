@@ -23,6 +23,8 @@ describe('hybridFeedSearch', () => {
   it('defers to /api/cves when list filters need server fields hybrid lacks', () => {
     assert.equal(shouldUseHybridSearch({ search: 'x', poc_only: true }), false)
     assert.equal(shouldUseHybridSearch({ search: 'x', vendors: 'Microsoft' }), false)
+    assert.equal(shouldUseHybridSearch({ search: 'x', exclude_vendors: 'linux' }), false)
+    assert.equal(shouldUseHybridSearch({ search: 'x', severity_list: 'CRITICAL,HIGH' }), false)
     assert.equal(shouldUseHybridSearch({ search: '' }), false)
   })
 

@@ -101,15 +101,61 @@ html[data-ui-variant="pitch"] .cve-card.cve-opened {
 /* ── Filters & chips ────────────────────────────────────────────────────── */
 
 html[data-ui-variant="pitch"] .filter-chip,
-html[data-ui-variant="pitch"] .quick-filter-chip,
 html[data-ui-variant="pitch"] .ui-pill,
 html[data-ui-variant="pitch"] .ui-chip {
   border-radius: var(--radius-pill);
 }
 
 html[data-ui-variant="pitch"] .filter-bar,
-html[data-ui-variant="pitch"] .feed-filter-toolbar {
+html[data-ui-variant="pitch"] .filter-toolbar {
   border-radius: var(--radius-lg);
+}
+
+html[data-ui-variant="pitch"] .filter-btn,
+html[data-ui-variant="pitch"] .filter-search,
+html[data-ui-variant="pitch"] .export-btn {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .filter-btn.active {
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .vendor-filter-block {
+  border-radius: var(--radius-lg);
+}
+
+html[data-ui-variant="pitch"] .vendor-btn {
+  border-radius: var(--radius-pill);
+}
+
+html[data-ui-variant="pitch"] .vendor-btn.active {
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .technique-row {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .technique-row-active {
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .ioc-quota-panel {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .ioc-quota-chip {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .ioc-quota-retry-btn {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .brief-chart-filter-chip {
+  border-radius: var(--radius-pill);
 }
 
 /* ── Drawer ─────────────────────────────────────────────────────────────── */

@@ -15,7 +15,13 @@ import { formatSectionHeading } from '../utils/sectionHeading.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import FeedVisibleRange from './FeedVisibleRange.jsx'
 import { nextLocalStack } from '../utils/stackLocalSync.js'
-import { toggleChipSelection } from '../utils/toggleChipSelection.js'
+import {
+  parseFeedQuery,
+  parsedQueryToFilters,
+  toggleQueryToken,
+} from '../utils/feedQueryParser.js'
+import { VENDORS } from '../utils/vendorList.js'
+import ParsedQueryChips from './ParsedQueryChips.jsx'
 import './FilterBar.css'
 
 const STACK_DEBOUNCE_MS = 400
@@ -31,13 +37,7 @@ const QUICK_FILTERS = [
   { id: 'kev_overdue', label: 'KEV OVERDUE', explain: 'KEV entries past their CISA federal remediation deadline. Prioritize if affected products are in your environment.' },
 ]
 
-export const VENDORS = [
-  'Adobe', 'Amazon', 'Apache', 'Apple', 'Atlassian', 'Check Point', 'Cisco',
-  'Citrix', 'Dell', 'Docker', 'F5', 'Fortinet', 'GitLab', 'Google', 'HP',
-  'IBM', 'Ivanti', 'Jenkins', 'Juniper', 'Kubernetes', 'Linux', 'Microsoft',
-  'MongoDB', 'Node.js', 'Oracle', 'Palo Alto', 'PHP', 'Python', 'SAP',
-  'Siemens', 'VMware', 'WordPress',
-]
+export { VENDORS } from '../utils/vendorList.js'
 
 function deriveActive(filters) {
   if (filters.watchlist_only && !filters.kev_only && !filters.kev_overdue_only && !filters.poc_only && !filters.severity) {
@@ -63,6 +63,8 @@ export function hasActiveFilters(filters) {
     filters.stack ||
     filters.technique ||
     filters.vendors ||
+    filters.exclude_vendors ||
+    filters.severity_list ||
     filters.kev_only ||
     filters.kev_overdue_only ||
     filters.poc_only ||
@@ -194,24 +196,67 @@ export default function FilterBar({
 
   const active = deriveActive(filters)
   const selectedVendors = parseVendors(filters.vendors)
+  const parsedChips = filters.parsed_chips || []
+
+  function applyParsedSearch(queryText) {
+    const trimmed = String(queryText || '').trim()
+    if (!trimmed) {
+      onFiltersChange({
+        search: '',
+        vendors: '',
+        exclude_vendors: '',
+        severity: null,
+        severity_list: '',
+        kev_only: false,
+        kev_overdue_only: false,
+        poc_only: false,
+        patch_only: false,
+        watchlist_only: false,
+        epss_min: null,
+        technique: '',
+        published_on: '',
+        parsed_chips: [],
+      })
+      return
+    }
+    const patch = parsedQueryToFilters(parseFeedQuery(trimmed))
+    onFiltersChange({
+      search: patch.search,
+      vendors: patch.vendors,
+      exclude_vendors: patch.exclude_vendors,
+      severity: patch.severity,
+      severity_list: patch.severity_list,
+      kev_only: patch.kev_only,
+      kev_overdue_only: patch.kev_overdue_only,
+      poc_only: patch.poc_only,
+      patch_only: patch.patch_only,
+      watchlist_only: patch.watchlist_only,
+      epss_min: patch.epss_min,
+      technique: patch.technique,
+      published_on: patch.published_on,
+      parsed_chips: patch.parsed_chips,
+      ...(patch.stack ? { stack: patch.stack } : {}),
+    })
+  }
 
   function handleQuickFilter(id) {
-    const base = {
-      severity: null,
-      kev_only: false,
-      kev_overdue_only: false,
-      poc_only: false,
-      watchlist_only: false,
+    if (id === 'all') {
+      setLocalSearch('')
+      applyParsedSearch('')
+      return
     }
-    const next = toggleChipSelection(active, id, 'all')
-    if (next === 'watchlist')     onFiltersChange({ ...base, watchlist_only: true })
-    else if (next === 'kev')           onFiltersChange({ ...base, kev_only: true })
-    else if (next === 'kev_overdue')   onFiltersChange({ ...base, kev_overdue_only: true })
-    else if (next === 'critical') onFiltersChange({ ...base, severity: 'CRITICAL' })
-    else if (next === 'high')     onFiltersChange({ ...base, severity: 'HIGH' })
-    else if (next === 'medium')   onFiltersChange({ ...base, severity: 'MEDIUM' })
-    else if (next === 'poc')      onFiltersChange({ ...base, poc_only: true })
-    else                        onFiltersChange(base)
+    const tokenMap = {
+      watchlist: 'watchlist',
+      kev: 'kev',
+      kev_overdue: 'overdue',
+      critical: 'critical',
+      high: 'high',
+      medium: 'medium',
+      poc: 'poc',
+    }
+    const nextSearch = toggleQueryToken(localSearch, tokenMap[id] || id)
+    setLocalSearch(nextSearch)
+    applyParsedSearch(nextSearch)
   }
 
   function handleSearchChange(e) {
@@ -219,8 +264,13 @@ export default function FilterBar({
     setLocalSearch(val)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      onFiltersChange({ search: val })
+      applyParsedSearch(val)
     }, 320)
+  }
+
+  function handleParsedQueryChange(nextQuery) {
+    setLocalSearch(nextQuery)
+    applyParsedSearch(nextQuery)
   }
 
   function handleStackChange(e) {
@@ -247,14 +297,22 @@ export default function FilterBar({
   }
 
   function handleVendorClick(vendor) {
-    const next = selectedVendors.includes(vendor)
-      ? selectedVendors.filter(v => v !== vendor)
-      : [...selectedVendors, vendor]
-    onFiltersChange({ vendors: next.join(',') })
+    const token = vendor.toLowerCase()
+    const nextSearch = selectedVendors.includes(vendor)
+      ? localSearch.replace(new RegExp(`\\b${token}\\b`, 'gi'), '').replace(/\s+/g, ' ').trim()
+      : (localSearch.trim() ? `${localSearch.trim()} ${token}` : token)
+    setLocalSearch(nextSearch)
+    applyParsedSearch(nextSearch)
   }
 
   function clearVendors() {
-    onFiltersChange({ vendors: '' })
+    const nextSearch = localSearch
+      .split(/\s+/)
+      .filter((part) => !VENDORS.some((v) => v.toLowerCase() === part.toLowerCase()))
+      .join(' ')
+      .trim()
+    setLocalSearch(nextSearch)
+    applyParsedSearch(nextSearch)
   }
 
   async function fetchExportRows() {
@@ -508,7 +566,7 @@ export default function FilterBar({
             className="filter-search"
             value={localSearch}
             onChange={handleSearchChange}
-            placeholder="search CVE-ID, keyword, or describe an issue…"
+            placeholder="search: amazon + kev, vendor:apache is:kev, &quot;log4j&quot;…"
             aria-label="Search CVEs by ID, keyword, or natural language (press / to focus)"
             autoComplete="off"
             spellCheck="false"
@@ -519,6 +577,12 @@ export default function FilterBar({
             </span>
           )}
         </div>
+
+        <ParsedQueryChips
+          chips={parsedChips}
+          query={localSearch}
+          onQueryChange={handleParsedQueryChange}
+        />
 
         <div className="filter-bar-filters">
           <div className="filter-buttons" role="group" aria-label="Quick filters">
@@ -551,8 +615,7 @@ export default function FilterBar({
         </div>
       </div>
 
-      {(active === 'all' || selectedVendors.length > 0) && (
-        <div className="vendor-filter-block">
+      <div className="vendor-filter-block">
           <div className="vendor-filter-header">
             <span className="vendor-filter-label mono">{formatSectionHeading('// COMMON VENDORS')}</span>
             {selectedVendors.length > 0 && (
@@ -584,7 +647,6 @@ export default function FilterBar({
             ))}
           </div>
         </div>
-      )}
     </div>
   )
 }

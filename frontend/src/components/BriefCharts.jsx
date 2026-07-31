@@ -122,7 +122,7 @@ function EpssSparklineCell({ history, currentScore, seriesLabel }) {
 
 function EpssMoversTable({ movers, histories, loading, onSelectCVE, windowLabel, sparkSpec }) {
   if (!movers.length && !loading) {
-    return <p className="brief-charts-empty mono">No EPSS increases in the last {windowLabel}.</p>
+    return <p className="brief-chart-empty brief-charts-empty mono">No EPSS increases in the last {windowLabel}.</p>
   }
 
   const seriesLabel = sparkSpec.isContext ? 'context' : 'trend'

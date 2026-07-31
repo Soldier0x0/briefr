@@ -78,7 +78,7 @@ def test_get_preferences_defaults(client):
     assert body["poll_interval_seconds"] == 30
     assert body["utc_time"] is False
     assert body["reduce_motion"] is False
-    assert body["ui_variant"] == "default"
+    assert body["ui_variant"] == "pitch"
     assert body["notification_sound"] is True
     assert body["timezone"] == "UTC"
     assert body["remember_profile_on_server"] is False

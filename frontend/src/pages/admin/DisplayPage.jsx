@@ -114,7 +114,7 @@ export default function DisplayPage() {
         ...prev,
         instanceUiVariantDefault: body.ui_variant || nextVariant,
       }))
-      setStatus(`Saved ${nextVariant === 'pitch' ? 'showcase' : 'classic'} as the instance default for new users.`)
+      setStatus(`Saved ${nextVariant === 'default' ? 'newspaper' : 'showcase'} as the instance default for new users.`)
     } catch (e) {
       setStatus(e.message || 'Could not save instance UI default.')
     } finally {
@@ -220,13 +220,13 @@ export default function DisplayPage() {
         <CardTitle>Visual style</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch
-            on={prefs.uiVariant === 'pitch'}
-            onChange={(v) => update('uiVariant', v ? 'pitch' : 'default')}
+            on={prefs.uiVariant === 'default'}
+            onChange={(v) => update('uiVariant', v ? 'default' : 'pitch')}
           />
-          Showcase card style — rounded cards, calmer spacing, pitch-deck polish
+          Newspaper Style — dense terminal layout, original BRIEFR
         </label>
         <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
-          Mirrors the cleaner marketing-reel look. Turn off anytime to restore the classic analyst layout across BRIEF, FEED, admin, and wallboard.
+          Showcase card style is the default (rounded cards, calmer spacing). Turn on Newspaper Style to restore the classic analyst layout across BRIEF, FEED, admin, and wallboard.
         </p>
         {isAdmin ? (
           <div className="display-typography-actions" style={{ marginTop: '0.75rem' }}>
@@ -237,13 +237,13 @@ export default function DisplayPage() {
               disabled={saving}
             >
               <Sparkles size={13} strokeWidth={2} aria-hidden="true" />
-              Save {prefs.uiVariant === 'pitch' ? 'showcase' : 'classic'} as instance default
+              Save {prefs.uiVariant === 'default' ? 'newspaper' : 'showcase'} as instance default
             </button>
           </div>
         ) : null}
         {prefs.instanceUiVariantDefault ? (
           <p className="display-typography-status mono" style={{ marginTop: '0.5rem' }}>
-            Instance default: {prefs.instanceUiVariantDefault === 'pitch' ? 'showcase' : 'classic'}
+            Instance default: {prefs.instanceUiVariantDefault === 'default' ? 'newspaper' : 'showcase'}
           </p>
         ) : null}
       </Card>

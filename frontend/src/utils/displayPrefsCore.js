@@ -18,7 +18,7 @@ export const DISPLAY_DEFAULTS = {
   utcTime: false,
   reduceMotion: false,
   notificationSound: true,
-  uiVariant: 'default',
+  uiVariant: 'pitch',
   typographyPx: { ...DEFAULT_TYPOGRAPHY_PX },
 }
 

@@ -535,6 +535,11 @@
   border-color: var(--accent-primary);
 }
 
+.ui-switch[data-state='checked']:hover:not(:disabled) {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
 .ui-switch:disabled {
   opacity: 0.55;
   cursor: not-allowed;

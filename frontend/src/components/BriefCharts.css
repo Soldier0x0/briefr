@@ -76,6 +76,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 12px;
+  align-items: start;
 }
 
 .brief-chart-card {
@@ -169,7 +170,7 @@
 
 .brief-chart-canvas-wrap {
   position: relative;
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 160px;
   width: 100%;
 }
@@ -184,11 +185,20 @@
   opacity: 0.88;
 }
 
-.brief-chart-empty {
+.brief-chart-empty,
+.brief-charts-empty {
   padding: 0.75rem 0;
   color: var(--text3);
   font-size: var(--type-meta);
   text-align: center;
+}
+
+.brief-charts-empty {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
 }
 
 .brief-chart-canvas-wrap canvas {

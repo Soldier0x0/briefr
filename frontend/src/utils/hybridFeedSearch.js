@@ -13,6 +13,8 @@ export function shouldUseHybridSearch(filters) {
   if (!q) return false
   if (filters?.poc_only || filters?.kev_overdue_only || filters?.watchlist_only) return false
   if (filters?.vendors) return false
+  if (filters?.exclude_vendors) return false
+  if (filters?.severity_list) return false
   if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
   if (filters?.technique || filters?.published_on) return false
   return true

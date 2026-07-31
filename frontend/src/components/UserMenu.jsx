@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Layers, LogOut, Settings, Home, LayoutDashboard, ChevronDown, Sparkles } from 'lucide-react'
+import { Layers, LogOut, Settings, Home, LayoutDashboard, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import {
   DropdownMenu,
@@ -9,9 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-  Switch,
 } from './ui/index.js'
-import { getDisplayPrefs, setDisplayPrefs } from '../utils/displayPrefs.js'
 import './UserMenu.css'
 
 export default function UserMenu({
@@ -29,28 +26,6 @@ export default function UserMenu({
   const role = user?.role || ''
   const initial = username.charAt(0).toUpperCase()
   const onAdmin = location.pathname.startsWith('/admin')
-  const [showcaseUi, setShowcaseUi] = useState(() => getDisplayPrefs().uiVariant === 'pitch')
-
-  useEffect(() => {
-    function sync() {
-      setShowcaseUi(getDisplayPrefs().uiVariant === 'pitch')
-    }
-    window.addEventListener('briefr-preferences-loaded', sync)
-    window.addEventListener('briefr-display-prefs-changed', sync)
-    return () => {
-      window.removeEventListener('briefr-preferences-loaded', sync)
-      window.removeEventListener('briefr-display-prefs-changed', sync)
-    }
-  }, [])
-
-  async function toggleShowcaseUi(checked) {
-    setShowcaseUi(checked)
-    try {
-      await setDisplayPrefs({ uiVariant: checked ? 'pitch' : 'default' })
-    } catch {
-      setShowcaseUi(getDisplayPrefs().uiVariant === 'pitch')
-    }
-  }
 
   async function handleLogout() {
     onItemClick?.()
@@ -113,18 +88,6 @@ export default function UserMenu({
               <Settings size={14} aria-hidden="true" />
               <span>Preferences</span>
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="user-menu-item user-menu-item-toggle"
-            onSelect={(event) => event.preventDefault()}
-          >
-            <Sparkles size={14} aria-hidden="true" />
-            <span className="user-menu-toggle-label">Showcase card style</span>
-            <Switch
-              checked={showcaseUi}
-              onCheckedChange={(checked) => { void toggleShowcaseUi(checked) }}
-              aria-label="Toggle showcase card style"
-            />
           </DropdownMenuItem>
           {showClearSession && onClearSession && (
             <>
