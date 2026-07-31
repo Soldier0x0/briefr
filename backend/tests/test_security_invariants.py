@@ -167,8 +167,9 @@ def test_login_failure_body_stays_generic(client):
     )
     assert resp.status_code == 401
     body = resp.json()
+    assert set(body) == {"detail", "request_id"}
     assert body["detail"] == "Invalid username or password"
-    assert body.get("request_id")
+    assert body["request_id"] == resp.headers["X-Request-ID"]
 
 
 @pytest.mark.parametrize("method,path", ANALYST_SAMPLE_ROUTES)

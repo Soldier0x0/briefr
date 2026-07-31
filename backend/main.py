@@ -196,6 +196,16 @@ async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
     )
 
 
+def _json_safe_value(value):
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, dict):
+        return {key: _json_safe_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_value(item) for item in value]
+    return str(value)
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     request_id = request_id_var.get() or ""
@@ -204,7 +214,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         item = dict(err)
         ctx = item.get("ctx")
         if isinstance(ctx, dict):
-            item["ctx"] = {key: str(val) for key, val in ctx.items()}
+            item["ctx"] = {key: _json_safe_value(val) for key, val in ctx.items()}
         errors.append(item)
     return JSONResponse(
         status_code=422,
