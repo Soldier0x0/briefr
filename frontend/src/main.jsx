@@ -22,6 +22,7 @@ import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import './styles/tokens.css'
+import './styles/pitch-variant.css'
 import './App.css'
 import './components/ui/ui.css'
 

@@ -1,0 +1,221 @@
+/**
+ * Showcase ("pitch") visual style — optional via data-ui-variant="pitch" on <html>.
+ * Rounded cards, separated rows, calmer spacing. Toggle in Admin → Display.
+ */
+
+html[data-ui-variant="pitch"] {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 2px 10px color-mix(in srgb, var(--background-primary) 55%, transparent);
+  --shadow-md: 0 10px 28px color-mix(in srgb, var(--background-primary) 65%, transparent);
+  --shadow-lg: 0 18px 48px color-mix(in srgb, var(--background-primary) 72%, transparent);
+}
+
+html[data-ui-variant="pitch"] .admin-root {
+  --admin-radius: 10px;
+  --admin-radius-sm: 8px;
+  --admin-radius-lg: 16px;
+}
+
+/* ── Analyst header ─────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .header-tab {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .header-tab.active {
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Stats & brief ──────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .stats-row {
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+
+html[data-ui-variant="pitch"] .stat-cell {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+html[data-ui-variant="pitch"] .morning-brief-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+html[data-ui-variant="pitch"] .morning-brief-row {
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+html[data-ui-variant="pitch"] .morning-brief-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+html[data-ui-variant="pitch"] .morning-brief-row-btn {
+  padding: var(--space-4);
+}
+
+html[data-ui-variant="pitch"] .morning-brief-feed-link,
+html[data-ui-variant="pitch"] .morning-brief-filter-chip {
+  border-radius: var(--radius-pill);
+}
+
+/* ── CVE feed ───────────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .cve-list {
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-5);
+}
+
+html[data-ui-variant="pitch"] .cve-card {
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  margin: 0;
+  padding: var(--space-4) 6.25rem var(--space-4) var(--space-5);
+}
+
+html[data-ui-variant="pitch"] .cve-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+html[data-ui-variant="pitch"] .cve-card.cve-opened {
+  box-shadow: var(--shadow-md), inset 3px 0 0 0 var(--text-primary);
+}
+
+/* ── Filters & chips ────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .filter-chip,
+html[data-ui-variant="pitch"] .quick-filter-chip,
+html[data-ui-variant="pitch"] .ui-pill,
+html[data-ui-variant="pitch"] .ui-chip {
+  border-radius: var(--radius-pill);
+}
+
+html[data-ui-variant="pitch"] .filter-bar,
+html[data-ui-variant="pitch"] .feed-filter-toolbar {
+  border-radius: var(--radius-lg);
+}
+
+/* ── Drawer ─────────────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .drawer-panel {
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+}
+
+html[data-ui-variant="pitch"] .drawer-tab {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .drawer-threat-signal-card,
+html[data-ui-variant="pitch"] .drawer-panel-section,
+html[data-ui-variant="pitch"] .corr-finding {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── IOC / Forge / incidents ──────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .ioc-input-section,
+html[data-ui-variant="pitch"] .ioc-result-card,
+html[data-ui-variant="pitch"] .ioc-provider-card,
+html[data-ui-variant="pitch"] .forge-panel,
+html[data-ui-variant="pitch"] .forge-scenario-card,
+html[data-ui-variant="pitch"] .cs-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .ioc-value-input,
+html[data-ui-variant="pitch"] .ioc-lookup-btn {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .forge-matrix-cell,
+html[data-ui-variant="pitch"] .forge-technique-cell {
+  border-radius: var(--radius-sm);
+}
+
+/* ── Charts & panels ────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .brief-chart-card,
+html[data-ui-variant="pitch"] .what-changed-panel,
+html[data-ui-variant="pitch"] .timeline-heatmap-wrap {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Shared UI primitives ───────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .ui-card,
+html[data-ui-variant="pitch"] .admin-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+html[data-ui-variant="pitch"] .ui-btn,
+html[data-ui-variant="pitch"] .admin-btn {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .ui-datagrid,
+html[data-ui-variant="pitch"] .admin-datagrid {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .ui-stat-card,
+html[data-ui-variant="pitch"] .admin-stat-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Admin layout ───────────────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .admin-sidebar-item {
+  border-radius: var(--radius-md);
+}
+
+html[data-ui-variant="pitch"] .admin-config-section,
+html[data-ui-variant="pitch"] .admin-ops-chart-card,
+html[data-ui-variant="pitch"] .danger-zone {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-variant="pitch"] .admin-empty {
+  border-radius: var(--radius-lg);
+}
+
+/* ── Login / wallboard shells ───────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .login-card,
+html[data-ui-variant="pitch"] .wallboard-tile {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Security architecture ──────────────────────────────────────────────── */
+
+html[data-ui-variant="pitch"] .sa-panel,
+html[data-ui-variant="pitch"] .sa-stat-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}

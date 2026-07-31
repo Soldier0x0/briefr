@@ -16,8 +16,13 @@ from db.search_tokens import create_search_token, list_search_tokens, revoke_sea
 from dependencies import audit
 from monitoring.api_key_health import build_api_key_health_payload, run_api_key_health_checks
 from monitoring.notifications import build_operator_notifications
-from preferences.display_validate import sanitize_typography_px
-from preferences.repo import get_instance_typography_default, set_instance_typography_default
+from preferences.display_validate import sanitize_typography_px, sanitize_ui_variant
+from preferences.repo import (
+    get_instance_typography_default,
+    get_instance_ui_variant_default,
+    set_instance_typography_default,
+    set_instance_ui_variant_default,
+)
 
 from .router import router
 
@@ -137,4 +142,32 @@ async def write_instance_typography_default(body: dict, request: Request):
         await db.close()
     await audit(request, "display.typography_default", "updated")
     return {"typography_px": saved}
+
+
+@router.get("/display/ui-variant-default")
+async def read_instance_ui_variant_default():
+    db = await get_db()
+    try:
+        ui_variant = await get_instance_ui_variant_default(db)
+        return {"ui_variant": ui_variant or "default"}
+    finally:
+        await db.close()
+
+
+@router.put("/display/ui-variant-default")
+async def write_instance_ui_variant_default(body: dict, request: Request):
+    if "ui_variant" not in body:
+        raise HTTPException(status_code=422, detail="ui_variant is required")
+    try:
+        sanitized = sanitize_ui_variant(body.get("ui_variant"))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    db = await get_db()
+    try:
+        saved = await set_instance_ui_variant_default(db, sanitized)
+        await db.commit()
+    finally:
+        await db.close()
+    await audit(request, "display.ui_variant_default", f"ui_variant={saved}")
+    return {"ui_variant": saved}
 

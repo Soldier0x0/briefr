@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Sparkles } from 'lucide-react'
 import { adminApi } from '../../api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { Card, CardTitle, Pill, PillGroup, Select } from '../../components/ui/index.js'
@@ -100,6 +100,28 @@ export default function DisplayPage() {
     setTypographyDraft({ ...DEFAULT_TYPOGRAPHY_PX })
   }
 
+  async function saveInstanceUiVariant() {
+    if (!isAdmin) return
+    setSaving(true)
+    setStatus('')
+    try {
+      const nextVariant = prefs.uiVariant === 'pitch' ? 'pitch' : 'default'
+      const res = await adminApi.putJson('/display/ui-variant-default', {
+        ui_variant: nextVariant,
+      })
+      const body = res.data || res
+      setPrefs((prev) => ({
+        ...prev,
+        instanceUiVariantDefault: body.ui_variant || nextVariant,
+      }))
+      setStatus(`Saved ${nextVariant === 'pitch' ? 'showcase' : 'classic'} as the instance default for new users.`)
+    } catch (e) {
+      setStatus(e.message || 'Could not save instance UI default.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function reset() {
     clearTypographyPreview()
     void resetDisplayPrefs().finally(() => {
@@ -192,6 +214,38 @@ export default function DisplayPage() {
           <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
           Play a short chime when new high-priority notifications arrive
         </label>
+      </Card>
+
+      <Card>
+        <CardTitle>Visual style</CardTitle>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
+          <ToggleSwitch
+            on={prefs.uiVariant === 'pitch'}
+            onChange={(v) => update('uiVariant', v ? 'pitch' : 'default')}
+          />
+          Showcase card style — rounded cards, calmer spacing, pitch-deck polish
+        </label>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+          Mirrors the cleaner marketing-reel look. Turn off anytime to restore the classic analyst layout across BRIEF, FEED, admin, and wallboard.
+        </p>
+        {isAdmin ? (
+          <div className="display-typography-actions" style={{ marginTop: '0.75rem' }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn-ghost"
+              onClick={saveInstanceUiVariant}
+              disabled={saving}
+            >
+              <Sparkles size={13} strokeWidth={2} aria-hidden="true" />
+              Save {prefs.uiVariant === 'pitch' ? 'showcase' : 'classic'} as instance default
+            </button>
+          </div>
+        ) : null}
+        {prefs.instanceUiVariantDefault ? (
+          <p className="display-typography-status mono" style={{ marginTop: '0.5rem' }}>
+            Instance default: {prefs.instanceUiVariantDefault === 'pitch' ? 'showcase' : 'classic'}
+          </p>
+        ) : null}
       </Card>
 
       <Card>

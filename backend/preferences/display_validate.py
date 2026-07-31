@@ -10,6 +10,8 @@ POLL_INTERVALS = frozenset({15, 30, 60, 120})
 MAX_DISPLAY_PREFS_JSON_LEN = 4096
 MAX_TIMEZONE_LEN = 64
 
+UI_VARIANTS = frozenset({"default", "pitch"})
+
 DEFAULT_DISPLAY_PREFS = {
     "font_scale": "medium",
     "density": "comfortable",
@@ -18,6 +20,7 @@ DEFAULT_DISPLAY_PREFS = {
     "utc_time": False,
     "reduce_motion": False,
     "notification_sound": True,
+    "ui_variant": "default",
 }
 
 DEFAULT_TYPOGRAPHY_PX = {
@@ -33,6 +36,16 @@ TYPOGRAPHY_ROLES = frozenset(DEFAULT_TYPOGRAPHY_PX)
 MIN_TYPOGRAPHY_PX = 9
 MAX_TYPOGRAPHY_PX = 20
 INSTANCE_TYPOGRAPHY_SETTING_KEY = "display_typography_default"
+INSTANCE_UI_VARIANT_SETTING_KEY = "display_ui_variant_default"
+
+
+def sanitize_ui_variant(value: object | None) -> str:
+    if value is None:
+        return DEFAULT_DISPLAY_PREFS["ui_variant"]
+    token = str(value).strip()
+    if token not in UI_VARIANTS:
+        raise ValueError("ui_variant is invalid")
+    return token
 
 
 def sanitize_typography_px(data: dict | None) -> dict:
@@ -113,6 +126,12 @@ def sanitize_display_prefs(data: dict | None) -> dict:
 
     if "notification_sound" in data and data["notification_sound"] is not None:
         base["notification_sound"] = _coerce_bool(data["notification_sound"], "notification_sound")
+
+    if "ui_variant" in data and data["ui_variant"] is not None:
+        ui_variant = str(data["ui_variant"]).strip()
+        if ui_variant not in UI_VARIANTS:
+            raise ValueError("ui_variant is invalid")
+        base["ui_variant"] = ui_variant
 
     return base
 

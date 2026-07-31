@@ -105,6 +105,8 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/notifications"),
     ("GET", "/api/admin/display/typography-default"),
     ("PUT", "/api/admin/display/typography-default"),
+    ("GET", "/api/admin/display/ui-variant-default"),
+    ("PUT", "/api/admin/display/ui-variant-default"),
     ("GET", "/api/admin/backups"),
     ("POST", "/api/admin/backups/verify/{filename}"),
     ("POST", "/api/admin/backups/run"),

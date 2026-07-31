@@ -138,6 +138,14 @@
   color: var(--red);
 }
 
+.user-menu-item-toggle {
+  justify-content: flex-start;
+}
+
+.user-menu-toggle-label {
+  flex: 1;
+}
+
 .user-menu-wrap--admin .user-menu-dropdown {
   z-index: 300;
 }

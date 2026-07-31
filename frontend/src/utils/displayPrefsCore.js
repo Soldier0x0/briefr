@@ -8,6 +8,8 @@ import { osPrefersReducedMotion } from './motion.js'
 const FONT_SCALES = { xsmall: 0.8, small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }
 const DENSITY_MODES = ['compact', 'comfortable', 'spacious']
 
+export const UI_VARIANT_OPTIONS = ['default', 'pitch']
+
 export const DISPLAY_DEFAULTS = {
   fontScale: 'medium',
   density: 'comfortable',
@@ -16,6 +18,7 @@ export const DISPLAY_DEFAULTS = {
   utcTime: false,
   reduceMotion: false,
   notificationSound: true,
+  uiVariant: 'default',
   typographyPx: { ...DEFAULT_TYPOGRAPHY_PX },
 }
 
@@ -34,11 +37,17 @@ export function toDisplayPrefs(data = {}) {
       : data.notificationSound !== undefined
         ? !!data.notificationSound
         : DISPLAY_DEFAULTS.notificationSound,
+    uiVariant: UI_VARIANT_OPTIONS.includes(data.ui_variant || data.uiVariant)
+      ? (data.ui_variant || data.uiVariant)
+      : DISPLAY_DEFAULTS.uiVariant,
     typographyPx: typographyPx
       ? { ...DEFAULT_TYPOGRAPHY_PX, ...typographyPx }
       : { ...DEFAULT_TYPOGRAPHY_PX },
     instanceTypographyDefault: data.instance_typography_default
       || data.instanceTypographyDefault
+      || null,
+    instanceUiVariantDefault: data.instance_ui_variant_default
+      || data.instanceUiVariantDefault
       || null,
   }
 }
@@ -57,6 +66,11 @@ export function applyDisplayPrefs(prefs = toDisplayPrefs()) {
     document.documentElement.removeAttribute('data-motion')
   }
   applyTypographyPx(getEffectiveTypographyPx(prefs))
+  if (prefs.uiVariant === 'pitch') {
+    document.documentElement.setAttribute('data-ui-variant', 'pitch')
+  } else {
+    document.documentElement.removeAttribute('data-ui-variant')
+  }
   try {
     localStorage.setItem('briefr_notification_sound', prefs.notificationSound ? '1' : '0')
   } catch { /* ignore */ }

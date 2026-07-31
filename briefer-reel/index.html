@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #0a0a08;
+        --text: #f2f0ea;
+        --text2: #c4c1b8;
+        --accent: #e85533;
+        --border: #2a2a25;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--text);
+      }
+
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+
+      .bg-glow {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 40% at 50% 0%, rgba(232, 85, 51, 0.12), transparent 70%),
+          radial-gradient(ellipse 60% 30% at 50% 100%, rgba(232, 85, 51, 0.08), transparent 70%);
+      }
+
+      .top-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding-bottom: 28px;
+        z-index: 10;
+        background: linear-gradient(to bottom, var(--bg) 55%, transparent);
+      }
+
+      .brand {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 14px;
+      }
+
+      .scene-label {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 22px;
+        letter-spacing: 0.1em;
+        color: var(--text2);
+        padding: 10px 22px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(17, 17, 16, 0.85);
+      }
+
+      #walkthrough {
+        position: absolute;
+        left: 20px;
+        top: 200px;
+        width: 1040px;
+        height: 650px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(232, 85, 51, 0.08);
+        background: #000;
+        z-index: 5;
+        object-fit: cover;
+        object-position: top center;
+        display: block;
+      }
+
+      .bottom-bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 36px;
+        z-index: 10;
+        background: linear-gradient(to top, var(--bg) 70%, transparent);
+      }
+
+      .caption {
+        font-size: 26px;
+        color: var(--text2);
+        text-align: center;
+        line-height: 1.4;
+        max-width: 900px;
+        padding: 0 32px;
+      }
+
+      .cta-pill {
+        margin-top: 20px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 20px;
+        color: var(--accent);
+        padding: 12px 24px;
+        border: 1px solid rgba(232, 85, 51, 0.4);
+        border-radius: 10px;
+        background: rgba(232, 85, 51, 0.08);
+      }
+
+      .intro-card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        z-index: 20;
+      }
+
+      .intro-title {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 88px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+      }
+
+      .intro-sub {
+        margin-top: 20px;
+        font-size: 30px;
+        color: var(--text2);
+        text-align: center;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="58"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="bg-layer"
+        class="clip bg-glow"
+        data-start="0"
+        data-duration="58"
+        data-track-index="0"
+      ></div>
+
+      <video
+        id="walkthrough"
+        class="clip"
+        src="assets/capture/walkthrough.mp4"
+        muted
+        playsinline
+        data-start="0"
+        data-duration="58"
+        data-track-index="1"
+      ></video>
+
+      <audio
+        id="narration"
+        class="clip"
+        src="assets/voiceover/narration.wav"
+        data-start="1.5"
+        data-duration="44.3"
+        data-track-index="2"
+        data-volume="1"
+        data-timeline-role="voiceover"
+      ></audio>
+
+      <div
+        id="intro"
+        class="clip intro-card"
+        data-start="0"
+        data-duration="2"
+        data-track-index="10"
+      >
+        <h1 id="intro-title" class="intro-title">BRIEFR</h1>
+        <p id="intro-sub" class="intro-sub">Real product walkthrough</p>
+      </div>
+
+      <div
+        id="top-bar"
+        class="clip top-bar"
+        data-start="0"
+        data-duration="58"
+        data-track-index="11"
+      >
+        <div class="brand">BRIEFR</div>
+        <div id="scene-label" class="scene-label">// MORNING BRIEF</div>
+      </div>
+
+      <div
+        id="bottom-bar"
+        class="clip bottom-bar"
+        data-start="0"
+        data-duration="58"
+        data-track-index="12"
+      >
+        <p id="caption" class="caption">Self-hosted CVE intelligence for security analysts</p>
+        <div id="cta-pill" class="cta-pill">briefrdemo.projectjupiter.in</div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      const labels = [
+        { t: 2, text: "// MORNING BRIEF", cap: "Start every day with your action queue and heatmap" },
+        { t: 12, text: "// CVE FEED", cap: "Prioritized vulnerabilities filtered to your stack" },
+        { t: 20, text: "// CVE DETAIL", cap: "Operational priority, threat score, and remediation" },
+        { t: 30, text: "// IOC LOOKUP", cap: "Enrich IPs, hashes, and domains instantly" },
+        { t: 40, text: "// FORGE", cap: "Map ATT&CK techniques and build hunt packs" },
+        { t: 50, text: "// GET STARTED", cap: "Self-hosted · Open source · Apache 2.0" },
+      ];
+
+      gsap.set("#top-bar, #bottom-bar", { opacity: 0 });
+      gsap.set("#intro-title, #intro-sub", { opacity: 0, y: 30 });
+
+      tl.to("#intro-title", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.15);
+      tl.to("#intro-sub", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.4);
+      tl.to("#intro", { opacity: 0, duration: 0.5, ease: "power2.in" }, 1.5);
+      tl.to("#top-bar, #bottom-bar", { opacity: 1, duration: 0.4 }, 1.8);
+
+      labels.forEach(({ t, text, cap }) => {
+        tl.call(() => {
+          document.getElementById("scene-label").textContent = text;
+          document.getElementById("caption").textContent = cap;
+        }, null, t);
+        tl.fromTo(
+          "#scene-label",
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+          t,
+        );
+        tl.fromTo(
+          "#caption",
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+          t + 0.05,
+        );
+      });
+
+      tl.fromTo(
+        "#cta-pill",
+        { opacity: 0, scale: 0.92 },
+        { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.4)" },
+        50.5,
+      );
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

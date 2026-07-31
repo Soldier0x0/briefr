@@ -66,6 +66,9 @@ function toApiPatch(displayPatch = {}, timezone) {
   if (displayPatch.notificationSound !== undefined) {
     patch.notification_sound = displayPatch.notificationSound
   }
+  if (displayPatch.uiVariant !== undefined) {
+    patch.ui_variant = displayPatch.uiVariant
+  }
   if (displayPatch.typographyPx !== undefined) {
     patch.typography_px = displayPatch.typographyPx
   }
@@ -80,6 +83,7 @@ function fromApi(data) {
     remember_profile_on_server: !!data?.remember_profile_on_server,
     updated_at: data?.updated_at || null,
     instanceTypographyDefault: data?.instance_typography_default || null,
+    instanceUiVariantDefault: data?.instance_ui_variant_default || null,
   }
 }
 
