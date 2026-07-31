@@ -112,11 +112,11 @@ components:
     ref: backend/routers/admin/system.py
 - id: routers-admin-tokens
   title: routers.admin.tokens
-  summary: FastAPI router module with 8 endpoint(s).
+  summary: FastAPI router module with 10 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 8
+  endpoint_count: 10
   source_refs:
   - type: file
     ref: backend/routers/admin/tokens.py

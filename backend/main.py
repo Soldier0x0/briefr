@@ -199,9 +199,16 @@ async def pool_exhausted_handler(request: Request, exc: PoolExhaustedError):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     request_id = request_id_var.get() or ""
+    errors = []
+    for err in exc.errors():
+        item = dict(err)
+        ctx = item.get("ctx")
+        if isinstance(ctx, dict):
+            item["ctx"] = {key: str(val) for key, val in ctx.items()}
+        errors.append(item)
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "request_id": request_id},
+        content={"detail": errors, "request_id": request_id},
         headers={"X-Request-ID": request_id} if request_id else {},
     )
 
