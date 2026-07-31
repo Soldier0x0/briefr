@@ -31,7 +31,7 @@ import { formatAbsolute, getTimezone } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
-import { getSavedStack } from './utils/cveFilters.js'
+import { getSavedStack, filtersPatchChanged } from './utils/cveFilters.js'
 import { hasTutorialSeen, markTutorialSeen } from './utils/tutorial.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
@@ -167,7 +167,7 @@ function BriefView({ isActive, stats, statsError, statsErrorRequestId, onRetrySt
 
   const handleFiltersChange = useCallback((next) => {
     setFilters(prev => {
-      const changed = Object.keys(next).some(k => next[k] !== prev[k])
+      const changed = filtersPatchChanged(prev, next)
       return changed ? { ...prev, ...next } : prev
     })
   }, [setFilters])
@@ -258,7 +258,7 @@ function FeedView({ isActive, filters, setFilters, selectedCVE, setSelectedCVE,
     setFilters(prev => {
       // No-op guard: clicking the already-active filter must not produce a
       // new object identity (which would reset + refetch + scroll the feed).
-      const changed = Object.keys(next).some(k => next[k] !== prev[k])
+      const changed = filtersPatchChanged(prev, next)
       return changed ? { ...prev, ...next } : prev
     })
   }, [setFilters])
@@ -424,11 +424,14 @@ export default function App() {
 
   const handleOpenCVE = useCallback((cve) => {
     const id = cve?.cve_id ? String(cve.cve_id).trim().toUpperCase() : null
-    if (id) openDrawerCveIdRef.current = id
-    drawerControllerRef.current?.open(cve)
-    // Sync open drawer to ?cve= so Back closes the drawer first.
     if (!id) return
-    if (searchParams.get('cve')?.toUpperCase() === id) return
+    const urlId = searchParams.get('cve')?.trim().toUpperCase()
+    if (urlId === id) {
+      openDrawerCveIdRef.current = id
+      drawerControllerRef.current?.open(cve)
+      return
+    }
+    // URL is the drawer open SSOT — avoids closing before ?cve= lands (race with sync effect).
     pushContext(setSearchParams, (prev) => {
       const next = new URLSearchParams(prev)
       next.set('cve', id)
@@ -528,6 +531,8 @@ export default function App() {
       patch_only: false,
       severity: null,
       search: '',
+      feed_query: '',
+      parsed_chips: [],
       stack: '',
     }))
   }, [assetCtx?.profile, selectAppTab])
@@ -542,6 +547,8 @@ export default function App() {
       patch_only: false,
       epss_min: null,
       search: '',
+      feed_query: '',
+      parsed_chips: [],
       stack: '',
       vendors: '',
       exclude_vendors: '',
@@ -1128,7 +1135,7 @@ function AppLayout({
 
 
             <ToolErrorBoundary key={selectedCVE?.cve_id || 'empty'} label="CVE detail" onReset={onCloseCVE}>
-              {drawerMounted && (
+              {(drawerMounted || selectedCVE) && (
                 <Suspense fallback={null}>
                   <DetailDrawer
                     cve={selectedCVE}

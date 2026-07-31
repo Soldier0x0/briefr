@@ -72,6 +72,13 @@ describe('hybridFeedSearch', () => {
     )
   })
 
+  it('defers single-token structured quick-filter keywords to /api/cves', () => {
+    assert.equal(shouldUseHybridSearch({ feed_query: 'critical' }), false)
+    assert.equal(shouldUseHybridSearch({ feed_query: 'high' }), false)
+    assert.equal(shouldUseHybridSearch({ feed_query: 'kev' }), false)
+    assert.equal(shouldUseHybridSearch({ feed_query: 'poc' }), false)
+  })
+
   it('defers single-token vendor-only queries to /api/cves', () => {
     assert.equal(
       shouldUseHybridSearch({ feed_query: 'amazon', vendors: 'Amazon', search: '' }),

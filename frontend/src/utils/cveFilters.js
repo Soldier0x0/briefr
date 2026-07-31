@@ -4,6 +4,16 @@ import { getSavedStack } from './userStack.js'
 
 export { getSavedStack }
 
+/** True when a filter patch materially changes state (parsed_chips compared by value). */
+export function filtersPatchChanged(prev, next) {
+  return Object.keys(next).some((k) => {
+    if (k === 'parsed_chips') {
+      return JSON.stringify(next[k] ?? []) !== JSON.stringify(prev[k] ?? [])
+    }
+    return next[k] !== prev[k]
+  })
+}
+
 /** Map UI filter state to query params for /api/cves. */
 export function toApiCveParams(filters) {
   const {

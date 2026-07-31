@@ -23,6 +23,13 @@ function hasUnparsedFreeText(query) {
   return Boolean(parsed.search?.trim())
 }
 
+/** True when every token was consumed as structured chips (e.g. "critical", "amazon + kev"). */
+function isFullyStructuredFilterQuery(query) {
+  const parsed = parseFeedQuery(query)
+  if (parsed.search?.trim()) return false
+  return parsed.chips.length > 0
+}
+
 /**
  * Use /api/search/semantic when the query is the primary retrieval signal.
  * Fall back to /api/cves?search= when list filters need fields hybrid cannot
@@ -46,6 +53,7 @@ export function shouldUseHybridSearch(filters) {
     return hasUnparsedFreeText(q)
   }
   if (filters?.vendors) return false
+  if (isFullyStructuredFilterQuery(q)) return false
   return true
 }
 

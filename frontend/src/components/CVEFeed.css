@@ -39,7 +39,6 @@
    next filter result set loads — no skeleton flash on every filter click. */
 .cve-list.feed-refreshing {
   opacity: 0.45;
-  pointer-events: none;
 }
 
 /* States */
