@@ -1,4 +1,5 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   fetchCVE,
   fetchCVEDrawerBundle,
@@ -575,7 +576,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   }, [isOpen, cve])
 
   if (!cve) {
-    return <div className="drawer-overlay" aria-hidden="true" />
+    return null
   }
 
   const products = Array.isArray(cve.affected_products) ? cve.affected_products : []
@@ -590,7 +591,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const hasPreviewContent = Boolean(cve.description || cve.summary)
   const showBlockingLoadingOverlay = loading && !hasPreviewContent
 
-  return (
+  return createPortal(
     <>
       <div
         className="drawer-overlay drawer-overlay-active"
@@ -1045,6 +1046,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         onConfirm={handleConfirmSuppress}
         submitting={suppressSubmitting}
       />
-    </>
+    </>,
+    document.body,
   )
 }

@@ -37,6 +37,7 @@ import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
 import { resolveAppTab, buildAppTabSearchParams } from './utils/shellUrlState.js'
 import { pushContext, replaceHygiene } from './utils/navHistory.js'
+import { shouldCloseDrawerOnCveUrlRemoval } from './utils/drawerUrlSync.js'
 
 const BriefCharts = lazyWithReload(() => import('./components/BriefCharts.jsx'))
 const MorningBrief = lazyWithReload(() => import('./components/MorningBrief.jsx'))
@@ -421,22 +422,20 @@ export default function App() {
   // Tracks the CVE id the drawer is showing so URL sync can close on Back
   // without re-opening from a stale selectedCVE state tick.
   const openDrawerCveIdRef = useRef(null)
+  const hadCveInUrlRef = useRef(false)
 
   const handleOpenCVE = useCallback((cve) => {
     const id = cve?.cve_id ? String(cve.cve_id).trim().toUpperCase() : null
     if (!id) return
-    const urlId = searchParams.get('cve')?.trim().toUpperCase()
-    if (urlId === id) {
-      openDrawerCveIdRef.current = id
-      drawerControllerRef.current?.open(cve)
-      return
+    openDrawerCveIdRef.current = id
+    drawerControllerRef.current?.open(cve)
+    if (searchParams.get('cve')?.toUpperCase() !== id) {
+      pushContext(setSearchParams, (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('cve', id)
+        return next
+      })
     }
-    // URL is the drawer open SSOT — avoids closing before ?cve= lands (race with sync effect).
-    pushContext(setSearchParams, (prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('cve', id)
-      return next
-    })
   }, [searchParams, setSearchParams])
 
   const handleCloseCVE = useCallback(() => {
@@ -579,12 +578,18 @@ export default function App() {
   useEffect(() => {
     const cveParam = searchParams.get('cve')
     if (!cveParam) {
-      if (openDrawerCveIdRef.current) {
-        openDrawerCveIdRef.current = null
-        drawerControllerRef.current?.close()
+      // Only close when the URL *had* ?cve= and it was removed (Back / close),
+      // not during optimistic open before pushContext lands.
+      if (shouldCloseDrawerOnCveUrlRemoval(hadCveInUrlRef.current, cveParam)) {
+        hadCveInUrlRef.current = false
+        if (openDrawerCveIdRef.current) {
+          openDrawerCveIdRef.current = null
+          drawerControllerRef.current?.close()
+        }
       }
       return
     }
+    hadCveInUrlRef.current = true
     if (!/^CVE-\d{4}-\d+$/i.test(cveParam.trim())) return
     const id = cveParam.trim().toUpperCase()
     if (openDrawerCveIdRef.current !== id) {
@@ -1134,49 +1139,50 @@ function AppLayout({
             )}
 
 
-            <ToolErrorBoundary key={selectedCVE?.cve_id || 'empty'} label="CVE detail" onReset={onCloseCVE}>
-              {(drawerMounted || selectedCVE) && (
-                <Suspense fallback={null}>
-                  <DetailDrawer
-                    cve={selectedCVE}
-                    loading={drawerLoading}
-                    error={drawerError}
-                    onRetry={onRetryDrawer}
-                    onClose={onCloseCVE}
-                    onCveReplace={onCveReplace}
-                    watchlistState={
-                      selectedCVE
-                        ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
-                        : null
-                    }
-                    onWatchlistChange={onWatchlistChange}
-                  />
-                </Suspense>
-              )}
-            </ToolErrorBoundary>
-
-            {digestOpen && (
-              <ToolErrorBoundary label="Digest" onReset={() => setDigestOpen(false)}>
-                <DigestModal cves={digestCVEs} filters={filters} onClose={() => setDigestOpen(false)} />
-              </ToolErrorBoundary>
-            )}
-
-            {aboutOpen && (
-              <ToolErrorBoundary label="About" onReset={() => setAboutOpen(false)}>
-                <AboutModal onClose={() => setAboutOpen(false)} />
-              </ToolErrorBoundary>
-            )}
-
-            {tutorialOpen && (
-              <ToolErrorBoundary label="Tutorial" onReset={() => setTutorialOpen(false)}>
-                <TutorialOverlay
-                  onClose={() => { setTutorialOpen(false); markTutorialSeen() }}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                />
-              </ToolErrorBoundary>
-            )}
       </div>
+
+      <ToolErrorBoundary key={selectedCVE?.cve_id || 'empty'} label="CVE detail" onReset={onCloseCVE}>
+        {(drawerMounted || selectedCVE) && (
+          <Suspense fallback={null}>
+            <DetailDrawer
+              cve={selectedCVE}
+              loading={drawerLoading}
+              error={drawerError}
+              onRetry={onRetryDrawer}
+              onClose={onCloseCVE}
+              onCveReplace={onCveReplace}
+              watchlistState={
+                selectedCVE
+                  ? (watchlist?.getState(selectedCVE.cve_id) || selectedCVE.watchlist_state)
+                  : null
+              }
+              onWatchlistChange={onWatchlistChange}
+            />
+          </Suspense>
+        )}
+      </ToolErrorBoundary>
+
+      {digestOpen && (
+        <ToolErrorBoundary label="Digest" onReset={() => setDigestOpen(false)}>
+          <DigestModal cves={digestCVEs} filters={filters} onClose={() => setDigestOpen(false)} />
+        </ToolErrorBoundary>
+      )}
+
+      {aboutOpen && (
+        <ToolErrorBoundary label="About" onReset={() => setAboutOpen(false)}>
+          <AboutModal onClose={() => setAboutOpen(false)} />
+        </ToolErrorBoundary>
+      )}
+
+      {tutorialOpen && (
+        <ToolErrorBoundary label="Tutorial" onReset={() => setTutorialOpen(false)}>
+          <TutorialOverlay
+            onClose={() => { setTutorialOpen(false); markTutorialSeen() }}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </ToolErrorBoundary>
+      )}
     </div>
   )
 }
