@@ -58,6 +58,7 @@
   background: transparent;
   overflow-x: auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   white-space: pre;
   user-select: all;
   -webkit-user-select: all;

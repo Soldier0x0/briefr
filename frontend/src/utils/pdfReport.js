@@ -2,7 +2,7 @@
  * Browser-side CVE PDF reports (jsPDF + optional html2canvas capture).
  * Heavy PDF libs load on first export via dynamic import — not on first paint.
  */
-import { fetchCVE, fetchCVECorrelation, fetchCVEDetection, fetchCVESentences } from '../api.js'
+import { fetchCVE, fetchCVECorrelation, fetchCVEDetection, fetchCVEDrawerBundle, fetchCVERisk, fetchCVESentences } from '../api.js'
 import {
   aiFooterNoteForSource,
   formatExecutiveSummaryBody,
@@ -23,6 +23,16 @@ import {
   hexToRgb,
 } from './exportCommon.js'
 import { drawPdfCodeBlock } from './pdfCodeBlock.js'
+import {
+  formatCapecSection,
+  formatDetectionOverview,
+  formatReferencesSection,
+  formatRelatedSection,
+  formatTriageSnapshot,
+  pickCommunitySigmaYaml,
+  pickFirstYaraRule,
+  pickHuntStarterYaml,
+} from './pdfReportSections.js'
 
 const CONTENT_TOP = 18
 
@@ -119,12 +129,15 @@ function drawSection(ctx, title, bodyLines, borderRgb) {
   ctx.y = y0 + blockH
 }
 
-function pickSigmaYaml(detection) {
-  if (!detection) return ''
-  const rules = detection.sigma_rules || []
-  if (rules.length && rules[0].content) return rules[0].content
-  if (detection.generated_sigma) return detection.generated_sigma
-  return ''
+function pdfCodeLayout(ctx) {
+  return {
+    doc: ctx.doc,
+    margin: MARGIN,
+    pageW: PAGE_W,
+    contentBottom: CONTENT_BOTTOM,
+    ensureSpace,
+    splitLines,
+  }
 }
 
 function drawCheckboxList(ctx, title, items, borderRgb) {
@@ -326,6 +339,11 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
   }
   ctx.y = drawPageHeader(doc, meta, cve, true)
 
+  const triageBody = formatTriageSnapshot(cve, cve.risk)
+  if (triageBody) {
+    drawSection(ctx, 'TRIAGE SNAPSHOT', triageBody, border)
+  }
+
   const execBody = executiveSummaryText || [
     sentences.risk || `Severity: ${cve.severity || 'Unknown'}.`,
     cve.summary || cve.description || 'No plain-language summary available.',
@@ -343,6 +361,10 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
     const imgH = 18
     ctx.doc.addImage(sparklineDataUrl, 'PNG', MARGIN + 5, ctx.y, imgW, imgH)
     ctx.y += imgH + 6
+  }
+
+  if (cve.summary) {
+    drawSection(ctx, 'WHY THIS MATTERS', cve.summary, border)
   }
 
   const techParts = [
@@ -368,6 +390,11 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
   ].filter(Boolean)
   drawSection(ctx, 'THREAT INTELLIGENCE', intelParts.join('\n\n'), border)
 
+  const capecBody = formatCapecSection(cve)
+  if (capecBody) {
+    drawSection(ctx, 'ATTACK PATTERNS (CAPEC)', capecBody, border)
+  }
+
   if (techniques.length) {
     const mitreLines = techniques.map(t => {
       const tid = t.id || t.technique_id
@@ -375,28 +402,50 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
     })
     drawSection(ctx, 'MITRE ATT&CK', mitreLines.join('\n'), border)
     drawSection(ctx, 'DETECTION OPPORTUNITIES', detectionLinesFromTechniques(techniques), border)
-    const sigmaYaml = pickSigmaYaml(cve.detection)
-    if (sigmaYaml) {
-      drawPdfCodeBlock(ctx, 'SIGMA RULE (copy-ready)', sigmaYaml, border, {
-        doc: ctx.doc,
-        margin: MARGIN,
-        pageW: PAGE_W,
-        ensureSpace,
-        splitLines,
-      })
-    }
   } else {
     drawSection(ctx, 'MITRE ATT&CK', 'No techniques mapped.', border)
     drawSection(ctx, 'DETECTION OPPORTUNITIES', 'No detection guidance — no ATT&CK mapping.', border)
   }
 
+  const detection = cve.detection
+  const detectionOverview = formatDetectionOverview(detection)
+  drawSection(ctx, 'DETECTION ENGINEERING', detectionOverview, border)
+
+  const codeLayout = pdfCodeLayout(ctx)
+  const communityYaml = pickCommunitySigmaYaml(detection)
+  if (communityYaml) {
+    drawPdfCodeBlock(ctx, 'COMMUNITY SIGMA (copy-ready)', communityYaml, border, codeLayout)
+  }
+  const huntStarterYaml = pickHuntStarterYaml(detection)
+  if (huntStarterYaml) {
+    drawPdfCodeBlock(
+      ctx,
+      'BRIEFR HUNT STARTER (experimental — validate before production)',
+      huntStarterYaml,
+      border,
+      codeLayout,
+    )
+  }
+  const yaraRule = pickFirstYaraRule(detection)
+  if (yaraRule) {
+    drawPdfCodeBlock(ctx, 'YARA TEMPLATE (experimental)', yaraRule, border, codeLayout)
+  }
+
+  const relatedBody = formatRelatedSection(cve.related, cve.relatedNews, cve.relatedMethod)
+  if (relatedBody) {
+    drawSection(ctx, 'RELATED INTELLIGENCE', relatedBody, border)
+  }
+
   drawCheckboxList(ctx, 'RECOMMENDED ACTIONS', recommendedActions(cve, sentences), border)
 
+  const refBody = formatReferencesSection(cve)
+  drawSection(ctx, 'REFERENCES', refBody, border)
+
   const srcLines = sourcesForCve(cve).map(s => `${s.name}: ${s.url}`)
-  drawSection(ctx, 'SOURCES', srcLines.join('\n'), border)
+  drawSection(ctx, 'DATA SOURCES', srcLines.join('\n'), border)
 }
 
-export async function enrichCveForPdf(cve) {
+export async function enrichCveForPdf(cve, options = {}) {
   const id = cve?.cve_id
   if (!id) return cve
 
@@ -416,33 +465,40 @@ export async function enrichCveForPdf(cve) {
     }
   }
 
-  let sentences = null
-  try {
-    sentences = await fetchCVESentences(id)
-  } catch {
-    sentences = null
-  }
+  const sector = options.sector || ''
+  const riskPayload = options.riskPayload || {}
 
-  let correlation = null
-  let detection = null
-  try {
-    correlation = await fetchCVECorrelation(id)
-  } catch {
-    correlation = null
-  }
-  try {
-    const product = full.affected_products?.[0]?.split(':')?.[1] || ''
-    detection = await fetchCVEDetection(id, product)
-  } catch {
-    detection = null
-  }
+  const [sentences, correlation, detection, risk, bundle] = await Promise.all([
+    fetchCVESentences(id).catch(() => null),
+    fetchCVECorrelation(id, sector).catch(() => null),
+    fetchCVEDetection(id, full.affected_products?.[0]?.split(':')?.[1] || '').catch(() => null),
+    options.risk
+      ? Promise.resolve(options.risk)
+      : fetchCVERisk(id, riskPayload).catch(() => null),
+    (options.related || options.relatedNews)
+      ? Promise.resolve({
+        related: options.related || [],
+        related_news: options.relatedNews || [],
+        related_method: options.relatedMethod || '',
+      })
+      : fetchCVEDrawerBundle(id, sector).catch(() => null),
+  ])
 
-  return { ...full, sentences: sentences || {}, correlation: correlation || {}, detection: detection || null }
+  return {
+    ...full,
+    sentences: sentences || {},
+    correlation: correlation || {},
+    detection: detection || null,
+    risk: risk || null,
+    related: bundle?.related || options.related || [],
+    relatedNews: bundle?.related_news || options.relatedNews || [],
+    relatedMethod: bundle?.related_method || options.relatedMethod || '',
+  }
 }
 
 export async function downloadSingleCvePdf(cve, options = {}) {
   const { jsPDF } = await loadPdfLibs()
-  const enriched = await enrichCveForPdf(cve)
+  const enriched = await enrichCveForPdf(cve, options)
   const summaryData = await loadPdfExecutiveSummary({
     cves: [enriched],
     investigationDuration: 1,
