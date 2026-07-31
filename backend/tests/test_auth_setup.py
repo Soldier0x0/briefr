@@ -107,3 +107,30 @@ def test_setup_rejects_short_password(empty_client):
         json={"username": "ops", "password": "short"},
     )
     assert resp.status_code == 422
+    body = resp.json()
+    assert set(body) == {"detail", "request_id"}
+    assert body["request_id"] == resp.headers["X-Request-ID"]
+    password_errors = [
+        err for err in body["detail"]
+        if tuple(err.get("loc", ())) == ("body", "password")
+    ]
+    assert len(password_errors) == 1
+    ctx = password_errors[0].get("ctx", {})
+    assert ctx["error"] == "Password must be at least 8 characters."
+
+
+def test_setup_rejects_overlong_password_preserves_numeric_ctx(empty_client):
+    resp = empty_client.post(
+        "/api/auth/setup",
+        json={"username": "ops", "password": "a" * 129},
+    )
+    assert resp.status_code == 422
+    password_errors = [
+        err for err in resp.json()["detail"]
+        if tuple(err.get("loc", ())) == ("body", "password")
+    ]
+    assert len(password_errors) == 1
+    err = password_errors[0]
+    assert err["type"] == "string_too_long"
+    ctx = err.get("ctx", {})
+    assert ctx["max_length"] == 128
