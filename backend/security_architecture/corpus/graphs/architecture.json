@@ -632,7 +632,7 @@
       "label": "routers.admin.tokens",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 8,
+      "endpoint_count": 10,
       "source_refs": [
         {
           "type": "file",
