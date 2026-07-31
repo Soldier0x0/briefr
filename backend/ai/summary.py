@@ -190,6 +190,29 @@ def _parse_ai_payload(content: str) -> dict[str, Any] | None:
     }
 
 
+def _unwrap_nested_summary_field(value: str) -> tuple[str, dict[str, Any] | None]:
+    """
+    Some LLMs return the full JSON object as the executive_summary string value.
+    Unwrap so PDF/UI never render raw ``{"executive_summary": "..."}`` text.
+    """
+    text = (value or "").strip()
+    if not text.startswith("{"):
+        return text, None
+
+    try:
+        nested = json.loads(text)
+    except json.JSONDecodeError:
+        return text, None
+
+    if not isinstance(nested, dict):
+        return text, None
+
+    inner = (nested.get("executive_summary") or nested.get("summary") or "").strip()
+    if inner:
+        return inner, nested
+    return text, nested
+
+
 def _normalize_result(
     raw: dict[str, Any],
     source: str,
@@ -198,16 +221,29 @@ def _normalize_result(
     actors: list[dict],
 ) -> dict[str, Any]:
     summary = (raw.get("executive_summary") or raw.get("summary") or "").strip()
+    nested_payload: dict[str, Any] | None = None
+    if summary:
+        summary, nested_payload = _unwrap_nested_summary_field(summary)
+
     if not summary:
         summary = _template_executive_summary(cves, iocs, actors, 1)
 
     findings = raw.get("key_findings")
+    if (not isinstance(findings, list) or not findings) and nested_payload:
+        nested_findings = nested_payload.get("key_findings")
+        if isinstance(nested_findings, list) and nested_findings:
+            findings = nested_findings
+
     if not isinstance(findings, list) or not findings:
         findings = _template_key_findings(cves, iocs, actors)
     else:
         findings = [str(f).strip() for f in findings if str(f).strip()][:8]
 
-    confidence = str(raw.get("confidence") or "medium").lower()
+    confidence = str(raw.get("confidence") or "").lower()
+    if confidence not in ("high", "medium", "low") and nested_payload:
+        nested_confidence = str(nested_payload.get("confidence") or "").lower()
+        if nested_confidence in ("high", "medium", "low"):
+            confidence = nested_confidence
     if confidence not in ("high", "medium", "low"):
         confidence = "medium"
 
