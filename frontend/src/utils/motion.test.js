@@ -16,5 +16,6 @@ describe('motion.js', () => {
     )
     assert.match(src, /setAttribute\('data-motion', 'off'\)/)
     assert.match(src, /setAttribute\('data-motion', 'on'\)/)
+    assert.match(src, /setAttribute\('data-ui-variant', 'pitch'\)/)
   })
 })

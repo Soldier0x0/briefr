@@ -230,6 +230,7 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
             "utc_time",
             "reduce_motion",
             "notification_sound",
+            "ui_variant",
             "typography_px",
         )
         if key in patch

@@ -195,6 +195,20 @@ export default function DisplayPage() {
       </Card>
 
       <Card>
+        <CardTitle>Visual style</CardTitle>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
+          <ToggleSwitch
+            on={prefs.uiVariant === 'pitch'}
+            onChange={(v) => update('uiVariant', v ? 'pitch' : 'default')}
+          />
+          Showcase card style — rounded cards, calmer spacing, pitch-deck polish
+        </label>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+          Mirrors the cleaner marketing-reel look. Turn off anytime to restore the classic analyst layout across BRIEF, FEED, admin, and wallboard.
+        </p>
+      </Card>
+
+      <Card>
         <CardTitle>Motion</CardTitle>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
           <ToggleSwitch on={!!prefs.reduceMotion} onChange={v => update('reduceMotion', v)} />

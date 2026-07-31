@@ -66,6 +66,9 @@ function toApiPatch(displayPatch = {}, timezone) {
   if (displayPatch.notificationSound !== undefined) {
     patch.notification_sound = displayPatch.notificationSound
   }
+  if (displayPatch.uiVariant !== undefined) {
+    patch.ui_variant = displayPatch.uiVariant
+  }
   if (displayPatch.typographyPx !== undefined) {
     patch.typography_px = displayPatch.typographyPx
   }

@@ -78,6 +78,7 @@ def test_get_preferences_defaults(client):
     assert body["poll_interval_seconds"] == 30
     assert body["utc_time"] is False
     assert body["reduce_motion"] is False
+    assert body["ui_variant"] == "default"
     assert body["notification_sound"] is True
     assert body["timezone"] == "UTC"
     assert body["remember_profile_on_server"] is False
@@ -152,6 +153,19 @@ def test_patch_preferences_typography_px(client):
 def test_patch_preferences_rejects_invalid_typography_px(client):
     _login(client)
     res = client.patch("/api/me/preferences", json={"typography_px": {"body": 8}})
+    assert res.status_code == 422
+
+
+def test_patch_preferences_ui_variant_pitch(client):
+    _login(client)
+    res = client.patch("/api/me/preferences", json={"ui_variant": "pitch"})
+    assert res.status_code == 200
+    assert res.json()["ui_variant"] == "pitch"
+
+
+def test_patch_preferences_rejects_invalid_ui_variant(client):
+    _login(client)
+    res = client.patch("/api/me/preferences", json={"ui_variant": "neon"})
     assert res.status_code == 422
 
 
