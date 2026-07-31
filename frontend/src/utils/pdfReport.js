@@ -24,14 +24,12 @@ import {
 } from './exportCommon.js'
 import { drawPdfCodeBlock } from './pdfCodeBlock.js'
 import {
+  collectOfficialSigmaRulesForPdf,
   formatCapecSection,
   formatDetectionOverview,
   formatReferencesSection,
   formatRelatedSection,
   formatTriageSnapshot,
-  pickCommunitySigmaYaml,
-  pickFirstYaraRule,
-  pickHuntStarterYaml,
 } from './pdfReportSections.js'
 
 const CONTENT_TOP = 18
@@ -409,27 +407,19 @@ function renderSingleCvePages(doc, ctx, cve, meta, sparklineDataUrl, { newPage =
 
   const detection = cve.detection
   const detectionOverview = formatDetectionOverview(detection)
-  drawSection(ctx, 'DETECTION ENGINEERING', detectionOverview, border)
+  drawSection(ctx, 'OFFICIAL DETECTION RULES', detectionOverview, border)
 
   const codeLayout = pdfCodeLayout(ctx)
-  const communityYaml = pickCommunitySigmaYaml(detection)
-  if (communityYaml) {
-    drawPdfCodeBlock(ctx, 'COMMUNITY SIGMA (copy-ready)', communityYaml, border, codeLayout)
-  }
-  const huntStarterYaml = pickHuntStarterYaml(detection)
-  if (huntStarterYaml) {
+  collectOfficialSigmaRulesForPdf(detection).forEach(rule => {
     drawPdfCodeBlock(
       ctx,
-      'BRIEFR HUNT STARTER (experimental — validate before production)',
-      huntStarterYaml,
+      `SIGMAHQ — ${rule.title}`,
+      rule.content,
       border,
       codeLayout,
+      rule.attribution,
     )
-  }
-  const yaraRule = pickFirstYaraRule(detection)
-  if (yaraRule) {
-    drawPdfCodeBlock(ctx, 'YARA TEMPLATE (experimental)', yaraRule, border, codeLayout)
-  }
+  })
 
   const relatedBody = formatRelatedSection(cve.related, cve.relatedNews, cve.relatedMethod)
   if (relatedBody) {

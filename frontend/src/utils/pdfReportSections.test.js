@@ -1,12 +1,12 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  collectOfficialSigmaRulesForPdf,
   formatCapecSection,
   formatDetectionOverview,
   formatRelatedSection,
+  formatSigmaAttribution,
   formatTriageSnapshot,
-  pickCommunitySigmaYaml,
-  pickHuntStarterYaml,
 } from './pdfReportSections.js'
 
 describe('pdfReportSections', () => {
@@ -35,28 +35,67 @@ describe('pdfReportSections', () => {
     assert.match(body, /CAPEC-88:/)
   })
 
-  it('prefers community sigma YAML over hunt starter', () => {
+  it('collects official SigmaHQ rules with attribution and ranks CVE-exact first', () => {
     const detection = {
-      sigma_rules: [{ content: 'title: community\nstatus: test' }],
-      generated_sigma: 'title: hunt\nstatus: experimental',
+      sigma_rules: [
+        {
+          title: 'Technique rule',
+          content: 'title: technique',
+          source: 'SigmaHQ',
+          match_basis: 'technique_related',
+        },
+        {
+          title: 'CVE rule',
+          content: 'title: cve',
+          source: 'SigmaHQ',
+          match_basis: 'cve_exact',
+          attribution: 'SigmaHQ · Florian Roth',
+          html_url: 'https://github.com/SigmaHQ/sigma/blob/master/rule.yml',
+        },
+      ],
+      generated_sigma: 'title: briefr-generated',
     }
-    assert.equal(pickCommunitySigmaYaml(detection), 'title: community\nstatus: test')
-    assert.equal(pickHuntStarterYaml(detection), 'title: hunt\nstatus: experimental')
+    const rules = collectOfficialSigmaRulesForPdf(detection)
+    assert.equal(rules.length, 2)
+    assert.equal(rules[0].title, 'CVE rule')
+    assert.match(rules[0].attribution, /SigmaHQ/)
+    assert.match(formatSigmaAttribution(rules[0]), /Source: https:\/\/github.com/)
+    assert.doesNotMatch(rules.map(r => r.content).join('\n'), /briefr-generated/)
   })
 
-  it('lists detection assets but not generic SIEM queries', () => {
+  it('lists only official detection sources and omits BRIEFR templates', () => {
     const body = formatDetectionOverview({
-      sigma_rules: [{ title: 'Rule A', match_basis: 'cve_exact' }],
+      sigma_rules: [{
+        title: 'Rule A',
+        content: 'title: official',
+        source: 'SigmaHQ',
+        match_basis: 'cve_exact',
+        attribution: 'SigmaHQ · Author',
+      }],
+      elastic_rules: [{ name: 'Elastic rule', html_url: 'https://github.com/elastic/detection-rules' }],
+      generated_sigma: 'title: hunt starter',
+      yara_rules: [{ yara: 'rule generated {}' }],
       siem_queries: {
         elastic_kql: { query: 'process.name: foo' },
-        log_patterns: ['Watch auth logs for exploit attempts'],
+        log_patterns: ['Watch auth logs'],
       },
-      evidence: { observables: { nuclei_urls: ['https://github.com/projectdiscovery/nuclei-templates'] } },
     })
-    assert.match(body, /Community Sigma rules/)
-    assert.match(body, /Rule A/)
-    assert.match(body, /Log patterns/)
+    assert.match(body, /Official SigmaHQ rules/)
+    assert.match(body, /SigmaHQ · Author/)
+    assert.match(body, /Official Elastic detection rules/)
+    assert.doesNotMatch(body, /hunt starter/i)
+    assert.doesNotMatch(body, /YARA/)
+    assert.doesNotMatch(body, /Log patterns/)
     assert.doesNotMatch(body, /process\.name/)
+  })
+
+  it('states when no official rules matched', () => {
+    const body = formatDetectionOverview({
+      generated_sigma: 'title: only briefr',
+      siem_queries: { log_patterns: ['noise'] },
+    })
+    assert.match(body, /No official community detection rules/)
+    assert.match(body, /BRIEFR-generated hunt starters are omitted/)
   })
 
   it('formats related CVEs and news', () => {

@@ -5,6 +5,12 @@ import {
   getSsvcAnnotationDisplay,
 } from '../scoring/riskScore.js'
 
+const SIGMA_MATCH_RANK = {
+  cve_exact: 0,
+  cve_search: 1,
+  technique_related: 2,
+}
+
 export function formatTriageSnapshot(cve, risk) {
   const lines = []
   const op = getOperationalPriorityDisplay(risk)
@@ -65,64 +71,96 @@ export function formatRelatedSection(related = [], relatedNews = [], relatedMeth
   return parts.join('\n')
 }
 
+export function formatSigmaAttribution(rule) {
+  const parts = []
+  if (rule.attribution) {
+    parts.push(rule.attribution)
+  } else {
+    const author = String(rule.author || '').trim()
+    parts.push(author ? `SigmaHQ · ${author}` : 'SigmaHQ (Detection Rule License 1.1)')
+  }
+  if (rule.license) parts.push(`License: ${rule.license}`)
+  if (rule.match_basis) parts.push(`Match: ${rule.match_basis}`)
+  if (rule.html_url) parts.push(`Source: ${rule.html_url}`)
+  return parts.join(' · ')
+}
+
+export function formatElasticAttribution(rule) {
+  const parts = ['Elastic Detection Rules (elastic/detection-rules)']
+  if (rule.language) parts.push(`Language: ${rule.language}`)
+  if (rule.html_url) parts.push(`Source: ${rule.html_url}`)
+  return parts.join(' · ')
+}
+
+/** Official SigmaHQ rules with fetched YAML — ranked CVE-exact first. */
+export function collectOfficialSigmaRulesForPdf(detection, { maxRules = 2 } = {}) {
+  const rules = (detection?.sigma_rules || []).filter(rule => {
+    if (!rule?.content) return false
+    const source = String(rule.source || '').toLowerCase()
+    return source.includes('sigma') || Boolean(rule.path)
+  })
+
+  return [...rules]
+    .sort((a, b) => {
+      const rankA = SIGMA_MATCH_RANK[a.match_basis] ?? 9
+      const rankB = SIGMA_MATCH_RANK[b.match_basis] ?? 9
+      if (rankA !== rankB) return rankA - rankB
+      return String(a.title || a.path || '').localeCompare(String(b.title || b.path || ''))
+    })
+    .slice(0, maxRules)
+    .map(rule => ({
+      kind: 'sigma',
+      title: rule.title || rule.path?.split('/').pop()?.replace('.yml', '') || 'Sigma rule',
+      content: rule.content,
+      attribution: formatSigmaAttribution(rule),
+      sourceUrl: rule.html_url || rule.download_url || '',
+    }))
+}
+
+/** Official Elastic community rules (metadata + source links; body not stored in API). */
+export function collectOfficialElasticRulesForPdf(detection, { maxRules = 4 } = {}) {
+  return (detection?.elastic_rules || [])
+    .slice(0, maxRules)
+    .map(rule => ({
+      kind: 'elastic',
+      title: rule.name || rule.path?.split('/').pop() || 'Elastic detection rule',
+      attribution: formatElasticAttribution(rule),
+      sourceUrl: rule.html_url || rule.download_url || '',
+    }))
+}
+
 export function formatDetectionOverview(detection) {
   if (!detection) return ''
+
   const parts = []
-  const sigmaRules = detection.sigma_rules || []
-  const elasticRules = detection.elastic_rules || []
+  const sigmaRules = collectOfficialSigmaRulesForPdf(detection)
+  const elasticRules = collectOfficialElasticRulesForPdf(detection)
 
   if (sigmaRules.length) {
-    parts.push('Community Sigma rules:')
-    sigmaRules.slice(0, 6).forEach(rule => {
-      const title = rule.title || rule.name || rule.path?.split('/').pop() || 'Sigma rule'
-      const basis = rule.match_basis ? ` [${rule.match_basis}]` : ''
-      parts.push(`• ${title}${basis}`)
+    parts.push('Official SigmaHQ rules (YAML included below when fetched):')
+    sigmaRules.forEach(rule => {
+      parts.push(`• ${rule.title} — ${rule.attribution}`)
     })
   }
+
   if (elasticRules.length) {
-    parts.push('Community Elastic rules:')
-    elasticRules.slice(0, 4).forEach(rule => {
-      parts.push(`• ${rule.name || 'Elastic rule'}`)
+    parts.push('Official Elastic detection rules (view/download from source):')
+    elasticRules.forEach(rule => {
+      parts.push(`• ${rule.title} — ${rule.attribution}`)
     })
   }
 
   const nucleiUrls = detection.evidence?.observables?.nuclei_urls || []
   if (nucleiUrls.length) {
-    parts.push('Nuclei templates:')
+    parts.push('Official Nuclei templates (ProjectDiscovery):')
     nucleiUrls.slice(0, 4).forEach(url => parts.push(`• ${url}`))
   }
 
-  const yaraRules = detection.yara_rules || []
-  if (yaraRules.length) {
-    parts.push(`YARA hunt templates: ${yaraRules.length} generated from OTX file hashes (experimental).`)
-  }
-
-  const logPatterns = detection.siem_queries?.log_patterns || []
-  if (logPatterns.length) {
-    parts.push('Log patterns to monitor:')
-    logPatterns.forEach(p => parts.push(`• ${p}`))
-  }
-
   if (!parts.length) {
-    return 'No community detection rules or hunt starters matched for this CVE.'
+    return 'No official community detection rules (SigmaHQ / Elastic) matched for this CVE. BRIEFR-generated hunt starters are omitted from PDF exports.'
   }
+
   return parts.join('\n')
-}
-
-export function pickCommunitySigmaYaml(detection) {
-  const rules = detection?.sigma_rules || []
-  const match = rules.find(r => r.content)
-  return match?.content || ''
-}
-
-export function pickHuntStarterYaml(detection) {
-  return detection?.generated_sigma || ''
-}
-
-export function pickFirstYaraRule(detection) {
-  const rules = detection?.yara_rules || []
-  const match = rules.find(r => r.yara || r.content)
-  return match?.yara || match?.content || ''
 }
 
 export function formatReferencesSection(cve) {
