@@ -4,6 +4,7 @@ import { notifyApiError } from './Toast.jsx'
 import { ingestLogUrl } from '../utils/adminLinks.js'
 import { toApiCveParams } from '../utils/cveFilters.js'
 import {
+  getHybridSearchQuery,
   hybridSearchStatusLabel,
   processHybridSearchResults,
   shouldUseHybridSearch,
@@ -233,7 +234,7 @@ export default function CVEFeed({
     try {
       const filtersNow = filtersRef.current
       if (!append && shouldUseHybridSearch(filtersNow)) {
-        const q = (filtersNow.search || '').trim()
+        const q = getHybridSearchQuery(filtersNow)
         const body = await fetchSemanticSearch({
           q,
           mode: 'hybrid',
@@ -559,6 +560,7 @@ export default function CVEFeed({
               poc_only: false,
               patch_only: false,
               search: '',
+              feed_query: '',
               epss_min: null,
               vendors: '',
               my_stack_only: false,

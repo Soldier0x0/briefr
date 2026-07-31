@@ -59,6 +59,7 @@ function parseVendors(vendorsStr) {
 
 export function hasActiveFilters(filters) {
   return !!(
+    (filters.feed_query && filters.feed_query.trim()) ||
     (filters.search && filters.search.trim()) ||
     filters.stack ||
     filters.technique ||
@@ -88,7 +89,7 @@ export default function FilterBar({
   searchFocusTrigger,
   searchStatus = '',
 }) {
-  const [localSearch, setLocalSearch] = useState(filters.search || '')
+  const [localSearch, setLocalSearch] = useState(filters.feed_query || filters.search || '')
   const [localStack, setLocalStack] = useState(() => filters.stack || '')
   const [stackHintVisible, setStackHintVisible] = useState(() => {
     try { return localStorage.getItem('briefr_stack_hint_dismissed') !== '1' } catch { return true }
@@ -105,10 +106,6 @@ export default function FilterBar({
   const exportSuccessTimeoutRef = useRef(null)
   const searchRef    = useRef(null)
   const pollRef = useRef(null)
-
-  useEffect(() => {
-    setLocalSearch(filters.search || '')
-  }, [filters.search])
 
   useEffect(() => {
     setLocalStack((prev) => nextLocalStack(prev, filters.stack))
@@ -202,6 +199,7 @@ export default function FilterBar({
     const trimmed = String(queryText || '').trim()
     if (!trimmed) {
       onFiltersChange({
+        feed_query: '',
         search: '',
         vendors: '',
         exclude_vendors: '',
@@ -221,6 +219,7 @@ export default function FilterBar({
     }
     const patch = parsedQueryToFilters(parseFeedQuery(trimmed))
     onFiltersChange({
+      feed_query: trimmed,
       search: patch.search,
       vendors: patch.vendors,
       exclude_vendors: patch.exclude_vendors,

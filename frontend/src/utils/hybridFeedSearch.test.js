@@ -22,10 +22,36 @@ describe('hybridFeedSearch', () => {
 
   it('defers to /api/cves when list filters need server fields hybrid lacks', () => {
     assert.equal(shouldUseHybridSearch({ search: 'x', poc_only: true }), false)
-    assert.equal(shouldUseHybridSearch({ search: 'x', vendors: 'Microsoft' }), false)
+    assert.equal(shouldUseHybridSearch({ search: 'microsoft', vendors: 'Microsoft' }), false)
     assert.equal(shouldUseHybridSearch({ search: 'x', exclude_vendors: 'linux' }), false)
     assert.equal(shouldUseHybridSearch({ search: 'x', severity_list: 'CRITICAL,HIGH' }), false)
     assert.equal(shouldUseHybridSearch({ search: '' }), false)
+  })
+
+  it('uses hybrid for multi-token natural queries even with parsed vendor chips', () => {
+    assert.equal(
+      shouldUseHybridSearch({
+        feed_query: 'amazon kv',
+        vendors: 'Amazon',
+        search: 'kv',
+      }),
+      true,
+    )
+    assert.equal(
+      shouldUseHybridSearch({
+        feed_query: 'amazon plus kv',
+        vendors: 'Amazon',
+        search: 'plus kv',
+      }),
+      true,
+    )
+  })
+
+  it('defers single-token vendor-only queries to /api/cves', () => {
+    assert.equal(
+      shouldUseHybridSearch({ feed_query: 'amazon', vendors: 'Amazon', search: '' }),
+      false,
+    )
   })
 
   it('keeps hybrid when My Stack / severity / KEV chips are active (E7)', () => {

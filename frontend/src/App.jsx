@@ -92,6 +92,7 @@ const DEFAULT_FILTERS = {
   patch_only: false,
   epss_min: null,
   search: '',
+  feed_query: '',
   stack: '',
   vendors: '',
   exclude_vendors: '',

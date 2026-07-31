@@ -1,5 +1,20 @@
 /** Helpers for FEED hybrid search (Embeddings E4). */
 
+const STRUCTURED_QUERY_RE = /\b(vendor:|v:|is:|sev:|severity:|cve:|technique:|t:|epss:|stack:|product:|published:|date:)/i
+
+/** Raw analyst query string (full input) or parsed free-text fallback. */
+export function getHybridSearchQuery(filters) {
+  return (filters?.feed_query || filters?.search || '').trim()
+}
+
+function hasExplicitStructuredSyntax(query) {
+  return STRUCTURED_QUERY_RE.test(query)
+}
+
+function isMultiTokenNaturalQuery(query) {
+  return query.split(/[\s+]+/).filter(Boolean).length > 1
+}
+
 /**
  * Use /api/search/semantic when the query is the primary retrieval signal.
  * Fall back to /api/cves?search= when list filters need fields hybrid cannot
@@ -9,14 +24,18 @@
  * Severity / KEV chips also stay on hybrid (API + client filter).
  */
 export function shouldUseHybridSearch(filters) {
-  const q = (filters?.search || '').trim()
+  const q = getHybridSearchQuery(filters)
   if (!q) return false
   if (filters?.poc_only || filters?.kev_overdue_only || filters?.watchlist_only) return false
-  if (filters?.vendors) return false
   if (filters?.exclude_vendors) return false
   if (filters?.severity_list) return false
   if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
   if (filters?.technique || filters?.published_on) return false
+  if (hasExplicitStructuredSyntax(q)) return false
+  // Multi-word natural queries (e.g. "amazon kv", "amazon plus kv") stay on hybrid
+  // even when the parser also extracted a vendor chip from the first token.
+  if (isMultiTokenNaturalQuery(q)) return true
+  if (filters?.vendors) return false
   return true
 }
 
