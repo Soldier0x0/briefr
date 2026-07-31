@@ -37,3 +37,6 @@ graphify-out/
 .superpowers/
 briefr-docs/
 projectjupiter-landing/
+
+# HyperFrames marketing reel — generate locally; do not commit media to public repo
+briefer-reel/
