@@ -20,6 +20,12 @@ describe('drawerScrollLock', () => {
     assert.doesNotMatch(jsx, /const atTop = scrollTop <= 0 && e\.deltaY < 0/)
   })
 
+  it('drawer imports TabOverview used by the overview tab panel', () => {
+    const jsx = read('../components/DetailDrawer/index.jsx')
+    assert.match(jsx, /import TabOverview from '\.\/OverviewTab\.jsx'/)
+    assert.match(jsx, /<TabOverview[\s>]/)
+  })
+
   it('code panel body contains scroll for nested YAML blocks', () => {
     const css = read('../components/CodePanel.css')
     assert.match(css, /\.code-panel-body[\s\S]*overflow-y:\s*auto/)
