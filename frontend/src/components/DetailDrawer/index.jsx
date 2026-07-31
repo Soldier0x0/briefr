@@ -27,7 +27,7 @@ import { shouldIgnoreGlobalShortcut } from '../../utils/keyboardScope.js'
 import useModalLayer from '../../hooks/useModalLayer.js'
 import { severityColor } from './helpers.js'
 import { severityTooltip } from '../../utils/severitySemantics.js'
-import TabOverview from './OverviewTab.jsx'
+import { handleDrawerWheel } from '../../utils/drawerScrollLock.js'
 import TabIntel from './IntelTab.jsx'
 import TabDetect from './DetectTab.jsx'
 import TabRelated from './RelatedTab.jsx'
@@ -456,13 +456,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         e.preventDefault()
         return
       }
-      const { scrollTop, scrollHeight, clientHeight } = panel
-      const atTop = scrollTop <= 0 && e.deltaY < 0
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0
-      if (atTop || atBottom) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
+      handleDrawerWheel(e, panel)
     }
 
     document.addEventListener('wheel', onWheel, { passive: false, capture: true })
@@ -516,9 +510,23 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     setPdfError(null)
     try {
       const { downloadSingleCvePdf } = await import('../../utils/pdfReport.js')
+      const sector = assetCtx?.profile?.environment?.industry || ''
+      const riskPayload =
+        assetCtx?.isLoaded && assetCtx?.profile
+          ? {
+              profile: assetCtx.profile,
+              assets: profileToMatchAssets(assetCtx.profile),
+            }
+          : {}
       await downloadSingleCvePdf(cve, {
         analystName,
         sparklineElement: epssSparklineRef.current,
+        sector,
+        riskPayload,
+        risk: riskScore,
+        related,
+        relatedNews,
+        relatedMethod,
       })
       setPdfModalOpen(false)
       notifyExportSuccess(`PDF downloaded for ${cve.cve_id}`)

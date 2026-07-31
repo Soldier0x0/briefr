@@ -310,7 +310,7 @@ function GeneratedSigmaSection({
         </div>
         <CodePanel
           code={generatedSigma}
-          title="Hunt starter YAML"
+          title={detection?.cve_id ? `Hunt starter — ${detection.cve_id.toLowerCase()}.yml` : 'Hunt starter YAML'}
           copyLabel="Copy YAML"
         />
       </div>
