@@ -47,6 +47,31 @@ describe('hybridFeedSearch', () => {
     )
   })
 
+  it('defers fully structured multi-token queries to /api/cves', () => {
+    assert.equal(
+      shouldUseHybridSearch({
+        feed_query: 'amazon + kev',
+        vendors: 'Amazon',
+        search: '',
+        kev_only: true,
+      }),
+      false,
+    )
+    assert.equal(
+      shouldUseHybridSearch({
+        feed_query: 'apache kev',
+        vendors: 'Apache',
+        search: '',
+        kev_only: true,
+      }),
+      false,
+    )
+    assert.equal(
+      shouldUseHybridSearch({ feed_query: 'vendor:apache is:kev' }),
+      false,
+    )
+  })
+
   it('defers single-token vendor-only queries to /api/cves', () => {
     assert.equal(
       shouldUseHybridSearch({ feed_query: 'amazon', vendors: 'Amazon', search: '' }),

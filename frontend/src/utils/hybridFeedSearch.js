@@ -1,5 +1,7 @@
 /** Helpers for FEED hybrid search (Embeddings E4). */
 
+import { parseFeedQuery } from './feedQueryParser.js'
+
 const STRUCTURED_QUERY_RE = /\b(vendor:|v:|is:|sev:|severity:|cve:|technique:|t:|epss:|stack:|product:|published:|date:)/i
 
 /** Raw analyst query string (full input) or parsed free-text fallback. */
@@ -13,6 +15,12 @@ function hasExplicitStructuredSyntax(query) {
 
 function isMultiTokenNaturalQuery(query) {
   return query.split(/[\s+]+/).filter(Boolean).length > 1
+}
+
+/** True when the parser left free-text tokens (e.g. "amazon kv" → search "kv"). */
+function hasUnparsedFreeText(query) {
+  const parsed = parseFeedQuery(query)
+  return Boolean(parsed.search?.trim())
 }
 
 /**
@@ -32,9 +40,11 @@ export function shouldUseHybridSearch(filters) {
   if (filters?.summary_only || filters?.ai_context_only || filters?.ai_profile_match) return false
   if (filters?.technique || filters?.published_on) return false
   if (hasExplicitStructuredSyntax(q)) return false
-  // Multi-word natural queries (e.g. "amazon kv", "amazon plus kv") stay on hybrid
-  // even when the parser also extracted a vendor chip from the first token.
-  if (isMultiTokenNaturalQuery(q)) return true
+  if (isMultiTokenNaturalQuery(q)) {
+    // Natural language with leftover text (e.g. "amazon kv") → hybrid semantic search.
+    // Fully parsed multi-token filters (e.g. "amazon + kev") → /api/cves structured path.
+    return hasUnparsedFreeText(q)
+  }
   if (filters?.vendors) return false
   return true
 }
