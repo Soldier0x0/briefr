@@ -82,6 +82,8 @@ async def verify_backup(filename: str, request: Request):
     try:
         safe_path = resolve_backup_archive(filename, backup_dir=backup_dir)
     except PathValidationError as exc:
+        if "file not found" in str(exc).lower():
+            raise HTTPException(404, "Backup file not found") from exc
         raise HTTPException(400, str(exc)) from exc
     if not safe_path.exists():
         raise HTTPException(404, "Backup file not found")

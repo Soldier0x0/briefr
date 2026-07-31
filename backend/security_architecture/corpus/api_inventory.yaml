@@ -114,6 +114,12 @@ endpoints:
 - method: PUT
   path: /api/admin/display/typography-default
   component_id: routers-admin-tokens
+- method: GET
+  path: /api/admin/display/ui-variant-default
+  component_id: routers-admin-tokens
+- method: PUT
+  path: /api/admin/display/ui-variant-default
+  component_id: routers-admin-tokens
 - method: POST
   path: /api/admin/feeds/epss/force-resync
   component_id: routers-admin-feeds
