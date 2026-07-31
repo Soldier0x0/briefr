@@ -73,15 +73,20 @@ export function formatRelatedSection(related = [], relatedNews = [], relatedMeth
 
 export function formatSigmaAttribution(rule) {
   const parts = []
+  const author = String(rule.author || '').trim()
   if (rule.attribution) {
     parts.push(rule.attribution)
   } else {
-    const author = String(rule.author || '').trim()
-    parts.push(author ? `SigmaHQ · ${author}` : 'SigmaHQ (Detection Rule License 1.1)')
+    parts.push(author ? `SigmaHQ · ${author}` : 'SigmaHQ · author credit required (DRL-1.1)')
   }
-  if (rule.license) parts.push(`License: ${rule.license}`)
+  if (author && rule.attribution && !rule.attribution.includes(author)) {
+    parts.push(`Author: ${author}`)
+  }
+  parts.push(`License: ${rule.license || 'DRL-1.1'}`)
+  if (rule.license_url) parts.push(`License URL: ${rule.license_url}`)
   if (rule.match_basis) parts.push(`Match: ${rule.match_basis}`)
   if (rule.html_url) parts.push(`Source: ${rule.html_url}`)
+  else if (rule.download_url) parts.push(`Source: ${rule.download_url}`)
   return parts.join(' · ')
 }
 
@@ -150,14 +155,8 @@ export function formatDetectionOverview(detection) {
     })
   }
 
-  const nucleiUrls = detection.evidence?.observables?.nuclei_urls || []
-  if (nucleiUrls.length) {
-    parts.push('Official Nuclei templates (ProjectDiscovery):')
-    nucleiUrls.slice(0, 4).forEach(url => parts.push(`• ${url}`))
-  }
-
   if (!parts.length) {
-    return 'No official community detection rules (SigmaHQ / Elastic) matched for this CVE. BRIEFR-generated hunt starters are omitted from PDF exports.'
+    return 'No official community detection rules (SigmaHQ / Elastic) matched for this CVE.'
   }
 
   return parts.join('\n')

@@ -71,6 +71,7 @@ describe('pdfReportSections', () => {
         source: 'SigmaHQ',
         match_basis: 'cve_exact',
         attribution: 'SigmaHQ · Author',
+        license: 'DRL-1.1',
       }],
       elastic_rules: [{ name: 'Elastic rule', html_url: 'https://github.com/elastic/detection-rules' }],
       generated_sigma: 'title: hunt starter',
@@ -79,13 +80,16 @@ describe('pdfReportSections', () => {
         elastic_kql: { query: 'process.name: foo' },
         log_patterns: ['Watch auth logs'],
       },
+      evidence: { observables: { nuclei_urls: ['https://github.com/projectdiscovery/nuclei-templates'] } },
     })
     assert.match(body, /Official SigmaHQ rules/)
     assert.match(body, /SigmaHQ · Author/)
+    assert.match(body, /License: DRL-1.1/)
     assert.match(body, /Official Elastic detection rules/)
     assert.doesNotMatch(body, /hunt starter/i)
     assert.doesNotMatch(body, /YARA/)
     assert.doesNotMatch(body, /Log patterns/)
+    assert.doesNotMatch(body, /Nuclei/)
     assert.doesNotMatch(body, /process\.name/)
   })
 
@@ -95,7 +99,22 @@ describe('pdfReportSections', () => {
       siem_queries: { log_patterns: ['noise'] },
     })
     assert.match(body, /No official community detection rules/)
-    assert.match(body, /BRIEFR-generated hunt starters are omitted/)
+    assert.doesNotMatch(body, /BRIEFR-generated/)
+    assert.doesNotMatch(body, /omitted/)
+  })
+
+  it('always includes license and author credit in sigma attribution', () => {
+    const withAuthor = formatSigmaAttribution({
+      author: 'Florian Roth',
+      license: 'DRL-1.1',
+      html_url: 'https://github.com/SigmaHQ/sigma/blob/master/rule.yml',
+    })
+    assert.match(withAuthor, /SigmaHQ · Florian Roth/)
+    assert.match(withAuthor, /License: DRL-1.1/)
+
+    const withoutAuthor = formatSigmaAttribution({ html_url: 'https://github.com/SigmaHQ/sigma' })
+    assert.match(withoutAuthor, /author credit required/)
+    assert.match(withoutAuthor, /License: DRL-1.1/)
   })
 
   it('formats related CVEs and news', () => {
