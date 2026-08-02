@@ -2,23 +2,24 @@
 # Paste each CUT block separately into F5 TTS · lay over matching MP4
 
 # =============================================================================
-# CUT 1 — PRODUCT HOOK — 45s — briefr-cut1-product-hook-45s.mp4
-# What it is · morning brief · stack priority · CVE detail · IOC · PDF · self-host
+# CUT 1 — PRODUCT HOOK — 50s — briefr-cut1-product-hook-50s.mp4
 # =============================================================================
 
-BRIEFR is self-hosted CVE intelligence for security teams.
+Thousands of CVEs publish every week. Which ones hit YOUR stack?
 
-Every morning, see what changed in the last twenty-four hours. KEV deadlines, EPSS movers, and stack matches in one ranked queue.
+BRIEFR is self-hosted CVE intelligence for analysts. Brief, Feed, IOC Lookup, and Forge — powered by NVD, CISA KEV, EPSS, and OTX.
 
-Your declared stack comes first. CVEs touching Apache, Palo Alto, Citrix, or whatever you run bubble to the top with an explainable risk score.
+Every morning, your delta queue shows new KEV entries, deadlines due soon, EPSS movers, stack matches, and active campaigns — each with real examples.
 
-Open any CVE for remediation status, patch availability, and a full threat picture.
+Your declared stack ranks first. Apache, Palo Alto, Citrix — prioritized in the feed with scores visible.
 
-Look up IPs, file hashes, and domains through VirusTotal, AbuseIPDB, and GreyNoise. Add free API keys when you want enrichment.
+Threat score ninety-one. Six weighted factors, each explained in plain English. Asset, KEV, EPSS, exploit, CVSS, momentum.
 
-Generate a PDF report with triage snapshot, executive summary, and detection guidance.
+Look up IPs, file hashes, and domains. VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar, OTX. Optional free-tier API keys.
 
-Completely free, open source under Apache two point oh. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL.
+Export PDF reports with triage snapshot, executive summary, technical detail, MITRE ATT and CK, detection rules, and references.
+
+Free to run. Yours to host. Two vCPU, two gigabytes minimum. Four gigabytes recommended. github.com/Soldier0x0/briefr
 
 
 # =============================================================================

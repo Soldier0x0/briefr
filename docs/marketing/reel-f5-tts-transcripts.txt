@@ -2,32 +2,32 @@
 # Timestamps match HyperFrames GSAP scene timings · lay over matching MP4
 
 # =============================================================================
-# CUT 1 — PRODUCT HOOK — 45s — briefr-cut1-product-hook-45s.mp4
+# CUT 1 — PRODUCT HOOK — 50s — briefr-cut1-product-hook-50s.mp4
 # =============================================================================
 
-[00:00.0 – 00:05.0]  INTRO
-BRIEFR is self-hosted CVE intelligence for security teams.
+[00:00.0 – 00:05.0]  PROBLEM
+Thousands of CVEs publish every week. Which ones hit YOUR stack? NVD, KEV, EPSS, OTX, SigmaHQ.
 
-[00:05.0 – 00:09.0]  VALUE
-One dashboard. Every signal. NVD, CISA KEV, EPSS, MITRE ATT and CK, IOC enrichment, PDF reports.
+[00:05.0 – 00:10.0]  PRODUCT SCOPE
+BRIEFR — self-hosted CVE intelligence for analysts. Brief, Feed, IOC Lookup, Forge. Powered by NVD, CISA KEV, EPSS, and OTX.
 
-[00:09.0 – 00:16.0]  MORNING BRIEF
-Every morning, see what changed in the last twenty-four hours. KEV deadlines, EPSS movers, and stack matches in one ranked queue.
+[00:10.0 – 00:18.0]  MORNING BRIEF
+Your twenty-four-hour delta queue: new KEV entries, KEV due soon, EPSS movers, stack matches, and active campaigns — each with examples.
 
-[00:16.0 – 00:22.0]  STACK FEED
-Your declared stack comes first. CVEs touching Apache, Palo Alto, Citrix, or whatever you run bubble to the top.
+[00:18.0 – 00:24.0]  STACK FEED
+Stack-prioritized CVE queue. Your declared Apache, Palo Alto, and Citrix products rank first.
 
-[00:22.0 – 00:28.0]  RISK SCORE
-Open any CVE for an explainable risk score. Six weighted factors: asset match, KEV, EPSS, exploit, CVSS, and momentum.
+[00:24.0 – 00:31.0]  EXPLAINABLE SCORE
+Threat score ninety-one — six weighted factors, each with a plain-English sentence. Asset, KEV, EPSS, exploit, CVSS, momentum.
 
-[00:28.0 – 00:34.0]  IOC LOOKUP
-Look up IPs, file hashes, and domains through VirusTotal, AbuseIPDB, and GreyNoise. Add free API keys when you want enrichment.
+[00:31.0 – 00:38.0]  IOC LOOKUP
+Enrich IPs, file hashes, and domains through VirusTotal, AbuseIPDB, GreyNoise, MalwareBazaar, and OTX. Optional free-tier API keys.
 
-[00:34.0 – 00:40.0]  PDF EXPORT
-Generate a PDF report with triage snapshot, executive summary, and threat intelligence sections.
+[00:38.0 – 00:45.0]  PDF EXPORT
+Export analyst-ready PDFs: triage snapshot, executive summary, technical detail, MITRE ATT and CK, detection rules, and references.
 
-[00:40.0 – 00:45.0]  CTA
-Completely free, open source under Apache two point oh. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL. github.com/Soldier0x0/briefr
+[00:45.0 – 00:50.0]  CTA
+Free to run. Yours to host. github.com/Soldier0x0/briefr
 
 
 # =============================================================================
