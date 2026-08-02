@@ -3,141 +3,98 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div id="root" data-composition-id="cut2" data-start="0" data-duration="90" data-width="1080" data-height="1920">
-      <div id="bg-layer" style="position:absolute;inset:0;pointer-events:none">
-        <div class="bg-grid"></div>
-        <div id="bg-glow-1" class="bg-glow" style="top:-200px;left:-150px"></div>
-        <div id="bg-glow-2" class="bg-glow" style="bottom:-300px;right:-200px;opacity:0.5"></div>
+      <div style="position:absolute;inset:0;pointer-events:none"><div class="bg-grid"></div><div id="bg-glow-1" class="bg-glow" style="top:-250px;left:-200px"></div></div>
+
+      <div id="s1" class="clip scene scene-fill" data-start="0" data-duration="10">
+        <p id="s1-q" class="headline-lg" style="text-align:center">Black-box scores<br />destroy <span class="accent">trust</span></p>
+        <p id="s1-a" class="body-lg" style="text-align:center;margin-top:28px">BRIEFR shows every factor<br />and the weight behind it</p>
       </div>
 
-      <div id="s1" class="clip scene" data-start="0" data-duration="10">
-        <div id="s1-logo" class="logo-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" width="360"><g transform="translate(0,4)"><path d="M11 13v22M16 13v22" stroke="#3d3d38" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></div>
-        <p id="s1-title" class="kinetic-line" style="font-size:52px;text-align:center">How does BRIEFR<br /><span class="accent">decide what matters?</span></p>
-      </div>
-
-      <div id="s2" class="clip scene" data-start="10" data-duration="18" style="justify-content:flex-start;padding-top:140px">
-        <p id="s2-head" class="kinetic-line" style="font-size:42px;margin-bottom:32px;text-align:center">Six weighted factors</p>
-        <div id="s2-factors" class="ui-shell" style="width:900px">
-          <div class="ui-body">
-            <div class="factor-list" style="gap:16px">
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">Asset match</span><div class="factor-bar"><div class="factor-fill" data-w="100" style="width:0"></div></div><span class="factor-pct">35%</span></div>
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">CISA KEV</span><div class="factor-bar"><div class="factor-fill" data-w="71" style="width:0"></div></div><span class="factor-pct">25%</span></div>
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">EPSS</span><div class="factor-bar"><div class="factor-fill" data-w="43" style="width:0"></div></div><span class="factor-pct">15%</span></div>
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">Exploit</span><div class="factor-bar"><div class="factor-fill" data-w="29" style="width:0"></div></div><span class="factor-pct">10%</span></div>
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">CVSS</span><div class="factor-bar"><div class="factor-fill" data-w="29" style="width:0"></div></div><span class="factor-pct">10%</span></div>
-              <div class="factor-row" style="grid-template-columns:140px 1fr 60px"><span class="factor-name">Momentum</span><div class="factor-bar"><div class="factor-fill" data-w="14" style="width:0"></div></div><span class="factor-pct">5%</span></div>
-            </div>
-            <p style="margin-top:24px;font-size:18px;color:var(--text2);text-align:center">Same CVE · same stack · same score · every time</p>
-          </div>
+      <div id="s2" class="clip scene scene-fill" data-start="10" data-duration="20">
+        <p id="s2-head" class="label-lg">Risk Score v1.1b — six factors</p>
+        <div id="s2-factors" class="factor-list" style="flex:1;justify-content:center;gap:22px">
+          <div class="factor-row"><span class="factor-name">Asset</span><div class="factor-bar"><div class="factor-fill" data-w="100"></div></div><span class="factor-pct">35%</span></div>
+          <div class="factor-row"><span class="factor-name">KEV</span><div class="factor-bar"><div class="factor-fill" data-w="71"></div></div><span class="factor-pct">25%</span></div>
+          <div class="factor-row"><span class="factor-name">EPSS</span><div class="factor-bar"><div class="factor-fill" data-w="43"></div></div><span class="factor-pct">15%</span></div>
+          <div class="factor-row"><span class="factor-name">Exploit</span><div class="factor-bar"><div class="factor-fill" data-w="29"></div></div><span class="factor-pct">10%</span></div>
+          <div class="factor-row"><span class="factor-name">CVSS</span><div class="factor-bar"><div class="factor-fill" data-w="29"></div></div><span class="factor-pct">10%</span></div>
+          <div class="factor-row"><span class="factor-name">Momentum</span><div class="factor-bar"><div class="factor-fill" data-w="14"></div></div><span class="factor-pct">5%</span></div>
         </div>
-        <div id="s2-cap" class="scene-caption mono">Risk Score v1.1b</div>
+        <p id="s2-foot" class="body-md" style="text-align:center;color:var(--text3)">Each factor ships a plain-English sentence</p>
       </div>
 
-      <div id="s3" class="clip scene" data-start="28" data-duration="16" style="justify-content:flex-start;padding-top:130px">
-        <p id="s3-head" class="kinetic-line" style="font-size:40px;margin-bottom:28px;text-align:center">Stack matching</p>
-        <div id="s3-ui" class="ui-shell">
-          <div class="ui-body">
-            <div class="section-label mono">// Your declared stack</div>
-            <div id="s3-chips" class="feed-chips" style="justify-content:flex-start;margin-top:0;margin-bottom:24px">
-              <span class="chip accent">Apache HTTP Server</span><span class="chip">Palo Alto PAN-OS</span><span class="chip">Citrix ADC</span><span class="chip">Linux kernel</span>
-            </div>
-            <div class="section-label mono">// Term-based product matching</div>
-            <div id="s3-match" class="cve-card"><div class="cve-top"><span class="cve-id">CVE-2025-1234</span><span class="badge stack">STACK MATCH</span></div><div class="cve-desc">Vendor/product strings matched against affected products — labeled so you can judge</div></div>
-          </div>
+      <div id="s3" class="clip scene scene-fill" data-start="30" data-duration="18">
+        <p id="s3-head" class="label-lg">Term-based stack matching</p>
+        <div id="s3-chips" class="feed-chips" style="gap:16px">
+          <span class="chip accent" style="font-size:30px;padding:20px 28px">Apache HTTP Server</span>
+          <span class="chip" style="font-size:30px;padding:20px 28px">Palo Alto PAN-OS</span>
+          <span class="chip" style="font-size:30px;padding:20px 28px">Citrix NetScaler</span>
+          <span class="chip" style="font-size:30px;padding:20px 28px">Linux kernel</span>
         </div>
-        <div id="s3-cap" class="scene-caption mono">Your environment drives priority</div>
+        <div id="s3-card" class="cve-card dominant" style="margin-top:8px">
+          <div class="cve-top"><span class="cve-id-xl">CVE-2024-21762</span><span class="badge stack">STACK MATCH</span></div>
+          <p class="cve-desc-xl">FortiOS out-of-bound write — vendor string matched your declared Fortinet products</p>
+        </div>
       </div>
 
-      <div id="s4" class="clip scene" data-start="44" data-duration="18">
-        <p id="s4-head" class="kinetic-line" style="font-size:40px;margin-bottom:36px;text-align:center">Correlation engine</p>
-        <div id="s4-corr" class="correlation-nodes">
-          <div class="corr-node">CVE A</div><div class="corr-line"></div>
-          <div class="corr-node center">Cluster</div><div class="corr-line"></div>
-          <div class="corr-node">CVE B</div>
+      <div id="s4" class="clip scene scene-fill" data-start="48" data-duration="18">
+        <p id="s4-head" class="headline-md" style="text-align:center">Correlation finds<br /><span class="accent">campaign clusters</span></p>
+        <div id="s4-corr" class="correlation-nodes" style="margin:32px 0">
+          <div class="corr-node">CVE-24A</div><div class="corr-line"></div>
+          <div class="corr-node center">OTX<br/>cluster</div><div class="corr-line"></div>
+          <div class="corr-node">CVE-24B</div>
         </div>
-        <p id="s4-sub" class="kinetic-sub" style="margin-top:40px;text-align:center">Links CVEs sharing OTX indicators,<br />infrastructure, or campaigns</p>
-        <div id="s4-chips" class="feed-chips" style="margin-top:32px">
-          <span class="chip">OTX pulses</span><span class="chip">Shared infra</span><span class="chip accent">Campaigns</span>
-        </div>
-        <div id="s4-cap" class="scene-caption mono">See clusters, not isolated tickets</div>
+        <p id="s4-sub" class="body-lg" style="text-align:center">Shared indicators · infrastructure · threat actor overlap</p>
       </div>
 
-      <div id="s5" class="clip scene" data-start="62" data-duration="16" style="justify-content:flex-start;padding-top:140px">
-        <p id="s5-head" class="kinetic-line" style="font-size:40px;margin-bottom:28px;text-align:center">Semantic search</p>
-        <div id="s5-ui" class="ui-shell">
-          <div class="ui-body">
-            <div class="section-label mono">// Embedding model</div>
-            <p style="font-size:28px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:16px">BAAI/bge-small-en-v1.5</p>
-            <div class="feed-chips" style="justify-content:flex-start;margin-top:0">
-              <span class="chip accent">fastembed</span><span class="chip">CPU only</span><span class="chip">No GPU</span>
-            </div>
-            <p style="margin-top:24px;font-size:18px;color:var(--text2)">Find related CVEs by meaning — not just keyword overlap</p>
-          </div>
-        </div>
-        <div id="s5-cap" class="scene-caption mono">Vector search on your own hardware</div>
+      <div id="s5" class="clip scene scene-fill" data-start="66" data-duration="14">
+        <p id="s5-head" class="label-lg">Semantic CVE search</p>
+        <p id="s5-model" class="headline-md accent" style="margin:16px 0">BAAI/bge-small-en-v1.5</p>
+        <div class="feed-chips"><span class="chip accent">fastembed</span><span class="chip">CPU only</span><span class="chip">No GPU</span></div>
+        <p id="s5-sub" class="body-lg" style="margin-top:32px">Find related vulns by meaning — not keyword grep</p>
       </div>
 
-      <div id="s6" class="clip scene" data-start="78" data-duration="12">
-        <p id="s6-head" class="cta-title" style="font-size:56px">Cached results.<br /><span style="color:var(--accent)">Fast triage.</span></p>
-        <p id="s6-sub" class="kinetic-sub" style="text-align:center;margin-top:24px">Scoring and correlation run on a fixed schedule.<br />Your browser reads pre-computed intelligence.</p>
-        <div id="s6-url" class="cta-url" style="margin-top:40px">github.com/Soldier0x0/briefr</div>
+      <div id="s6" class="clip scene scene-fill" data-start="80" data-duration="10">
+        <p id="s6-head" class="cta-title" style="font-size:72px">Pre-computed.<br /><span class="accent">Instant.</span></p>
+        <p class="body-lg" style="text-align:center;margin-top:24px">Scheduler writes · API serves cached intelligence</p>
+        <div class="cta-url" style="margin-top:36px">github.com/Soldier0x0/briefr</div>
       </div>
     </div>
     <script>
-      window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
       const hide = ["#s2","#s3","#s4","#s5","#s6"];
       gsap.set(hide, { opacity: 0 });
-      gsap.set("#s1-logo, #s1-title", { opacity: 0, y: 40 });
-
-      tl.to("#s1-logo", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.3);
-      tl.to("#s1-title", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.8);
+      gsap.set("#s1-q, #s1-a", { opacity: 0, y: 50 });
+      tl.to("#s1-q", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.3);
+      tl.to("#s1-a", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.8);
       tl.to("#s1", { opacity: 0, duration: 0.5 }, 9.4);
-
       tl.to("#s2", { opacity: 1, duration: 0.01 }, 10);
-      tl.from("#s2-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 10.2);
-      tl.from("#s2-factors", { opacity: 0, scale: 0.92, duration: 0.8, ease: "power3.out" }, 10.8);
-      tl.to("#s2-factors .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.7, stagger: 0.12, ease: "power2.out" }, 11.6);
-      tl.from("#s2-cap", { opacity: 0, duration: 0.5 }, 14);
-      tl.to("#s2", { opacity: 0, duration: 0.5 }, 27.4);
-
-      tl.to("#s3", { opacity: 1, duration: 0.01 }, 28);
-      tl.from("#s3-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 28.2);
-      tl.from("#s3-ui", { opacity: 0, x: 60, duration: 0.8, ease: "power3.out" }, 28.8);
-      tl.from("#s3-chips .chip", { opacity: 0, y: 20, stagger: 0.1, duration: 0.4 }, 29.6);
-      tl.from("#s3-match", { opacity: 0, x: -40, duration: 0.6 }, 30.4);
-      tl.from("#s3-cap", { opacity: 0, duration: 0.5 }, 32);
-      tl.to("#s3", { opacity: 0, duration: 0.5 }, 43.4);
-
-      tl.to("#s4", { opacity: 1, duration: 0.01 }, 44);
-      tl.from("#s4-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 44.2);
-      tl.from(".corr-node", { opacity: 0, scale: 0.5, stagger: 0.15, duration: 0.6, ease: "back.out(1.5)" }, 45);
-      tl.from(".corr-line", { scaleX: 0, duration: 0.4, stagger: 0.1 }, 45.6);
-      tl.from("#s4-sub", { opacity: 0, y: 20, duration: 0.6 }, 46.5);
-      tl.from("#s4-chips .chip", { opacity: 0, y: 15, stagger: 0.1, duration: 0.4 }, 47.2);
-      tl.from("#s4-cap", { opacity: 0, duration: 0.5 }, 48.5);
-      tl.to("#s4", { opacity: 0, duration: 0.5 }, 61.4);
-
-      tl.to("#s5", { opacity: 1, duration: 0.01 }, 62);
-      tl.from("#s5-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 62.2);
-      tl.from("#s5-ui", { opacity: 0, scale: 0.92, duration: 0.8, ease: "power3.out" }, 62.8);
-      tl.from("#s5-cap", { opacity: 0, duration: 0.5 }, 66);
-      tl.to("#s5", { opacity: 0, duration: 0.5 }, 77.4);
-
-      tl.to("#s6", { opacity: 1, duration: 0.01 }, 78);
-      tl.from("#s6-head", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, 78.2);
-      tl.from("#s6-sub", { opacity: 0, y: 20, duration: 0.7 }, 79);
-      tl.from("#s6-url", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.4)" }, 80);
-      tl.to("#bg-glow-1", { opacity: 0.8, duration: 2, yoyo: true, repeat: 44, ease: "sine.inOut" }, 0);
-
-      window.__timelines["cut2"] = tl;
+      tl.from("#s2-head", { opacity: 0, y: 30, duration: 0.6 }, 10.2);
+      tl.to("#s2-factors .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.75, stagger: 0.14, ease: "power2.out" }, 11);
+      tl.from("#s2-foot", { opacity: 0, duration: 0.5 }, 14);
+      tl.to("#s2", { opacity: 0, duration: 0.5 }, 29.4);
+      tl.to("#s3", { opacity: 1, duration: 0.01 }, 30);
+      tl.from("#s3-chips .chip", { opacity: 0, scale: 0.8, stagger: 0.1, duration: 0.5, ease: "back.out(1.4)" }, 30.3);
+      tl.from("#s3-card", { opacity: 0, y: 60, duration: 0.8, ease: "power3.out" }, 31.2);
+      tl.to("#s3", { opacity: 0, duration: 0.5 }, 47.4);
+      tl.to("#s4", { opacity: 1, duration: 0.01 }, 48);
+      tl.from("#s4-head", { opacity: 0, y: 40, duration: 0.7 }, 48.2);
+      tl.from(".corr-node", { opacity: 0, scale: 0.5, stagger: 0.15, duration: 0.6, ease: "back.out(1.5)" }, 49);
+      tl.from("#s4-sub", { opacity: 0, duration: 0.6 }, 50.5);
+      tl.to("#s4", { opacity: 0, duration: 0.5 }, 65.4);
+      tl.to("#s5", { opacity: 1, duration: 0.01 }, 66);
+      tl.from("#s5-head, #s5-model, #s5-sub", { opacity: 0, y: 30, stagger: 0.15, duration: 0.6 }, 66.2);
+      tl.to("#s5", { opacity: 0, duration: 0.5 }, 79.4);
+      tl.to("#s6", { opacity: 1, duration: 0.01 }, 80);
+      tl.from("#s6-head", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, 80.2);
+      tl.to("#bg-glow-1", { opacity: 0.9, duration: 2, yoyo: true, repeat: 44, ease: "sine.inOut" }, 0);
+      window.__timelines = { cut2: tl };
     </script>
   </body>
 </html>

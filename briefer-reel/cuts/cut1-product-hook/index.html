@@ -5,283 +5,182 @@
     <meta name="viewport" content="width=1080, height=1920" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="cut1"
-      data-start="0"
-      data-duration="45"
-      data-width="1080"
-      data-height="1920"
-    >
-      <div id="bg-layer" class="clip" data-start="0" data-duration="45" data-track-index="0" style="position:absolute;inset:0;pointer-events:none">
-        <div id="bg-grid" class="bg-grid"></div>
-        <div id="bg-glow-1" class="bg-glow" style="top:-200px;left:-150px"></div>
-        <div id="bg-glow-2" class="bg-glow" style="bottom:-300px;right:-200px;opacity:0.5"></div>
-        <div class="bg-scanline"></div>
+    <div id="root" data-composition-id="cut1" data-start="0" data-duration="45" data-width="1080" data-height="1920">
+      <div id="bg-layer" style="position:absolute;inset:0;pointer-events:none">
+        <div class="bg-grid"></div>
+        <div id="bg-glow-1" class="bg-glow" style="top:-250px;left:-200px"></div>
+        <div id="bg-glow-2" class="bg-glow" style="bottom:-350px;right:-250px;opacity:0.55"></div>
       </div>
 
-      <!-- 0–5s Intro -->
-      <div id="scene-intro" class="clip scene" data-start="0" data-duration="5" data-track-index="1">
-        <div id="intro-logo" class="logo-wrap">
+      <!-- 0–5s Problem hook -->
+      <div id="scene-problem" class="clip scene scene-fill" data-start="0" data-duration="5" style="justify-content:space-evenly;padding:80px 40px">
+        <p id="prob-1" class="headline-xl" style="text-align:center;font-size:88px">Thousands of CVEs<br />publish every week.</p>
+        <p id="prob-2" class="headline-xl accent" style="text-align:center;font-size:88px">Which ones hit<br /><span style="color:var(--text)">YOUR stack?</span></p>
+      </div>
+
+      <!-- 5–9s Brand -->
+      <div id="scene-brand" class="clip scene scene-fill" data-start="5" data-duration="4">
+        <div id="brand-logo" class="logo-wrap" style="align-self:center">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" aria-label="BRIEFR">
-            <g transform="translate(0, 4)">
-              <path d="M11 13v22M16 13v22" stroke="#3d3d38" stroke-width="2" stroke-linecap="round"/>
-              <rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/>
-              <rect x="22" y="22" width="15" height="2.5" rx="1" fill="#f2f0ea" opacity="0.75"/>
-              <rect x="22" y="29" width="10" height="2.5" rx="1" fill="#a7a396" opacity="0.55"/>
-            </g>
-            <text x="60" y="38" font-family="'DM Serif Display', Georgia, serif" font-size="36" fill="#f2f0ea">BRIEFR</text>
+            <g transform="translate(0,4)"><path d="M11 13v22M16 13v22" stroke="#4a4a44" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#ff6b47"/><rect x="22" y="22" width="15" height="2.5" rx="1" fill="#ffffff" opacity="0.9"/><rect x="22" y="29" width="10" height="2.5" rx="1" fill="#d8d5ce" opacity="0.7"/></g>
+            <text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#ffffff">BRIEFR</text>
           </svg>
         </div>
-        <p id="intro-tagline" class="hero-tagline">Self-hosted CVE intelligence<br />for security analysts</p>
-        <div id="intro-pill" class="hero-pill mono">Apache 2.0 · Open Source · Self-hosted</div>
+        <p id="brand-tag" class="body-lg" style="text-align:center;margin-top:32px">Ranks threats against<br />your <span class="accent" style="font-weight:700">actual environment</span></p>
+        <div id="brand-pill" class="hero-pill">Self-hosted · Apache 2.0</div>
       </div>
 
-      <!-- 5–9s Value -->
-      <div id="scene-value" class="clip scene" data-start="5" data-duration="4" data-track-index="2">
-        <div class="kinetic-wrap">
-          <p id="value-line1" class="kinetic-line">One dashboard.<br /><span class="accent">Every signal.</span></p>
-          <p id="value-line2" class="kinetic-sub">NVD · CISA KEV · EPSS · MITRE ATT&amp;CK<br />IOC enrichment · PDF reports</p>
-          <div id="value-chips" class="feed-chips">
-            <span class="chip accent">Morning brief</span>
-            <span class="chip">Stack-aware</span>
-            <span class="chip">Explainable scoring</span>
+      <!-- 9–16s Morning deltas — full-height stat stack -->
+      <div id="scene-brief" class="clip scene scene-fill" data-start="9" data-duration="7">
+        <p id="brief-head" class="label-lg">24-hour delta queue</p>
+        <div id="brief-stats" class="stat-stack">
+          <div class="stat-hero" id="bs1">
+            <div class="stat-hero-label">KEV remediation due</div>
+            <div class="stat-hero-value">4</div>
+            <div class="stat-hero-note">Federal deadline approaching</div>
+          </div>
+          <div class="stat-hero" id="bs2">
+            <div class="stat-hero-label">EPSS probability jumpers</div>
+            <div class="stat-hero-value">12</div>
+            <div class="stat-hero-note">Exploit likelihood rising</div>
+          </div>
+          <div class="stat-hero" id="bs3">
+            <div class="stat-hero-label">Matches your declared stack</div>
+            <div class="stat-hero-value">18</div>
+            <div class="stat-hero-note">Apache · PAN-OS · Citrix</div>
           </div>
         </div>
       </div>
 
-      <!-- 9–16s Morning brief -->
-      <div id="scene-brief" class="clip scene" data-start="9" data-duration="7" data-track-index="3" style="justify-content:flex-start;padding-top:120px">
-        <div id="brief-ui" class="ui-shell">
-          <div class="ui-header">
-            <span class="ui-logo">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><g transform="translate(0,4) scale(0.5)"><path d="M11 13v22M16 13v22" stroke="#3d3d38" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/><rect x="22" y="22" width="15" height="2.5" rx="1" fill="#f2f0ea" opacity="0.75"/><rect x="22" y="29" width="10" height="2.5" rx="1" fill="#a7a396" opacity="0.55"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg>
-            </span>
-            <div class="ui-nav">
-              <span class="ui-tab active">BRIEF</span>
-              <span class="ui-tab">FEED</span>
-              <span class="ui-tab">IOC</span>
-              <span class="ui-tab">FORGE</span>
-            </div>
+      <!-- 16–22s Priority CVE — dominant card -->
+      <div id="scene-priority" class="clip scene scene-fill" data-start="16" data-duration="6">
+        <p id="prio-head" class="label-lg">Stack-prioritized queue</p>
+        <div id="prio-card" class="cve-card dominant">
+          <div class="cve-top">
+            <span class="cve-id-xl">CVE-2024-38475</span>
+            <span class="badge kev">CISA KEV</span>
           </div>
-          <div class="ui-body">
-            <div class="section-label mono">// Last 24 hours</div>
-            <div class="stats-row">
-              <div id="brief-stat1" class="stat-card">
-                <div class="stat-label">KEV due soon</div>
-                <div class="stat-value">4</div>
-                <div class="stat-delta">Action required</div>
-              </div>
-              <div id="brief-stat2" class="stat-card">
-                <div class="stat-label">EPSS movers</div>
-                <div class="stat-value">12</div>
-                <div class="stat-delta">↑ significant</div>
-              </div>
-              <div id="brief-stat3" class="stat-card">
-                <div class="stat-label">Stack matches</div>
-                <div class="stat-value">18</div>
-                <div class="stat-delta">Your environment</div>
-              </div>
-            </div>
-            <div class="section-label mono">// Active campaigns</div>
-            <div id="brief-heatmap" class="heatmap">
-              <div class="heat-cell"></div><div class="heat-cell l1"></div><div class="heat-cell l2"></div><div class="heat-cell l3"></div><div class="heat-cell l4"></div><div class="heat-cell l2"></div><div class="heat-cell l1"></div><div class="heat-cell"></div><div class="heat-cell l1"></div><div class="heat-cell l3"></div><div class="heat-cell l4"></div><div class="heat-cell l2"></div><div class="heat-cell l1"></div><div class="heat-cell"></div>
-              <div class="heat-cell l1"></div><div class="heat-cell l2"></div><div class="heat-cell l4"></div><div class="heat-cell l3"></div><div class="heat-cell l2"></div><div class="heat-cell l1"></div><div class="heat-cell"></div><div class="heat-cell l2"></div><div class="heat-cell l3"></div><div class="heat-cell l4"></div><div class="heat-cell l3"></div><div class="heat-cell l2"></div><div class="heat-cell l1"></div><div class="heat-cell"></div>
-              <div class="heat-cell"></div><div class="heat-cell l1"></div><div class="heat-cell l2"></div><div class="heat-cell l3"></div><div class="heat-cell l2"></div><div class="heat-cell l4"></div><div class="heat-cell l3"></div><div class="heat-cell l2"></div><div class="heat-cell l1"></div><div class="heat-cell"></div><div class="heat-cell l1"></div><div class="heat-cell l2"></div><div class="heat-cell l3"></div><div class="heat-cell l2"></div>
-            </div>
+          <p class="cve-desc-xl">Apache HTTP Server mod_rewrite — remote code execution in your web tier</p>
+          <div style="margin-top:32px;display:flex;gap:16px;flex-wrap:wrap">
+            <span class="chip accent">Score 91</span>
+            <span class="chip">Patch available</span>
+            <span class="chip">Active exploitation</span>
           </div>
         </div>
-        <div id="brief-caption" class="scene-caption mono">Start every day informed</div>
+        <p id="prio-cap" class="scene-caption">Not every CVE deserves your Monday morning</p>
       </div>
 
-      <!-- 16–22s Feed -->
-      <div id="scene-feed" class="clip scene" data-start="16" data-duration="6" data-track-index="4" style="justify-content:flex-start;padding-top:120px">
-        <div id="feed-ui" class="ui-shell">
-          <div class="ui-header">
-            <span class="ui-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><g transform="translate(0,4) scale(0.5)"><path d="M11 13v22M16 13v22" stroke="#3d3d38" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></span>
-            <div class="ui-nav">
-              <span class="ui-tab">BRIEF</span>
-              <span class="ui-tab active">FEED</span>
-              <span class="ui-tab">IOC</span>
-              <span class="ui-tab">FORGE</span>
-            </div>
-          </div>
-          <div class="ui-body">
-            <div class="section-label mono">// Stack-prioritized CVE feed</div>
-            <div id="feed-card1" class="cve-card">
-              <div class="cve-top"><span class="cve-id">CVE-2025-1234</span><span class="badge kev">KEV</span></div>
-              <div class="cve-desc">RCE in Apache HTTP Server mod_proxy — matches your stack</div>
-            </div>
-            <div id="feed-card2" class="cve-card amber">
-              <div class="cve-top"><span class="cve-id">CVE-2025-5678</span><span class="badge epss">EPSS 0.82</span></div>
-              <div class="cve-desc">Privilege escalation in Linux kernel netfilter</div>
-            </div>
-            <div id="feed-card3" class="cve-card green">
-              <div class="cve-top"><span class="cve-id">CVE-2025-9012</span><span class="badge stack">STACK</span></div>
-              <div class="cve-desc">Auth bypass in Fortinet FortiOS SSL-VPN</div>
-            </div>
-          </div>
+      <!-- 22–28s Risk score hero -->
+      <div id="scene-score" class="clip scene scene-fill" data-start="22" data-duration="6" style="justify-content:space-between;padding:64px 40px">
+        <p id="score-head" class="label-lg">Explainable threat score</p>
+        <div id="score-hero" class="score-hero" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+          <div class="score-hero-num" style="font-size:240px">91</div>
+          <div class="score-hero-label">out of 100 · reproducible</div>
         </div>
-        <div id="feed-caption" class="scene-caption mono">Your stack comes first</div>
-      </div>
-
-      <!-- 22–28s Risk detail -->
-      <div id="scene-detail" class="clip scene" data-start="22" data-duration="6" data-track-index="5" style="justify-content:flex-start;padding-top:100px">
-        <div id="detail-ui" class="ui-shell">
-          <div class="ui-header">
-            <span class="ui-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></span>
-            <div class="ui-nav"><span class="ui-tab active">CVE DETAIL</span></div>
-          </div>
-          <div class="ui-body">
-            <div class="drawer-layout">
-              <div id="detail-left" class="drawer-panel">
-                <div class="section-label mono">// CVE-2025-1234</div>
-                <div class="op-band">P1</div>
-                <div class="score-label mono">Operational Priority</div>
-                <div class="threat-score">87</div>
-                <div class="score-label mono">Threat Score</div>
-                <p style="margin-top:16px;font-size:16px;color:var(--text2);line-height:1.4">KEV listed · Active exploitation · Patch available</p>
-              </div>
-              <div id="detail-right" class="drawer-panel">
-                <div class="section-label mono">// Risk factors</div>
-                <div class="factor-list">
-                  <div class="factor-row"><span class="factor-name">Asset</span><div class="factor-bar"><div class="factor-fill" data-w="35"></div></div><span class="factor-pct">35%</span></div>
-                  <div class="factor-row"><span class="factor-name">KEV</span><div class="factor-bar"><div class="factor-fill" data-w="25"></div></div><span class="factor-pct">25%</span></div>
-                  <div class="factor-row"><span class="factor-name">EPSS</span><div class="factor-bar"><div class="factor-fill" data-w="15"></div></div><span class="factor-pct">15%</span></div>
-                  <div class="factor-row"><span class="factor-name">Exploit</span><div class="factor-bar"><div class="factor-fill" data-w="10"></div></div><span class="factor-pct">10%</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div id="score-factors" class="factor-list" style="gap:22px">
+          <div class="factor-row"><span class="factor-name">Asset</span><div class="factor-bar"><div class="factor-fill" data-w="100"></div></div><span class="factor-pct">35%</span></div>
+          <div class="factor-row"><span class="factor-name">KEV</span><div class="factor-bar"><div class="factor-fill" data-w="71"></div></div><span class="factor-pct">25%</span></div>
+          <div class="factor-row"><span class="factor-name">EPSS</span><div class="factor-bar"><div class="factor-fill" data-w="43"></div></div><span class="factor-pct">15%</span></div>
+          <div class="factor-row"><span class="factor-name">Exploit</span><div class="factor-bar"><div class="factor-fill" data-w="29"></div></div><span class="factor-pct">10%</span></div>
         </div>
-        <div id="detail-caption" class="scene-caption mono">Explainable risk scoring</div>
       </div>
 
       <!-- 28–34s IOC -->
-      <div id="scene-ioc" class="clip scene" data-start="28" data-duration="6" data-track-index="6" style="justify-content:flex-start;padding-top:120px">
-        <div id="ioc-ui" class="ui-shell">
-          <div class="ui-header">
-            <span class="ui-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></span>
-            <div class="ui-nav"><span class="ui-tab">FEED</span><span class="ui-tab active">IOC</span></div>
-          </div>
-          <div class="ui-body">
-            <div class="section-label mono">// IOC lookup · IP / hash / domain</div>
+      <div id="scene-ioc" class="clip scene scene-fill" data-start="28" data-duration="6">
+        <p id="ioc-head" class="label-lg">IOC enrichment · one lookup</p>
+        <div id="ioc-panel" class="ui-shell ui-shell-fill">
+          <div class="ui-body" style="display:flex;flex-direction:column;justify-content:center">
             <div class="ioc-input">
-              <div class="ioc-field">185.220.101.42</div>
+              <div class="ioc-field">194.36.1.18</div>
               <div class="ioc-btn">SCAN</div>
             </div>
-            <div id="provider-grid" class="provider-grid">
+            <div id="ioc-grid" class="provider-grid">
               <div class="provider-card"><div class="provider-name">VirusTotal</div><div class="provider-status">Malicious</div></div>
-              <div class="provider-card"><div class="provider-name">AbuseIPDB</div><div class="provider-status">98% conf.</div></div>
+              <div class="provider-card"><div class="provider-name">AbuseIPDB</div><div class="provider-status">96%</div></div>
               <div class="provider-card"><div class="provider-name">GreyNoise</div><div class="provider-status">Scanner</div></div>
-              <div class="provider-card"><div class="provider-name">OTX</div><div class="provider-status">3 pulses</div></div>
+              <div class="provider-card"><div class="provider-name">OTX</div><div class="provider-status">5 pulses</div></div>
             </div>
-            <p style="margin-top:16px;font-size:14px;color:var(--text3)">Optional free-tier API keys for enrichment</p>
+            <p class="body-md" style="margin-top:24px;color:var(--text3)">Optional free-tier API keys</p>
           </div>
         </div>
-        <div id="ioc-caption" class="scene-caption mono">Instant IOC enrichment</div>
       </div>
 
       <!-- 34–40s PDF -->
-      <div id="scene-pdf" class="clip scene" data-start="34" data-duration="6" data-track-index="7" style="justify-content:flex-start;padding-top:120px">
-        <div id="pdf-ui" class="ui-shell">
-          <div class="ui-header">
-            <span class="ui-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></span>
-            <div class="ui-nav"><span class="ui-tab active">PDF EXPORT</span></div>
-          </div>
-          <div class="ui-body">
-            <div id="pdf-sections" class="pdf-sections">
-              <div class="pdf-section"><div class="pdf-section-title">TRIAGE SNAPSHOT</div><div class="pdf-section-body">Priority, score, KEV status, patch availability</div></div>
-              <div class="pdf-section"><div class="pdf-section-title">EXECUTIVE SUMMARY</div><div class="pdf-section-body">Business impact in plain language</div></div>
-              <div class="pdf-section"><div class="pdf-section-title">THREAT INTELLIGENCE</div><div class="pdf-section-body">Campaign links, IOCs, detection guidance</div></div>
-            </div>
-          </div>
+      <div id="scene-pdf" class="clip scene scene-fill" data-start="34" data-duration="6">
+        <p id="pdf-head" class="label-lg">Analyst-ready PDF export</p>
+        <div id="pdf-sections" class="pdf-sections">
+          <div class="pdf-section"><div class="pdf-section-title">TRIAGE SNAPSHOT</div><div class="pdf-section-body">Priority band, score, patch status</div></div>
+          <div class="pdf-section"><div class="pdf-section-title">WHY THIS MATTERS</div><div class="pdf-section-body">Business impact for leadership</div></div>
+          <div class="pdf-section"><div class="pdf-section-title">DETECTION GUIDANCE</div><div class="pdf-section-body">Sigma rules and hunt pivots</div></div>
         </div>
-        <div id="pdf-caption" class="scene-caption mono">Shareable PDF reports</div>
       </div>
 
       <!-- 40–45s CTA -->
-      <div id="scene-cta" class="clip scene" data-start="40" data-duration="5" data-track-index="8">
-        <h2 id="cta-title" class="cta-title">Your data.<br /><span style="color:var(--accent)">Your infra.</span></h2>
+      <div id="scene-cta" class="clip scene scene-fill" data-start="40" data-duration="5" style="justify-content:space-evenly;padding:72px 40px">
+        <h2 id="cta-title" class="cta-title" style="font-size:92px">Free to run.<br /><span class="accent">Yours to host.</span></h2>
         <div id="cta-features" class="cta-features">
-          <div class="cta-feature"><div class="cta-feature-label">Self-hosted</div></div>
           <div class="cta-feature"><div class="cta-feature-label">PostgreSQL 16</div></div>
           <div class="cta-feature"><div class="cta-feature-label">2 vCPU · 2 GB min</div></div>
           <div class="cta-feature"><div class="cta-feature-label">4 GB recommended</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">No vendor lock-in</div></div>
         </div>
         <div id="cta-url" class="cta-url">github.com/Soldier0x0/briefr</div>
-        <p id="cta-foot" class="cta-foot mono">Free · Open source · Apache 2.0</p>
       </div>
     </div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      const scenes = ["#scene-value","#scene-brief","#scene-feed","#scene-detail","#scene-ioc","#scene-pdf","#scene-cta"];
-      gsap.set(scenes, { opacity: 0 });
-      gsap.set("#intro-logo, #intro-tagline, #intro-pill", { opacity: 0, y: 40 });
+      const hide = ["#scene-brand","#scene-brief","#scene-priority","#scene-score","#scene-ioc","#scene-pdf","#scene-cta"];
+      gsap.set(hide, { opacity: 0 });
+      gsap.set("#prob-1, #prob-2", { opacity: 0, y: 60 });
 
-      tl.to("#intro-logo", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.2);
-      tl.to("#intro-tagline", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.6);
-      tl.to("#intro-pill", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 1.0);
-      tl.to("#scene-intro", { opacity: 0, y: -30, duration: 0.5, ease: "power2.in" }, 4.4);
+      tl.to("#prob-1", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.2);
+      tl.to("#prob-2", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.7);
+      tl.to("#scene-problem", { opacity: 0, scale: 1.04, duration: 0.5, ease: "power2.in" }, 4.4);
 
-      tl.to("#scene-value", { opacity: 1, duration: 0.01 }, 5);
-      tl.from("#value-line1", { opacity: 0, y: 50, duration: 0.8, ease: "power3.out" }, 5.1);
-      tl.from("#value-line2", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 5.5);
-      tl.from("#value-chips .chip", { opacity: 0, y: 20, duration: 0.5, stagger: 0.12, ease: "power2.out" }, 6);
-      tl.to("#scene-value", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in" }, 8.5);
+      tl.to("#scene-brand", { opacity: 1, duration: 0.01 }, 5);
+      tl.from("#brand-logo", { opacity: 0, scale: 0.85, duration: 0.8, ease: "back.out(1.4)" }, 5.1);
+      tl.from("#brand-tag", { opacity: 0, y: 40, duration: 0.7, ease: "power3.out" }, 5.5);
+      tl.from("#brand-pill", { opacity: 0, y: 20, duration: 0.5, ease: "power2.out" }, 5.9);
+      tl.to("#scene-brand", { opacity: 0, duration: 0.4 }, 8.5);
 
       tl.to("#scene-brief", { opacity: 1, duration: 0.01 }, 9);
-      tl.from("#brief-ui", { opacity: 0, scale: 0.92, y: 60, duration: 0.8, ease: "power3.out" }, 9.1);
-      tl.from("#brief-stat1, #brief-stat2, #brief-stat3", { opacity: 0, y: 24, duration: 0.5, stagger: 0.1, ease: "power2.out" }, 9.6);
-      tl.from("#brief-heatmap .heat-cell", { opacity: 0, scale: 0.5, duration: 0.3, stagger: 0.02, ease: "back.out(1.4)" }, 10.2);
-      tl.from("#brief-caption", { opacity: 0, y: 20, duration: 0.5, ease: "power2.out" }, 11);
-      tl.to("#scene-brief", { opacity: 0, scale: 0.96, duration: 0.5, ease: "power2.in" }, 15.4);
+      tl.from("#brief-head", { opacity: 0, y: 30, duration: 0.6, ease: "power3.out" }, 9.1);
+      tl.from("#bs1, #bs2, #bs3", { opacity: 0, x: -60, duration: 0.6, stagger: 0.15, ease: "power3.out" }, 9.5);
+      tl.to("#scene-brief", { opacity: 0, x: 80, duration: 0.5, ease: "power2.in" }, 15.4);
 
-      tl.to("#scene-feed", { opacity: 1, duration: 0.01 }, 16);
-      tl.from("#feed-ui", { opacity: 0, x: 80, duration: 0.7, ease: "power3.out" }, 16.1);
-      tl.from("#feed-card1, #feed-card2, #feed-card3", { opacity: 0, x: -40, duration: 0.55, stagger: 0.15, ease: "power2.out" }, 16.6);
-      tl.from("#feed-caption", { opacity: 0, duration: 0.5, ease: "power2.out" }, 18);
-      tl.to("#scene-feed", { opacity: 0, x: -60, duration: 0.5, ease: "power2.in" }, 21.4);
+      tl.to("#scene-priority", { opacity: 1, duration: 0.01 }, 16);
+      tl.from("#prio-head", { opacity: 0, duration: 0.5 }, 16.1);
+      tl.from("#prio-card", { opacity: 0, scale: 0.9, y: 50, duration: 0.8, ease: "power3.out" }, 16.3);
+      tl.from("#prio-cap", { opacity: 0, y: 20, duration: 0.5 }, 17.5);
+      tl.to("#scene-priority", { opacity: 0, duration: 0.4 }, 21.4);
 
-      tl.to("#scene-detail", { opacity: 1, duration: 0.01 }, 22);
-      tl.from("#detail-ui", { opacity: 0, scale: 0.94, duration: 0.7, ease: "power3.out" }, 22.1);
-      tl.from("#detail-left", { opacity: 0, x: -30, duration: 0.6, ease: "power2.out" }, 22.5);
-      tl.from("#detail-right", { opacity: 0, x: 30, duration: 0.6, ease: "power2.out" }, 22.7);
-      tl.to(".factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.8, stagger: 0.1, ease: "power2.out" }, 23.2);
-      tl.from("#detail-caption", { opacity: 0, duration: 0.5 }, 24);
-      tl.to("#scene-detail", { opacity: 0, duration: 0.4, ease: "power2.in" }, 27.4);
+      tl.to("#scene-score", { opacity: 1, duration: 0.01 }, 22);
+      tl.from("#score-hero-num", { opacity: 0, scale: 0.6, duration: 0.9, ease: "back.out(1.6)" }, 22.2);
+      tl.to("#score-factors .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.7, stagger: 0.12, ease: "power2.out" }, 23.2);
+      tl.to("#scene-score", { opacity: 0, duration: 0.4 }, 27.4);
 
       tl.to("#scene-ioc", { opacity: 1, duration: 0.01 }, 28);
-      tl.from("#ioc-ui", { opacity: 0, y: 50, duration: 0.7, ease: "power3.out" }, 28.1);
-      tl.from("#provider-grid .provider-card", { opacity: 0, scale: 0.8, duration: 0.4, stagger: 0.1, ease: "back.out(1.5)" }, 28.8);
-      tl.from("#ioc-caption", { opacity: 0, duration: 0.5 }, 30);
-      tl.to("#scene-ioc", { opacity: 0, duration: 0.4, ease: "power2.in" }, 33.4);
+      tl.from("#ioc-panel", { opacity: 0, y: 80, duration: 0.7, ease: "power3.out" }, 28.1);
+      tl.from("#ioc-grid .provider-card", { opacity: 0, scale: 0.8, stagger: 0.1, duration: 0.45, ease: "back.out(1.5)" }, 28.8);
+      tl.to("#scene-ioc", { opacity: 0, duration: 0.4 }, 33.4);
 
       tl.to("#scene-pdf", { opacity: 1, duration: 0.01 }, 34);
-      tl.from("#pdf-ui", { opacity: 0, scale: 0.94, duration: 0.7, ease: "power3.out" }, 34.1);
-      tl.from("#pdf-sections .pdf-section", { opacity: 0, x: -30, duration: 0.5, stagger: 0.15, ease: "power2.out" }, 34.6);
-      tl.from("#pdf-caption", { opacity: 0, duration: 0.5 }, 36);
-      tl.to("#scene-pdf", { opacity: 0, duration: 0.4, ease: "power2.in" }, 39.4);
+      tl.from("#pdf-sections .pdf-section", { opacity: 0, x: -50, stagger: 0.14, duration: 0.55, ease: "power2.out" }, 34.2);
+      tl.to("#scene-pdf", { opacity: 0, duration: 0.4 }, 39.4);
 
       tl.to("#scene-cta", { opacity: 1, duration: 0.01 }, 40);
-      tl.from("#cta-title", { opacity: 0, y: 40, duration: 0.7, ease: "power3.out" }, 40.1);
-      tl.from("#cta-features .cta-feature", { opacity: 0, y: 30, duration: 0.45, stagger: 0.08, ease: "power2.out" }, 40.6);
-      tl.from("#cta-url", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.4)" }, 41.4);
-      tl.from("#cta-foot", { opacity: 0, duration: 0.5 }, 42);
+      tl.from("#cta-title", { opacity: 0, y: 50, duration: 0.8, ease: "power3.out" }, 40.1);
+      tl.from("#cta-features .cta-feature", { opacity: 0, y: 30, stagger: 0.08, duration: 0.45 }, 40.7);
+      tl.from("#cta-url", { opacity: 0, scale: 0.88, duration: 0.6, ease: "back.out(1.4)" }, 41.5);
 
-      tl.to("#bg-glow-1", { opacity: 0.8, duration: 2, yoyo: true, repeat: 22, ease: "sine.inOut" }, 0);
-      tl.to("#bg-glow-2", { opacity: 0.3, duration: 2.5, yoyo: true, repeat: 17, ease: "sine.inOut" }, 0.5);
-
+      tl.to("#bg-glow-1", { opacity: 0.9, duration: 2, yoyo: true, repeat: 22, ease: "sine.inOut" }, 0);
       window.__timelines["cut1"] = tl;
     </script>
   </body>
