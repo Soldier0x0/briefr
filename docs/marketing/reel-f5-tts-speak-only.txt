@@ -1,74 +1,71 @@
-# BRIEFR — F5 TTS speak-only (public-facing)
-# One block per cut · paste into F5 TTS · align to reel MP4s in docs/marketing/reels/
-# No internal filenames, architecture jargon, or engineer-only detail.
+# BRIEFR — F5 TTS speak-only (public · four DISTINCT cuts)
+# Paste each CUT block separately into F5 TTS · lay over matching MP4
 
 # =============================================================================
-# CUT 1 — HOOK — 35 seconds
+# CUT 1 — PRODUCT HOOK — 45s — briefr-cut1-product-hook-45s.mp4
+# What it is · morning brief · stack priority · CVE detail · IOC · PDF · self-host
 # =============================================================================
 
-There's a tool that watches published vulnerabilities for you.
+BRIEFR is self-hosted CVE intelligence for security teams.
 
-Same sources your SOC already trusts. NVD, CISA KEV, exploit prediction, and threat-intel feeds.
+Every morning, see what changed in the last twenty-four hours. KEV deadlines, EPSS movers, and stack matches in one ranked queue.
 
-Not a black-box guess. A scored, explainable priority. Every number tells you why.
+Your declared stack comes first. CVEs touching Apache, Palo Alto, Citrix, or whatever you run bubble to the top with an explainable risk score.
 
-You host it. You own it. Apache 2.0.
+Open any CVE for remediation status, patch availability, and a full threat picture.
 
-BRIEFR. Link in bio.
+Look up IPs, file hashes, and domains through VirusTotal, AbuseIPDB, and GreyNoise. Add free API keys when you want enrichment.
 
+Generate a PDF report with triage snapshot, executive summary, and detection guidance.
 
-# =============================================================================
-# CUT 2 — WALKTHROUGH — 90 seconds
-# =============================================================================
-
-This is BRIEFR, open-source vulnerability intelligence you run yourself. Here's what it does.
-
-A background scheduler pulls from NVD, CISA KEV, EPSS, MITRE ATT&CK, AlienVault OTX, ExploitDB, and more into one database.
-
-Every CVE gets a Risk Score out of one hundred. Six weighted factors. Same inputs, same number, every time.
-
-It connects related CVEs through shared threat intel and campaigns, so you're not triaging alone.
-
-Starter detection packs for every CVE. Sigma rules and SIEM queries for Elastic, Splunk, Sentinel, and QRadar. Community rules first. Generated rules are labeled experimental.
-
-Scoring and detection are deterministic. Optional AI handles summaries if you want it. Not required for daily triage.
-
-The software is free. You provide hosting. A small VPS is enough.
-
-BRIEFR. Self-hosted. Open source. Link in bio.
+Completely free, open source under Apache two point oh. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL.
 
 
 # =============================================================================
-# CUT 3 — FOR SECURITY TEAMS — 90 seconds (public product story)
+# CUT 2 — SCORING & CORRELATION — 90s — briefr-cut2-scoring-correlation-90s.mp4
+# Risk formula · stack matching · correlation · embeddings
 # =============================================================================
 
-BRIEFR is open-source CVE intelligence built for security teams who want signal, not noise.
+How does BRIEFR decide what matters?
 
-It ingests NVD, CISA KEV, EPSS, MITRE ATT&CK, OTX, exploit indexes, and more. Add keys for VirusTotal, AbuseIPDB, or GreyNoise when you need IOC lookup.
+Every CVE gets a risk score from zero to one hundred. Six weighted factors. Asset match against your stack is the largest. Then CISA KEV listing, EPSS probability, exploit availability, CVSS, and momentum.
 
-Every CVE gets an explainable Risk Score. Six factors, fixed formula, plain-English reasons.
+Same CVE, same stack, same score. Every time. Each factor includes a plain-English sentence explaining why.
 
-Related CVEs surface through shared indicators and campaigns. Your morning brief ranks KEV deadlines, EPSS movers, stack matches, and active campaigns into one action queue.
+Stack matching is term-based. Vendor and product strings from your profile against affected products in each CVE. Matches are labeled so you can judge them.
 
-Detection starts with community Sigma rules. SIEM queries ready to paste. Everything experimental is labeled honestly.
+The correlation engine links CVEs that share OTX indicators, infrastructure, or campaigns. So you see clusters, not isolated tickets.
 
-Self-hosted under Apache 2.0. Your data stays yours. No per-seat license. You provide the server.
+For semantic search, BRIEFR uses BAAI bge-small-en-v1.5 embeddings on CPU through fastembed. No GPU required. Find related CVEs by meaning, not just keyword overlap.
 
-BRIEFR. github.com/Soldier0x0/briefr
+Scoring and correlation run on a fixed schedule. Your browser reads cached results. Fast triage, reproducible intelligence.
 
 
 # =============================================================================
-# CUT 4 — LINKEDIN — 60 seconds
+# CUT 3 — DATA & DEPLOY — 90s — briefr-cut3-data-deploy-90s.mp4
+# Feed ingestion · Postgres 16 · pgvector · docker compose
 # =============================================================================
 
-This is BRIEFR. Open-source CVE intelligence you self-host.
+Where does BRIEFR data come from, and where does it live?
 
-More than twenty public feeds and indexes land in one database. NVD, KEV, EPSS, ATT&CK, OTX, ExploitDB, Nuclei, OSV, and more. Optional keys for VirusTotal, AbuseIPDB, and GreyNoise.
+A background scheduler ingests NVD, CISA KEV, EPSS, MITRE ATT and CK, AlienVault OTX, ExploitDB, OSV, SigmaHQ, and more. Public feeds are free. IOC enrichment uses optional free-tier API keys for VirusTotal, AbuseIPDB, and GreyNoise.
 
-Every CVE gets a Risk Score out of one hundred. Six factors. Fixed formula. Not a black box.
+Everything lands in one PostgreSQL sixteen database. Intel tables and app tables in separate schemas. The scheduler writes. The API reads. No microservices, no separate message queue.
 
-Community Sigma rules, SIEM queries for Elastic, Splunk, Sentinel, and QRadar. A morning brief ranks what needs attention today.
+For production, use the pgvector image. Docker compose up, set your database URL, and you have vector-enabled Postgres for embeddings and the SigmaHQ rule index.
 
-Free software. You provide hosting. Built for a small VPS.
+Minimum hardware: two vCPU, two gigabytes for local SQLite development. Recommended: two vCPU, four gigabytes with PostgreSQL for a small team deployment.
+
+One deployment. Your data stays on your server. Generous free API limits for personal use and small teams.
+
+
+# =============================================================================
+# CUT 4 — LINKEDIN — 60s — briefr-cut4-linkedin-60s.mp4
+# Fast montage · free · self-hosted CTA
+# =============================================================================
+
+CVE intelligence you self-host. Morning brief. Stack-prioritized feed. Explainable scores. IOC lookup. PDF reports.
+
+Completely free to run. Open source. Optional free-tier API keys. You provide the server.
 
 BRIEFR. github.com/Soldier0x0/briefr

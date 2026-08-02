@@ -1,224 +1,132 @@
-# BRIEFR — F5 TTS timestamped transcripts (public-facing)
-# Pair with silent reels in docs/marketing/reels/
-# No internal filenames, circuit breakers, or engineer-only detail.
+# BRIEFR — F5 TTS timestamped transcripts (four DISTINCT cuts)
+# Official logo from briefr-maintainer/content/00-brand/logo/
 
-# =============================================================================
-# CUT 1 — HOOK — 35 seconds
-# =============================================================================
+# CUT 1 — PRODUCT HOOK — 45s — briefr-cut1-product-hook-45s.mp4
 
---- CUT 1 · SEGMENT 01 · SILENCE ---
+--- SEGMENT 01 · SILENCE ---
 START:  00:00.000
 END:    00:03.000
-TYPE:   silence
 
---- CUT 1 · SEGMENT 02 · HOOK ---
+--- SEGMENT 02 · INTRO ---
 START:  00:03.000
 END:    00:08.000
-TYPE:   speak
+BRIEFR is self-hosted CVE intelligence for security teams.
 
-There's a tool that watches published vulnerabilities for you.
-
---- CUT 1 · SEGMENT 03 · FEEDS ---
+--- SEGMENT 03 · MORNING BRIEF ---
 START:  00:08.000
-END:    00:15.000
-TYPE:   speak
+END:    00:14.000
+Every morning, see what changed in the last twenty-four hours. KEV deadlines, EPSS movers, and stack matches in one ranked queue.
 
-Same sources your SOC already trusts. NVD, CISA KEV, exploit prediction, and threat-intel feeds.
+--- SEGMENT 04 · STACK ---
+START:  00:14.000
+END:    00:20.000
+Your declared stack comes first. CVEs touching your products bubble to the top with an explainable risk score.
 
---- CUT 1 · SEGMENT 04 · RISK SCORE ---
-START:  00:15.000
-END:    00:23.000
-TYPE:   speak
+--- SEGMENT 05 · CVE DETAIL ---
+START:  00:20.000
+END:    00:27.000
+Open any CVE for remediation status, patch availability, and a full threat picture.
 
-Not a black-box guess. A scored, explainable priority. Every number tells you why.
+--- SEGMENT 06 · IOC ---
+START:  00:27.000
+END:    00:34.000
+Look up IPs, file hashes, and domains through VirusTotal, AbuseIPDB, and GreyNoise. Add free API keys when you want enrichment.
 
---- CUT 1 · SEGMENT 05 · SELF-HOSTED ---
-START:  00:23.000
-END:    00:30.000
-TYPE:   speak
+--- SEGMENT 07 · PDF ---
+START:  00:34.000
+END:    00:39.000
+Generate a PDF report with triage snapshot, executive summary, and detection guidance.
 
-You host it. You own it. Apache 2.0.
-
---- CUT 1 · SEGMENT 06 · CLOSE ---
-START:  00:30.000
-END:    00:35.000
-TYPE:   speak
-
-BRIEFR. Link in bio.
+--- SEGMENT 08 · SELF-HOST ---
+START:  00:39.000
+END:    00:45.000
+Completely free, open source under Apache 2.0. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL.
 
 
-# =============================================================================
-# CUT 2 — WALKTHROUGH — 90 seconds
-# =============================================================================
+# CUT 2 — SCORING & CORRELATION — 90s — briefr-cut2-scoring-correlation-90s.mp4
 
---- CUT 2 · SEGMENT 01 · SILENCE ---
-START:  00:00.000
-END:    00:02.000
-TYPE:   silence
-
---- CUT 2 · SEGMENT 02 · OPEN ---
-START:  00:02.000
+--- SEGMENT 01 ---
+START:  00:03.000
 END:    00:12.000
-TYPE:   speak
+How does BRIEFR decide what matters?
 
-This is BRIEFR, open-source vulnerability intelligence you run yourself. Here's what it does.
-
---- CUT 2 · SEGMENT 03 · FEEDS ---
+--- SEGMENT 02 ---
 START:  00:12.000
-END:    00:26.000
-TYPE:   speak
+END:    00:30.000
+Every CVE gets a risk score from zero to one hundred. Six weighted factors. Asset match against your stack is the largest. Then CISA KEV listing, EPSS probability, exploit availability, CVSS, and momentum.
 
-A background scheduler pulls from NVD, CISA KEV, EPSS, MITRE ATT&CK, AlienVault OTX, ExploitDB, and more into one database.
+--- SEGMENT 03 ---
+START:  00:30.000
+END:    00:44.000
+Same CVE, same stack, same score. Every time. Each factor includes a plain-English sentence explaining why.
 
---- CUT 2 · SEGMENT 04 · RISK SCORE ---
-START:  00:26.000
-END:    00:40.000
-TYPE:   speak
+--- SEGMENT 04 ---
+START:  00:44.000
+END:    00:58.000
+Stack matching is term-based. Vendor and product strings from your profile against affected products in each CVE. Matches are labeled so you can judge them.
 
-Every CVE gets a Risk Score out of one hundred. Six weighted factors. Same inputs, same number, every time.
-
---- CUT 2 · SEGMENT 05 · CORRELATION ---
-START:  00:40.000
-END:    00:48.000
-TYPE:   speak
-
-It connects related CVEs through shared threat intel and campaigns, so you're not triaging alone.
-
---- CUT 2 · SEGMENT 06 · DETECTION ---
-START:  00:48.000
-END:    01:02.000
-TYPE:   speak
-
-Starter detection packs for every CVE. Sigma rules and SIEM queries for Elastic, Splunk, Sentinel, and QRadar. Community rules first. Generated rules are labeled experimental.
-
---- CUT 2 · SEGMENT 07 · AI ---
-START:  01:02.000
+--- SEGMENT 05 ---
+START:  00:58.000
 END:    01:12.000
-TYPE:   speak
+The correlation engine links CVEs that share OTX indicators, infrastructure, or campaigns. So you see clusters, not isolated tickets.
 
-Scoring and detection are deterministic. Optional AI handles summaries if you want it. Not required for daily triage.
-
---- CUT 2 · SEGMENT 08 · COST ---
+--- SEGMENT 06 ---
 START:  01:12.000
 END:    01:24.000
-TYPE:   speak
+For semantic search, BRIEFR uses BAAI bge-small-en-v1.5 embeddings on CPU through fastembed. No GPU required.
 
-The software is free. You provide hosting. A small VPS is enough.
-
---- CUT 2 · SEGMENT 09 · CLOSE ---
+--- SEGMENT 07 ---
 START:  01:24.000
 END:    01:30.000
-TYPE:   speak
-
-BRIEFR. Self-hosted. Open source. Link in bio.
+Scoring and correlation run on a fixed schedule. Your browser reads cached results.
 
 
-# =============================================================================
-# CUT 3 — FOR SECURITY TEAMS — 90 seconds
-# =============================================================================
+# CUT 3 — DATA & DEPLOY — 90s — briefr-cut3-data-deploy-90s.mp4
 
---- CUT 3 · SEGMENT 01 · SILENCE ---
-START:  00:00.000
-END:    00:02.000
-TYPE:   silence
-
---- CUT 3 · SEGMENT 02 · OPEN ---
-START:  00:02.000
+--- SEGMENT 01 ---
+START:  00:03.000
 END:    00:10.000
-TYPE:   speak
+Where does BRIEFR data come from, and where does it live?
 
-BRIEFR is open-source CVE intelligence built for security teams who want signal, not noise.
-
---- CUT 3 · SEGMENT 03 · SOURCES ---
+--- SEGMENT 02 ---
 START:  00:10.000
-END:    00:26.000
-TYPE:   speak
+END:    00:28.000
+A background scheduler ingests NVD, CISA KEV, EPSS, MITRE ATT&CK, AlienVault OTX, ExploitDB, OSV, SigmaHQ, and more. Public feeds are free. IOC enrichment uses optional free-tier API keys for VirusTotal, AbuseIPDB, and GreyNoise.
 
-It ingests NVD, CISA KEV, EPSS, MITRE ATT&CK, OTX, exploit indexes, and more. Add keys for VirusTotal, AbuseIPDB, or GreyNoise when you need IOC lookup.
-
---- CUT 3 · SEGMENT 04 · RISK SCORE ---
-START:  00:26.000
+--- SEGMENT 03 ---
+START:  00:28.000
 END:    00:42.000
-TYPE:   speak
+Everything lands in one PostgreSQL 16 database. Intel tables and app tables in separate schemas. The scheduler writes. The API reads.
 
-Every CVE gets an explainable Risk Score. Six factors, fixed formula, plain-English reasons.
-
---- CUT 3 · SEGMENT 05 · BRIEF ---
+--- SEGMENT 04 ---
 START:  00:42.000
-END:    00:52.000
-TYPE:   speak
+END:    01:02.000
+For production, use the pgvector image. Docker compose up, set your database URL, and you have vector-enabled Postgres for embeddings and the SigmaHQ rule index.
 
-Your morning brief ranks KEV deadlines, EPSS movers, stack matches, and active campaigns into one action queue.
-
---- CUT 3 · SEGMENT 06 · DETECTION ---
-START:  00:52.000
-END:    01:04.000
-TYPE:   speak
-
-Detection starts with community Sigma rules. SIEM queries ready to paste. Everything experimental is labeled honestly.
-
---- CUT 3 · SEGMENT 07 · SELF-HOSTED ---
-START:  01:04.000
+--- SEGMENT 05 ---
+START:  01:02.000
 END:    01:16.000
-TYPE:   speak
+Minimum hardware: two vCPU, two gigabytes for local SQLite development. Recommended: two vCPU, four gigabytes with PostgreSQL for a small team deployment.
 
-Self-hosted under Apache 2.0. Your data stays yours. No per-seat license. You provide the server.
-
---- CUT 3 · SEGMENT 08 · CLOSE ---
+--- SEGMENT 06 ---
 START:  01:16.000
 END:    01:30.000
-TYPE:   speak
-
-BRIEFR. github.com/Soldier0x0/briefr
+One deployment. Your data stays on your server. Generous free API limits for personal use and small teams.
 
 
-# =============================================================================
-# CUT 4 — LINKEDIN — 60 seconds
-# =============================================================================
+# CUT 4 — LINKEDIN — 60s — briefr-cut4-linkedin-60s.mp4
 
---- CUT 4 · SEGMENT 01 · SILENCE ---
-START:  00:00.000
-END:    00:03.000
-TYPE:   silence
-
---- CUT 4 · SEGMENT 02 · HOOK ---
+--- SEGMENT 01 ---
 START:  00:03.000
-END:    00:08.000
-TYPE:   speak
+END:    00:15.000
+CVE intelligence you self-host. Morning brief. Stack-prioritized feed. Explainable scores. IOC lookup. PDF reports.
 
-This is BRIEFR. Open-source CVE intelligence you self-host.
+--- SEGMENT 02 ---
+START:  00:15.000
+END:    00:28.000
+Completely free to run. Open source. Optional free-tier API keys. You provide the server.
 
---- CUT 4 · SEGMENT 03 · SOURCES ---
-START:  00:08.000
-END:    00:20.000
-TYPE:   speak
-
-More than twenty public feeds and indexes land in one database. NVD, KEV, EPSS, ATT&CK, OTX, ExploitDB, Nuclei, OSV, and more. Optional keys for VirusTotal, AbuseIPDB, and GreyNoise.
-
---- CUT 4 · SEGMENT 04 · RISK SCORE ---
-START:  00:20.000
-END:    00:32.000
-TYPE:   speak
-
-Every CVE gets a Risk Score out of one hundred. Six factors. Fixed formula. Not a black box.
-
---- CUT 4 · SEGMENT 05 · WORKFLOW ---
-START:  00:32.000
-END:    00:44.000
-TYPE:   speak
-
-Community Sigma rules, SIEM queries for Elastic, Splunk, Sentinel, and QRadar. A morning brief ranks what needs attention today.
-
---- CUT 4 · SEGMENT 06 · COST ---
-START:  00:44.000
-END:    00:52.000
-TYPE:   speak
-
-Free software. You provide hosting. Built for a small VPS.
-
---- CUT 4 · SEGMENT 07 · CLOSE ---
-START:  00:52.000
+--- SEGMENT 03 ---
+START:  00:28.000
 END:    01:00.000
-TYPE:   speak
-
 BRIEFR. github.com/Soldier0x0/briefr

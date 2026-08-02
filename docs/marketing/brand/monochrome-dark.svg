@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none" role="img" aria-label="BRIEFR monochrome logo dark">
+  <path d="M11 13v22M16 13v22" stroke="#0a0a08" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+  <rect x="22" y="14" width="22" height="3" rx="1" fill="#0a0a08"/>
+  <rect x="22" y="22" width="15" height="2.5" rx="1" fill="#0a0a08" opacity="0.65"/>
+  <rect x="22" y="29" width="10" height="2.5" rx="1" fill="#0a0a08" opacity="0.4"/>
+  <text x="60" y="32" font-family="'DM Serif Display', Georgia, serif" font-size="32" fill="#0a0a08">BRIEFR</text>
+</svg>
