@@ -1,0 +1,74 @@
+# BRIEFR — F5 TTS speak-only (public-facing)
+# One block per cut · paste into F5 TTS · align to reel MP4s in docs/marketing/reels/
+# No internal filenames, architecture jargon, or engineer-only detail.
+
+# =============================================================================
+# CUT 1 — HOOK — 35 seconds
+# =============================================================================
+
+There's a tool that watches published vulnerabilities for you.
+
+Same sources your SOC already trusts. NVD, CISA KEV, exploit prediction, and threat-intel feeds.
+
+Not a black-box guess. A scored, explainable priority. Every number tells you why.
+
+You host it. You own it. Apache 2.0.
+
+BRIEFR. Link in bio.
+
+
+# =============================================================================
+# CUT 2 — WALKTHROUGH — 90 seconds
+# =============================================================================
+
+This is BRIEFR, open-source vulnerability intelligence you run yourself. Here's what it does.
+
+A background scheduler pulls from NVD, CISA KEV, EPSS, MITRE ATT&CK, AlienVault OTX, ExploitDB, and more into one database.
+
+Every CVE gets a Risk Score out of one hundred. Six weighted factors. Same inputs, same number, every time.
+
+It connects related CVEs through shared threat intel and campaigns, so you're not triaging alone.
+
+Starter detection packs for every CVE. Sigma rules and SIEM queries for Elastic, Splunk, Sentinel, and QRadar. Community rules first. Generated rules are labeled experimental.
+
+Scoring and detection are deterministic. Optional AI handles summaries if you want it. Not required for daily triage.
+
+The software is free. You provide hosting. A small VPS is enough.
+
+BRIEFR. Self-hosted. Open source. Link in bio.
+
+
+# =============================================================================
+# CUT 3 — FOR SECURITY TEAMS — 90 seconds (public product story)
+# =============================================================================
+
+BRIEFR is open-source CVE intelligence built for security teams who want signal, not noise.
+
+It ingests NVD, CISA KEV, EPSS, MITRE ATT&CK, OTX, exploit indexes, and more. Add keys for VirusTotal, AbuseIPDB, or GreyNoise when you need IOC lookup.
+
+Every CVE gets an explainable Risk Score. Six factors, fixed formula, plain-English reasons.
+
+Related CVEs surface through shared indicators and campaigns. Your morning brief ranks KEV deadlines, EPSS movers, stack matches, and active campaigns into one action queue.
+
+Detection starts with community Sigma rules. SIEM queries ready to paste. Everything experimental is labeled honestly.
+
+Self-hosted under Apache 2.0. Your data stays yours. No per-seat license. You provide the server.
+
+BRIEFR. github.com/Soldier0x0/briefr
+
+
+# =============================================================================
+# CUT 4 — LINKEDIN — 60 seconds
+# =============================================================================
+
+This is BRIEFR. Open-source CVE intelligence you self-host.
+
+More than twenty public feeds and indexes land in one database. NVD, KEV, EPSS, ATT&CK, OTX, ExploitDB, Nuclei, OSV, and more. Optional keys for VirusTotal, AbuseIPDB, and GreyNoise.
+
+Every CVE gets a Risk Score out of one hundred. Six factors. Fixed formula. Not a black box.
+
+Community Sigma rules, SIEM queries for Elastic, Splunk, Sentinel, and QRadar. A morning brief ranks what needs attention today.
+
+Free software. You provide hosting. Built for a small VPS.
+
+BRIEFR. github.com/Soldier0x0/briefr
