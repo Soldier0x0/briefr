@@ -1,132 +1,90 @@
-# BRIEFR — F5 TTS timestamped transcripts (four DISTINCT cuts)
-# Official logo from briefr-maintainer/content/00-brand/logo/
+# BRIEFR — F5 TTS transcripts (public · four DISTINCT cuts)
+# Timestamps match HyperFrames GSAP scene timings · lay over matching MP4
 
+# =============================================================================
 # CUT 1 — PRODUCT HOOK — 45s — briefr-cut1-product-hook-45s.mp4
+# =============================================================================
 
---- SEGMENT 01 · SILENCE ---
-START:  00:00.000
-END:    00:03.000
-
---- SEGMENT 02 · INTRO ---
-START:  00:03.000
-END:    00:08.000
+[00:00.0 – 00:05.0]  INTRO
 BRIEFR is self-hosted CVE intelligence for security teams.
 
---- SEGMENT 03 · MORNING BRIEF ---
-START:  00:08.000
-END:    00:14.000
+[00:05.0 – 00:09.0]  VALUE
+One dashboard. Every signal. NVD, CISA KEV, EPSS, MITRE ATT and CK, IOC enrichment, PDF reports.
+
+[00:09.0 – 00:16.0]  MORNING BRIEF
 Every morning, see what changed in the last twenty-four hours. KEV deadlines, EPSS movers, and stack matches in one ranked queue.
 
---- SEGMENT 04 · STACK ---
-START:  00:14.000
-END:    00:20.000
-Your declared stack comes first. CVEs touching your products bubble to the top with an explainable risk score.
+[00:16.0 – 00:22.0]  STACK FEED
+Your declared stack comes first. CVEs touching Apache, Palo Alto, Citrix, or whatever you run bubble to the top.
 
---- SEGMENT 05 · CVE DETAIL ---
-START:  00:20.000
-END:    00:27.000
-Open any CVE for remediation status, patch availability, and a full threat picture.
+[00:22.0 – 00:28.0]  RISK SCORE
+Open any CVE for an explainable risk score. Six weighted factors: asset match, KEV, EPSS, exploit, CVSS, and momentum.
 
---- SEGMENT 06 · IOC ---
-START:  00:27.000
-END:    00:34.000
+[00:28.0 – 00:34.0]  IOC LOOKUP
 Look up IPs, file hashes, and domains through VirusTotal, AbuseIPDB, and GreyNoise. Add free API keys when you want enrichment.
 
---- SEGMENT 07 · PDF ---
-START:  00:34.000
-END:    00:39.000
-Generate a PDF report with triage snapshot, executive summary, and detection guidance.
+[00:34.0 – 00:40.0]  PDF EXPORT
+Generate a PDF report with triage snapshot, executive summary, and threat intelligence sections.
 
---- SEGMENT 08 · SELF-HOST ---
-START:  00:39.000
-END:    00:45.000
-Completely free, open source under Apache 2.0. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL.
+[00:40.0 – 00:45.0]  CTA
+Completely free, open source under Apache two point oh. Self-host on your own server. Two vCPU and two gigabytes minimum. Four gigabytes recommended with PostgreSQL. github.com/Soldier0x0/briefr
 
 
+# =============================================================================
 # CUT 2 — SCORING & CORRELATION — 90s — briefr-cut2-scoring-correlation-90s.mp4
+# =============================================================================
 
---- SEGMENT 01 ---
-START:  00:03.000
-END:    00:12.000
+[00:00.0 – 00:10.0]  HOOK
 How does BRIEFR decide what matters?
 
---- SEGMENT 02 ---
-START:  00:12.000
-END:    00:30.000
-Every CVE gets a risk score from zero to one hundred. Six weighted factors. Asset match against your stack is the largest. Then CISA KEV listing, EPSS probability, exploit availability, CVSS, and momentum.
+[00:10.0 – 00:28.0]  RISK WEIGHTS
+Every CVE gets a risk score from zero to one hundred. Six weighted factors. Asset match against your stack is the largest at thirty-five percent. Then CISA KEV listing at twenty-five, EPSS probability at fifteen, exploit availability, CVSS, and momentum. Same CVE, same stack, same score. Every time.
 
---- SEGMENT 03 ---
-START:  00:30.000
-END:    00:44.000
-Same CVE, same stack, same score. Every time. Each factor includes a plain-English sentence explaining why.
-
---- SEGMENT 04 ---
-START:  00:44.000
-END:    00:58.000
+[00:28.0 – 00:44.0]  STACK MATCHING
 Stack matching is term-based. Vendor and product strings from your profile against affected products in each CVE. Matches are labeled so you can judge them.
 
---- SEGMENT 05 ---
-START:  00:58.000
-END:    01:12.000
+[00:44.0 – 01:02.0]  CORRELATION
 The correlation engine links CVEs that share OTX indicators, infrastructure, or campaigns. So you see clusters, not isolated tickets.
 
---- SEGMENT 06 ---
-START:  01:12.000
-END:    01:24.000
-For semantic search, BRIEFR uses BAAI bge-small-en-v1.5 embeddings on CPU through fastembed. No GPU required.
+[01:02.0 – 01:18.0]  EMBEDDINGS
+For semantic search, BRIEFR uses BAAI bge-small-en-v1.5 embeddings on CPU through fastembed. No GPU required. Find related CVEs by meaning, not just keyword overlap.
 
---- SEGMENT 07 ---
-START:  01:24.000
-END:    01:30.000
-Scoring and correlation run on a fixed schedule. Your browser reads cached results.
+[01:18.0 – 01:30.0]  CTA
+Scoring and correlation run on a fixed schedule. Your browser reads cached results. Fast triage, reproducible intelligence. github.com/Soldier0x0/briefr
 
 
+# =============================================================================
 # CUT 3 — DATA & DEPLOY — 90s — briefr-cut3-data-deploy-90s.mp4
+# =============================================================================
 
---- SEGMENT 01 ---
-START:  00:03.000
-END:    00:10.000
+[00:00.0 – 00:10.0]  HOOK
 Where does BRIEFR data come from, and where does it live?
 
---- SEGMENT 02 ---
-START:  00:10.000
-END:    00:28.000
-A background scheduler ingests NVD, CISA KEV, EPSS, MITRE ATT&CK, AlienVault OTX, ExploitDB, OSV, SigmaHQ, and more. Public feeds are free. IOC enrichment uses optional free-tier API keys for VirusTotal, AbuseIPDB, and GreyNoise.
+[00:10.0 – 00:32.0]  FEEDS
+A background scheduler ingests NVD, CISA KEV, EPSS, MITRE ATT and CK, AlienVault OTX, ExploitDB, OSV, SigmaHQ, and more. Public feeds are free. IOC enrichment uses optional free-tier API keys for VirusTotal, AbuseIPDB, and GreyNoise.
 
---- SEGMENT 03 ---
-START:  00:28.000
-END:    00:42.000
-Everything lands in one PostgreSQL 16 database. Intel tables and app tables in separate schemas. The scheduler writes. The API reads.
+[00:32.0 – 00:52.0]  POSTGRES
+Everything lands in one PostgreSQL sixteen database. Intel tables and app tables in separate schemas. The scheduler writes. The API reads. No microservices, no separate message queue. Production uses the pgvector image for embeddings and the SigmaHQ rule index.
 
---- SEGMENT 04 ---
-START:  00:42.000
-END:    01:02.000
-For production, use the pgvector image. Docker compose up, set your database URL, and you have vector-enabled Postgres for embeddings and the SigmaHQ rule index.
+[00:52.0 – 01:10.0]  DEPLOY
+Docker compose up, set your database URL, and you have vector-enabled Postgres. Minimum hardware: two vCPU, two gigabytes for local SQLite development. Recommended: two vCPU, four gigabytes with PostgreSQL for a small team deployment.
 
---- SEGMENT 05 ---
-START:  01:02.000
-END:    01:16.000
-Minimum hardware: two vCPU, two gigabytes for local SQLite development. Recommended: two vCPU, four gigabytes with PostgreSQL for a small team deployment.
-
---- SEGMENT 06 ---
-START:  01:16.000
-END:    01:30.000
-One deployment. Your data stays on your server. Generous free API limits for personal use and small teams.
+[01:10.0 – 01:30.0]  CTA
+One deployment. Your data stays on your server. Apache two point oh. No vendor lock-in. github.com/Soldier0x0/briefr
 
 
+# =============================================================================
 # CUT 4 — LINKEDIN — 60s — briefr-cut4-linkedin-60s.mp4
+# =============================================================================
 
---- SEGMENT 01 ---
-START:  00:03.000
-END:    00:15.000
-CVE intelligence you self-host. Morning brief. Stack-prioritized feed. Explainable scores. IOC lookup. PDF reports.
+[00:00.0 – 00:04.0]  HOOK
+CVE intelligence you self-host.
 
---- SEGMENT 02 ---
-START:  00:15.000
-END:    00:28.000
-Completely free to run. Open source. Optional free-tier API keys. You provide the server.
+[00:04.0 – 00:12.0]  MONTAGE
+Morning brief. Stack-prioritized feed. Explainable risk scoring. IOC lookup.
 
---- SEGMENT 03 ---
-START:  00:28.000
-END:    01:00.000
-BRIEFR. github.com/Soldier0x0/briefr
+[00:12.0 – 00:42.0]  FEATURE FLASHES
+KEV due soon. Stack matches. EPSS movers. Prioritized CVE cards. Instant IOC enrichment. Shareable PDF reports.
+
+[00:42.0 – 01:00.0]  CTA
+Completely free to run. Open source. Optional free-tier API keys. You provide the server. BRIEFR. github.com/Soldier0x0/briefr

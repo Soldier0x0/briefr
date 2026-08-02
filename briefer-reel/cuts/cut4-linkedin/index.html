@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .flash-card { transform-origin: center; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="cut4" data-start="0" data-duration="60" data-width="1080" data-height="1920">
+      <div id="bg-layer" style="position:absolute;inset:0;pointer-events:none">
+        <div class="bg-grid"></div>
+        <div id="bg-glow-1" class="bg-glow" style="top:-200px;left:-150px"></div>
+        <div id="bg-glow-2" class="bg-glow" style="bottom:-300px;right:-200px;opacity:0.5"></div>
+      </div>
+
+      <!-- 0-4s hook -->
+      <div id="s1" class="clip scene" data-start="0" data-duration="4">
+        <div id="s1-logo" class="logo-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" width="400"><g transform="translate(0,4)"><rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></div>
+        <p id="s1-tag" class="hero-tagline">CVE intelligence you self-host</p>
+      </div>
+
+      <!-- 4-12s montage grid -->
+      <div id="s2" class="clip scene" data-start="4" data-duration="8">
+        <div id="s2-grid" class="montage-grid">
+          <div class="montage-card flash-card" id="mc1"><h3>MORNING BRIEF</h3><p>KEV · EPSS · stack matches</p></div>
+          <div class="montage-card flash-card" id="mc2"><h3>STACK FEED</h3><p>Your products first</p></div>
+          <div class="montage-card flash-card" id="mc3"><h3>RISK SCORE</h3><p>6 factors · explainable</p></div>
+          <div class="montage-card flash-card" id="mc4"><h3>IOC LOOKUP</h3><p>VT · AbuseIPDB · GreyNoise</p></div>
+        </div>
+      </div>
+
+      <!-- 12-18s brief flash -->
+      <div id="s3" class="clip scene" data-start="12" data-duration="6" style="justify-content:flex-start;padding-top:140px">
+        <div id="s3-ui" class="ui-shell">
+          <div class="ui-header"><span class="ui-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" height="28"><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></span><div class="ui-nav"><span class="ui-tab active">BRIEF</span></div></div>
+          <div class="ui-body">
+            <div class="stats-row">
+              <div class="stat-card"><div class="stat-label">KEV due soon</div><div class="stat-value">4</div></div>
+              <div class="stat-card"><div class="stat-label">Stack matches</div><div class="stat-value">18</div></div>
+              <div class="stat-card"><div class="stat-label">EPSS movers</div><div class="stat-value">12</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 18-24s feed flash -->
+      <div id="s4" class="clip scene" data-start="18" data-duration="6" style="justify-content:flex-start;padding-top:140px">
+        <div id="s4-ui" class="ui-shell">
+          <div class="ui-body">
+            <div class="cve-card"><div class="cve-top"><span class="cve-id">CVE-2025-1234</span><span class="badge kev">KEV</span></div><div class="cve-desc">RCE · Apache · Score 87</div></div>
+            <div class="cve-card amber"><div class="cve-top"><span class="cve-id">CVE-2025-5678</span><span class="badge epss">EPSS 0.82</span></div><div class="cve-desc">Kernel netfilter escalation</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 24-30s IOC flash -->
+      <div id="s5" class="clip scene" data-start="24" data-duration="6" style="justify-content:flex-start;padding-top:160px">
+        <div id="s5-ui" class="ui-shell" style="width:880px">
+          <div class="ui-body">
+            <div class="ioc-input"><div class="ioc-field">185.220.101.42</div><div class="ioc-btn">SCAN</div></div>
+            <div class="provider-grid">
+              <div class="provider-card"><div class="provider-name">VirusTotal</div><div class="provider-status">Malicious</div></div>
+              <div class="provider-card"><div class="provider-name">GreyNoise</div><div class="provider-status">Scanner</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 30-36s PDF flash -->
+      <div id="s6" class="clip scene" data-start="30" data-duration="6">
+        <div id="s6-pdf" class="pdf-sections" style="max-width:800px;width:100%">
+          <div class="pdf-section"><div class="pdf-section-title">TRIAGE SNAPSHOT</div></div>
+          <div class="pdf-section"><div class="pdf-section-title">EXECUTIVE SUMMARY</div></div>
+          <div class="pdf-section"><div class="pdf-section-title">DETECTION GUIDANCE</div></div>
+        </div>
+      </div>
+
+      <!-- 36-42s scoring flash -->
+      <div id="s7" class="clip scene" data-start="36" data-duration="6">
+        <p class="kinetic-line" style="font-size:48px;text-align:center" id="s7-text">Explainable<br /><span class="accent">risk scoring</span></p>
+        <div id="s7-bars" class="factor-list" style="max-width:700px;width:100%;margin-top:32px">
+          <div class="factor-row"><span class="factor-name">Asset</span><div class="factor-bar"><div class="factor-fill" data-w="100" style="width:0"></div></div><span class="factor-pct">35%</span></div>
+          <div class="factor-row"><span class="factor-name">KEV</span><div class="factor-bar"><div class="factor-fill" data-w="71" style="width:0"></div></div><span class="factor-pct">25%</span></div>
+        </div>
+      </div>
+
+      <!-- 42-60s CTA -->
+      <div id="s8" class="clip scene" data-start="42" data-duration="18">
+        <h2 id="s8-title" class="cta-title">Completely free.<br /><span style="color:var(--accent)">Self-hosted.</span></h2>
+        <p id="s8-sub" class="kinetic-sub" style="text-align:center;margin-top:20px">Open source · Optional API keys · You provide the server</p>
+        <div id="s8-features" class="cta-features" style="margin-top:36px">
+          <div class="cta-feature"><div class="cta-feature-label">Morning brief</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">PDF reports</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">IOC enrichment</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">PostgreSQL 16</div></div>
+        </div>
+        <div id="s8-url" class="cta-url" style="margin-top:36px">github.com/Soldier0x0/briefr</div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const hide = ["#s2","#s3","#s4","#s5","#s6","#s7","#s8"];
+      gsap.set(hide, { opacity: 0 });
+      gsap.set("#s1-logo, #s1-tag", { opacity: 0, y: 30 });
+
+      tl.to("#s1-logo", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.2);
+      tl.to("#s1-tag", { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.5);
+      tl.to("#s1", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, 3.5);
+
+      tl.to("#s2", { opacity: 1, duration: 0.01 }, 4);
+      tl.from(".flash-card", { opacity: 0, scale: 0.8, rotation: -3, stagger: 0.12, duration: 0.5, ease: "back.out(1.4)" }, 4.1);
+      tl.to(".flash-card", { scale: 1.02, duration: 0.3, yoyo: true, repeat: 3, stagger: 0.1 }, 5.5);
+      tl.to("#s2", { opacity: 0, duration: 0.3 }, 11.5);
+
+      tl.to("#s3", { opacity: 1, duration: 0.01 }, 12);
+      tl.from("#s3-ui", { opacity: 0, x: 100, duration: 0.5, ease: "power3.out" }, 12.1);
+      tl.to("#s3", { opacity: 0, x: -80, duration: 0.35, ease: "power2.in" }, 17.5);
+
+      tl.to("#s4", { opacity: 1, duration: 0.01 }, 18);
+      tl.from("#s4-ui", { opacity: 0, scale: 0.9, duration: 0.5, ease: "power3.out" }, 18.1);
+      tl.from("#s4-ui .cve-card", { opacity: 0, x: -50, stagger: 0.12, duration: 0.4 }, 18.4);
+      tl.to("#s4", { opacity: 0, duration: 0.3 }, 23.5);
+
+      tl.to("#s5", { opacity: 1, duration: 0.01 }, 24);
+      tl.from("#s5-ui", { opacity: 0, y: 60, duration: 0.5, ease: "power3.out" }, 24.1);
+      tl.to("#s5", { opacity: 0, duration: 0.3 }, 29.5);
+
+      tl.to("#s6", { opacity: 1, duration: 0.01 }, 30);
+      tl.from("#s6-pdf .pdf-section", { opacity: 0, x: 40, stagger: 0.1, duration: 0.4 }, 30.1);
+      tl.to("#s6", { opacity: 0, duration: 0.3 }, 35.5);
+
+      tl.to("#s7", { opacity: 1, duration: 0.01 }, 36);
+      tl.from("#s7-text", { opacity: 0, y: 30, duration: 0.5, ease: "power3.out" }, 36.1);
+      tl.to("#s7-bars .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.6, stagger: 0.15 }, 36.6);
+      tl.to("#s7", { opacity: 0, duration: 0.3 }, 41.5);
+
+      tl.to("#s8", { opacity: 1, duration: 0.01 }, 42);
+      tl.from("#s8-title", { opacity: 0, y: 40, duration: 0.7, ease: "power3.out" }, 42.2);
+      tl.from("#s8-sub", { opacity: 0, y: 20, duration: 0.6 }, 43);
+      tl.from("#s8-features .cta-feature", { opacity: 0, y: 25, stagger: 0.08, duration: 0.4 }, 43.8);
+      tl.from("#s8-url", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.4)" }, 45);
+      tl.to("#bg-glow-1", { opacity: 0.8, duration: 1.8, yoyo: true, repeat: 16, ease: "sine.inOut" }, 0);
+
+      window.__timelines["cut4"] = tl;
+    </script>
+  </body>
+</html>

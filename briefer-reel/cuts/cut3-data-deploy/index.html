@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="root" data-composition-id="cut3" data-start="0" data-duration="90" data-width="1080" data-height="1920">
+      <div id="bg-layer" style="position:absolute;inset:0;pointer-events:none">
+        <div class="bg-grid"></div>
+        <div id="bg-glow-1" class="bg-glow" style="top:-200px;left:-150px"></div>
+        <div id="bg-glow-2" class="bg-glow" style="bottom:-300px;right:-200px;opacity:0.5"></div>
+      </div>
+
+      <div id="s1" class="clip scene" data-start="0" data-duration="10">
+        <div id="s1-logo" class="logo-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" width="360"><g transform="translate(0,4)"><rect x="22" y="14" width="22" height="3" rx="1" fill="#e85533"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#f2f0ea">BRIEFR</text></svg></div>
+        <p id="s1-title" class="kinetic-line" style="font-size:48px;text-align:center">Where does the data<br /><span class="accent">come from — and live?</span></p>
+      </div>
+
+      <div id="s2" class="clip scene" data-start="10" data-duration="22">
+        <p id="s2-head" class="kinetic-line" style="font-size:38px;margin-bottom:28px;text-align:center">Public intel feeds</p>
+        <div id="s2-chips" class="feed-chips" style="max-width:880px">
+          <span class="chip accent">NVD</span><span class="chip">CISA KEV</span><span class="chip">EPSS</span><span class="chip">MITRE ATT&amp;CK</span>
+          <span class="chip">AlienVault OTX</span><span class="chip">ExploitDB</span><span class="chip">OSV</span><span class="chip">SigmaHQ</span>
+        </div>
+        <p id="s2-sub" class="kinetic-sub" style="text-align:center;margin-top:32px">Background scheduler ingests on a fixed cadence.<br />Public feeds are free.</p>
+        <div id="s2-enrich" class="feed-chips" style="margin-top:24px">
+          <span class="chip">VirusTotal</span><span class="chip">AbuseIPDB</span><span class="chip accent">GreyNoise</span>
+        </div>
+        <p style="font-size:18px;color:var(--text3);margin-top:16px;text-align:center">Optional free-tier API keys for IOC enrichment</p>
+        <div id="s2-cap" class="scene-caption mono">One scheduler writes · API reads</div>
+      </div>
+
+      <div id="s3" class="clip scene" data-start="32" data-duration="20" style="justify-content:flex-start;padding-top:130px">
+        <p id="s3-head" class="kinetic-line" style="font-size:40px;margin-bottom:28px;text-align:center">PostgreSQL 16 + pgvector</p>
+        <div id="s3-arch" class="arch-diagram">
+          <div class="arch-box accent"><span class="mono" style="font-size:16px;color:var(--accent)">intel schema</span><p style="margin-top:8px;font-size:18px;color:var(--text2)">CVEs · feeds · embeddings · Sigma rules</p></div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box"><span class="mono" style="font-size:16px;color:var(--text3)">app schema</span><p style="margin-top:8px;font-size:18px;color:var(--text2)">Users · profiles · settings · audit</p></div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box accent"><span class="mono" style="font-size:16px;color:var(--accent)">pgvector/pgvector:pg16</span></div>
+        </div>
+        <div id="s3-cap" class="scene-caption mono">One database · no microservices</div>
+      </div>
+
+      <div id="s4" class="clip scene" data-start="52" data-duration="18" style="justify-content:flex-start;padding-top:140px">
+        <p id="s4-head" class="kinetic-line" style="font-size:38px;margin-bottom:24px;text-align:center">Deploy in minutes</p>
+        <div id="s4-cmd" class="deploy-cmd" style="max-width:900px;width:100%">
+          docker compose -f deploy/docker-compose.postgres.yml up -d<br/><br/>
+          export DATABASE_URL=postgresql://...
+        </div>
+        <div id="s4-specs" class="cta-features" style="margin-top:32px;max-width:900px">
+          <div class="cta-feature"><div class="cta-feature-label">2 vCPU · 2 GB min</div><p style="font-size:14px;color:var(--text3);margin-top:8px">SQLite dev</p></div>
+          <div class="cta-feature"><div class="cta-feature-label">2 vCPU · 4 GB rec.</div><p style="font-size:14px;color:var(--text3);margin-top:8px">PostgreSQL team</p></div>
+        </div>
+        <div id="s4-cap" class="scene-caption mono">Your data stays on your server</div>
+      </div>
+
+      <div id="s5" class="clip scene" data-start="70" data-duration="20">
+        <h2 id="s5-title" class="cta-title" style="font-size:60px">Self-hosted.<br /><span style="color:var(--accent)">Yours.</span></h2>
+        <div id="s5-features" class="cta-features" style="margin-top:40px">
+          <div class="cta-feature"><div class="cta-feature-label">Apache 2.0</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">FastAPI + React</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">No vendor lock-in</div></div>
+          <div class="cta-feature"><div class="cta-feature-label">Free API limits</div></div>
+        </div>
+        <div id="s5-url" class="cta-url" style="margin-top:36px">github.com/Soldier0x0/briefr</div>
+        <p id="s5-foot" class="cta-foot mono">Clone · configure · run</p>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const hide = ["#s2","#s3","#s4","#s5"];
+      gsap.set(hide, { opacity: 0 });
+      gsap.set("#s1-logo, #s1-title", { opacity: 0, y: 40 });
+
+      tl.to("#s1-logo", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.3);
+      tl.to("#s1-title", { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.8);
+      tl.to("#s1", { opacity: 0, duration: 0.5 }, 9.4);
+
+      tl.to("#s2", { opacity: 1, duration: 0.01 }, 10);
+      tl.from("#s2-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 10.2);
+      tl.from("#s2-chips .chip", { opacity: 0, scale: 0.7, stagger: 0.08, duration: 0.4, ease: "back.out(1.5)" }, 11);
+      tl.from("#s2-sub", { opacity: 0, y: 20, duration: 0.6 }, 13);
+      tl.from("#s2-enrich .chip", { opacity: 0, y: 15, stagger: 0.1, duration: 0.4 }, 14);
+      tl.from("#s2-cap", { opacity: 0, duration: 0.5 }, 16);
+      tl.to("#s2", { opacity: 0, duration: 0.5 }, 31.4);
+
+      tl.to("#s3", { opacity: 1, duration: 0.01 }, 32);
+      tl.from("#s3-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 32.2);
+      tl.from(".arch-box", { opacity: 0, y: 30, stagger: 0.2, duration: 0.6, ease: "power3.out" }, 33);
+      tl.from(".arch-arrow", { opacity: 0, scale: 0.5, stagger: 0.15, duration: 0.4 }, 33.8);
+      tl.from("#s3-cap", { opacity: 0, duration: 0.5 }, 36);
+      tl.to("#s3", { opacity: 0, duration: 0.5 }, 51.4);
+
+      tl.to("#s4", { opacity: 1, duration: 0.01 }, 52);
+      tl.from("#s4-head", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 52.2);
+      tl.from("#s4-cmd", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, 53);
+      tl.from("#s4-specs .cta-feature", { opacity: 0, y: 25, stagger: 0.12, duration: 0.5 }, 54.5);
+      tl.from("#s4-cap", { opacity: 0, duration: 0.5 }, 56);
+      tl.to("#s4", { opacity: 0, duration: 0.5 }, 69.4);
+
+      tl.to("#s5", { opacity: 1, duration: 0.01 }, 70);
+      tl.from("#s5-title", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" }, 70.2);
+      tl.from("#s5-features .cta-feature", { opacity: 0, y: 30, stagger: 0.08, duration: 0.45 }, 71.2);
+      tl.from("#s5-url", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.4)" }, 72.5);
+      tl.from("#s5-foot", { opacity: 0, duration: 0.5 }, 73.5);
+      tl.to("#bg-glow-1", { opacity: 0.8, duration: 2, yoyo: true, repeat: 44, ease: "sine.inOut" }, 0);
+
+      window.__timelines["cut3"] = tl;
+    </script>
+  </body>
+</html>

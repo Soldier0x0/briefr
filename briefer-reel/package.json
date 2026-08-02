@@ -1,0 +1,12 @@
+{
+  "name": "briefer-reel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:cut1": "cd cuts/cut1-product-hook && npx --yes hyperframes@0.7.86 preview",
+    "dev:cut2": "cd cuts/cut2-scoring-correlation && npx --yes hyperframes@0.7.86 preview",
+    "dev:cut3": "cd cuts/cut3-data-deploy && npx --yes hyperframes@0.7.86 preview",
+    "dev:cut4": "cd cuts/cut4-linkedin && npx --yes hyperframes@0.7.86 preview",
+    "render:all": "bash ../scripts/render_marketing_reels.sh"
+  }
+}

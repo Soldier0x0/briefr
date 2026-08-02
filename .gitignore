@@ -38,5 +38,6 @@ graphify-out/
 briefr-docs/
 projectjupiter-landing/
 
-# HyperFrames marketing reel — generate locally; do not commit media to public repo
-briefer-reel/
+# HyperFrames marketing reel — source is committed; rendered MP4s stay local
+briefer-reel/renders/
+briefer-reel/node_modules/
