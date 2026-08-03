@@ -2,7 +2,7 @@
 # Paste each CUT block separately into F5 TTS · lay over matching MP4
 
 # =============================================================================
-# CUT 1 — PRODUCT HOOK — 50s — briefr-cut1-product-hook-50s.mp4
+# CUT 1 — PRODUCT HOOK — 51s — briefr-cut1-product-hook-51s.mp4
 # =============================================================================
 
 Thousands of CVEs publish every week. Which ones hit YOUR stack?

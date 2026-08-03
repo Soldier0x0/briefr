@@ -8,222 +8,228 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="root" data-composition-id="cut1" data-start="0" data-duration="50" data-width="1080" data-height="1920">
+    <div id="root" data-composition-id="cut1" data-start="0" data-duration="51" data-width="1080" data-height="1920">
       <div id="bg-layer" style="position:absolute;inset:0;pointer-events:none">
         <div class="bg-grid"></div>
         <div id="bg-glow-1" class="bg-glow" style="top:-250px;left:-200px"></div>
         <div id="bg-glow-2" class="bg-glow" style="bottom:-350px;right:-250px;opacity:0.55"></div>
       </div>
 
-      <!-- 0–5s Problem -->
-      <div id="scene-problem" class="clip scene" data-start="0" data-duration="5">
-        <p id="prob-1" class="headline-lg" style="text-align:center">Thousands of CVEs<br />publish every week.</p>
-        <p id="prob-2" class="headline-lg accent" style="text-align:center;margin-top:32px">Which ones hit<br /><span style="color:var(--text)">YOUR stack?</span></p>
-        <p id="prob-feeds" class="label-md" style="text-align:center;margin-top:28px">NVD · KEV · EPSS · OTX · SigmaHQ</p>
-      </div>
-
-      <!-- 5–10s Brand + scope -->
-      <div id="scene-brand" class="clip scene scene-top" data-start="5" data-duration="5">
-        <div id="brand-logo" class="logo-wrap" style="align-self:center;margin-bottom:20px">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" width="440"><g transform="translate(0,4)"><rect x="22" y="14" width="22" height="3" rx="1" fill="#ff6b47"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#ffffff">BRIEFR</text></svg>
-        </div>
-        <p id="brand-tag" class="body-md" style="text-align:center;margin-bottom:20px">Self-hosted CVE intelligence for analysts</p>
-        <div id="brand-nav" class="chip-row" style="margin-bottom:14px">
-          <span class="chip accent">BRIEF</span><span class="chip">FEED</span><span class="chip">IOC LOOKUP</span><span class="chip">FORGE</span>
-        </div>
-        <div id="brand-data" class="chip-row">
-          <span class="chip">NVD</span><span class="chip">CISA KEV</span><span class="chip">EPSS</span><span class="chip">OTX</span>
+      <!-- 0–0.5s Logo intro -->
+      <div id="scene-logo-in" class="clip scene scene-logo" data-start="0" data-duration="0.5">
+        <div id="logo-in" class="logo-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" aria-label="BRIEFR">
+            <g transform="translate(0,4)"><path d="M11 13v22M16 13v22" stroke="#4a4a44" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#ff6b47"/><rect x="22" y="22" width="15" height="2.5" rx="1" fill="#ffffff" opacity="0.9"/><rect x="22" y="29" width="10" height="2.5" rx="1" fill="#d8d5ce" opacity="0.7"/></g>
+            <text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#ffffff">BRIEFR</text>
+          </svg>
         </div>
       </div>
 
-      <!-- 10–18s Morning brief grid -->
-      <div id="scene-brief" class="clip scene scene-top" data-start="10" data-duration="8">
-        <p id="brief-head" class="label-lg">24-hour delta queue</p>
-        <div id="brief-grid" class="brief-grid">
-          <div class="brief-cell" id="bc1">
-            <div class="brief-cell-title">New KEV entries</div>
-            <div class="brief-cell-count">3</div>
-            <div class="brief-cell-example">CVE-2024-38475 · Apache</div>
-          </div>
-          <div class="brief-cell" id="bc2">
-            <div class="brief-cell-title">KEV due soon</div>
-            <div class="brief-cell-count">4</div>
-            <div class="brief-cell-example">Federal deadline in 6 days</div>
-          </div>
-          <div class="brief-cell" id="bc3">
-            <div class="brief-cell-title">EPSS movers</div>
-            <div class="brief-cell-count">12</div>
-            <div class="brief-cell-example">+0.41 exploit probability overnight</div>
-          </div>
-          <div class="brief-cell" id="bc4">
-            <div class="brief-cell-title">Stack matches</div>
-            <div class="brief-cell-count">18</div>
-            <div class="brief-cell-example">FortiOS · PAN-OS · Citrix</div>
-          </div>
-          <div class="brief-cell wide" id="bc5">
-            <div class="brief-cell-title">Active campaigns</div>
-            <div class="brief-cell-count">2</div>
-            <div class="brief-cell-example">APT29 infrastructure overlap · 6 linked CVEs</div>
-          </div>
+      <!-- 0.5–5.5s Problem -->
+      <div id="scene-problem" class="clip scene" data-start="0.5" data-duration="5">
+        <div class="scene-content">
+          <p id="prob-1" class="headline-lg" style="text-align:center">Thousands of CVEs<br />publish every week.</p>
+          <p id="prob-2" class="headline-lg accent" style="text-align:center;margin-top:32px">Which ones hit<br /><span style="color:var(--text)">YOUR stack?</span></p>
+          <p id="prob-feeds" class="label-md" style="text-align:center;margin-top:28px">NVD · KEV · EPSS · OTX · SigmaHQ</p>
         </div>
-        <p id="brief-cap" class="scene-caption" style="margin-top:12px">Start every day with a ranked delta queue</p>
       </div>
 
-      <!-- 18–24s Feed queue -->
-      <div id="scene-queue" class="clip scene scene-top" data-start="18" data-duration="6">
-        <p id="queue-head" class="label-lg">Stack-prioritized feed</p>
-        <div id="queue-list" class="queue-list">
-          <div class="queue-row top" id="qr1">
-            <div class="queue-row-top">
-              <span class="queue-rank">#1</span>
-              <span class="queue-id">CVE-2024-38475</span>
-              <div class="queue-badges"><span class="badge kev">KEV</span><span class="badge" style="background:rgba(255,107,71,0.2);color:var(--accent-bright)">91</span></div>
+      <!-- 5.5–10.5s Brand + scope -->
+      <div id="scene-brand" class="clip scene" data-start="5.5" data-duration="5">
+        <div class="scene-content">
+          <div id="brand-logo" class="logo-wrap" style="align-self:center;margin-bottom:20px">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" width="440"><g transform="translate(0,4)"><rect x="22" y="14" width="22" height="3" rx="1" fill="#ff6b47"/></g><text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#ffffff">BRIEFR</text></svg>
+          </div>
+          <p id="brand-tag" class="body-md" style="text-align:center;margin-bottom:20px">Self-hosted CVE intelligence for analysts</p>
+          <div id="brand-nav" class="chip-row" style="margin-bottom:14px">
+            <span class="chip accent">BRIEF</span><span class="chip">FEED</span><span class="chip">IOC LOOKUP</span><span class="chip">FORGE</span>
+          </div>
+          <div id="brand-data" class="chip-row">
+            <span class="chip">NVD</span><span class="chip">CISA KEV</span><span class="chip">EPSS</span><span class="chip">OTX</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10.5–18.5s Morning brief grid -->
+      <div id="scene-brief" class="clip scene" data-start="10.5" data-duration="8">
+        <div class="scene-content">
+          <p id="brief-head" class="label-lg">24-hour delta queue</p>
+          <div id="brief-grid" class="brief-grid">
+            <div class="brief-cell" id="bc1"><div class="brief-cell-title">New KEV entries</div><div class="brief-cell-count">3</div><div class="brief-cell-example">CVE-2024-38475 · Apache</div></div>
+            <div class="brief-cell" id="bc2"><div class="brief-cell-title">KEV due soon</div><div class="brief-cell-count">4</div><div class="brief-cell-example">Federal deadline in 6 days</div></div>
+            <div class="brief-cell" id="bc3"><div class="brief-cell-title">EPSS movers</div><div class="brief-cell-count">12</div><div class="brief-cell-example">+0.41 exploit probability overnight</div></div>
+            <div class="brief-cell" id="bc4"><div class="brief-cell-title">Stack matches</div><div class="brief-cell-count">18</div><div class="brief-cell-example">FortiOS · PAN-OS · Citrix</div></div>
+            <div class="brief-cell wide" id="bc5"><div class="brief-cell-title">Active campaigns</div><div class="brief-cell-count">2</div><div class="brief-cell-example">APT29 infrastructure overlap · 6 linked CVEs</div></div>
+          </div>
+          <p id="brief-cap" class="scene-caption" style="margin-top:12px">Start every day with a ranked delta queue</p>
+        </div>
+      </div>
+
+      <!-- 18.5–24.5s Feed queue -->
+      <div id="scene-queue" class="clip scene" data-start="18.5" data-duration="6">
+        <div class="scene-content">
+          <p id="queue-head" class="label-lg">Stack-prioritized feed</p>
+          <div id="queue-list" class="queue-list">
+            <div class="queue-row top" id="qr1">
+              <div class="queue-row-top"><span class="queue-rank">#1</span><span class="queue-id">CVE-2024-38475</span><div class="queue-badges"><span class="badge kev">KEV</span><span class="badge" style="background:rgba(255,107,71,0.2);color:var(--accent-bright)">91</span></div></div>
+              <div class="queue-meta">Apache mod_rewrite RCE · patch available</div>
             </div>
-            <div class="queue-meta">Apache mod_rewrite RCE · patch available</div>
-          </div>
-          <div class="queue-row" id="qr2">
-            <div class="queue-row-top">
-              <span class="queue-rank">#2</span>
-              <span class="queue-id">CVE-2024-21762</span>
-              <div class="queue-badges"><span class="badge stack">STACK</span><span class="badge" style="background:rgba(255,107,71,0.15);color:var(--text2)">78</span></div>
+            <div class="queue-row" id="qr2">
+              <div class="queue-row-top"><span class="queue-rank">#2</span><span class="queue-id">CVE-2024-21762</span><div class="queue-badges"><span class="badge stack">STACK</span><span class="badge" style="background:rgba(255,107,71,0.15);color:var(--text2)">78</span></div></div>
+              <div class="queue-meta">FortiOS SSL-VPN auth bypass</div>
             </div>
-            <div class="queue-meta">FortiOS SSL-VPN auth bypass</div>
-          </div>
-          <div class="queue-row" id="qr3">
-            <div class="queue-row-top">
-              <span class="queue-rank">#3</span>
-              <span class="queue-id">CVE-2024-1086</span>
-              <div class="queue-badges"><span class="badge epss">EPSS</span><span class="badge" style="background:rgba(255,107,71,0.15);color:var(--text2)">65</span></div>
+            <div class="queue-row" id="qr3">
+              <div class="queue-row-top"><span class="queue-rank">#3</span><span class="queue-id">CVE-2024-1086</span><div class="queue-badges"><span class="badge epss">EPSS</span><span class="badge" style="background:rgba(255,107,71,0.15);color:var(--text2)">65</span></div></div>
+              <div class="queue-meta">Linux netfilter privesc</div>
             </div>
-            <div class="queue-meta">Linux netfilter privesc</div>
           </div>
-        </div>
-        <div id="stack-strip" class="stack-strip">Your stack: Apache · Palo Alto · Citrix → 18 matches today</div>
-      </div>
-
-      <!-- 24–31s Explainable score -->
-      <div id="scene-score" class="clip scene scene-top" data-start="24" data-duration="7">
-        <p id="score-head" class="label-lg">Explainable threat score</p>
-        <div id="score-split" class="score-split">
-          <div class="score-panel" id="score-panel">
-            <div class="score-panel-num">91</div>
-            <div class="score-panel-sub">P1 · KEV listed</div>
-            <div class="score-panel-sub" style="color:var(--text3);margin-top:6px">Patch available</div>
-          </div>
-          <div class="factor-explain" id="factor-explain">
-            <div class="factor-explain-row" id="fe1"><div class="factor-explain-top"><span class="factor-explain-name">Asset</span><span class="factor-explain-pct">35%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="100"></div></div><div class="factor-explain-sentence">Matches Apache in your profile</div></div>
-            <div class="factor-explain-row" id="fe2"><div class="factor-explain-top"><span class="factor-explain-name">KEV</span><span class="factor-explain-pct">25%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="71"></div></div><div class="factor-explain-sentence">Listed on CISA KEV catalog</div></div>
-            <div class="factor-explain-row" id="fe3"><div class="factor-explain-top"><span class="factor-explain-name">EPSS</span><span class="factor-explain-pct">15%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="43"></div></div><div class="factor-explain-sentence">High exploit probability</div></div>
-            <div class="factor-explain-row" id="fe4"><div class="factor-explain-top"><span class="factor-explain-name">Exploit</span><span class="factor-explain-pct">10%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="29"></div></div><div class="factor-explain-sentence">Public exploit available</div></div>
-            <div class="factor-explain-row" id="fe5"><div class="factor-explain-top"><span class="factor-explain-name">CVSS</span><span class="factor-explain-pct">10%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="29"></div></div><div class="factor-explain-sentence">CVSS 9.8 critical</div></div>
-            <div class="factor-explain-row" id="fe6"><div class="factor-explain-top"><span class="factor-explain-name">Momentum</span><span class="factor-explain-pct">5%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="14"></div></div><div class="factor-explain-sentence">Rising publication velocity</div></div>
-          </div>
+          <div id="stack-strip" class="stack-strip">Your stack: Apache · Palo Alto · Citrix → 18 matches today</div>
         </div>
       </div>
 
-      <!-- 31–38s IOC triple lookup -->
-      <div id="scene-ioc" class="clip scene scene-top" data-start="31" data-duration="7">
-        <p id="ioc-head" class="label-lg">IOC enrichment · IP · hash · domain</p>
-        <div id="ioc-table" class="ioc-table">
-          <div class="ioc-row" id="ioc1">
-            <div class="ioc-row-type">IP</div>
-            <div class="ioc-row-value">194.36.1.18</div>
-            <div class="ioc-row-results">VirusTotal Malicious · AbuseIPDB 96% · GreyNoise Scanner</div>
+      <!-- 24.5–31.5s Explainable score -->
+      <div id="scene-score" class="clip scene" data-start="24.5" data-duration="7">
+        <div class="scene-content">
+          <p id="score-head" class="label-lg">Explainable threat score</p>
+          <div id="score-split" class="score-split">
+            <div class="score-panel" id="score-panel">
+              <div class="score-panel-num">91</div>
+              <div class="score-panel-sub">P1 · KEV listed</div>
+              <div class="score-panel-sub" style="color:var(--text3);margin-top:6px">Patch available</div>
+            </div>
+            <div class="factor-explain" id="factor-explain">
+              <div class="factor-explain-row" id="fe1"><div class="factor-explain-top"><span class="factor-explain-name">Asset</span><span class="factor-explain-pct">35%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="100"></div></div><div class="factor-explain-sentence">Matches Apache in your profile</div></div>
+              <div class="factor-explain-row" id="fe2"><div class="factor-explain-top"><span class="factor-explain-name">KEV</span><span class="factor-explain-pct">25%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="71"></div></div><div class="factor-explain-sentence">Listed on CISA KEV catalog</div></div>
+              <div class="factor-explain-row" id="fe3"><div class="factor-explain-top"><span class="factor-explain-name">EPSS</span><span class="factor-explain-pct">15%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="43"></div></div><div class="factor-explain-sentence">High exploit probability</div></div>
+              <div class="factor-explain-row" id="fe4"><div class="factor-explain-top"><span class="factor-explain-name">Exploit</span><span class="factor-explain-pct">10%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="29"></div></div><div class="factor-explain-sentence">Public exploit available</div></div>
+              <div class="factor-explain-row" id="fe5"><div class="factor-explain-top"><span class="factor-explain-name">CVSS</span><span class="factor-explain-pct">10%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="29"></div></div><div class="factor-explain-sentence">CVSS 9.8 critical</div></div>
+              <div class="factor-explain-row" id="fe6"><div class="factor-explain-top"><span class="factor-explain-name">Momentum</span><span class="factor-explain-pct">5%</span></div><div class="factor-explain-bar"><div class="factor-fill" data-w="14"></div></div><div class="factor-explain-sentence">Rising publication velocity</div></div>
+            </div>
           </div>
-          <div class="ioc-row" id="ioc2">
-            <div class="ioc-row-type">HASH</div>
-            <div class="ioc-row-value">sha256:4a3f…c21e</div>
-            <div class="ioc-row-results">VirusTotal · MalwareBazaar</div>
-          </div>
-          <div class="ioc-row" id="ioc3">
-            <div class="ioc-row-type">DOMAIN</div>
-            <div class="ioc-row-value">c2.evil-domain.net</div>
-            <div class="ioc-row-results">VirusTotal · URLhaus · OTX 5 pulses</div>
-          </div>
-        </div>
-        <p class="body-md" style="text-align:center;color:var(--text3);margin-top:8px">Optional free-tier API keys for enrichment</p>
-      </div>
-
-      <!-- 38–45s PDF TOC -->
-      <div id="scene-pdf" class="clip scene scene-top" data-start="38" data-duration="7">
-        <div id="pdf-bar" class="pdf-export-bar"><span>EXPORT PDF</span><span>briefr-cve-2024-38475.pdf</span></div>
-        <div id="pdf-toc" class="pdf-toc" style="margin-top:14px">
-          <div class="pdf-toc-row" id="pt1"><span class="pdf-toc-num">01</span><span class="pdf-toc-title">TRIAGE SNAPSHOT</span></div>
-          <div class="pdf-toc-row" id="pt2"><span class="pdf-toc-num">02</span><span class="pdf-toc-title">EXECUTIVE SUMMARY</span></div>
-          <div class="pdf-toc-row" id="pt3"><span class="pdf-toc-num">03</span><span class="pdf-toc-title">WHY THIS MATTERS</span></div>
-          <div class="pdf-toc-row" id="pt4"><span class="pdf-toc-num">04</span><span class="pdf-toc-title">TECHNICAL DETAIL</span></div>
-          <div class="pdf-toc-row" id="pt5"><span class="pdf-toc-num">05</span><span class="pdf-toc-title">THREAT INTELLIGENCE</span></div>
-          <div class="pdf-toc-row" id="pt6"><span class="pdf-toc-num">06</span><span class="pdf-toc-title">MITRE ATT&amp;CK</span></div>
-          <div class="pdf-toc-row" id="pt7"><span class="pdf-toc-num">07</span><span class="pdf-toc-title">DETECTION OPPORTUNITIES</span></div>
-          <div class="pdf-toc-row" id="pt8"><span class="pdf-toc-num">08</span><span class="pdf-toc-title">OFFICIAL DETECTION RULES</span></div>
-          <div class="pdf-toc-row" id="pt9"><span class="pdf-toc-num">09</span><span class="pdf-toc-title">REFERENCES</span></div>
         </div>
       </div>
 
-      <!-- 45–50s CTA -->
-      <div id="scene-cta" class="clip scene scene-top" data-start="45" data-duration="5">
-        <h2 id="cta-title" class="cta-title" style="font-size:80px;text-align:center">Free to run.<br /><span class="accent">Yours to host.</span></h2>
-        <div id="cap-grid" class="cap-grid" style="margin-top:20px">
-          <div class="cap-cell">Morning brief</div><div class="cap-cell">Stack scoring</div><div class="cap-cell">IOC lookup</div>
-          <div class="cap-cell">PDF reports</div><div class="cap-cell">FORGE / Sigma</div><div class="cap-cell">Semantic search</div>
-          <div class="cap-cell">Self-hosted</div><div class="cap-cell">PostgreSQL 16</div><div class="cap-cell">Apache 2.0</div>
+      <!-- 31.5–38.5s IOC -->
+      <div id="scene-ioc" class="clip scene" data-start="31.5" data-duration="7">
+        <div class="scene-content">
+          <p id="ioc-head" class="label-lg">IOC enrichment · IP · hash · domain</p>
+          <div id="ioc-table" class="ioc-table">
+            <div class="ioc-row" id="ioc1"><div class="ioc-row-type">IP</div><div class="ioc-row-value">194.36.1.18</div><div class="ioc-row-results">VirusTotal Malicious · AbuseIPDB 96% · GreyNoise Scanner</div></div>
+            <div class="ioc-row" id="ioc2"><div class="ioc-row-type">HASH</div><div class="ioc-row-value">sha256:4a3f…c21e</div><div class="ioc-row-results">VirusTotal · MalwareBazaar</div></div>
+            <div class="ioc-row" id="ioc3"><div class="ioc-row-type">DOMAIN</div><div class="ioc-row-value">c2.evil-domain.net</div><div class="ioc-row-results">VirusTotal · URLhaus · OTX 5 pulses</div></div>
+          </div>
+          <p class="body-md" style="text-align:center;color:var(--text3)">Optional free-tier API keys for enrichment</p>
         </div>
-        <p class="spec-strip" style="margin-top:16px">2 vCPU · 2 GB min · 4 GB recommended</p>
-        <div id="cta-url" class="cta-url" style="margin-top:14px">github.com/Soldier0x0/briefr</div>
+      </div>
+
+      <!-- 38.5–45.5s PDF TOC -->
+      <div id="scene-pdf" class="clip scene" data-start="38.5" data-duration="7">
+        <div class="scene-content">
+          <div id="pdf-bar" class="pdf-export-bar"><span>EXPORT PDF</span><span>briefr-cve-2024-38475.pdf</span></div>
+          <div id="pdf-toc" class="pdf-toc" style="margin-top:14px">
+            <div class="pdf-toc-row" id="pt1"><span class="pdf-toc-num">01</span><span class="pdf-toc-title">TRIAGE SNAPSHOT</span></div>
+            <div class="pdf-toc-row" id="pt2"><span class="pdf-toc-num">02</span><span class="pdf-toc-title">EXECUTIVE SUMMARY</span></div>
+            <div class="pdf-toc-row" id="pt3"><span class="pdf-toc-num">03</span><span class="pdf-toc-title">WHY THIS MATTERS</span></div>
+            <div class="pdf-toc-row" id="pt4"><span class="pdf-toc-num">04</span><span class="pdf-toc-title">TECHNICAL DETAIL</span></div>
+            <div class="pdf-toc-row" id="pt5"><span class="pdf-toc-num">05</span><span class="pdf-toc-title">THREAT INTELLIGENCE</span></div>
+            <div class="pdf-toc-row" id="pt6"><span class="pdf-toc-num">06</span><span class="pdf-toc-title">MITRE ATT&amp;CK</span></div>
+            <div class="pdf-toc-row" id="pt7"><span class="pdf-toc-num">07</span><span class="pdf-toc-title">DETECTION OPPORTUNITIES</span></div>
+            <div class="pdf-toc-row" id="pt8"><span class="pdf-toc-num">08</span><span class="pdf-toc-title">OFFICIAL DETECTION RULES</span></div>
+            <div class="pdf-toc-row" id="pt9"><span class="pdf-toc-num">09</span><span class="pdf-toc-title">REFERENCES</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 45.5–50.5s CTA -->
+      <div id="scene-cta" class="clip scene" data-start="45.5" data-duration="5">
+        <div class="scene-content">
+          <h2 id="cta-title" class="cta-title" style="font-size:80px;text-align:center">Free to run.<br /><span class="accent">Yours to host.</span></h2>
+          <div id="cap-grid" class="cap-grid" style="margin-top:20px">
+            <div class="cap-cell">Morning brief</div><div class="cap-cell">Stack scoring</div><div class="cap-cell">IOC lookup</div>
+            <div class="cap-cell">PDF reports</div><div class="cap-cell">FORGE / Sigma</div><div class="cap-cell">Semantic search</div>
+            <div class="cap-cell">Self-hosted</div><div class="cap-cell">PostgreSQL 16</div><div class="cap-cell">Apache 2.0</div>
+          </div>
+          <p class="spec-strip" style="margin-top:16px">2 vCPU · 2 GB min · 4 GB recommended</p>
+          <div id="cta-url" class="cta-url" style="margin-top:14px">github.com/Soldier0x0/briefr</div>
+        </div>
+      </div>
+
+      <!-- 50.5–51s Logo outro -->
+      <div id="scene-logo-out" class="clip scene scene-logo" data-start="50.5" data-duration="0.5">
+        <div id="logo-out" class="logo-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" fill="none" aria-label="BRIEFR">
+            <g transform="translate(0,4)"><path d="M11 13v22M16 13v22" stroke="#4a4a44" stroke-width="2" stroke-linecap="round"/><rect x="22" y="14" width="22" height="3" rx="1" fill="#ff6b47"/><rect x="22" y="22" width="15" height="2.5" rx="1" fill="#ffffff" opacity="0.9"/><rect x="22" y="29" width="10" height="2.5" rx="1" fill="#d8d5ce" opacity="0.7"/></g>
+            <text x="60" y="38" font-family="'DM Serif Display',Georgia,serif" font-size="36" fill="#ffffff">BRIEFR</text>
+          </svg>
+        </div>
       </div>
     </div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      const hide = ["#scene-brand","#scene-brief","#scene-queue","#scene-score","#scene-ioc","#scene-pdf","#scene-cta"];
+      const hide = ["#scene-problem","#scene-brand","#scene-brief","#scene-queue","#scene-score","#scene-ioc","#scene-pdf","#scene-cta","#scene-logo-out"];
       gsap.set(hide, { opacity: 0 });
+      gsap.set("#logo-in, #logo-out", { opacity: 0 });
       gsap.set("#prob-1, #prob-2, #prob-feeds", { opacity: 0, y: 50 });
 
-      tl.to("#prob-1", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.2);
-      tl.to("#prob-2", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.6);
-      tl.to("#prob-feeds", { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.0);
-      tl.to("#scene-problem", { opacity: 0, duration: 0.4, ease: "power2.in" }, 4.5);
+      // Intro logo 0–0.5s
+      tl.to("#logo-in", { opacity: 1, duration: 0.25, ease: "power2.out" }, 0.05);
+      tl.to("#logo-in", { opacity: 0, duration: 0.2, ease: "power2.in" }, 0.28);
+      tl.to("#scene-logo-in", { opacity: 0, duration: 0.01 }, 0.5);
 
-      tl.to("#scene-brand", { opacity: 1, duration: 0.01 }, 5);
-      tl.from("#brand-logo", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.3)" }, 5.1);
-      tl.from("#brand-tag", { opacity: 0, y: 24, duration: 0.5 }, 5.4);
-      tl.from("#brand-nav .chip", { opacity: 0, y: 16, stagger: 0.08, duration: 0.4 }, 5.7);
-      tl.from("#brand-data .chip", { opacity: 0, y: 16, stagger: 0.08, duration: 0.4 }, 6.1);
-      tl.to("#scene-brand", { opacity: 0, duration: 0.35 }, 9.5);
+      // Problem 0.5–5.5s
+      tl.to("#scene-problem", { opacity: 1, duration: 0.01 }, 0.5);
+      tl.to("#prob-1", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.7);
+      tl.to("#prob-2", { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 1.1);
+      tl.to("#prob-feeds", { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.5);
+      tl.to("#scene-problem", { opacity: 0, duration: 0.4, ease: "power2.in" }, 5.0);
 
-      tl.to("#scene-brief", { opacity: 1, duration: 0.01 }, 10);
-      tl.from("#brief-head", { opacity: 0, y: 20, duration: 0.5 }, 10.1);
-      tl.from("#bc1, #bc2, #bc3, #bc4, #bc5", { opacity: 0, y: 30, stagger: 0.1, duration: 0.45, ease: "power2.out" }, 10.4);
-      tl.from("#brief-cap", { opacity: 0, duration: 0.4 }, 12);
-      tl.to("#scene-brief", { opacity: 0, x: 50, duration: 0.4 }, 17.5);
+      tl.to("#scene-brand", { opacity: 1, duration: 0.01 }, 5.5);
+      tl.from("#brand-logo", { opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.3)" }, 5.6);
+      tl.from("#brand-tag", { opacity: 0, y: 24, duration: 0.5 }, 5.9);
+      tl.from("#brand-nav .chip", { opacity: 0, y: 16, stagger: 0.08, duration: 0.4 }, 6.2);
+      tl.from("#brand-data .chip", { opacity: 0, y: 16, stagger: 0.08, duration: 0.4 }, 6.6);
+      tl.to("#scene-brand", { opacity: 0, duration: 0.35 }, 10.0);
 
-      tl.to("#scene-queue", { opacity: 1, duration: 0.01 }, 18);
-      tl.from("#qr1, #qr2, #qr3", { opacity: 0, x: -50, stagger: 0.12, duration: 0.5, ease: "power3.out" }, 18.2);
-      tl.from("#stack-strip", { opacity: 0, y: 16, duration: 0.4 }, 19.2);
-      tl.to("#scene-queue", { opacity: 0, duration: 0.35 }, 23.5);
+      tl.to("#scene-brief", { opacity: 1, duration: 0.01 }, 10.5);
+      tl.from("#brief-head", { opacity: 0, y: 20, duration: 0.5 }, 10.6);
+      tl.from("#bc1, #bc2, #bc3, #bc4, #bc5", { opacity: 0, y: 30, stagger: 0.1, duration: 0.45, ease: "power2.out" }, 10.9);
+      tl.from("#brief-cap", { opacity: 0, duration: 0.4 }, 12.5);
+      tl.to("#scene-brief", { opacity: 0, x: 50, duration: 0.4 }, 18.0);
 
-      tl.to("#scene-score", { opacity: 1, duration: 0.01 }, 24);
-      tl.from("#score-panel", { opacity: 0, x: -30, duration: 0.6, ease: "power3.out" }, 24.2);
-      tl.from("#fe1, #fe2, #fe3, #fe4, #fe5, #fe6", { opacity: 0, x: 30, stagger: 0.08, duration: 0.4 }, 24.6);
-      tl.to("#factor-explain .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.5, stagger: 0.07 }, 25.2);
-      tl.to("#scene-score", { opacity: 0, duration: 0.35 }, 30.5);
+      tl.to("#scene-queue", { opacity: 1, duration: 0.01 }, 18.5);
+      tl.from("#qr1, #qr2, #qr3", { opacity: 0, x: -50, stagger: 0.12, duration: 0.5, ease: "power3.out" }, 18.7);
+      tl.from("#stack-strip", { opacity: 0, y: 16, duration: 0.4 }, 19.7);
+      tl.to("#scene-queue", { opacity: 0, duration: 0.35 }, 24.0);
 
-      tl.to("#scene-ioc", { opacity: 1, duration: 0.01 }, 31);
-      tl.from("#ioc1, #ioc2, #ioc3", { opacity: 0, y: 30, stagger: 0.12, duration: 0.5, ease: "power3.out" }, 31.2);
-      tl.to("#scene-ioc", { opacity: 0, duration: 0.35 }, 37.5);
+      tl.to("#scene-score", { opacity: 1, duration: 0.01 }, 24.5);
+      tl.from("#score-panel", { opacity: 0, x: -30, duration: 0.6, ease: "power3.out" }, 24.7);
+      tl.from("#fe1, #fe2, #fe3, #fe4, #fe5, #fe6", { opacity: 0, x: 30, stagger: 0.08, duration: 0.4 }, 25.1);
+      tl.to("#factor-explain .factor-fill", { width: (i, el) => el.dataset.w + "%", duration: 0.5, stagger: 0.07 }, 25.7);
+      tl.to("#scene-score", { opacity: 0, duration: 0.35 }, 31.0);
 
-      tl.to("#scene-pdf", { opacity: 1, duration: 0.01 }, 38);
-      tl.from("#pdf-bar", { opacity: 0, y: -20, duration: 0.5 }, 38.1);
-      tl.from("#pt1, #pt2, #pt3, #pt4, #pt5, #pt6, #pt7, #pt8, #pt9", { opacity: 0, x: -30, stagger: 0.06, duration: 0.35 }, 38.4);
-      tl.to("#scene-pdf", { opacity: 0, duration: 0.35 }, 44.5);
+      tl.to("#scene-ioc", { opacity: 1, duration: 0.01 }, 31.5);
+      tl.from("#ioc1, #ioc2, #ioc3", { opacity: 0, y: 30, stagger: 0.12, duration: 0.5, ease: "power3.out" }, 31.7);
+      tl.to("#scene-ioc", { opacity: 0, duration: 0.35 }, 38.0);
 
-      tl.to("#scene-cta", { opacity: 1, duration: 0.01 }, 45);
-      tl.from("#cta-title", { opacity: 0, y: 40, duration: 0.7, ease: "power3.out" }, 45.1);
-      tl.from(".cap-cell", { opacity: 0, scale: 0.9, stagger: 0.05, duration: 0.35 }, 45.6);
-      tl.from("#cta-url", { opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.3)" }, 46.8);
+      tl.to("#scene-pdf", { opacity: 1, duration: 0.01 }, 38.5);
+      tl.from("#pdf-bar", { opacity: 0, y: -20, duration: 0.5 }, 38.6);
+      tl.from("#pt1, #pt2, #pt3, #pt4, #pt5, #pt6, #pt7, #pt8, #pt9", { opacity: 0, x: -30, stagger: 0.06, duration: 0.35 }, 38.9);
+      tl.to("#scene-pdf", { opacity: 0, duration: 0.35 }, 45.0);
 
-      tl.to("#bg-glow-1", { opacity: 0.9, duration: 2, yoyo: true, repeat: 24, ease: "sine.inOut" }, 0);
+      tl.to("#scene-cta", { opacity: 1, duration: 0.01 }, 45.5);
+      tl.from("#cta-title", { opacity: 0, y: 40, duration: 0.7, ease: "power3.out" }, 45.6);
+      tl.from(".cap-cell", { opacity: 0, scale: 0.9, stagger: 0.05, duration: 0.35 }, 46.1);
+      tl.from("#cta-url", { opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.3)" }, 47.3);
+      tl.to("#scene-cta", { opacity: 0, duration: 0.3 }, 50.2);
+
+      // Outro logo 50.5–51s
+      tl.to("#scene-logo-out", { opacity: 1, duration: 0.01 }, 50.5);
+      tl.to("#logo-out", { opacity: 1, duration: 0.25, ease: "power2.out" }, 50.55);
+      tl.to("#logo-out", { opacity: 0, duration: 0.2, ease: "power2.in" }, 50.78);
+
+      tl.to("#bg-glow-1", { opacity: 0.9, duration: 2, yoyo: true, repeat: 25, ease: "sine.inOut" }, 0);
       window.__timelines["cut1"] = tl;
     </script>
   </body>

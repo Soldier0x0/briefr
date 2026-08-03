@@ -70,17 +70,29 @@ body {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  padding: 44px 40px;
+  padding: 48px 40px;
+  gap: 20px;
+}
+
+.scene-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
 .scene-fill {
-  justify-content: stretch;
+  justify-content: center;
 }
 
-.scene-top {
-  justify-content: flex-start;
-  padding-top: 64px;
+.scene-logo {
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.scene-logo .logo-wrap svg {
+  width: 480px;
 }
 
 /* ── Typography: mobile-first, bold, bright ── */

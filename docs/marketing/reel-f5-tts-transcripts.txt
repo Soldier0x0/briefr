@@ -2,7 +2,7 @@
 # Timestamps match HyperFrames GSAP scene timings · lay over matching MP4
 
 # =============================================================================
-# CUT 1 — PRODUCT HOOK — 50s — briefr-cut1-product-hook-50s.mp4
+# CUT 1 — PRODUCT HOOK — 51s — briefr-cut1-product-hook-51s.mp4
 # =============================================================================
 
 [00:00.0 – 00:05.0]  PROBLEM
