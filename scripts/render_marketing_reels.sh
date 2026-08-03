@@ -20,7 +20,7 @@ render_cut() {
 }
 
 render_cut "$ROOT/briefer-reel/cuts/cut1-product-hook" \
-  "$OUT_DIR/briefr-cut1-product-hook-51s.mp4"
+  "$OUT_DIR/briefr-cut1-product-hook-54s.mp4"
 
 render_cut "$ROOT/briefer-reel/cuts/cut2-scoring-correlation" \
   "$OUT_DIR/briefr-cut2-scoring-correlation-90s.mp4"

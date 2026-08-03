@@ -8,7 +8,7 @@ Inspired by the original PR #799 composition (`8a79141a`) — stylized mock UI s
 
 | File | Duration | Narrative |
 |------|----------|-----------|
-| `briefr-cut1-product-hook-51s.mp4` | 51s | Product hook with logo bookends — dense content, vertically centered |
+| `briefr-cut1-product-hook-54s.mp4` | 54s | Product hook with logo bookends — dense content, vertically centered |
 | `briefr-cut2-scoring-correlation-90s.mp4` | 90s | Six-factor risk weights, stack matching, correlation engine, embeddings |
 | `briefr-cut3-data-deploy-90s.mp4` | 90s | Feed ingestion, PostgreSQL 16 + pgvector, docker compose deploy |
 | `briefr-cut4-linkedin-60s.mp4` | 60s | Fast montage + free/self-hosted CTA |
