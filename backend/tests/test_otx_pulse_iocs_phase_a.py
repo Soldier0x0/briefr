@@ -40,11 +40,29 @@ def test_db_init_sqlite_ddl_has_raw_and_host_columns():
 
 
 def test_db_init_pg_bootstrap_has_raw_and_host_alter():
-    """The Postgres bootstrap statement list in db/init.py must add the same
-    columns so a parity bootstrap matches migration 037."""
+    """The Postgres bootstrap path must add the same columns as migration 037.
+
+    PG schema is applied via Alembic (run_postgres_migrations), with init_db
+    dispatching to _init_postgres_schema() when PostgreSQL is active. This
+    test targets that dispatch and the migration it runs — a bare text search
+    across all of db/init.py would otherwise be satisfied by the SQLite
+    migration list alone (CodeRabbit review).
+    """
     source = _DB_INIT.read_text(encoding="utf-8")
-    assert "ALTER TABLE otx_pulse_iocs ADD COLUMN raw_ioc TEXT DEFAULT ''" in source
-    assert "ALTER TABLE otx_pulse_iocs ADD COLUMN host_ioc TEXT DEFAULT ''" in source
+    pg_bootstrap = source[source.index("async def _init_postgres_schema") :]
+    assert "async def _init_postgres_schema" in pg_bootstrap
+    assert "_normalize_epss_scores(db)" in pg_bootstrap
+
+    migration = _load_migration("037_otx_pulse_iocs_raw_host")
+    import inspect
+
+    upgrade_source = inspect.getsource(migration.upgrade)
+    assert "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS raw_ioc" in (
+        upgrade_source
+    )
+    assert "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS host_ioc" in (
+        upgrade_source
+    )
 
 
 def test_037_migration_revision_and_chain():
@@ -159,12 +177,11 @@ def test_postgres_schema_and_round_trip_carry_new_columns(tmp_path, monkeypatch)
 def test_sqlite_schema_has_raw_and_host_columns(tmp_path, monkeypatch):
     """Functional parity: after init_db() on SQLite the new columns exist with
     the default value, and replace_otx_pulse_iocs round-trips them."""
-    from tests.conftest import run_db_test
+    from tests.conftest import run_db_test, use_sqlite_backend
 
     from database import get_db, init_db, replace_otx_pulse_iocs
 
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "phase_a.db"))
-    monkeypatch.setattr("database.DB_PATH", str(tmp_path / "phase_a.db"))
+    use_sqlite_backend(monkeypatch, tmp_path / "phase_a.db")
 
     async def _run():
         await init_db()
@@ -188,6 +205,69 @@ def test_sqlite_schema_has_raw_and_host_columns(tmp_path, monkeypatch):
             )
             assert rows[0]["raw_ioc"] == "https://drive.google.com/uc?id=abc123"
             assert rows[0]["host_ioc"] == "drive.google.com"
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_sqlite_backfill_host_ioc_for_legacy_rows(tmp_path, monkeypatch):
+    """CodeRabbit: the SQLite migration path adds host_ioc with an empty
+    default but must also backfill existing DOMAIN/HOSTNAME/URL/URI rows so a
+    legacy dev/CI DB matches what migration 037 backfills on PostgreSQL."""
+    import aiosqlite
+
+    from tests.conftest import run_db_test, use_sqlite_backend
+
+    from database import get_db, init_db
+
+    db_path = tmp_path / "phase_a_legacy.db"
+    use_sqlite_backend(monkeypatch, db_path)
+
+    async def _seed_legacy_db():
+        conn = await aiosqlite.connect(str(db_path))
+        try:
+            await conn.executescript(
+                """
+                CREATE TABLE otx_pulse_iocs (
+                    pulse_id TEXT NOT NULL,
+                    ioc_type TEXT NOT NULL DEFAULT '',
+                    ioc_value TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    fetched_at TEXT DEFAULT (datetime('now')),
+                    observed_at TEXT,
+                    PRIMARY KEY (pulse_id, ioc_type, ioc_value)
+                );
+                INSERT INTO otx_pulse_iocs (pulse_id, ioc_type, ioc_value) VALUES
+                    ('legacy-a', 'DOMAIN', 'EVIL.EXAMPLE.COM'),
+                    ('legacy-b', 'HOSTNAME', 'sub.example.com.'),
+                    ('legacy-c', 'URL', 'https://drive.google.com/uc?id=abc123'),
+                    ('legacy-d', 'URI', 'https://t.me/still_stellc'),
+                    ('legacy-e', 'IP', '1.2.3.4'),
+                    ('legacy-f', 'HASH', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+                """
+            )
+            await conn.commit()
+        finally:
+            await conn.close()
+
+    async def _run():
+        await _seed_legacy_db()
+        await init_db()
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT pulse_id, ioc_type, ioc_value, raw_ioc, host_ioc "
+                "FROM otx_pulse_iocs ORDER BY pulse_id"
+            )
+            by_pulse = {r["pulse_id"]: r for r in rows}
+            assert by_pulse["legacy-a"]["host_ioc"] == "evil.example.com"
+            assert by_pulse["legacy-b"]["host_ioc"] == "sub.example.com"
+            assert by_pulse["legacy-c"]["host_ioc"] == "drive.google.com"
+            assert by_pulse["legacy-d"]["host_ioc"] == "t.me"
+            assert by_pulse["legacy-e"]["host_ioc"] == ""
+            assert by_pulse["legacy-f"]["host_ioc"] == ""
+            assert all(r["raw_ioc"] == "" for r in rows)
         finally:
             await db.close()
 

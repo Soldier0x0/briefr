@@ -124,6 +124,7 @@ def test_otx_pulse_iocs_persists_raw_and_host_columns(tmp_path, monkeypatch):
     value) and host_ioc (normalized host) so four-level IOC preservation is
     durable. Read directly from the table — the read API is write-path-only
     for Phase A."""
+    placeholder = "$1" if is_postgres() else "?"
     if not is_postgres():
         db_path = tmp_path / "correlation_otx_iocs_raw.db"
         monkeypatch.setenv("DB_PATH", str(db_path))
@@ -148,8 +149,8 @@ def test_otx_pulse_iocs_persists_raw_and_host_columns(tmp_path, monkeypatch):
             )
             await db.commit()
             rows = await db.execute_fetchall(
-                "SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
-                "FROM otx_pulse_iocs WHERE pulse_id = ?",
+                f"SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
+                f"FROM otx_pulse_iocs WHERE pulse_id = {placeholder}",
                 (PULSE_ID,),
             )
             by_value = {r["ioc_value"]: r for r in rows}
@@ -171,8 +172,8 @@ def test_otx_pulse_iocs_persists_raw_and_host_columns(tmp_path, monkeypatch):
             )
             await db.commit()
             rows2 = await db.execute_fetchall(
-                "SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
-                "FROM otx_pulse_iocs WHERE pulse_id = ?",
+                f"SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
+                f"FROM otx_pulse_iocs WHERE pulse_id = {placeholder}",
                 (PULSE_ID,),
             )
             assert len(rows2) == 1

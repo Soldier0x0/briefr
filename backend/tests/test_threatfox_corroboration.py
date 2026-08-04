@@ -180,6 +180,14 @@ def test_phase_a_columns_do_not_change_corroboration_output(tmp_path, monkeypatc
             assert set(rows[0].keys()) == {"ioc_type", "ioc_value", "description", "observed_at"}
             assert rows[0]["ioc_value"] == "https://drive.google.com/uc?id=abc123"
 
+            stored = await db.execute_fetchall(
+                "SELECT raw_ioc, host_ioc FROM otx_pulse_iocs WHERE pulse_id = ?",
+                ("pulse-corr",),
+            )
+            assert len(stored) == 1
+            assert stored[0]["raw_ioc"] == "https://drive.google.com/uc?id=abc123"
+            assert stored[0]["host_ioc"] == "drive.google.com"
+
             populated = await find_shared_infrastructure_v2(db, "CVE-2024-5001", limit=10)
             await db.execute(
                 "UPDATE otx_pulse_iocs SET raw_ioc = '', host_ioc = '' WHERE pulse_id = ?",

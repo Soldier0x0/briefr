@@ -59,9 +59,9 @@ def test_concurrent_store_persists_raw_and_host_for_url_iocs(tmp_path, monkeypat
     """Phase A: concurrent URL-IOC stores through the lock path must persist
     raw_ioc and host_ioc (URL canonical value lowercases the host; raw keeps
     the verbatim input)."""
-    db_path = str(tmp_path / "otx_ioc_url.db")
-    monkeypatch.setenv("DB_PATH", db_path)
-    monkeypatch.setattr(database, "DB_PATH", db_path)
+    from tests.conftest import use_sqlite_backend
+
+    use_sqlite_backend(monkeypatch, tmp_path / "otx_ioc_url.db")
     run_db_test(init_db())
 
     pulse_id = "pulse-url-concurrent-test"

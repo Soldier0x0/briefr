@@ -113,15 +113,18 @@ def normalize_ioc(
 ) -> tuple[str, str, dict[str, Any]] | None:
     """
     Return (canonical_type, canonical_value, meta) or None when empty.
-    meta may include raw_value and is_noise_ip.
+    meta may include raw_value and is_noise_ip. raw_value keeps the verbatim
+    upstream input (including surrounding whitespace); the stripped value is
+    used only for validation and canonicalization.
     """
-    raw = (ioc_value or "").strip()
+    raw_value = ioc_value or ""
+    raw = raw_value.strip()
     if not raw:
         return None
 
     canon_type = normalize_ioc_type(ioc_type)
     refanged = refang(raw)
-    meta: dict[str, Any] = {"raw_value": raw}
+    meta: dict[str, Any] = {"raw_value": raw_value}
 
     if canon_type == "IP":
         try:
