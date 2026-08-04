@@ -35,11 +35,13 @@ def _legacy_host(ioc_type: str, ioc_value: str) -> str:
 
 
 def upgrade() -> None:
+    # 036 moved otx_pulse_iocs into the intel schema; alembic/env.py runs
+    # without the app pool's search_path, so qualify explicitly.
     op.execute(
-        "ALTER TABLE otx_pulse_iocs ADD COLUMN IF NOT EXISTS raw_ioc TEXT DEFAULT ''"
+        "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS raw_ioc TEXT DEFAULT ''"
     )
     op.execute(
-        "ALTER TABLE otx_pulse_iocs ADD COLUMN IF NOT EXISTS host_ioc TEXT DEFAULT ''"
+        "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS host_ioc TEXT DEFAULT ''"
     )
     _backfill_host_ioc()
 
@@ -54,13 +56,13 @@ def _backfill_host_ioc() -> None:
     rows = conn.execute(
         text(
             "SELECT pulse_id, ioc_type, ioc_value "
-            "FROM otx_pulse_iocs WHERE host_ioc = '' OR host_ioc IS NULL"
+            "FROM intel.otx_pulse_iocs WHERE host_ioc = '' OR host_ioc IS NULL"
         )
     ).mappings().all()
     if not rows:
         return
     update_sql = text(
-        "UPDATE otx_pulse_iocs SET host_ioc = :host "
+        "UPDATE intel.otx_pulse_iocs SET host_ioc = :host "
         "WHERE pulse_id = :pulse_id AND ioc_type = :ioc_type "
         "AND ioc_value = :ioc_value"
     )
@@ -80,5 +82,5 @@ def _backfill_host_ioc() -> None:
 
 
 def downgrade() -> None:
-    op.execute("ALTER TABLE otx_pulse_iocs DROP COLUMN IF EXISTS host_ioc")
-    op.execute("ALTER TABLE otx_pulse_iocs DROP COLUMN IF EXISTS raw_ioc")
+    op.execute("ALTER TABLE intel.otx_pulse_iocs DROP COLUMN IF EXISTS host_ioc")
+    op.execute("ALTER TABLE intel.otx_pulse_iocs DROP COLUMN IF EXISTS raw_ioc")

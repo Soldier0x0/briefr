@@ -52,11 +52,31 @@ def test_037_migration_revision_and_chain():
     source = path.read_text(encoding="utf-8")
     assert 'revision = "037_otx_pulse_iocs_raw_host"' in source
     assert 'down_revision = "036_intel_app_schema_split"' in source
-    assert "ALTER TABLE otx_pulse_iocs" in source
+    assert "ALTER TABLE intel.otx_pulse_iocs" in source
     assert "raw_ioc" in source
     assert "host_ioc" in source
     assert "DROP COLUMN IF EXISTS host_ioc" in source
     assert "DROP COLUMN IF EXISTS raw_ioc" in source
+
+
+def test_037_migration_qualifies_intel_schema():
+    """036 moved otx_pulse_iocs into the intel schema, and alembic/env.py runs
+    without the app pool's search_path — 037 must qualify every reference as
+    intel.otx_pulse_iocs or production upgrades from 036 fail with
+    'relation \"otx_pulse_iocs\" does not exist' (Codex P1 review)."""
+    path = _VERSIONS_DIR / "037_otx_pulse_iocs_raw_host.py"
+    source = path.read_text(encoding="utf-8")
+    for statement in (
+        "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS raw_ioc",
+        "ALTER TABLE intel.otx_pulse_iocs ADD COLUMN IF NOT EXISTS host_ioc",
+        "FROM intel.otx_pulse_iocs",
+        "UPDATE intel.otx_pulse_iocs SET host_ioc",
+        "ALTER TABLE intel.otx_pulse_iocs DROP COLUMN IF EXISTS host_ioc",
+        "ALTER TABLE intel.otx_pulse_iocs DROP COLUMN IF EXISTS raw_ioc",
+    ):
+        assert statement in source, f"missing qualified statement: {statement}"
+    unqualified = source.replace("intel.otx_pulse_iocs", "")
+    assert "ALTER TABLE otx_pulse_iocs" not in unqualified
 
 
 def test_037_backfill_helper_derives_host():
