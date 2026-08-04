@@ -110,6 +110,39 @@ def test_refang_and_normalize_ioc_types():
     assert domain[1] == "evil.example.com"
 
 
+def test_normalize_ioc_emits_raw_and_host_meta():
+    """Phase A: normalize_ioc must surface the raw value and, for URL/DOMAIN,
+    the normalized host so persistence can store them as raw_ioc/host_ioc."""
+    url = normalize_ioc("URL", "https://drive.google.com/uc?id=abc123")
+    assert url is not None
+    typ, val, meta = url
+    assert typ == "URL"
+    assert val == "https://drive.google.com/uc?id=abc123"
+    assert meta["raw_value"] == "https://drive.google.com/uc?id=abc123"
+    assert meta["host"] == "drive.google.com"
+
+    tme = normalize_ioc("URL", "https://t.me/still_stellc")
+    assert tme is not None
+    assert tme[2]["host"] == "t.me"
+
+    steam = normalize_ioc("URL", "https://steamcommunity.com/profiles/7656119")
+    assert steam is not None
+    assert steam[2]["host"] == "steamcommunity.com"
+
+    domain = normalize_ioc("DOMAIN", "EVIL.EXAMPLE.COM")
+    assert domain is not None
+    assert domain[2]["host"] == "evil.example.com"
+    assert domain[2]["raw_value"] == "EVIL.EXAMPLE.COM"
+
+    ip = normalize_ioc("IP", "192.168.1.5")
+    assert ip is not None
+    assert "host" not in ip[2]
+
+    h = normalize_ioc("HASH", "a" * 64)
+    assert h is not None
+    assert "host" not in h[2]
+
+
 def test_is_noise_ip_covers_ipv6_public_resolvers():
     """Gemini review on PR #487: IPv4-only resolver set silently let IPv6
     variants of the same well-known resolvers through as non-noise."""

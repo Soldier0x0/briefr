@@ -80,6 +80,16 @@ def _normalize_url(value: str) -> str:
     )
 
 
+def _url_host(value: str) -> str:
+    """Host of a canonical URL — lowercased, port stripped, trailing dot cut.
+
+    Mirrors the read-time URL→domain join in threatfox_corroboration
+    (_threatfox_lookup_pair) so persisted host_ioc matches what corroboration
+    would derive on its own."""
+    parsed = urlparse(value if "://" in value else f"http://{value}")
+    return (parsed.hostname or "").lower().rstrip(".")
+
+
 def is_noise_ip(value: str) -> bool:
     """RFC1918, loopback, link-local, or a well-known public resolver —
     downrank, do not delete."""
@@ -126,12 +136,14 @@ def normalize_ioc(
         canon_value = _normalize_domain(refanged)
         if not canon_value or "." not in canon_value:
             return None
+        meta["host"] = canon_value
         return canon_type, canon_value, meta
 
     if canon_type == "URL":
         canon_value = _normalize_url(refanged)
         if len(canon_value) < 8:
             return None
+        meta["host"] = _url_host(canon_value)
         return canon_type, canon_value, meta
 
     if canon_type == "HASH":
