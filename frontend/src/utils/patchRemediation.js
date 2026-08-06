@@ -8,6 +8,20 @@ import {
   pickPrimaryRemediationReference,
 } from './patchReferences.js'
 
+/** True when `host` is exactly `expected` or a subdomain of it. */
+function hostMatches(host, expected) {
+  return host === expected || host.endsWith(`.${expected}`)
+}
+
+/** Hostname of a URL ('' when unparsable). */
+function urlHost(url) {
+  try {
+    return new URL(url).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
 /**
  * Build vendor remediation content for the REMEDIATION block.
  * Uses concise analyst copy — not the combined patch+KEV paragraph.
@@ -73,11 +87,9 @@ export function pickVendorRemediationReference(cve, urls = []) {
   const ranked = list
     .map(url => {
       const { score, label } = classifyRemediationReference(url, { cveId, isKev: !!cve?.is_kev })
-      const host = (() => {
-        try { return new URL(url).hostname.toLowerCase() } catch { return '' }
-      })()
-      const isCisa = host.includes('cisa.gov')
-      const isNvd = host.includes('nist.gov')
+      const host = urlHost(url)
+      const isCisa = hostMatches(host, 'cisa.gov')
+      const isNvd = hostMatches(host, 'nist.gov')
       const adjusted = isCisa ? score - 50 : isNvd ? score - 20 : score
       return { url, score: adjusted, label }
     })
@@ -100,10 +112,7 @@ export function pickCisaRemediationReference(cve, urls = []) {
   const cisa = list
     .map(url => {
       const { score, label } = classifyRemediationReference(url, { cveId, isKev: true })
-      const host = (() => {
-        try { return new URL(url).hostname.toLowerCase() } catch { return '' }
-      })()
-      if (!host.includes('cisa.gov')) return null
+      if (!hostMatches(urlHost(url), 'cisa.gov')) return null
       return { url, score, label }
     })
     .filter(Boolean)

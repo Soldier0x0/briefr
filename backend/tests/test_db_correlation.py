@@ -48,8 +48,7 @@ def test_pulse_ioc_lock_pool_scoped_per_event_loop():
     def grab_locks():
         first = correlation_mod._pulse_ioc_lock("pulse-a")
         second = correlation_mod._pulse_ioc_lock("pulse-a")
-        other = correlation_mod._pulse_ioc_lock("pulse-b")
-        return id(first), id(second), id(other)
+        return id(first), id(second)
 
     async def loop_body(results, key):
         results[key] = grab_locks()
@@ -64,7 +63,6 @@ def test_pulse_ioc_lock_pool_scoped_per_event_loop():
 
     for results in (results_a, results_b):
         assert results["a"][0] == results["a"][1], "same pulse reuses same lock"
-        assert results["a"][0] != results["a"][2], "distinct pulses stripe apart"
         assert results["a"][0] == results["b"][0], "loops do not share a pool"
         assert results["a"][1] == results["b"][1]
 

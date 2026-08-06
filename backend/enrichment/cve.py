@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlsplit
 
 MITRE_TECHNIQUE_RE = re.compile(
     r"attack\.mitre\.org/techniques/(T\d{4})(?:/(\d{3}))?",
@@ -31,6 +32,22 @@ POC_URL_RE = re.compile(
 )
 
 
+_POC_HOSTS = (
+    "github.com",
+    "www.github.com",
+    "gitlab.com",
+    "www.gitlab.com",
+    "raw.githubusercontent.com",
+)
+
+
+def _host_matches(host: str | None, expected: str) -> bool:
+    if not host:
+        return False
+    host = host.lower()
+    return host == expected or host.endswith(f".{expected}")
+
+
 def url_looks_like_poc(url: str) -> bool:
     if not url:
         return False
@@ -39,7 +56,8 @@ def url_looks_like_poc(url: str) -> bool:
         return True
     if POC_URL_RE.search(lower):
         return True
-    if "github.com" in lower or "gitlab.com" in lower or "raw.githubusercontent.com" in lower:
+    host = urlsplit(url).hostname
+    if any(_host_matches(host, h) for h in _POC_HOSTS):
         if "poc" in lower or "exploit" in lower:
             return True
     return False
