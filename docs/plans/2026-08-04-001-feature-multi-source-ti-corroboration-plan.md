@@ -5,7 +5,7 @@ product_contract_source: ce-design
 title: Multi-Source Threat Intelligence Corroboration
 date: 2026-08-04
 status: proposed — design review
-last_reviewed: 2026-08-04 (initial); 2026-08-06 (line-ref audit only — design decisions left to owner, see §10 Q7/Q8)
+last_reviewed: 2026-08-04 (initial); 2026-08-06 (line-ref audit + design decisions resolved §10 Q7/Q8 — hybrid corroboration scoring, full URL + host_ioc column)
 reviewed_against: main @ correlation v2 phase 2 (confidence.py, ioc_graph.py, threatfox_corroboration.py), scheduler.py, source_rate_limits.py, db/schema_inventory.py
 ---
 
@@ -20,7 +20,7 @@ BRIEFR already ships two proven ingestion archetypes and a deterministic confide
 - **Ingestion:** reuse `resilient_client` circuit/pacing, `tracking.has_quota`/`record_api_call`, per-source `PACING_PROFILES`, and the bulk `fetch → normalize → upsert` shape.
 - **Scheduler:** reuse the `run_threatfox_sync` job template (`scheduler.py:924-960`), its lock registration (`scheduler_locks.py:13`), `_job_progress` / `_write_job_last_run`, and env-driven interval registration (`scheduler.py:2276-2286`).
 - **Normalization:** reuse `correlation/ioc_normalize.py` (`normalize_ioc_type` `:47`, `normalize_ioc` `:111`, `refang` `:40`) — zero new canonical types.
-- **Confidence:** reuse `confidence_for_ioc_edge` (`confidence.py:34-145`) and `corroboration_factor` (`freshness.py:60-63`) as-is. The function already accepts a `corroborated_by` list and its `corroboration_k = 1 + (1 if corroborated_by else 0)` (`confidence.py:114`) generalizes deterministically to `1 + len(corroborated_by)` — one independent upstream observation per receipt (see §3.5, where the tradeoff vs. distinct-source counting is called out as an open question).
+- **Confidence:** reuse `confidence_for_ioc_edge` (`confidence.py:34-145`) and `corroboration_factor` (`freshness.py:60-63`) as-is. The function already accepts a `corroborated_by` list and its `corroboration_k = 1 + (1 if corroborated_by else 0)` (`confidence.py:114`) generalizes deterministically to a **hybrid count that rewards both distinct sources and report depth** — `k = 1 + k_sources + 0.5·max(0, k_receipts − k_sources)`, where `k_sources` counts distinct corroborating source keys and `k_receipts` counts total receipts (see §3.5, resolving §10 Q7).
 - **Determinism:** no LLM anywhere on this path. Every step is a pure mapping (upstream type → canonical type), SQL, or a pure arithmetic factor. Source count → corroboration factor is a closed-form, capped function.
 
 **Caveats that shape the work:**
@@ -121,8 +121,9 @@ ti_mirror_iocs (
   source           TEXT NOT NULL,          -- registry source_key
   ref_id           TEXT NOT NULL,          -- upstream id (e.g. urlhaus id)
   ioc_type         TEXT NOT NULL,          -- canonical (IP/DOMAIN/URL/HASH)
-  ioc_value        TEXT NOT NULL,          -- canonical lowercased value
+  ioc_value        TEXT NOT NULL,          -- canonical lowercased value (full URL for URL rows)
   raw_ioc          TEXT DEFAULT '',
+  host_ioc         TEXT DEFAULT '',        -- derived host/domain for URL rows (Q8); '' for non-URL
   malware          TEXT DEFAULT '',
   threat_type      TEXT DEFAULT '',
   confidence_level INTEGER DEFAULT 0,
@@ -131,10 +132,12 @@ ti_mirror_iocs (
   PRIMARY KEY (source, ref_id)
 );
 CREATE INDEX idx_ti_mirror_type_value ON ti_mirror_iocs (ioc_type, ioc_value);
+CREATE INDEX idx_ti_mirror_host ON ti_mirror_iocs (host_ioc);
 CREATE INDEX idx_ti_mirror_source ON ti_mirror_iocs (source);
 ```
 
 - This mirrors `threatfox_iocs` (`db/init.py:749-759` Postgres / `:1092-1102` SQLite) plus a `source` column; `ioc_type`/`ioc_value` hold canonical values as produced by `normalize_ioc`.
+- **`host_ioc` (resolves §10 Q8):** URL rows keep the **full URL** as `ioc_value` — they are *not* downcast at ingest (unlike ThreatFox today, `feeds/threatfox.py:29-30`). Instead a `host_ioc` column stores the derived host/domain, populated with the same pure host-extraction used for `otx_pulse_iocs.host_ioc` (`db/init.py:82-83`; alembic `037_otx_pulse_iocs_raw_host`). This gives DNS-blocklist exports a ready-made domain column without a read-time URL parse, while preserving the verbatim URL for evidence display and `retro_match`.
 - It is an **app-schema** table (operator-local evidence, not published intel), matching `threatfox_iocs` in `APP_TABLES` (`schema_inventory.py:48`).
 
 ### 3.3 Migration of ThreatFox
@@ -154,21 +157,42 @@ Replace `batch_threatfox_hits` (`threatfox_corroboration.py:61-117`) with a sour
 - returns `{(ioc_type, ioc_value): [rows with source + ref_id + confidence_level + …]}`;
 - builds receipts `f"{source}:{ref_id}"` (preserving today's `threatfox:{ioc_id}` format for the migrated source).
 
-**Open question (raised during review, unresolved):** ThreatFox downcasts URLs to `DOMAIN` at ingest (`feeds/threatfox.py:29-30`, host stored as `ioc_value`, full URL in `raw_ioc`) **and** at read time (`_threatfox_lookup_pair:36-50` extracts the host for the join). If URLhaus rows are stored as canonical `URL` (per §3.1's `mirror_type_map: {"url": "url"}`), `batch_source_evidence` must decide how a `URL` row corroborates an OTX `DOMAIN` edge — either keep a read-time host-extraction transform (matches current ThreatFox behavior for both `DOMAIN` and `URL` edges) or store URLhaus URLs downcast to `DOMAIN`. Both are viable; see §10 Q8.
+**URL↔DOMAIN matching (resolves §10 Q8):** a URLhaus `URL` row must be able to corroborate an OTX `DOMAIN` edge. Rather than choosing between a read-time host-extraction transform or ingest-time downcast, both are supported via the `host_ioc` column added in §3.2:
+
+- For an OTX `DOMAIN` edge, the source query joins `ioc_type='url' AND host_ioc = <edge value>` (host extracted once at ingest, reused by every read — no per-read URL parse);
+- For an OTX `URL` edge, the query joins `ioc_type='url' AND ioc_value = <edge value>` (verbatim match).
+- `ioc_value` keeps the full URL for display, retro-match, and later DNS-blocklist exports; `host_ioc` is what those exports consume as the "domain" field. This matches the existing `otx_pulse_iocs` precedent (`db/init.py:87-101`, alembic 037), so operators already know the semantics.
 
 `find_shared_infrastructure_v2` (`ioc_graph.py:87-180`) then:
 - collects corroboration receipts from **all** sources instead of ThreatFox only (`:107-111`);
 - sets `sources = ["otx"] + distinct corroborating source keys` (`:148-150`);
 - passes the full `corroborated_by` list into `confidence_for_ioc_edge` unchanged.
 
-### 3.5 Confidence reuse (unchanged algorithm)
+### 3.5 Confidence reuse (hybrid k — sources AND depth)
 
-Only one line generalizes:
+Only one line generalizes, but with both dimensions counted (resolves §10 Q7):
 
 - `confidence.py:114` — `corroboration_k = 1 + (1 if corroborated_by else 0)` becomes
-  `1 + len(corroborated_by or [])` (equivalent when `corroborated_by` is a single-element list; deterministic for N).
+  `1 + len(corroborated_by or [])` in its simplest form, but the design owner chose a
+  **hybrid** that counts distinct sources at full weight and repeated reports from the same
+  source at half weight:
 
-**Open question (raised during review, unresolved):** `corroborated_by` is a receipt list with **one entry per matching mirror row** (`ioc_graph.py:106-111` builds it from *every* `tf_rows` row, no dedup; `batch_threatfox_hits` appends every row, `threatfox_corroboration.py:109-116`). `threatfox_iocs` is unique only on `ioc_id` (`db/init.py:750`), so a single source can emit several receipts for one canonical value (e.g. two ThreatFox rows, different `ioc_id`, same domain/host/IP). Under `1 + len(corroborated_by)` that inflates `k` to 3 with one source, jumping `corroboration_factor` from 0.917 to 1.0 (`freshness.py:63`) — i.e. **each receipt is treated as an independent observation, not each source**. The original plan wording implies that is intended (`corroboration_receipt` = one per upstream `ioc_id`; `confidence.py:133` calls them "independent … observation"); the reviewer flagged it because it changes single-source confidence. Whether `k` should count observations or distinct sources is left to the design owner (see §10 Q7).
+  ```
+  k_sources  = len({receipt.split(":")[0] for receipt in corroborated_by})   # distinct source keys
+  k_receipts = len(corroborated_by or [])                                     # total receipts (depth)
+  corroboration_k = 1 + k_sources + 0.5 * max(0, k_receipts - k_sources)
+  ```
+
+  where `receipt.split(":")[0]` recovers the `source_key` from each `f"{source}:{ref_id}"` receipt (`receipt_prefix` in §3.1). Rationale:
+
+  - **Distinct sources are the primary signal** (independence), so each new source adds a full +1;
+  - **Report depth is a secondary signal** (same source repeating an observation adds evidence but is not independent), so receipts beyond the first per source add +0.5 each;
+  - **Behavior is monotonic and bounded**: with one source and N≥1 receipts, `k = 2 + 0.5·(N−1)`, reaching `corroboration_factor` saturation (k=3) only at N=3 receipts from a single source — two rows from one source now score 0.961 instead of a full 1.0, so a lone source needs genuine depth (3+ reports) to max out confidence;
+  - **Two distinct sources, one receipt each** → `k = 1 + 2 + 0 = 3` → factor 1.0, so two genuinely independent sources saturate confidence as before.
+
+  For traceability the **reasoning shown to the user** (`confidence_factors` list, CORR-PR-5) reports `corroboration.k_sources` and `corroboration.k_receipts` alongside the final factor, so a user sees *why* a value reached 1.0 (e.g. "2 independent sources + 3 reports"). The `sources` list on the evidence (`ioc_graph.py:148-150`) already surfaces which sources corroborated.
+
+**Open question (raised during review, resolved — see §10 Q7):** `corroborated_by` is a receipt list with **one entry per matching mirror row** (`ioc_graph.py:106-111` builds it from *every* `tf_rows` row, no dedup; `batch_threatfox_hits` appends every row, `threatfox_corroboration.py:109-116`). `threatfox_iocs` is unique only on `ioc_id` (`db/init.py:750`), so a single source can emit several receipts for one canonical value. The hybrid above keeps single-source confidence from inflating while still rewarding genuine depth. `corroboration_receipt` stays one per upstream `ioc_id` (`corroboration_receipt` `:23-24`), so `k_receipts` remains "independent upstream observations"; the source-weighting makes the *source count* explicit rather than implicit.
 
 Everything else — base levels, degree penalty, freshness half-lives, `corroboration_factor`, `numeric_edge_level`, `aggregate_infrastructure_confidence` — stays byte-for-byte identical. `corroboration_factor` already caps at 1.0 (`freshness.py:63`), so multi-source evidence saturates predictably.
 
@@ -217,7 +241,7 @@ Pacing profiles for `urlhaus`, `malwarebazaar`, `threatfox`, `circl`, `virustota
 
 - **No LLM / embeddings / learned weights** anywhere in fetch, parse, store, or scoring for this feature.
 - **Canonicalization is total and pure**: every value passes `normalize_ioc_type` then `normalize_ioc` (`ioc_normalize.py:47-143`); unknowns survive as their canonical type and are scored by the existing rules.
-- **Scoring is closed-form**: base level + degree penalty + freshness half-life + `corroboration_factor(k)`, all pure functions of stored columns (`confidence.py`, `freshness.py`). Source count k is a plain integer.
+- **Scoring is closed-form**: base level + degree penalty + freshness half-life + `corroboration_factor(k)`, all pure functions of stored columns (`confidence.py`, `freshness.py`). The hybrid `k` (§3.5) is a deterministic function of the `corroborated_by` receipt list — distinct sources at full weight, extra reports per source at half weight.
 - **Ordering is deterministic**: corroboration receipts are collected per `(ioc_type, ioc_value)` and the peer sort key in `find_shared_infrastructure_v2` (`ioc_graph.py:169-178`) is unchanged.
 - **Idempotent upserts**: `ON CONFLICT(source, ref_id)` — re-running a sync converges to the same rows.
 - **Scheduler is non-overlapping**: lock + `max_instances=1` + `coalesce=True` for every job.
@@ -240,7 +264,7 @@ Pacing profiles for `urlhaus`, `malwarebazaar`, `threatfox`, `circl`, `virustota
 | Scheduler job | `scheduler.py` | register job block + `run_catalog_sync` |
 | Corroboration | `correlation/threatfox_corroboration.py` (or new `correlation/source_evidence.py`) | generalize to `batch_source_evidence` |
 | Retro-match | `ioc/retro_match.py` | switch UNION to unified table/view |
-| Confidence | `correlation/confidence.py:114` | `1 + len(corroborated_by or [])` |
+| Confidence | `correlation/confidence.py:114` | hybrid `k = 1 + k_sources + 0.5·max(0, k_receipts − k_sources)` (§3.5) |
 | UI copy | `frontend/src/` (IOCLookup evidence panel) | surface multi-source receipts + sources list |
 
 ---
@@ -266,7 +290,7 @@ This is a distinct, larger workstream and intentionally excluded here. The catal
 
 ### Phase 1 — Generalize corroboration (ThreatFox migrated, still single source)
 - `ti_mirror_iocs` upsert; compat view; `batch_source_evidence`; `confidence.py:114` change.
-- **Verify:** correlation confidence tests unchanged for single-source case; `find_shared_infrastructure_v2` evidence identical pre/post for migrated rows. (The §10 Q7 choice on `k` semantics may require a new test once decided.)
+- **Verify:** correlation confidence tests unchanged for single-source case; `find_shared_infrastructure_v2` evidence identical pre/post for migrated rows; new tests for the hybrid `k` (distinct sources vs. depth weighting, §3.5).
 
 ### Phase 2 — First additional source (URLhaus)
 - `feeds/urlhaus.py` (fetch + parse via registry), scheduler job, pacing/quota/limits, retention.
@@ -289,5 +313,5 @@ This is a distinct, larger workstream and intentionally excluded here. The catal
 4. **Confidence saturation copy** — surface "corroborated by N independent sources" in the UI even when the factor is already capped, so users see depth.
 5. **Retention policy per source** — uniform 7-day window (matching `OTX_TABLE_RETENTION_HOURS` `cache_retention.py:47`) vs per-source env.
 6. **`IOC_QUOTA_SERVICES`** — urlhaus and malwarebazaar already appear in the IOC Lookup quota panel (`tracking.py:145-152`; served by `GET /api/usage/ioc` → `routers/meta.py` → `get_ioc_usage_stats`). The only genuinely open part: should the **bulk-sync** API calls for URLhaus/MalwareBazaar/ThreatFox also be counted there (they use the same `record_api_call` path), or stay scheduler-only like ThreatFox today? Propose: add a sync-count aggregate per source so operators see catalog-sync volume without mixing it into the per-lookup IOC quota counters.
-7. **Corroboration `k` semantics** — should `corroboration_k = 1 + len(corroborated_by)` count **independent observations** (each mirror row = one receipt, as the original wording implies) or **distinct sources** (each source contributes at most +1)? Both are deterministic; the choice changes single-source confidence whenever one source emits multiple rows for a value. See §3.5.
-8. **URL storage for URLhaus** — store upstream `url` rows as canonical `URL` (full value, downcast at read time, as the §3.1 example implies) or downcast to `DOMAIN` at ingest like ThreatFox? Affects whether `batch_source_evidence` needs a read-time host-extraction join. See §3.4.
+7. **Corroboration `k` semantics** — **RESOLVED (2026-08-06): hybrid.** `corroboration_k = 1 + k_sources + 0.5·max(0, k_receipts − k_sources)`, where `k_sources` = distinct source keys and `k_receipts` = total receipts (depth). Sources count fully; extra reports from the same source count half. `confidence_factors` surfaces `corroboration.k_sources` + `corroboration.k_receipts` so the user sees why a value scored as it did. See §3.5.
+8. **URL storage for URLhaus** — **RESOLVED (2026-08-06): full URL + `host_ioc`.** URL rows keep the verbatim URL in `ioc_value` (no ingest-time downcast); `host_ioc` holds the derived host/domain (same extraction as `otx_pulse_iocs.host_ioc`, alembic 037). Corroboration joins URL rows to DOMAIN edges via `host_ioc`, and URL↔URL via `ioc_value`. DNS-blocklist exports read `host_ioc`. See §3.4.
