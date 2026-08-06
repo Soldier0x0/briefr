@@ -1519,14 +1519,14 @@
       ]
     },
     {
-      "id": "table:threatfox_iocs",
-      "label": "threatfox_iocs",
+      "id": "table:ti_mirror_iocs",
+      "label": "ti_mirror_iocs",
       "kind": "table",
       "cluster": "database",
       "source_refs": [
         {
           "type": "table",
-          "ref": "threatfox_iocs"
+          "ref": "ti_mirror_iocs"
         }
       ]
     },
@@ -1683,6 +1683,12 @@
       "kind": "references_table"
     },
     {
+      "id": "core:dependencies->table:ti_mirror_iocs",
+      "source": "core:dependencies",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:api_key_health_check->table:atlas_case_studies",
       "source": "job:api_key_health_check",
       "target": "table:atlas_case_studies",
@@ -1746,6 +1752,12 @@
       "id": "job:api_key_health_check->table:sync_state",
       "source": "job:api_key_health_check",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:api_key_health_check->table:ti_mirror_iocs",
+      "source": "job:api_key_health_check",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -1830,6 +1842,12 @@
       "id": "job:atlas_version_check->table:sync_state",
       "source": "job:atlas_version_check",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:atlas_version_check->table:ti_mirror_iocs",
+      "source": "job:atlas_version_check",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -1935,6 +1953,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:backup_deadman_check->table:ti_mirror_iocs",
+      "source": "job:backup_deadman_check",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:backup_deadman_check->table:watchlist",
       "source": "job:backup_deadman_check",
       "target": "table:watchlist",
@@ -1956,6 +1980,12 @@
       "id": "job:cache_retention_cleanup->table:otx_pulse_iocs",
       "source": "job:cache_retention_cleanup",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cache_retention_cleanup->table:ti_mirror_iocs",
+      "source": "job:cache_retention_cleanup",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2022,6 +2052,12 @@
       "id": "job:catchup_tick->table:sync_state",
       "source": "job:catchup_tick",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:catchup_tick->table:ti_mirror_iocs",
+      "source": "job:catchup_tick",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2094,6 +2130,12 @@
       "id": "job:cpe_catalog_sync->table:sync_state",
       "source": "job:cpe_catalog_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:cpe_catalog_sync->table:ti_mirror_iocs",
+      "source": "job:cpe_catalog_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2181,6 +2223,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:cvelistv5_incremental_sync->table:ti_mirror_iocs",
+      "source": "job:cvelistv5_incremental_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:detection_context_llm->table:atlas_case_studies",
       "source": "job:detection_context_llm",
       "target": "table:atlas_case_studies",
@@ -2259,6 +2307,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:detection_context_llm->table:ti_mirror_iocs",
+      "source": "job:detection_context_llm",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:detection_context_sync->table:atlas_case_studies",
       "source": "job:detection_context_sync",
       "target": "table:atlas_case_studies",
@@ -2328,6 +2382,12 @@
       "id": "job:detection_context_sync->table:sync_state",
       "source": "job:detection_context_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:detection_context_sync->table:ti_mirror_iocs",
+      "source": "job:detection_context_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2424,6 +2484,12 @@
       "id": "job:embeddings_backfill->table:sync_state",
       "source": "job:embeddings_backfill",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:embeddings_backfill->table:ti_mirror_iocs",
+      "source": "job:embeddings_backfill",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2535,6 +2601,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:epss_score_sync->table:ti_mirror_iocs",
+      "source": "job:epss_score_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:exploit_sources_sync->table:atlas_case_studies",
       "source": "job:exploit_sources_sync",
       "target": "table:atlas_case_studies",
@@ -2610,6 +2682,12 @@
       "id": "job:exploit_sources_sync->table:sync_state",
       "source": "job:exploit_sources_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:exploit_sources_sync->table:ti_mirror_iocs",
+      "source": "job:exploit_sources_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2691,6 +2769,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:incident_feed_refresh->table:ti_mirror_iocs",
+      "source": "job:incident_feed_refresh",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:ioc_retro_match->table:atlas_case_studies",
       "source": "job:ioc_retro_match",
       "target": "table:atlas_case_studies",
@@ -2754,6 +2838,12 @@
       "id": "job:ioc_retro_match->table:sync_state",
       "source": "job:ioc_retro_match",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:ioc_retro_match->table:ti_mirror_iocs",
+      "source": "job:ioc_retro_match",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2826,6 +2916,12 @@
       "id": "job:kev_backlog_reconcile->table:sync_state",
       "source": "job:kev_backlog_reconcile",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:kev_backlog_reconcile->table:ti_mirror_iocs",
+      "source": "job:kev_backlog_reconcile",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -2949,6 +3045,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:kev_metadata_sync->table:ti_mirror_iocs",
+      "source": "job:kev_metadata_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:kev_metadata_sync->table:watchlist",
       "source": "job:kev_metadata_sync",
       "target": "table:watchlist",
@@ -3045,6 +3147,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:llm_product_extraction->table:ti_mirror_iocs",
+      "source": "job:llm_product_extraction",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:nightly_correlation->table:atlas_case_studies",
       "source": "job:nightly_correlation",
       "target": "table:atlas_case_studies",
@@ -3108,6 +3216,12 @@
       "id": "job:nightly_correlation->table:sync_state",
       "source": "job:nightly_correlation",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:nightly_correlation->table:ti_mirror_iocs",
+      "source": "job:nightly_correlation",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3231,6 +3345,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:nvd_incremental_sync->table:ti_mirror_iocs",
+      "source": "job:nvd_incremental_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:otx_continuous_sync->ext:otx",
       "source": "job:otx_continuous_sync",
       "target": "ext:otx",
@@ -3300,6 +3420,12 @@
       "id": "job:otx_continuous_sync->table:sync_state",
       "source": "job:otx_continuous_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:otx_continuous_sync->table:ti_mirror_iocs",
+      "source": "job:otx_continuous_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3375,6 +3501,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:otx_nightly_correlation->table:ti_mirror_iocs",
+      "source": "job:otx_nightly_correlation",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:resource_metrics_sample->table:cve_exploits",
       "source": "job:resource_metrics_sample",
       "target": "table:cve_exploits",
@@ -3390,6 +3522,12 @@
       "id": "job:resource_metrics_sample->table:otx_pulse_iocs",
       "source": "job:resource_metrics_sample",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:resource_metrics_sample->table:ti_mirror_iocs",
+      "source": "job:resource_metrics_sample",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3459,6 +3597,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:scheduled_backup->table:ti_mirror_iocs",
+      "source": "job:scheduled_backup",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:session_cleanup->table:cve_exploits",
       "source": "job:session_cleanup",
       "target": "table:cve_exploits",
@@ -3474,6 +3618,12 @@
       "id": "job:session_cleanup->table:otx_pulse_iocs",
       "source": "job:session_cleanup",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:session_cleanup->table:ti_mirror_iocs",
+      "source": "job:session_cleanup",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3540,6 +3690,12 @@
       "id": "job:sigmahq_index_sync->table:sync_state",
       "source": "job:sigmahq_index_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:sigmahq_index_sync->table:ti_mirror_iocs",
+      "source": "job:sigmahq_index_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3615,6 +3771,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:threatfox_sync->table:ti_mirror_iocs",
+      "source": "job:threatfox_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:vulncheck_kev_sync->table:atlas_case_studies",
       "source": "job:vulncheck_kev_sync",
       "target": "table:atlas_case_studies",
@@ -3678,6 +3840,12 @@
       "id": "job:vulncheck_kev_sync->table:sync_state",
       "source": "job:vulncheck_kev_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulncheck_kev_sync->table:ti_mirror_iocs",
+      "source": "job:vulncheck_kev_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3762,6 +3930,12 @@
       "id": "job:vulnrichment_snapshot_sync->table:sync_state",
       "source": "job:vulnrichment_snapshot_sync",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:vulnrichment_snapshot_sync->table:ti_mirror_iocs",
+      "source": "job:vulnrichment_snapshot_sync",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -3867,6 +4041,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:watchlist_monitor_alerts->table:ti_mirror_iocs",
+      "source": "job:watchlist_monitor_alerts",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:watchlist_monitor_alerts->table:watchlist",
       "source": "job:watchlist_monitor_alerts",
       "target": "table:watchlist",
@@ -3954,6 +4134,12 @@
       "id": "job:weekly_mitre_refresh->table:sync_state",
       "source": "job:weekly_mitre_refresh",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:weekly_mitre_refresh->table:ti_mirror_iocs",
+      "source": "job:weekly_mitre_refresh",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4053,6 +4239,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-ai_ops->table:ti_mirror_iocs",
+      "source": "routers-admin-ai_ops",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-catchup->table:audit_log",
       "source": "routers-admin-catchup",
       "target": "table:audit_log",
@@ -4098,6 +4290,12 @@
       "id": "routers-admin-catchup->table:sync_state",
       "source": "routers-admin-catchup",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-catchup->table:ti_mirror_iocs",
+      "source": "routers-admin-catchup",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4152,6 +4350,12 @@
       "id": "routers-admin-config->table:software_catalog",
       "source": "routers-admin-config",
       "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-config->table:ti_mirror_iocs",
+      "source": "routers-admin-config",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4215,6 +4419,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-data_ops->table:ti_mirror_iocs",
+      "source": "routers-admin-data_ops",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-data_ops->table:watchlist",
       "source": "routers-admin-data_ops",
       "target": "table:watchlist",
@@ -4260,6 +4470,12 @@
       "id": "routers-admin-database->table:otx_pulse_iocs",
       "source": "routers-admin-database",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-database->table:ti_mirror_iocs",
+      "source": "routers-admin-database",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4323,6 +4539,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-diagnostics->table:ti_mirror_iocs",
+      "source": "routers-admin-diagnostics",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-feeds->table:audit_log",
       "source": "routers-admin-feeds",
       "target": "table:audit_log",
@@ -4368,6 +4590,12 @@
       "id": "routers-admin-feeds->table:sync_state",
       "source": "routers-admin-feeds",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-feeds->table:ti_mirror_iocs",
+      "source": "routers-admin-feeds",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4422,6 +4650,12 @@
       "id": "routers-admin-intel_snapshot->table:otx_pulse_iocs",
       "source": "routers-admin-intel_snapshot",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-intel_snapshot->table:ti_mirror_iocs",
+      "source": "routers-admin-intel_snapshot",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4533,6 +4767,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-jobs->table:ti_mirror_iocs",
+      "source": "routers-admin-jobs",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-storage->table:audit_log",
       "source": "routers-admin-storage",
       "target": "table:audit_log",
@@ -4596,6 +4836,12 @@
       "id": "routers-admin-storage->table:sync_state",
       "source": "routers-admin-storage",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-storage->table:ti_mirror_iocs",
+      "source": "routers-admin-storage",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4695,6 +4941,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-system->table:ti_mirror_iocs",
+      "source": "routers-admin-system",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-tokens->table:audit_log",
       "source": "routers-admin-tokens",
       "target": "table:audit_log",
@@ -4746,6 +4998,12 @@
       "id": "routers-admin-tokens->table:sync_state",
       "source": "routers-admin-tokens",
       "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-tokens->table:ti_mirror_iocs",
+      "source": "routers-admin-tokens",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4809,6 +5067,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-webhooks->table:ti_mirror_iocs",
+      "source": "routers-admin-webhooks",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks_logs->table:cve_exploits",
       "source": "routers-admin-webhooks_logs",
       "target": "table:cve_exploits",
@@ -4824,6 +5088,12 @@
       "id": "routers-admin-webhooks_logs->table:otx_pulse_iocs",
       "source": "routers-admin-webhooks_logs",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks_logs->table:ti_mirror_iocs",
+      "source": "routers-admin-webhooks_logs",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -4923,6 +5193,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-atlas->table:ti_mirror_iocs",
+      "source": "routers-atlas",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-auth->table:audit_log",
       "source": "routers-auth",
       "target": "table:audit_log",
@@ -4974,6 +5250,12 @@
       "id": "routers-auth->table:sessions",
       "source": "routers-auth",
       "target": "table:sessions",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-auth->table:ti_mirror_iocs",
+      "source": "routers-auth",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5037,6 +5319,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-brief->table:ti_mirror_iocs",
+      "source": "routers-brief",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-correlation->table:correlation_campaign_members",
       "source": "routers-correlation",
       "target": "table:correlation_campaign_members",
@@ -5064,6 +5352,12 @@
       "id": "routers-correlation->table:otx_pulse_iocs",
       "source": "routers-correlation",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-correlation->table:ti_mirror_iocs",
+      "source": "routers-correlation",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5124,6 +5418,12 @@
       "id": "routers-cves-changes->table:otx_pulse_iocs",
       "source": "routers-cves-changes",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-changes->table:ti_mirror_iocs",
+      "source": "routers-cves-changes",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5295,6 +5595,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-cves-detail->table:ti_mirror_iocs",
+      "source": "routers-cves-detail",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-cves-detail->table:watchlist",
       "source": "routers-cves-detail",
       "target": "table:watchlist",
@@ -5436,6 +5742,12 @@
       "id": "routers-cves-intel->table:pulse_families",
       "source": "routers-cves-intel",
       "target": "table:pulse_families",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-cves-intel->table:ti_mirror_iocs",
+      "source": "routers-cves-intel",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5589,6 +5901,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-cves-list->table:ti_mirror_iocs",
+      "source": "routers-cves-list",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-cves-list->table:watchlist",
       "source": "routers-cves-list",
       "target": "table:watchlist",
@@ -5658,6 +5976,12 @@
       "id": "routers-detection_backlog->table:otx_pulse_iocs",
       "source": "routers-detection_backlog",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-detection_backlog->table:ti_mirror_iocs",
+      "source": "routers-detection_backlog",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5754,6 +6078,12 @@
       "id": "routers-forge->table:otx_pulse_iocs",
       "source": "routers-forge",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-forge->table:ti_mirror_iocs",
+      "source": "routers-forge",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5871,6 +6201,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-health->table:ti_mirror_iocs",
+      "source": "routers-health",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-ioc->table:cve_change_history",
       "source": "routers-ioc",
       "target": "table:cve_change_history",
@@ -5919,6 +6255,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-ioc->table:ti_mirror_iocs",
+      "source": "routers-ioc",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-me->table:cve_exploits",
       "source": "routers-me",
       "target": "table:cve_exploits",
@@ -5934,6 +6276,12 @@
       "id": "routers-me->table:otx_pulse_iocs",
       "source": "routers-me",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-me->table:ti_mirror_iocs",
+      "source": "routers-me",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -6015,6 +6363,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-meta->table:ti_mirror_iocs",
+      "source": "routers-meta",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-notifications_me->table:cve_exploits",
       "source": "routers-notifications_me",
       "target": "table:cve_exploits",
@@ -6030,6 +6384,12 @@
       "id": "routers-notifications_me->table:otx_pulse_iocs",
       "source": "routers-notifications_me",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:ti_mirror_iocs",
+      "source": "routers-notifications_me",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -6153,6 +6513,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-refresh->table:ti_mirror_iocs",
+      "source": "routers-refresh",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-search->table:correlation_campaigns",
       "source": "routers-search",
       "target": "table:correlation_campaigns",
@@ -6189,6 +6555,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-search->table:ti_mirror_iocs",
+      "source": "routers-search",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-stack_catalog->table:cve_exploits",
       "source": "routers-stack_catalog",
       "target": "table:cve_exploits",
@@ -6222,6 +6594,12 @@
       "id": "routers-stack_catalog->table:stack_backfill_runs",
       "source": "routers-stack_catalog",
       "target": "table:stack_backfill_runs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:ti_mirror_iocs",
+      "source": "routers-stack_catalog",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -6264,6 +6642,12 @@
       "id": "routers-threat_model->table:otx_pulse_iocs",
       "source": "routers-threat_model",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_model->table:ti_mirror_iocs",
+      "source": "routers-threat_model",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -6357,6 +6741,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-wallboard->table:ti_mirror_iocs",
+      "source": "routers-wallboard",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-watchlist->table:cve_change_history",
       "source": "routers-watchlist",
       "target": "table:cve_change_history",
@@ -6390,6 +6780,12 @@
       "id": "routers-watchlist->table:otx_pulse_iocs",
       "source": "routers-watchlist",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-watchlist->table:ti_mirror_iocs",
+      "source": "routers-watchlist",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -6462,6 +6858,12 @@
       "id": "security_architecture-routers-security_architecture->table:otx_pulse_iocs",
       "source": "security_architecture-routers-security_architecture",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "security_architecture-routers-security_architecture->table:ti_mirror_iocs",
+      "source": "security_architecture-routers-security_architecture",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     }
   ]

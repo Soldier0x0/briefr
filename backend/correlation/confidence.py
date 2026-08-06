@@ -111,7 +111,12 @@ def confidence_for_ioc_edge(
         ingested_at=ingested_at,
         now=now,
     )
-    corroboration_k = 1 + (1 if corroborated_by else 0)
+    k_sources = 0
+    k_receipts = 0
+    if corroborated_by:
+        k_sources = len({r.split(":", 1)[0] for r in corroborated_by if ":" in r})
+        k_receipts = len(corroborated_by)
+    corroboration_k = 1.0 + k_sources + 0.5 * max(0, k_receipts - k_sources)
     corroboration = corroboration_factor(corroboration_k)
     fresh_level = numeric_edge_level(
         t,
@@ -129,6 +134,8 @@ def confidence_for_ioc_edge(
     factors.append({
         "factor": "corroboration",
         "value": round(corroboration, 4),
+        "k_sources": k_sources,
+        "k_receipts": k_receipts,
         "reason": (
             "Independent ThreatFox observation corroborates this indicator"
             if corroborated_by

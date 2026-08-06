@@ -57,14 +57,18 @@ def score_to_confidence_level(score: float) -> str:
     return "low"
 
 
-def corroboration_factor(k: int) -> float:
-    """Independent source count multiplier (spec §7, CORR-PR-10)."""
-    sources = max(1, int(k or 1))
+def corroboration_factor(k: float) -> float:
+    """Independent source count multiplier (spec §7, CORR-PR-10).
+
+    `k` is the hybrid count `1 + k_sources + 0.5*max(0, k_receipts - k_sources)`
+    from confidence_for_ioc_edge, so it may be fractional.
+    """
+    sources = max(1.0, float(k or 1.0))
     return min(1.0, 0.6 + 0.2 * math.log2(1 + sources))
 
 
 def numeric_edge_level(
-    ioc_type: str, *, degree: int, freshness: float, corroboration_k: int = 1
+    ioc_type: str, *, degree: int, freshness: float, corroboration_k: float = 1.0
 ) -> str:
     t = (ioc_type or "").upper()
     if t in ("IPV4", "IPV6"):

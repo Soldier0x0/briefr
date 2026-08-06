@@ -12,8 +12,8 @@ from correlation.config import get_hub_cve_pulse_cap
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.narrative import infrastructure_summary
 from correlation.ioc_normalize import is_noise_ip
-from correlation.threatfox_corroboration import (
-    batch_threatfox_hits,
+from correlation.source_evidence import (
+    batch_source_evidence,
     corroboration_receipt,
     ioc_edge_key,
 )
@@ -92,7 +92,7 @@ async def find_shared_infrastructure_v2(
     confirmations_by_value = await confirmations_for_iocs_batch(
         db, [row["ioc_value"] for row in rows]
     )
-    threatfox_hits = await batch_threatfox_hits(
+    source_hits = await batch_source_evidence(
         db, [(row["ioc_type"], row["ioc_value"]) for row in rows]
     )
     by_peer: dict[str, list[dict]] = {}
@@ -103,11 +103,11 @@ async def find_shared_infrastructure_v2(
         ioc_value = row["ioc_value"]
         confirmations = confirmations_by_value.get(ioc_value, {})
         noise = ioc_type.upper() == "IP" and is_noise_ip(ioc_value)
-        tf_rows = threatfox_hits.get(ioc_edge_key(ioc_type, ioc_value) or (), [])
+        rows = source_hits.get(ioc_edge_key(ioc_type, ioc_value) or (), [])
         corroborated_by = [
-            corroboration_receipt(r["ioc_id"])
-            for r in tf_rows
-            if r.get("ioc_id")
+            corroboration_receipt(r["source"], r["ref_id"])
+            for r in rows
+            if r.get("source") and r.get("ref_id")
         ]
         conf, why, factors = confidence_for_ioc_edge(
             ioc_type,
@@ -146,8 +146,14 @@ async def find_shared_infrastructure_v2(
         counts = _count_by_type(edges)
         confidence, evidence, why, factors = aggregate_infrastructure_confidence(edges)
         sources = ["otx"]
-        if any(e.get("corroborated_by") for e in edges):
-            sources.append("threatfox")
+        for prefix in {
+            r.split(":", 1)[0]
+            for e in edges
+            for r in (e.get("corroborated_by") or [])
+            if ":" in r
+        }:
+            if prefix not in sources:
+                sources.append(prefix)
 
         results.append({
             "cve_id_b": peer,

@@ -4,7 +4,7 @@ artifact_readiness: design-proposed
 product_contract_source: ce-design
 title: Multi-Source Threat Intelligence Corroboration
 date: 2026-08-04
-status: proposed — design review
+status: implemented — merged (threatfox on unified ti_mirror mirror, registry-driven corroboration, hybrid-k confidence)
 last_reviewed: 2026-08-04 (initial); 2026-08-06 (line-ref audit + design decisions resolved §10 Q7/Q8 — hybrid corroboration scoring, full URL + host_ioc column)
 reviewed_against: main @ correlation v2 phase 2 (confidence.py, ioc_graph.py, threatfox_corroboration.py), scheduler.py, source_rate_limits.py, db/schema_inventory.py
 ---

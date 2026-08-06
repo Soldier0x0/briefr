@@ -51,10 +51,10 @@ def ioc_client(tmp_path, monkeypatch, auth_token):
             )
             await db.execute(
                 """
-                INSERT INTO threatfox_iocs (
-                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
+                INSERT INTO ti_mirror_iocs (
+                    source, ref_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
                     confidence_level, first_seen
-                ) VALUES ('tf-1', 'domain', 'evil.example', 'evil.example', 'vidar', 'botnet_cc', 100, '2024-01-01')
+                ) VALUES ('threatfox', 'tf-1', 'domain', 'evil.example', 'evil.example', 'vidar', 'botnet_cc', 100, '2024-01-01')
                 """
             )
             await db.commit()
@@ -149,11 +149,11 @@ def test_retro_match_local_join(tmp_path, monkeypatch):
             )
             await db.execute(
                 """
-                INSERT INTO threatfox_iocs (
-                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
+                INSERT INTO ti_mirror_iocs (
+                    source, ref_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
                     confidence_level, first_seen
                 ) VALUES (
-                    't1', 'domain', 'evil.example', 'evil.example',
+                    'threatfox', 't1', 'domain', 'evil.example', 'evil.example',
                     'vidar', 'botnet_cc', 90, '2024-06-01'
                 )
                 """
