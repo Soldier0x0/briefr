@@ -108,22 +108,28 @@ _DELETE_OTX_PULSE_IOCS_PG = "DELETE FROM otx_pulse_iocs WHERE pulse_id = $1"
 
 _UPSERT_OTX_PULSE_IOCS_SQLITE = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at
-) VALUES (?, ?, ?, ?, ?, ?)
+    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at,
+    raw_ioc, host_ioc
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
     description = excluded.description,
     fetched_at = excluded.fetched_at,
-    observed_at = excluded.observed_at
+    observed_at = excluded.observed_at,
+    raw_ioc = excluded.raw_ioc,
+    host_ioc = excluded.host_ioc
 """
 
 _UPSERT_OTX_PULSE_IOCS_PG = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at
-) VALUES ($1, $2, $3, $4, $5, $6)
+    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at,
+    raw_ioc, host_ioc
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
     description = excluded.description,
     fetched_at = excluded.fetched_at,
-    observed_at = excluded.observed_at
+    observed_at = excluded.observed_at,
+    raw_ioc = excluded.raw_ioc,
+    host_ioc = excluded.host_ioc
 """
 
 _SELECT_OTX_PULSE_IOCS_SQLITE = """
@@ -446,6 +452,7 @@ async def replace_otx_pulse_iocs(
         norm = normalize_ioc_row(row)
         if norm is None:
             continue
+        meta = norm.get("ioc_meta") or {}
         normalized_rows.append(
             (
                 pulse_id,
@@ -454,6 +461,8 @@ async def replace_otx_pulse_iocs(
                 norm.get("description") or "",
                 utcnow_str(),
                 str(norm.get("observed_at") or "").strip() or None,
+                meta.get("raw_value") or "",
+                meta.get("host") or "",
             )
         )
     if not normalized_rows:

@@ -110,6 +110,52 @@ def test_refang_and_normalize_ioc_types():
     assert domain[1] == "evil.example.com"
 
 
+def test_normalize_ioc_emits_raw_and_host_meta():
+    """Phase A: normalize_ioc must surface the raw value and, for URL/DOMAIN,
+    the normalized host so persistence can store them as raw_ioc/host_ioc. Raw
+    inputs that differ from their canonical form (defanged URL, non-canonical
+    IPv6, uppercase hash, surrounding whitespace) prove the verbatim value is
+    preserved rather than the canonical one."""
+    url = normalize_ioc("URL", "hxxp://drive.google.com/uc?id=abc123")
+    assert url is not None
+    typ, val, meta = url
+    assert typ == "URL"
+    assert val == "http://drive.google.com/uc?id=abc123"
+    assert meta["raw_value"] == "hxxp://drive.google.com/uc?id=abc123"
+    assert meta["host"] == "drive.google.com"
+
+    tme = normalize_ioc("URL", "https://t.me/still_stellc")
+    assert tme is not None
+    assert tme[2]["host"] == "t.me"
+
+    steam = normalize_ioc("URL", "https://steamcommunity.com/profiles/7656119")
+    assert steam is not None
+    assert steam[2]["host"] == "steamcommunity.com"
+
+    domain = normalize_ioc("DOMAIN", "EVIL.EXAMPLE.COM")
+    assert domain is not None
+    assert domain[2]["host"] == "evil.example.com"
+    assert domain[2]["raw_value"] == "EVIL.EXAMPLE.COM"
+
+    ip = normalize_ioc("IP", "2001:0db8:0000:0000:0000:ff00:0042:8329")
+    assert ip is not None
+    assert ip[1] == "2001:db8::ff00:42:8329"
+    assert ip[2]["raw_value"] == "2001:0db8:0000:0000:0000:ff00:0042:8329"
+    assert "host" not in ip[2]
+
+    h = normalize_ioc("HASH", "A" * 64)
+    assert h is not None
+    assert h[1] == "a" * 64
+    assert h[2]["raw_value"] == "A" * 64
+    assert "host" not in h[2]
+
+    padded = normalize_ioc("URL", "  https://drive.google.com/uc?id=abc123  ")
+    assert padded is not None
+    assert padded[1] == "https://drive.google.com/uc?id=abc123"
+    assert padded[2]["raw_value"] == "  https://drive.google.com/uc?id=abc123  "
+    assert padded[2]["host"] == "drive.google.com"
+
+
 def test_is_noise_ip_covers_ipv6_public_resolvers():
     """Gemini review on PR #487: IPv4-only resolver set silently let IPv6
     variants of the same well-known resolvers through as non-noise."""

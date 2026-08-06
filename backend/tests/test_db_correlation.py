@@ -119,6 +119,71 @@ def test_otx_pulse_iocs_round_trip(tmp_path, monkeypatch):
     run_db_test(_run())
 
 
+def test_otx_pulse_iocs_persists_raw_and_host_columns(tmp_path, monkeypatch):
+    """Phase A: replace_otx_pulse_iocs must persist raw_ioc (verbatim raw
+    value) and host_ioc (normalized host) so four-level IOC preservation is
+    durable. Read directly from the table — the read API is write-path-only
+    for Phase A."""
+    placeholder = "$1" if is_postgres() else "?"
+    if not is_postgres():
+        db_path = tmp_path / "correlation_otx_iocs_raw.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await replace_otx_pulse_iocs(
+                db,
+                PULSE_ID,
+                [
+                    {
+                        "ioc_type": "URL",
+                        "ioc_value": "https://drive.google.com/uc?id=abc123",
+                        "description": "phish",
+                    },
+                    {"ioc_type": "domain", "ioc_value": "EVIL.EXAMPLE.COM", "description": ""},
+                    {"ioc_type": "IPv4", "ioc_value": "1.2.3.4", "description": ""},
+                ],
+            )
+            await db.commit()
+            rows = await db.execute_fetchall(
+                f"SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
+                f"FROM otx_pulse_iocs WHERE pulse_id = {placeholder}",
+                (PULSE_ID,),
+            )
+            by_value = {r["ioc_value"]: r for r in rows}
+            assert by_value["https://drive.google.com/uc?id=abc123"]["raw_ioc"] == (
+                "https://drive.google.com/uc?id=abc123"
+            )
+            assert by_value["https://drive.google.com/uc?id=abc123"]["host_ioc"] == (
+                "drive.google.com"
+            )
+            assert by_value["evil.example.com"]["raw_ioc"] == "EVIL.EXAMPLE.COM"
+            assert by_value["evil.example.com"]["host_ioc"] == "evil.example.com"
+            assert by_value["1.2.3.4"]["raw_ioc"] == "1.2.3.4"
+            assert by_value["1.2.3.4"]["host_ioc"] == ""
+
+            await replace_otx_pulse_iocs(
+                db,
+                PULSE_ID,
+                [{"ioc_type": "domain", "ioc_value": "EVIL.EXAMPLE.COM", "description": "x"}],
+            )
+            await db.commit()
+            rows2 = await db.execute_fetchall(
+                f"SELECT ioc_type, ioc_value, raw_ioc, host_ioc "
+                f"FROM otx_pulse_iocs WHERE pulse_id = {placeholder}",
+                (PULSE_ID,),
+            )
+            assert len(rows2) == 1
+            assert rows2[0]["host_ioc"] == "evil.example.com"
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
 def test_correlation_suppression_round_trip(tmp_path, monkeypatch):
     if not is_postgres():
         db_path = tmp_path / "correlation_suppress.db"

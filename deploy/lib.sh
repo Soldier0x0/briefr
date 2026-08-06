@@ -101,26 +101,39 @@ fix_tree_permissions() {
 }
 
 ensure_node() {
+  # react-router 8.x (pinned via npm overrides to clear audit highs) requires
+  # Node >=22.22, so the deploy gate is 22.22 rather than Vite's 20.19 floor.
+  local node_min_major=22 node_min_minor=22
   if command -v node &>/dev/null; then
-    local node_ver
-    node_ver="$(node -v | cut -d'v' -f2 | cut -d'.' -f1)"
-    if [ "${node_ver}" -ge 18 ]; then
+    local node_ver node_major node_minor
+    node_ver="$(node -v | cut -d'v' -f2)"
+    node_major="${node_ver%%.*}"
+    node_minor="$(printf '%s' "${node_ver#*.}" | cut -d'.' -f1)"
+    if [ "${node_major}" -gt "${node_min_major}" ] || {
+      [ "${node_major}" -eq "${node_min_major}" ] && [ "${node_minor}" -ge "${node_min_minor}" ]
+    }; then
       return
     fi
-    echo "==> Upgrading Node.js (found v${node_ver}, v18+ required for Vite)"
+    echo "==> Upgrading Node.js (found v${node_ver}, v${node_min_major}.${node_min_minor}+ required for react-router)"
   fi
 
   echo "==> Installing Node.js (required for frontend build)"
-  . /etc/os-release
-  if [ "${VERSION_ID:-0}" = "11" ]; then
-    echo "    Debian 11 (Bullseye): using NodeSource for Node.js 18"
-    apt-get install -y -qq curl ca-certificates
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt-get install -y -qq nodejs
-  else
-    apt-get update -qq
-    apt-get install -y -qq nodejs npm
-  fi
+  # Add the pinned NodeSource 22.x apt repo without executing their remote
+  # setup script (avoids curl | bash — the GPG key is imported and the repo
+  # pinned in deb822 form, so apt verifies package integrity).
+  local arch keyring sources
+  arch="$(dpkg --print-architecture)"
+  keyring="/usr/share/keyrings/nodesource.gpg"
+  sources="/etc/apt/sources.list.d/nodesource.sources"
+  apt-get install -y -qq curl ca-certificates gnupg apt-transport-https
+  mkdir -p /usr/share/keyrings
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key |
+    gpg --dearmor -o "${keyring}"
+  chmod 644 "${keyring}"
+  printf 'Types: deb\nURIs: https://deb.nodesource.com/node_22.x\nSuites: nodistro\nComponents: main\nArchitectures: %s\nSigned-By: %s\n' \
+    "${arch}" "${keyring}" > "${sources}"
+  apt-get update -qq
+  apt-get install -y -qq nodejs
 }
 
 ensure_nginx() {

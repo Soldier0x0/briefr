@@ -65,6 +65,45 @@ async def get_db() -> DbConnection:
 async def _normalize_epss_scores(db: DbConnection) -> None:
     await db.execute(_NORMALIZE_EPSS_SCORES_SQL)
 
+
+def _sqlite_legacy_host(ioc_type: str, ioc_value: str) -> str:
+    """Derive host from a stored canonical value for legacy SQLite rows.
+
+    Mirrors migration 037's frozen _legacy_host (and read-time URL→domain
+    joins in threatfox_corroboration) so dev/CI SQLite backfill matches what
+    PostgreSQL backfills in production."""
+    t = (ioc_type or "").strip().upper()
+    value = (ioc_value or "").strip()
+    if t in ("DOMAIN", "HOSTNAME"):
+        return value.lower().rstrip(".")
+    if t in ("URL", "URI"):
+        from urllib.parse import urlparse
+
+        parsed = urlparse(value if "://" in value else f"http://{value}")
+        return (parsed.hostname or "").lower().rstrip(".")
+    return ""
+
+
+async def _backfill_sqlite_host_ioc(db: DbConnection) -> None:
+    """Backfill host_ioc for legacy SQLite rows whose host was never derived.
+
+    raw_ioc stays '' — the verbatim upstream value was not stored before
+    Phase A; only host_ioc is reconstructable from the canonical value."""
+    rows = await db.execute_fetchall(
+        "SELECT pulse_id, ioc_type, ioc_value FROM otx_pulse_iocs "
+        "WHERE host_ioc = '' OR host_ioc IS NULL"
+    )
+    for row in rows:
+        host = _sqlite_legacy_host(row["ioc_type"], row["ioc_value"])
+        if not host:
+            continue
+        await db.execute(
+            "UPDATE otx_pulse_iocs SET host_ioc = ? "
+            "WHERE pulse_id = ? AND ioc_type = ? AND ioc_value = ?",
+            (host, row["pulse_id"], row["ioc_type"], row["ioc_value"]),
+        )
+    await db.commit()
+
 async def run_postgres_migrations() -> None:
     """Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)."""
     import logging
@@ -421,6 +460,8 @@ async def init_db() -> None:
                 description TEXT DEFAULT '',
                 fetched_at TEXT DEFAULT (datetime('now')),
                 observed_at TEXT,
+                raw_ioc TEXT DEFAULT '',
+                host_ioc TEXT DEFAULT '',
                 PRIMARY KEY (pulse_id, ioc_type, ioc_value)
             );
 
@@ -828,6 +869,8 @@ async def init_db() -> None:
             """,
             "ALTER TABLE otx_cve_pulses ADD COLUMN targeted_countries TEXT DEFAULT '[]'",
             "ALTER TABLE otx_pulse_iocs ADD COLUMN observed_at TEXT",
+            "ALTER TABLE otx_pulse_iocs ADD COLUMN raw_ioc TEXT DEFAULT ''",
+            "ALTER TABLE otx_pulse_iocs ADD COLUMN host_ioc TEXT DEFAULT ''",
             """
             CREATE TABLE IF NOT EXISTS correlation_campaigns (
                 campaign_id TEXT PRIMARY KEY,
@@ -1089,6 +1132,11 @@ async def init_db() -> None:
         try:
             await db.execute(_CREATE_IDX_CVES_HAS_POC_SQL)
             await db.commit()
+        except Exception:
+            pass
+
+        try:
+            await _backfill_sqlite_host_ioc(db)
         except Exception:
             pass
 

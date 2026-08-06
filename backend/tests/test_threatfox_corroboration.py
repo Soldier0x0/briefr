@@ -145,6 +145,63 @@ def test_batch_threatfox_hits_matches_canonical_domain(tmp_path, monkeypatch):
     run_db_test(run())
 
 
+def test_phase_a_columns_do_not_change_corroboration_output(tmp_path, monkeypatch):
+    """Phase A guard: populating raw_ioc/host_ioc is write-path-only and must
+    not change the read API shape or corroboration/confidence output. A stored
+    URL IOC carries host_ioc='drive.google.com' yet read_otx_pulse_iocs still
+    returns the legacy four fields, and find_shared_infrastructure_v2 output is
+    byte-identical to a run where the new columns are left empty."""
+    from database import read_otx_pulse_iocs
+
+    async def run():
+        db_path = str(tmp_path / "tf-phase-a.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await _seed_shared_infrastructure(db)
+            await replace_otx_pulse_iocs(
+                db,
+                "pulse-corr",
+                [
+                    {
+                        "ioc_type": "URL",
+                        "ioc_value": "https://drive.google.com/uc?id=abc123",
+                        "description": "",
+                    }
+                ],
+            )
+            await db.commit()
+
+            rows = await read_otx_pulse_iocs(db, "pulse-corr", max_age_hours=6)
+            assert rows is not None
+            assert len(rows) == 1
+            assert set(rows[0].keys()) == {"ioc_type", "ioc_value", "description", "observed_at"}
+            assert rows[0]["ioc_value"] == "https://drive.google.com/uc?id=abc123"
+
+            stored = await db.execute_fetchall(
+                "SELECT raw_ioc, host_ioc FROM otx_pulse_iocs WHERE pulse_id = ?",
+                ("pulse-corr",),
+            )
+            assert len(stored) == 1
+            assert stored[0]["raw_ioc"] == "https://drive.google.com/uc?id=abc123"
+            assert stored[0]["host_ioc"] == "drive.google.com"
+
+            populated = await find_shared_infrastructure_v2(db, "CVE-2024-5001", limit=10)
+            await db.execute(
+                "UPDATE otx_pulse_iocs SET raw_ioc = '', host_ioc = '' WHERE pulse_id = ?",
+                ("pulse-corr",),
+            )
+            await db.commit()
+            legacy = await find_shared_infrastructure_v2(db, "CVE-2024-5001", limit=10)
+            assert legacy == populated
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
 def test_batch_threatfox_hits_maps_domain_and_url_keys(tmp_path, monkeypatch):
     from correlation.threatfox_corroboration import batch_threatfox_hits
 
