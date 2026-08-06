@@ -6,6 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import asyncio
+
 import db.correlation as correlation_mod
 from db.config import is_postgres
 from db.correlation import (
@@ -33,6 +35,38 @@ def test_correlation_sql_uses_native_placeholders():
     assert "ON CONFLICT(pulse_id, ioc_type, ioc_value)" in correlation_mod._UPSERT_OTX_PULSE_IOCS_PG
     assert "$6" in correlation_mod._UPSERT_CORRELATION_SUPPRESSION_PG
     assert "ON CONFLICT(cve_id, scope, scope_key)" in correlation_mod._UPSERT_CORRELATION_SUPPRESSION_PG
+
+
+def test_pulse_ioc_lock_pool_scoped_per_event_loop():
+    """Each live loop must consistently get the same lock for a pulse_id.
+
+    Regression: the module-level pool was created once at import, so a call
+    from a loop other than the one that first awaited a lock raised "bound to
+    a different event loop". The pool must be stable per loop and isolated
+    across concurrently-running loops."""
+
+    def grab_locks():
+        first = correlation_mod._pulse_ioc_lock("pulse-a")
+        second = correlation_mod._pulse_ioc_lock("pulse-a")
+        other = correlation_mod._pulse_ioc_lock("pulse-b")
+        return id(first), id(second), id(other)
+
+    async def loop_body(results, key):
+        results[key] = grab_locks()
+
+    async def run_pair():
+        results = {}
+        await asyncio.gather(loop_body(results, "a"), loop_body(results, "b"))
+        return results
+
+    results_a = asyncio.run(run_pair())
+    results_b = asyncio.run(run_pair())
+
+    for results in (results_a, results_b):
+        assert results["a"][0] == results["a"][1], "same pulse reuses same lock"
+        assert results["a"][0] != results["a"][2], "distinct pulses stripe apart"
+        assert results["a"][0] == results["b"][0], "loops do not share a pool"
+        assert results["a"][1] == results["b"][1]
 
 
 def test_otx_cve_pulses_round_trip(tmp_path, monkeypatch):
