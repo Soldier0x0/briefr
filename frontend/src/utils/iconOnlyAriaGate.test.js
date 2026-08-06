@@ -22,9 +22,14 @@ function walk(dir, out = []) {
 
 /** Button body is icon/symbol-only (no visible words). */
 function isIconOnlyBody(body) {
-  const text = body
-    .replace(/<[^>]*>|<|>/g, '')
-    .replace(/\{[^}]+\}/g, '')
+  let text = body.replace(/\{[^}]+\}/g, '')
+  let prev
+  do {
+    prev = text
+    text = text.replace(/<[^>]*>/g, '')
+  } while (text !== prev)
+  text = text
+    .replace(/<|>/g, '')
     .replace(/\s+/g, ' ')
     .trim()
   if (text === '&middot;&middot;&middot;') return true
@@ -63,5 +68,10 @@ describe('E6-3 icon-only aria-label gate', () => {
       [],
       `icon-only buttons missing aria-label:\n${[...new Set(misses)].join('\n')}`,
     )
+  })
+
+  it('strips tags even when a single pass would splice a live one', () => {
+    assert.equal(isIconOnlyBody('<scr<x>ipt>'), false)
+    assert.equal(isIconOnlyBody('<svg><path/></svg>'), true)
   })
 })
