@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime, timedelta, timezone
+from weakref import WeakKeyDictionary
 
 from db.cache import set_feed_cache
 from db.cve import _SQLITE_IN_CHUNK
@@ -307,7 +308,24 @@ _MATCH_CVES_SQL = "SELECT cve_id, cpe_matches, affected_products FROM cves"
 
 _NUM_IOC_LOCKS = 64
 
-_pulse_ioc_locks = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+_pulse_ioc_lock_pools: WeakKeyDictionary = WeakKeyDictionary()
+
+
+def _pulse_ioc_locks() -> list[asyncio.Lock]:
+    """Fixed-size pool of pulse-ID locks, scoped to the running event loop.
+
+    asyncio.Lock binds to the loop that first awaits it. Callers that drive
+    multiple loops (e.g. tests using run_db_test's asyncio.run per call)
+    would otherwise reuse a lock bound to a dead loop and raise
+    "bound to a different event loop"; keep a separate pool per loop so each
+    loop consistently reuses the same striped locks. Pools are weakly keyed by
+    the loop and freed once it is garbage-collected."""
+    loop = asyncio.get_running_loop()
+    pool = _pulse_ioc_lock_pools.get(loop)
+    if pool is None:
+        pool = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+        _pulse_ioc_lock_pools[loop] = pool
+    return pool
 
 
 def _is_postgres_connection(db: DbConnection) -> bool:
@@ -335,8 +353,8 @@ def _cutoff_datetime_hours_ago(hours: float) -> str:
 
 
 def _pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
-    """Fixed-size lock pool — avoids unbounded growth from per-pulse lock dicts."""
-    return _pulse_ioc_locks[hash(pulse_id) % _NUM_IOC_LOCKS]
+    """Return the striped lock for a pulse ID (pool is per event loop)."""
+    return _pulse_ioc_locks()[hash(pulse_id) % _NUM_IOC_LOCKS]
 
 
 async def upsert_otx_pulses(db: DbConnection, pulses: list[dict]) -> None:

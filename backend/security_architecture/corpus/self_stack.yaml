@@ -109,7 +109,7 @@ terms:
   term: fastapi
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 0.140.13
+  version: 0.141.1
 - id: self-stack-fontsource-dm-sans
   title: '@fontsource/dm-sans'
   summary: BRIEFR dependency term derived from frontend/package.json.
@@ -469,7 +469,7 @@ terms:
   term: uvicorn
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 0.51.0
+  version: 0.52.0
 - id: self-stack-vite
   title: vite
   summary: BRIEFR dependency term derived from frontend/package.json.
