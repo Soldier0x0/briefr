@@ -118,8 +118,21 @@ ensure_node() {
   fi
 
   echo "==> Installing Node.js (required for frontend build)"
-  apt-get install -y -qq curl ca-certificates
-  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  # Add the pinned NodeSource 22.x apt repo without executing their remote
+  # setup script (avoids curl | bash — the GPG key is imported and the repo
+  # pinned in deb822 form, so apt verifies package integrity).
+  local arch keyring sources
+  arch="$(dpkg --print-architecture)"
+  keyring="/usr/share/keyrings/nodesource.gpg"
+  sources="/etc/apt/sources.list.d/nodesource.sources"
+  apt-get install -y -qq curl ca-certificates gnupg apt-transport-https
+  mkdir -p /usr/share/keyrings
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key |
+    gpg --dearmor -o "${keyring}"
+  chmod 644 "${keyring}"
+  printf 'Types: deb\nURIs: https://deb.nodesource.com/node_22.x\nSuites: nodistro\nComponents: main\nArchitectures: %s\nSigned-By: %s\n' \
+    "${arch}" "${keyring}" > "${sources}"
+  apt-get update -qq
   apt-get install -y -qq nodejs
 }
 
