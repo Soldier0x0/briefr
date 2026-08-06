@@ -307,7 +307,24 @@ _MATCH_CVES_SQL = "SELECT cve_id, cpe_matches, affected_products FROM cves"
 
 _NUM_IOC_LOCKS = 64
 
-_pulse_ioc_locks = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+
+def _pulse_ioc_locks():
+    """Fixed-size pool of pulse-ID locks, scoped to the running event loop.
+
+    asyncio.Lock binds to the loop that first awaits it. Callers that drive
+    multiple loops (e.g. tests using run_db_test's asyncio.run per call)
+    would otherwise reuse a lock bound to a dead loop and raise
+    "bound to a different event loop"; recreate the pool per loop instead."""
+    loop = asyncio.get_running_loop()
+    entry = getattr(_pulse_ioc_locks, "_entry", None)
+    if entry is not None and entry[0] is loop:
+        return entry[1]
+    pool = [asyncio.Lock() for _ in range(_NUM_IOC_LOCKS)]
+    _pulse_ioc_locks._entry = (loop, pool)
+    return pool
+
+
+_pulse_ioc_locks._entry = None
 
 
 def _is_postgres_connection(db: DbConnection) -> bool:
@@ -335,8 +352,8 @@ def _cutoff_datetime_hours_ago(hours: float) -> str:
 
 
 def _pulse_ioc_lock(pulse_id: str) -> asyncio.Lock:
-    """Fixed-size lock pool — avoids unbounded growth from per-pulse lock dicts."""
-    return _pulse_ioc_locks[hash(pulse_id) % _NUM_IOC_LOCKS]
+    """Return the striped lock for a pulse ID (pool is per event loop)."""
+    return _pulse_ioc_locks()[hash(pulse_id) % _NUM_IOC_LOCKS]
 
 
 async def upsert_otx_pulses(db: DbConnection, pulses: list[dict]) -> None:
