@@ -23,8 +23,7 @@ function walk(dir, out = []) {
 /** Button body is icon/symbol-only (no visible words). */
 function isIconOnlyBody(body) {
   const text = body
-    .replace(/<[^>]*>/g, '')
-    .replace(/<|>/g, '')
+    .replace(/<[^>]*>|<|>/g, '')
     .replace(/\{[^}]+\}/g, '')
     .replace(/\s+/g, ' ')
     .trim()

@@ -56,7 +56,10 @@ def url_looks_like_poc(url: str) -> bool:
         return True
     if POC_URL_RE.search(lower):
         return True
-    host = urlsplit(url).hostname
+    try:
+        host = urlsplit(url).hostname
+    except ValueError:
+        return False
     if any(_host_matches(host, h) for h in _POC_HOSTS):
         if "poc" in lower or "exploit" in lower:
             return True

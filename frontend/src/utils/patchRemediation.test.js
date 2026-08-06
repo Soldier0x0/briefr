@@ -82,4 +82,15 @@ describe('remediation reference picks', () => {
     assert.match(ref.url, /cisa\.gov/)
     assert.equal(ref.label, 'CISA guidance')
   })
+
+  it('does not let spoofed cisa.gov hosts outrank the vendor advisory', () => {
+    const ref = pickVendorRemediationReference(
+      { cve_id: 'CVE-2024-0001', is_kev: true },
+      [
+        'https://notcisa.gov.example.com/advisory/CVE-2024-0001',
+        'https://helpx.adobe.com/security/products/acrobat/apsb26-68.html',
+      ],
+    )
+    assert.match(ref.url, /adobe\.com/)
+  })
 })
