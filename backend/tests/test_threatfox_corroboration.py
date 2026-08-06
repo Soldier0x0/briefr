@@ -77,12 +77,12 @@ def test_threatfox_corroboration_outranks_otx_only(tmp_path, monkeypatch):
             await _seed_shared_infrastructure(db)
             await db.execute(
                 """
-                INSERT INTO threatfox_iocs (
-                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
-                    confidence_level, first_seen
+                INSERT INTO ti_mirror_iocs (
+                    source, ref_id, ioc_type, ioc_value, raw_ioc, malware,
+                    threat_type, confidence_level, first_seen
                 ) VALUES (
-                    'tf-corr-1', 'domain', 'corroborated.example', 'corroborated.example',
-                    'vidar', 'botnet_cc', 90, '2024-06-01'
+                    'threatfox', 'tf-corr-1', 'domain', 'corroborated.example',
+                    'corroborated.example', 'vidar', 'botnet_cc', 90, '2024-06-01'
                 )
                 """
             )
@@ -113,8 +113,8 @@ def test_threatfox_corroboration_outranks_otx_only(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_batch_threatfox_hits_matches_canonical_domain(tmp_path, monkeypatch):
-    from correlation.threatfox_corroboration import batch_threatfox_hits
+def test_batch_source_evidence_matches_canonical_domain(tmp_path, monkeypatch):
+    from correlation.source_evidence import batch_source_evidence
 
     async def run():
         db_path = str(tmp_path / "tf-batch.db")
@@ -125,20 +125,20 @@ def test_batch_threatfox_hits_matches_canonical_domain(tmp_path, monkeypatch):
         try:
             await db.execute(
                 """
-                INSERT INTO threatfox_iocs (
-                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
-                    confidence_level, first_seen
+                INSERT INTO ti_mirror_iocs (
+                    source, ref_id, ioc_type, ioc_value, raw_ioc, malware,
+                    threat_type, confidence_level, first_seen
                 ) VALUES (
-                    'tf-99', 'domain', 'evil.example', 'evil.example',
+                    'threatfox', 'tf-99', 'domain', 'evil.example', 'evil.example',
                     'emotet', 'payload_delivery', 75, '2024-05-01'
                 )
                 """
             )
             await db.commit()
-            hits = await batch_threatfox_hits(db, [("DOMAIN", "EVIL.EXAMPLE")])
+            hits = await batch_source_evidence(db, [("DOMAIN", "EVIL.EXAMPLE")])
             key = ("DOMAIN", "evil.example")
             assert key in hits
-            assert hits[key][0]["ioc_id"] == "tf-99"
+            assert hits[key][0]["ref_id"] == "tf-99"
         finally:
             await db.close()
 
@@ -202,8 +202,8 @@ def test_phase_a_columns_do_not_change_corroboration_output(tmp_path, monkeypatc
     run_db_test(run())
 
 
-def test_batch_threatfox_hits_maps_domain_and_url_keys(tmp_path, monkeypatch):
-    from correlation.threatfox_corroboration import batch_threatfox_hits
+def test_batch_source_evidence_maps_domain_and_url_keys(tmp_path, monkeypatch):
+    from correlation.source_evidence import batch_source_evidence
 
     async def run():
         db_path = str(tmp_path / "tf-dual-type.db")
@@ -214,17 +214,17 @@ def test_batch_threatfox_hits_maps_domain_and_url_keys(tmp_path, monkeypatch):
         try:
             await db.execute(
                 """
-                INSERT INTO threatfox_iocs (
-                    ioc_id, ioc_type, ioc_value, raw_ioc, malware, threat_type,
-                    confidence_level, first_seen
+                INSERT INTO ti_mirror_iocs (
+                    source, ref_id, ioc_type, ioc_value, raw_ioc, malware,
+                    threat_type, confidence_level, first_seen
                 ) VALUES (
-                    'tf-dual', 'domain', 'shared.example', 'shared.example',
-                    'emotet', 'payload_delivery', 80, '2024-05-01'
+                    'threatfox', 'tf-dual', 'domain', 'shared.example',
+                    'shared.example', 'emotet', 'payload_delivery', 80, '2024-05-01'
                 )
                 """
             )
             await db.commit()
-            hits = await batch_threatfox_hits(
+            hits = await batch_source_evidence(
                 db,
                 [("DOMAIN", "shared.example"), ("URL", "http://shared.example/path")],
             )

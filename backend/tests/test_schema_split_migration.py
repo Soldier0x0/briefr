@@ -18,7 +18,7 @@ from tests.conftest import run_db_test
 
 def test_table_inventory_counts():
     assert len(INTEL_TABLES) == 30
-    assert len(APP_TABLES) == 27
+    assert len(APP_TABLES) == 28
     assert len(set(INTEL_TABLES) & set(APP_TABLES)) == 0
     assert "correlation_cve_snapshot" in INTEL_TABLES
     assert "embeddings" in INTEL_TABLES

@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-07-31 (FEED query language + showcase default)
+**Last updated:** 2026-08-06 (CodeQL triage complete — 0 open code-scanning alerts)
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
@@ -121,4 +121,4 @@ Details: https://docs.projectjupiter.in/docs/roadmap
 | Live demo | https://briefrdemo.projectjupiter.in — static 1:1 analyst UI ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)); fixture data, no backend; Cloudflare Workers deploy |
 | Self-host | [SELF_HOST.md](SELF_HOST.md) — install your own PostgreSQL-backed deployment |
 | Stale README / API_REFERENCE auth claims | **Done** — session-cookie auth + refresh route errors updated |
-| Security hardening (CodeQL triage) | **Done** — CI workflow least-privilege permissions; intel snapshot import path allowlist (`INTEL_SNAPSHOT_IMPORT_DIRS` / `INTEL_PUBLISH_DIR`); admin URL masking + generic 500 responses with `request_id`; log message scrubbing |
+| Security hardening (CodeQL triage) | **Done** — CI workflow least-privilege permissions; intel snapshot import path allowlist (`INTEL_SNAPSHOT_IMPORT_DIRS` / `INTEL_PUBLISH_DIR`); admin URL masking + generic 500 responses with `request_id`; log message scrubbing. **All 15 open CodeQL alerts resolved (#819):** parsed-hostname host matching (cve.py, intelligence.py, patchRemediation.js, api_queue_operations.py), urlsplit-based DB URL credential masking (database.py), no `str(exc)` in diagnostic/backup responses (diagnostics.py, storage_metrics.py), polynomial-ReDoS and incomplete-sanitization regexes replaced; **0 open code-scanning alerts on `main`** |

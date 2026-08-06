@@ -746,22 +746,27 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_user
                 ON ioc_watchlist(user_id);
 
-            CREATE TABLE IF NOT EXISTS threatfox_iocs (
-                ioc_id TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS ti_mirror_iocs (
+                source TEXT NOT NULL,
+                ref_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
-                raw_ioc TEXT NOT NULL DEFAULT '',
-                malware TEXT NOT NULL DEFAULT '',
-                threat_type TEXT NOT NULL DEFAULT '',
-                confidence_level INTEGER NOT NULL DEFAULT 0,
-                first_seen TEXT NOT NULL DEFAULT '',
-                fetched_at TEXT DEFAULT (datetime('now'))
+                raw_ioc TEXT DEFAULT '',
+                host_ioc TEXT DEFAULT '',
+                malware TEXT DEFAULT '',
+                threat_type TEXT DEFAULT '',
+                confidence_level INTEGER DEFAULT 0,
+                first_seen TEXT DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (source, ref_id)
             );
 
-            CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_value
-                ON threatfox_iocs(ioc_value);
-            CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value
-                ON threatfox_iocs(ioc_type, ioc_value);
+            CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_value
+                ON ti_mirror_iocs(ioc_type, ioc_value);
+            CREATE INDEX IF NOT EXISTS idx_ti_mirror_host
+                ON ti_mirror_iocs(host_ioc);
+            CREATE INDEX IF NOT EXISTS idx_ti_mirror_source
+                ON ti_mirror_iocs(source);
 
             CREATE TABLE IF NOT EXISTS resource_metrics (
                 ts TEXT PRIMARY KEY,
@@ -1089,20 +1094,60 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_value ON ioc_watchlist(ioc_value)",
             "CREATE INDEX IF NOT EXISTS idx_ioc_watchlist_user ON ioc_watchlist(user_id)",
             """
-            CREATE TABLE IF NOT EXISTS threatfox_iocs (
-                ioc_id TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS ti_mirror_iocs (
+                source TEXT NOT NULL,
+                ref_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
-                raw_ioc TEXT NOT NULL DEFAULT '',
-                malware TEXT NOT NULL DEFAULT '',
-                threat_type TEXT NOT NULL DEFAULT '',
-                confidence_level INTEGER NOT NULL DEFAULT 0,
-                first_seen TEXT NOT NULL DEFAULT '',
-                fetched_at TEXT DEFAULT (datetime('now'))
+                raw_ioc TEXT DEFAULT '',
+                host_ioc TEXT DEFAULT '',
+                malware TEXT DEFAULT '',
+                threat_type TEXT DEFAULT '',
+                confidence_level INTEGER DEFAULT 0,
+                first_seen TEXT DEFAULT '',
+                fetched_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (source, ref_id)
             )
             """,
-            "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_value ON threatfox_iocs(ioc_value)",
-            "CREATE INDEX IF NOT EXISTS idx_threatfox_iocs_type_value ON threatfox_iocs(ioc_type, ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_value ON ti_mirror_iocs(ioc_type, ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_host ON ti_mirror_iocs(host_ioc)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_source ON ti_mirror_iocs(source)",
+            """
+            INSERT OR IGNORE INTO ti_mirror_iocs (
+                source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc,
+                malware, threat_type, confidence_level, first_seen, fetched_at
+            )
+            SELECT
+                'threatfox',
+                ioc_id,
+                ioc_type,
+                ioc_value,
+                raw_ioc,
+                CASE WHEN UPPER(ioc_type) IN ('DOMAIN', 'HOSTNAME')
+                    THEN RTRIM(LOWER(ioc_value), '.')
+                    ELSE '' END,
+                malware,
+                threat_type,
+                confidence_level,
+                first_seen,
+                fetched_at
+            FROM threatfox_iocs
+            """,
+            "DROP TABLE IF EXISTS threatfox_iocs",
+            """
+            CREATE VIEW IF NOT EXISTS threatfox_iocs AS
+            SELECT ref_id AS ioc_id,
+                   ioc_type,
+                   ioc_value,
+                   raw_ioc,
+                   malware,
+                   threat_type,
+                   confidence_level,
+                   first_seen,
+                   fetched_at
+            FROM ti_mirror_iocs
+            WHERE source = 'threatfox'
+            """,
             "ALTER TABLE cves ADD COLUMN is_vulncheck_exploited INTEGER DEFAULT 0",
             "CREATE INDEX IF NOT EXISTS idx_cves_vulncheck_exploited ON cves(is_vulncheck_exploited)",
             _CREATE_IDX_CVES_MODIFIED_SQL,

@@ -200,6 +200,16 @@ DELETE FROM audit_log
 WHERE created_at < ?
 """
 
+_PURGE_TI_MIRROR_IOCS_SQLITE = """
+DELETE FROM ti_mirror_iocs
+WHERE fetched_at < ?
+"""
+
+_PURGE_TI_MIRROR_IOCS_PG = """
+DELETE FROM ti_mirror_iocs
+WHERE fetched_at < $1
+"""
+
 _PURGE_AUDIT_LOG_PG = """
 DELETE FROM audit_log
 WHERE created_at < $1
@@ -386,6 +396,23 @@ async def purge_old_audit_log(
     return await _rows_deleted(db, cursor)
 
 
+async def purge_stale_ti_mirror_iocs(
+    db: DbConnection,
+    retention_hours: float = OTX_TABLE_RETENTION_HOURS,
+) -> int:
+    """Purge aged catalog-mirror rows (ti_mirror_iocs) past the uniform
+    7-day window. Read paths filter on fetched_at; this deletes physical rows
+    so the mirror does not grow without bound."""
+    cutoff = _cutoff_datetime_hours_ago(retention_hours)
+    sql = (
+        _PURGE_TI_MIRROR_IOCS_PG
+        if _is_postgres_connection(db)
+        else _PURGE_TI_MIRROR_IOCS_SQLITE
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return await _rows_deleted(db, cursor)
+
+
 async def purge_stranded_webhook_dedupe(
     db: DbConnection,
     grace_hours: float = STRANDED_DEDUPE_GRACE_HOURS,
@@ -424,6 +451,7 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "feed_cache": await purge_stale_feed_cache(db),
         "epss_history": await purge_old_epss_history(db),
         "cve_change_history": await purge_old_cve_change_history(db),
+        "ti_mirror_iocs": await purge_stale_ti_mirror_iocs(db),
         "ai_operations": await purge_old_ai_operations(db),
         "ai_operation_payloads": await purge_old_ai_operation_payloads(db),
         "webhook_delivery_log": await purge_old_webhook_delivery_log(db),

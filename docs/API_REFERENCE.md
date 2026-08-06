@@ -785,7 +785,7 @@ Admin-managed tokens for agent/script retrieval. Plaintext shown **once** at cre
 
 | Job id | Default schedule | Env gates | Writes |
 |---|---|---|---|
-| `threatfox_sync` | Every 24h (`THREATFOX_SYNC_INTERVAL_HOURS`) | `ABUSECH_AUTH_KEY` | `threatfox_iocs` |
+| `threatfox_sync` | Every 24h (`THREATFOX_SYNC_INTERVAL_HOURS`) | `ABUSECH_AUTH_KEY` | `ti_mirror_iocs` (compat view `threatfox_iocs`) |
 | `vulncheck_kev_sync` | Every 24h (`VULNCHECK_KEV_SYNC_INTERVAL_HOURS`) | `VULNCHECK_API_KEY` | `cves.is_vulncheck_exploited` |
 | `ioc_retro_match` | Daily cron (`IOC_RETRO_MATCH_HOUR`/`MINUTE`, default 04:00) | — | dispatches `ioc_watchlist_hit` webhooks |
 

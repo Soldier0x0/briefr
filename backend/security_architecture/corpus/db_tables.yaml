@@ -405,15 +405,15 @@ tables:
   source_refs:
   - type: table
     ref: sync_state
-- id: threatfox_iocs
-  title: threatfox_iocs
-  summary: Database table defined in db/init.py (name=threatfox_iocs).
+- id: ti_mirror_iocs
+  title: ti_mirror_iocs
+  summary: Database table defined in db/init.py (name=ti_mirror_iocs).
   owner: platform
   status: active
   origin: generated
   source_refs:
   - type: table
-    ref: threatfox_iocs
+    ref: ti_mirror_iocs
 - id: user_notifications
   title: user_notifications
   summary: Database table defined in db/init.py (name=user_notifications).

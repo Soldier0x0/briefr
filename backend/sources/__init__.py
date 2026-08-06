@@ -1,0 +1,1 @@
+"""Catalog source registry package."""

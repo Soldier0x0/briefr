@@ -252,7 +252,7 @@ Sequence diagram: [`docs/diagrams/flow_ioc_lookup.mermaid`](diagrams/flow_ioc_lo
 ### C2. IOC watchlist + retro-match (V1.5 Phase 5)
 
 1. **UI:** `IOCLookup.jsx` watchlist panel — signed-in users save IPs/hashes/domains with optional labels via `POST /api/ioc/watchlist`; list/remove via `GET` / `DELETE`.
-2. **ThreatFox mirror:** `threatfox_sync` (interval, default 24h) fetches the Abuse.ch ThreatFox export when `ABUSECH_AUTH_KEY` is set → `threatfox_iocs` local mirror (`feeds/threatfox.py`, `db/threatfox.py`).
+2. **ThreatFox mirror:** `threatfox_sync` (interval, default 24h) fetches the Abuse.ch ThreatFox export when `ABUSECH_AUTH_KEY` is set → unified `ti_mirror_iocs` catalog mirror (`feeds/threatfox.py`, `db/threatfox.py`); `threatfox_iocs` is a compat view over `ti_mirror_iocs WHERE source='threatfox'`.
 3. **Retro-match:** `ioc_retro_match` (nightly cron, default 04:00) joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_iocs` (`ioc/retro_match.py`) — no outbound IOC enrichment on the match path.
 4. **Alerts:** matches dispatch optional `ioc_watchlist_hit` webhooks (dedupe `{user_id}:{ioc_value}:{source}`).
 
