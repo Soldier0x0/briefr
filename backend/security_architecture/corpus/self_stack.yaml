@@ -59,7 +59,7 @@ terms:
   term: cryptography
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 49.0.0
+  version: 50.0.0
 - id: self-stack-eslint
   title: eslint
   summary: BRIEFR dependency term derived from frontend/package.json.

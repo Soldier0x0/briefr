@@ -36,7 +36,7 @@ Copyright © 2026 Sai Harsha Vardhan. Licensed under the Apache License, Version
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 22.22+ (required by `react-router` 8.x pinned in the frontend)
 - Git
 
 Recommended API keys for full functionality: NVD, VirusTotal, AbuseIPDB. See [Environment variables](#4-environment-variables) for the full list.

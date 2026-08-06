@@ -35,7 +35,7 @@
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 22.22+ (required by `react-router` 8.x pinned in the frontend)
 - Git
 
 ### Steps
