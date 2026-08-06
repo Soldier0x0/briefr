@@ -70,6 +70,10 @@ def test_sanitize_context_masks_webhook_path_tail():
     assert "abcdefghijklmnop" not in cid
 
 
+def test_sanitize_context_handles_malformed_url():
+    assert sanitize_context("url", "http://[::1") == (None, None)
+
+
 def test_resolve_queue_task_rejects_unknown_operation():
     task = resolve_queue_task(
         "github",

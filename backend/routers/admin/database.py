@@ -9,9 +9,9 @@ SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import BackgroundTasks, HTTPException, Request
 
@@ -22,6 +22,19 @@ from settings import settings
 from .router import router
 
 # ── Database engine & migration ────────────────────────────────────────────
+
+
+def _mask_database_url_credentials(database_url: str) -> str:
+    """Redact the userinfo (password) from a database URL for audit logging."""
+    try:
+        parts = urlsplit(database_url)
+    except ValueError:
+        return "***"
+    if "@" not in parts.netloc:
+        return database_url
+    hostinfo = parts.netloc.rsplit("@", 1)[1]
+    masked = f"***@{hostinfo}"
+    return urlunsplit((parts.scheme, masked, parts.path, parts.query, parts.fragment))
 
 
 @router.get("/database")
@@ -42,7 +55,7 @@ async def get_database_info(request: Request):
         "writes_sqlite": not on_postgres and not settings.briefr_require_postgres,
     }
     if on_postgres:
-        info["postgres_dsn_redacted"] = re.sub(r"://[^@]+@", "://***@", current_url)
+        info["postgres_dsn_redacted"] = _mask_database_url_credentials(current_url)
     else:
         info["sqlite_path"] = str(db_path)
         info["sqlite_size_bytes"] = db_path.stat().st_size if db_path.exists() else 0
@@ -98,7 +111,7 @@ async def start_database_migration(request: Request, background_tasks: Backgroun
     except RuntimeError as exc:
         raise HTTPException(409, str(exc)) from exc
 
-    await audit(request, "database.migrate.start", re.sub(r"://[^@]+@", "://***@", database_url))
+    await audit(request, "database.migrate.start", _mask_database_url_credentials(database_url))
     background_tasks.add_task(run_migration, database_url, DB_PATH, _reserved=True)
     return {"ok": True, "message": "Migration started — poll /api/admin/database/migrate/status"}
 

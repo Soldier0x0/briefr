@@ -52,12 +52,16 @@ function isVendorHost(host) {
   return VENDOR_HOST_HINTS.some(v => host === v || host.endsWith(`.${v}`))
 }
 
+function isHostOrSubdomain(host, expected) {
+  return host === expected || host.endsWith(`.${expected}`)
+}
+
 function isNvdHost(host) {
-  return NVD_HOSTS.some(n => host.includes(n))
+  return NVD_HOSTS.some(n => isHostOrSubdomain(host, n))
 }
 
 function isCisaHost(host) {
-  return CISA_HOSTS.some(c => host.includes(c))
+  return CISA_HOSTS.some(c => isHostOrSubdomain(host, c))
 }
 
 function isGenericDocUrl(url) {

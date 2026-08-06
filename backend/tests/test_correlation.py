@@ -226,7 +226,7 @@ def test_ioc_normalization_at_ingest(tmp_path, monkeypatch):
             values = {row["ioc_value"] for row in rows}
             assert "IP" in types
             assert "192.168.1.10" in values
-            assert "evil.example.com" in values
+            assert any(v == "evil.example.com" for v in values)
         finally:
             await db.close()
 

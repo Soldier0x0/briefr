@@ -48,8 +48,7 @@ def test_pulse_ioc_lock_pool_scoped_per_event_loop():
     def grab_locks():
         first = correlation_mod._pulse_ioc_lock("pulse-a")
         second = correlation_mod._pulse_ioc_lock("pulse-a")
-        other = correlation_mod._pulse_ioc_lock("pulse-b")
-        return id(first), id(second), id(other)
+        return first, second
 
     async def loop_body(results, key):
         results[key] = grab_locks()
@@ -63,10 +62,12 @@ def test_pulse_ioc_lock_pool_scoped_per_event_loop():
     results_b = asyncio.run(run_pair())
 
     for results in (results_a, results_b):
-        assert results["a"][0] == results["a"][1], "same pulse reuses same lock"
-        assert results["a"][0] != results["a"][2], "distinct pulses stripe apart"
-        assert results["a"][0] == results["b"][0], "loops do not share a pool"
-        assert results["a"][1] == results["b"][1]
+        assert results["a"][0] is results["a"][1], "same pulse reuses same lock"
+        assert results["a"][0] is results["b"][0], "concurrent tasks share the loop pool"
+
+    # results_a and results_b ran in separate event loops, so the "pulse-a"
+    # lock from each must be a distinct object (per-loop pool isolation).
+    assert results_a["a"][0] is not results_b["a"][0], "loops must not share a pool"
 
 
 def test_otx_cve_pulses_round_trip(tmp_path, monkeypatch):

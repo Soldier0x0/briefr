@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import Optional
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 PACKETSTORM_FILE_RE = re.compile(r"/files/(\d+)/([^/?#]+)", re.I)
 MAX_REFERENCE_EXPLOIT_CARDS = 12
@@ -206,12 +206,25 @@ def packetstorm_file_id(url: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _url_host(url: str) -> str | None:
+    try:
+        host = urlsplit(url).hostname
+    except ValueError:
+        return None
+    return host.lower() if host else None
+
+
+def _is_github_host(url: str) -> bool:
+    host = _url_host(url) or ""
+    return host == "github.com" or host.endswith(".github.com")
+
+
 def _reference_card_priority(lower_url: str) -> int:
     if "metasploit" in lower_url:
         return 0
     if "exploit-db" in lower_url or "exploitdb" in lower_url:
         return 1
-    if "github.com" in lower_url:
+    if _is_github_host(lower_url):
         return 2
     if "packetstorm" in lower_url:
         return 4
@@ -246,7 +259,7 @@ def refs_to_exploit_cards(has_poc: bool, source_urls: list | None) -> list[dict]
             exploit_type = "weaponised"
             source = "Exploit-DB"
             title = "Exploit-DB entry"
-        elif "github.com" in lower and any(
+        elif _is_github_host(lower) and any(
             k in lower for k in ("poc", "exploit", "cve-", "log4j", "payload")
         ):
             source = "GitHub"

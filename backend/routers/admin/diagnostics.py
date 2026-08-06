@@ -221,8 +221,8 @@ async def run_smoke_test(request: Request):
             "passed": integrity_ok,
             "detail": result.message,
         })
-    except Exception as exc:
-        checks.append({"name": "db checks", "passed": False, "detail": str(exc)[:200]})
+    except Exception:
+        checks.append({"name": "db checks", "passed": False, "detail": "db unavailable"})
 
     # 2. At least one feed source healthy
     feed_health = get_feed_health()
@@ -239,8 +239,8 @@ async def run_smoke_test(request: Request):
         bdir = pathlib.Path(backup_dir)
         backup_ok = bdir.exists() and os.access(backup_dir, os.W_OK)
         checks.append({"name": "backup dir writable", "passed": backup_ok, "detail": backup_dir})
-    except Exception as exc:
-        checks.append({"name": "backup dir writable", "passed": False, "detail": str(exc)[:100]})
+    except Exception:
+        checks.append({"name": "backup dir writable", "passed": False, "detail": "not writable or missing"})
 
     duration_ms = round(_time.time() * 1000 - start_ms)
     all_passed = all(c["passed"] for c in checks)

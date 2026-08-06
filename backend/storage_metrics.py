@@ -112,8 +112,8 @@ def read_host_disk_io(db_path: str) -> dict[str, Any]:
 
     try:
         lines = proc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-    except OSError as exc:
-        return {"available": False, "reason": str(exc)}
+    except OSError:
+        return {"available": False, "reason": "proc_unreadable"}
 
     match: list[str] | None = None
     for line in lines:
