@@ -61,7 +61,7 @@ def test_schema_split_after_migrations():
                 """
                 SELECT table_schema, table_name
                 FROM information_schema.tables
-                WHERE table_type = 'BASE TABLE'
+                WHERE table_type IN ('BASE TABLE', 'VIEW')
                   AND table_schema IN ('intel', 'app', 'public')
                 ORDER BY table_schema, table_name
                 """
