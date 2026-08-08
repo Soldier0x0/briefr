@@ -137,7 +137,7 @@ def confidence_for_ioc_edge(
         "k_sources": k_sources,
         "k_receipts": k_receipts,
         "reason": (
-            "Independent ThreatFox observation corroborates this indicator"
+            "Independent corroborating source observation"
             if corroborated_by
             else "Single community (OTX) source"
         ),

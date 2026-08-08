@@ -51,7 +51,7 @@ OPERATION_LABELS: dict[str, str] = {
     "cve_ingest": "Syncing NVD vulnerability feed",
     "exploit_feed_sync": "Syncing public exploit index",
     "news_feed_sync": "Syncing incident news feed",
-    "threat_intel_sync": "Syncing ThreatFox indicators",
+    "threat_intel_sync": "Syncing TI catalog indicators",
     "osv_lookup": "Fetching OSV vulnerability record",
     "outbound_request": "Outbound API request",
     "webhook_delivery": "Delivering webhook notification",

@@ -234,6 +234,15 @@ jobs:
   source_refs:
   - type: job
     ref: threatfox_sync
+- id: urlhaus_sync
+  title: URLhaus IOC Mirror Sync
+  summary: Scheduled job registered in scheduler.py (id=urlhaus_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: urlhaus_sync
 - id: vulncheck_kev_sync
   title: VulnCheck KEV Tier Sync
   summary: Scheduled job registered in scheduler.py (id=vulncheck_kev_sync).

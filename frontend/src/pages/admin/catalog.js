@@ -149,6 +149,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Mirrors Abuse.ch ThreatFox IOC feeds for correlation and watchlist matching.',
     refreshButton: 'Refresh ThreatFox',
   },
+  urlhaus_sync: {
+    label: 'URLhaus IOC mirror',
+    short: 'URLhaus',
+    operatorName: 'URLhaus IOC Mirror Sync',
+    analystDescription: 'Mirrors Abuse.ch URLhaus URL catalog for multi-source correlation evidence.',
+    refreshButton: 'Refresh URLhaus',
+  },
   vulncheck_kev_sync: {
     label: 'VulnCheck KEV tier',
     short: 'VulnCheck KEV',

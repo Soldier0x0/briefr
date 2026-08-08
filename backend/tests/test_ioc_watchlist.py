@@ -122,6 +122,24 @@ def test_parse_threatfox_ioc_url_extracts_domain():
     assert row["ioc_value"] == "116.202.5.101"
 
 
+def test_parse_threatfox_ioc_url_downcast_drops_www():
+    """URL→DOMAIN downcast must drop a leading ``www.`` to match the canonical
+    DOMAIN edge value used by corroboration joins."""
+    row = parse_threatfox_ioc(
+        {
+            "id": "100",
+            "ioc": "http://www.evil.example/download.exe",
+            "ioc_type": "url",
+            "malware_printable": "Emotet",
+            "confidence_level": 100,
+            "first_seen": "2024-01-01",
+        }
+    )
+    assert row is not None
+    assert row["ioc_type"] == "domain"
+    assert row["ioc_value"] == "evil.example"
+
+
 def test_retro_match_local_join(tmp_path, monkeypatch):
     db_path = tmp_path / "retro.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
