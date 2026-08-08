@@ -156,6 +156,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Mirrors Abuse.ch URLhaus URL catalog for multi-source correlation evidence.',
     refreshButton: 'Refresh URLhaus',
   },
+  malwarebazaar_sync: {
+    label: 'MalwareBazaar IOC mirror',
+    short: 'MalwareBazaar',
+    operatorName: 'MalwareBazaar IOC Mirror Sync',
+    analystDescription: 'Mirrors Abuse.ch MalwareBazaar hash catalog for multi-source correlation evidence.',
+    refreshButton: 'Refresh MalwareBazaar',
+  },
   vulncheck_kev_sync: {
     label: 'VulnCheck KEV tier',
     short: 'VulnCheck KEV',

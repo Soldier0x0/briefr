@@ -299,6 +299,7 @@ This is a distinct, larger workstream and intentionally excluded here. The catal
 ### Phase 3 — Second source (MalwareBazaar) + retro-match cutover
 - Generalize `retro_match.py` UNION to `ti_mirror_iocs`.
 - **Verify:** watchlist retro-match hits across ThreatFox + URLhaus + MalwareBazaar mirrors; drop legacy physical table after soak.
+- **Status: implemented (2026-08-08).** `feeds/malwarebazaar.py` (recent_detections, hours↔days window), registry descriptor, scheduler job `malwarebazaar_sync` (env `MALWAREBAAZAAR_SYNC_ENABLED`/`_HOURS`/`_DAYS`), frontend `JOB_CATALOG` entry. `retro_match` now joins the unified `ti_mirror_iocs` across every catalog source (URL↔DOMAIN via `host_ioc`), webhook evidence columns generalized to `mirror_*`. Hash corroboration reaches three distinct sources. Legacy `threatfox_iocs` view (`alembic 039`) still exists for soak; a later PR can drop it.
 
 ### Merge gate
 - `./scripts/verify-local.sh` green (per AGENTS.md).

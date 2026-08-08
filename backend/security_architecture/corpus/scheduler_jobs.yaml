@@ -153,6 +153,15 @@ jobs:
   source_refs:
   - type: job
     ref: llm_product_extraction
+- id: malwarebazaar_sync
+  title: MalwareBazaar IOC Mirror Sync
+  summary: Scheduled job registered in scheduler.py (id=malwarebazaar_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: malwarebazaar_sync
 - id: nightly_correlation
   title: BRIEFR Nightly Correlation Engine
   summary: Scheduled job registered in scheduler.py (id=nightly_correlation).

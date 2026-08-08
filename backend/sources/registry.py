@@ -11,6 +11,7 @@ from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from correlation.ioc_normalize import normalize_ioc_type
+from feeds.malwarebazaar import fetch_malwarebazaar_iocs
 from feeds.threatfox import fetch_threatfox_iocs
 from feeds.urlhaus import fetch_urlhaus_iocs
 
@@ -72,6 +73,22 @@ CATALOG_SOURCES: tuple[SourceDescriptor, ...] = (
             }
         ),
         receipt_prefix="urlhaus",
+        retention_hours=24 * 7,
+    ),
+    SourceDescriptor(
+        source_key="malwarebazaar",
+        enabled_env="MALWAREBAAZAAR_SYNC_ENABLED",
+        key_env="ABUSECH_AUTH_KEY",
+        pacing_key="malwarebazaar",
+        sync_interval_hours_env="MALWAREBAAZAAR_SYNC_INTERVAL_HOURS",
+        sync_window_days_env="MALWAREBAAZAAR_SYNC_DAYS",
+        fetch=fetch_malwarebazaar_iocs,
+        mirror_type_map=MappingProxyType(
+            {
+                "HASH": "hash",
+            }
+        ),
+        receipt_prefix="malwarebazaar",
         retention_hours=24 * 7,
     ),
 )

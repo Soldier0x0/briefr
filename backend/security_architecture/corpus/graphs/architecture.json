@@ -329,6 +329,18 @@
       ]
     },
     {
+      "id": "job:malwarebazaar_sync",
+      "label": "MalwareBazaar IOC Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "malwarebazaar_sync"
+        }
+      ]
+    },
+    {
       "id": "job:nightly_correlation",
       "label": "BRIEFR Nightly Correlation Engine",
       "kind": "job",
@@ -3161,6 +3173,30 @@
     {
       "id": "job:llm_product_extraction->table:ti_mirror_iocs",
       "source": "job:llm_product_extraction",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:cve_exploits",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:cves",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:otx_pulse_iocs",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:ti_mirror_iocs",
+      "source": "job:malwarebazaar_sync",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },

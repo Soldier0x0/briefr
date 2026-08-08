@@ -342,6 +342,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "kev_backlog_reconcile": "run_kev_backlog_reconcile",
     "threatfox_sync": "run_threatfox_sync",
     "urlhaus_sync": "run_urlhaus_sync",
+    "malwarebazaar_sync": "run_malwarebazaar_sync",
     "vulncheck_kev_sync": "run_vulncheck_kev_sync",
     "ioc_retro_match": "run_ioc_retro_match",
     "epss_score_sync": "run_epss_sync",

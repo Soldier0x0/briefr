@@ -989,6 +989,10 @@ async def run_urlhaus_sync() -> bool:
     return await run_catalog_sync("urlhaus")
 
 
+async def run_malwarebazaar_sync() -> bool:
+    return await run_catalog_sync("malwarebazaar")
+
+
 async def run_vulncheck_kev_sync() -> bool:
     if get_lock("vulncheck_kev_sync").locked():
         logger.warning("VulnCheck KEV sync already in progress — skipping")
@@ -1048,7 +1052,7 @@ async def run_ioc_retro_match() -> bool:
             from ioc.retro_match import run_ioc_retro_match as _retro
             from webhooks.alerts import process_ioc_watchlist_hit_webhooks
 
-            _job_progress["ioc_retro_match"] = "Matching IOC watchlist against local OTX + ThreatFox mirrors…"
+            _job_progress["ioc_retro_match"] = "Matching IOC watchlist against local OTX + catalog mirrors…"
             matches = await _retro()
             if matches:
                 sent = await process_ioc_watchlist_hit_webhooks(matches)
@@ -2324,6 +2328,18 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
+    )
+
+    malwarebazaar_hours = int(os.environ.get("MALWAREBAAZAAR_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_malwarebazaar_sync,
+        trigger=IntervalTrigger(hours=max(1, malwarebazaar_hours), timezone=sched_tz),
+        id="malwarebazaar_sync",
+        name="MalwareBazaar IOC Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=150),
     )
 
     vulncheck_hours = int(os.environ.get("VULNCHECK_KEV_SYNC_INTERVAL_HOURS", "24"))
