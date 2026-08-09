@@ -16,12 +16,16 @@
 </p>
 
 <p align="center">
+  <a href="#what-is-briefr">What is BRIEFR?</a> ·
   <a href="#screenshots">Screenshots</a> ·
-  <a href="#why-briefr">Why BRIEFR?</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#documentation">Docs</a> ·
   <a href="#license">License</a>
 </p>
+
+---
+
+## What is BRIEFR?
 
 BRIEFR is a self-hosted CVE intelligence platform. It pulls vulnerability data
 from public and community sources — NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, OTX,
@@ -46,26 +50,35 @@ navigator, hunt packs).
 Some boundaries, so you know what you're getting: BRIEFR is not a scanner or ASM
 tool — it prioritizes known CVEs, it doesn't find your assets. Stack matching is
 term-based, not SBOM-precise. Community attribution is labeled as such. Data is
-as fresh as the upstream feeds and your own sync schedule; nothing is real-time.
-One instance, self-hosted: your hardware, your data.
+as fresh as each upstream feed allows, and BRIEFR syncs on a schedule that
+respects that feed's rate limits; nothing is real-time. One instance, self-hosted:
+your hardware, your data.
 
-**Stack:** FastAPI · React 19 · PostgreSQL 16 (+ pgvector for embeddings) · APScheduler. Production requires Postgres; SQLite remains a zero-config dev/test fallback until [PR #752](https://github.com/Soldier0x0/briefr/pull/752) lands.
+**Stack:** FastAPI · React 19 · PostgreSQL 16 (+ pgvector for embeddings) ·
+APScheduler. Bring your own API keys for upstream feeds.
 
-Apache 2.0: clone, self-host, modify, and use commercially with attribution ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE)). Bring your own API keys for upstream feeds.
+Apache 2.0: clone, self-host, modify, and use commercially with attribution
+([`LICENSE`](LICENSE), [`NOTICE`](NOTICE)).
 
-| Link | What it is |
-|------|------------|
-| **Live demo** | https://briefrdemo.projectjupiter.in — 1:1 analyst UI with fixture data (no install, no backend) |
-| **Self-host** | [docs/SELF_HOST.md](docs/SELF_HOST.md) — install your own PostgreSQL-backed deployment |
-| **Documentation** | https://docs.projectjupiter.in |
+---
 
-The demo is a static showroom ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)): same shell as production, frozen JSON instead of a database. Forge, hunt-pack generation, and IOC enrichment are visual-only.
+## Try it
+
+- **Live demo** — [briefrdemo.projectjupiter.in](https://briefrdemo.projectjupiter.in),
+  1:1 analyst UI with fixture data, no install and no backend.
+- **Self-host** — [docs/SELF_HOST.md](docs/SELF_HOST.md), install your own
+  PostgreSQL-backed deployment.
+- **Documentation** — [docs.projectjupiter.in](https://docs.projectjupiter.in).
+
+The demo is a static showroom ([`briefr-demo`](https://github.com/Soldier0x0/briefr-demo)):
+the same shell as production over frozen JSON instead of a database. Forge,
+hunt-pack generation, and IOC enrichment are visual-only there.
 
 ---
 
 ## Screenshots
 
-Reference screenshots from a self-hosted PostgreSQL deployment (July 2026). Regenerate: [`scripts/capture_readme_screenshots.mjs`](scripts/capture_readme_screenshots.mjs) — see [`docs/IMAGE_BRIEFS.md`](docs/IMAGE_BRIEFS.md). On [docs.projectjupiter.in](https://docs.projectjupiter.in/docs/user-guide/using-briefr), click any screenshot to expand inline.
+Screenshots from a self-hosted PostgreSQL deployment.
 
 <table>
 <tr>
@@ -84,9 +97,9 @@ Reference screenshots from a self-hosted PostgreSQL deployment (July 2026). Rege
 
 ## Getting started
 
-**Install paths (SQLite dev, Postgres dev, production):** [`docs/SELF_HOST.md`](docs/SELF_HOST.md)
+Install guide: [`docs/SELF_HOST.md`](docs/SELF_HOST.md)
 
-### Quick local development (not production)
+### Try BRIEFR locally
 
 ```bash
 git clone https://github.com/Soldier0x0/briefr.git
@@ -98,14 +111,17 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ```bash
-cd ../frontend && npm install && npm run dev   # http://localhost:5173 — dev only
+cd ../frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
-Open http://localhost:5173 → first-run setup creates the admin user.
+Open http://localhost:5173 — first-run setup creates the admin user.
 
 ### Production install (PostgreSQL + nginx)
 
-For a permanent system, use [SELF_HOST §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx): provision **`pgvector/pgvector:pg16`**, then `bash deploy/briefr-install.sh` (or `deploy/setup.sh`). That runs `npm run build`, configures **systemd + nginx**, and serves the built SPA — not the Vite dev server.
+For a permanent system, use [SELF_HOST §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx):
+provision **`pgvector/pgvector:pg16`**, then `bash deploy/briefr-install.sh`
+(or `deploy/setup.sh`). That runs `npm run build`, configures **systemd + nginx**,
+and serves the built SPA.
 
 ```bash
 curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
@@ -116,9 +132,6 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 | [SELF_HOST §2](docs/SELF_HOST.md#2-local-development-with-postgresql--pgvector) | Postgres + pgvector dev |
 | [SELF_HOST §3](docs/SELF_HOST.md#3-production-debian--systemd--nginx) | Production Debian deploy |
 | [POSTGRES.md](docs/POSTGRES.md) | Backups, restore, pgvector |
-| [ONBOARDING.md](docs/ONBOARDING.md) | Development and tests |
-
-Optional seed data: `python scripts/seed_screenshot_data.py` from repo root.
 
 ---
 
@@ -143,7 +156,8 @@ Index: [`docs/index.md`](docs/index.md)
 
 ## API
 
-Full catalog: [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md). Interactive Swagger at `http://localhost:8000/api/docs` (disable in production via `BRIEFR_ENV=production`).
+Full catalog: [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md). Interactive Swagger
+at `http://localhost:8000/api/docs` (disable in production via `BRIEFR_ENV=production`).
 
 Environment variables: `backend/.env.example`
 
@@ -151,6 +165,7 @@ Environment variables: `backend/.env.example`
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). Contributions: [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports: [`SECURITY.md`](SECURITY.md) (no public issues for vulnerabilities).
+Apache License 2.0 — see [`LICENSE`](LICENSE). Contributions: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Security reports: [`SECURITY.md`](SECURITY.md) (no public issues for vulnerabilities).
 
 Copyright © 2026 Sai Harsha Vardhan.
