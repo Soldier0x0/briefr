@@ -4,7 +4,7 @@
 </p>
 
 <h1 align="center">BRIEFR</h1>
-<p align="center"><strong>Self-hosted CVE intelligence for security analysts</strong></p>
+<p align="center"><strong>Self-hosted CVE intelligence and detection engineering</strong></p>
 
 <p align="center">
   <img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-blue.svg">
@@ -17,13 +17,41 @@
 
 <p align="center">
   <a href="#screenshots">Screenshots</a> ·
-  <a href="#what-it-does">What it does</a> ·
+  <a href="#why-briefr">Why BRIEFR?</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#documentation">Docs</a> ·
   <a href="#license">License</a>
 </p>
 
-BRIEFR aggregates NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, and optional threat feeds into one searchable UI — IOC lookup, explainable correlation, detection helpers, and PDF export. Apache 2.0: clone, self-host, modify, and use commercially with attribution ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE)). Bring your own API keys for upstream feeds.
+BRIEFR is a self-hosted CVE intelligence platform. It pulls vulnerability data
+from public and community sources — NVD, CISA KEV, EPSS, MITRE ATT&CK/ATLAS, OTX,
+abuse.ch, exploit indexes, RSS news — into a local PostgreSQL database and gives
+you a single UI to work through it: a daily brief, a searchable feed, IOC lookup,
+and detection rule generation.
+
+### Why BRIEFR?
+
+The public feeds are just the input; they're not really the point. BRIEFR's value
+is what it does with them: rule-based prioritization (Operational Priority P1–P4,
+threat score, environment relevance, SSVC), correlation that shows *why* CVEs are
+related (campaigns, shared infrastructure, actor/sector, timing), and Sigma /
+YARA / SIEM rule generation from a local SigmaHQ mirror. Everything is
+deterministic and documented — no black-box model. LLMs are optional and only
+narrate at the edges.
+
+The five tabs cover the workflow: **BRIEF** (morning queue), **FEED** (CVE list
+and search), **IOC LOOKUP**, **INCIDENTS & NEWS**, and **FORGE** (ATT&CK
+navigator, hunt packs).
+
+Some boundaries, so you know what you're getting: BRIEFR is not a scanner or ASM
+tool — it prioritizes known CVEs, it doesn't find your assets. Stack matching is
+term-based, not SBOM-precise. Community attribution is labeled as such. Data is
+as fresh as the upstream feeds and your own sync schedule; nothing is real-time.
+One instance, self-hosted: your hardware, your data.
+
+**Stack:** FastAPI · React 19 · PostgreSQL 16 (+ pgvector for embeddings) · APScheduler. Production requires Postgres; SQLite remains a zero-config dev/test fallback until [PR #752](https://github.com/Soldier0x0/briefr/pull/752) lands.
+
+Apache 2.0: clone, self-host, modify, and use commercially with attribution ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE)). Bring your own API keys for upstream feeds.
 
 | Link | What it is |
 |------|------------|
@@ -51,22 +79,6 @@ Reference screenshots from a self-hosted PostgreSQL deployment (July 2026). Rege
 <td align="center"><img src="docs/assets/screenshots/admin-security.png" alt="Admin Security" width="360" /><br><sub>Admin</sub></td>
 </tr>
 </table>
-
----
-
-## What it does
-
-| Tab | Label | Purpose |
-|-----|-------|---------|
-| `brief` | **BRIEF** | Morning queue, charts, heatmap, what changed |
-| `feed` | **FEED** | CVE list, stack filter, KEV deadlines, hybrid search, export |
-| `ioc` | **IOC LOOKUP** | IP / hash / domain enrichment |
-| `atlas` | **INCIDENTS & NEWS** | Security RSS + MITRE ATLAS narratives |
-| `forge` | **FORGE** | ATT&CK navigator, scenarios, campaigns, hunt packs |
-
-**Highlights:** incremental NVD ingest · KEV/EPSS/CVSS · explainable OTX correlation · local SigmaHQ index · semantic search (optional embeddings) · built-in login · no third-party analytics.
-
-**Stack:** FastAPI · React 19 · PostgreSQL 16 (+ pgvector for embeddings) · APScheduler. Production requires Postgres; SQLite remains a zero-config dev/test fallback until [PR #752](https://github.com/Soldier0x0/briefr/pull/752) lands.
 
 ---
 
