@@ -37,7 +37,7 @@ timeline within **10 business days** for confirmed issues.
 
 - Issues in third-party services (NVD, VirusTotal, cloud providers, etc.)
 - Missing security headers or rate limits on intentionally local/dev deployments
-  without `BRIEFR_ENV=production`
+  (`BRIEFR_ENV=development`)
 - Social engineering or physical access scenarios
 
 ## Secret scanning

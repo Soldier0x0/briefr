@@ -157,7 +157,7 @@ Index: [`docs/index.md`](docs/index.md)
 ## API
 
 Full catalog: [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md). Interactive Swagger
-at `http://localhost:8000/api/docs` (disable in production via `BRIEFR_ENV=production`).
+at `http://localhost:8000/api/docs` (enabled only in development — `BRIEFR_ENV=development`; production disables it).
 
 Environment variables: `backend/.env.example`
 

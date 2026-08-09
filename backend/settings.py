@@ -31,14 +31,14 @@ logger = logging.getLogger(__name__)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
-    briefr_env: str = "development"
+    briefr_env: str = "production"
     allowed_origins: str = "http://localhost:3000"
     database_url: str = ""
     db_path: str = ""
     database_pool_size: int = 10
     database_pool_acquire_timeout_seconds: int = 10
     database_pool_command_timeout_seconds: int = 60  # SQL only; not feed HTTP
-    briefr_require_postgres: bool = False
+    briefr_require_postgres: bool = True
 
     # §5.5 — structured logging + rate limiting (import-time config)
     log_format: str = "json"

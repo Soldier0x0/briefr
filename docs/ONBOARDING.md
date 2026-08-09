@@ -168,8 +168,8 @@ All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebra
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit **or** set empty (`DATABASE_URL=""`) for zero-config local SQLite. If `.env` has a placeholder Postgres DSN and nothing listens on `:5432`, startup fails with `ConnectionRefusedError` — clear the URL and set `BRIEFR_REQUIRE_POSTGRES=0` (cloud/bare VM; see `AGENTS.md`) |
-| `BRIEFR_REQUIRE_POSTGRES` | `0` | Set `1` to refuse startup unless `DATABASE_URL` is a real Postgres connection (recommended in production). Use `0` with empty `DATABASE_URL` for SQLite-only cloud/dev boxes without Docker |
+| `DATABASE_URL` | — | PostgreSQL DSN (`postgresql://user:pass@host:5432/dbname`); omit **or** set empty (`DATABASE_URL=""`) for zero-config local SQLite. If `.env` has a placeholder Postgres DSN and nothing listens on `:5432`, startup fails with `ConnectionRefusedError` — clear the URL and set `BRIEFR_REQUIRE_POSTGRES=0` (bare VM without Docker) |
+| `BRIEFR_REQUIRE_POSTGRES` | `1` | Refuse startup unless `DATABASE_URL` is a real PostgreSQL connection (product default; production is Postgres-only). Set `0` only as an explicit dev/test SQLite fallback with an empty `DATABASE_URL` |
 | `DATABASE_POOL_SIZE` | `10` | asyncpg pool size |
 | `DATABASE_POOL_COMMAND_TIMEOUT_SECONDS` | `60` | SQL statement timeout only — not feed HTTP; see [POSTGRES.md](POSTGRES.md) |
 | `BACKUP_DIR` | `/var/lib/briefr/backups` | Integrity-checked archive directory |
@@ -237,7 +237,7 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
 |----------|---------|---------|
 | `ALLOWED_ORIGINS` | localhost dev URLs | CORS origins (comma-separated) |
 | `DEFAULT_TIMEZONE` | `Asia/Kolkata` | Health / time display default |
-| `BRIEFR_ENV` | `development` | `production` disables Swagger/OpenAPI docs |
+| `BRIEFR_ENV` | `production` | `production` disables Swagger/OpenAPI docs and requires `JWT_SECRET`; set `development` for local dev |
 | `RATE_LIMIT_ENABLED` | `1` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` (429 + `Retry-After`) |
 | `RATE_LIMIT_IOC_PER_MINUTE` | `30` | Per-client-IP budget for `POST /api/ioc/lookup` |
 | `RATE_LIMIT_REFRESH_PER_MINUTE` | `10` | Per-client-IP budget shared by all `POST /api/refresh*` routes |
