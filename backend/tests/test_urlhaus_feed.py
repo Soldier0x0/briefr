@@ -124,7 +124,7 @@ def test_fetch_urlhaus_iocs_handles_bad_status(monkeypatch):
         asyncio.run(fetch_urlhaus_iocs("test-key"))
 
 
-def test_fetch_urlhaus_iocs_handles_non_list_urls(monkeypatch):
+def test_fetch_urlhaus_iocs_raises_on_non_list_urls(monkeypatch):
     async def fake_request(*args, **kwargs):
         return _FakeResponse(200, {"query_status": "ok", "urls": "not-a-list"})
 
@@ -134,7 +134,22 @@ def test_fetch_urlhaus_iocs_handles_non_list_urls(monkeypatch):
     monkeypatch.setattr("feeds.urlhaus.resilient_request", fake_request)
     monkeypatch.setattr("feeds.urlhaus.record_api_call", fake_record)
 
-    assert asyncio.run(fetch_urlhaus_iocs("test-key")) == []
+    with pytest.raises(FeedFetchError, match="not a list"):
+        asyncio.run(fetch_urlhaus_iocs("test-key"))
+
+
+def test_fetch_urlhaus_iocs_raises_on_non_object_body(monkeypatch):
+    async def fake_request(*args, **kwargs):
+        return _FakeResponse(200, "plain-string-body")
+
+    async def fake_record(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("feeds.urlhaus.resilient_request", fake_request)
+    monkeypatch.setattr("feeds.urlhaus.record_api_call", fake_record)
+
+    with pytest.raises(FeedFetchError, match="non-object"):
+        asyncio.run(fetch_urlhaus_iocs("test-key"))
 
 
 def test_fetch_urlhaus_iocs_skips_non_dict_entries(monkeypatch):

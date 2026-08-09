@@ -100,14 +100,16 @@ async def fetch_urlhaus_iocs(auth_key: str, *, days: int = 7) -> list[dict[str, 
     except (ValueError, TypeError) as exc:
         logger.warning("URLhaus returned non-JSON body: %s", exc)
         raise FeedFetchError("URLhaus non-JSON body") from exc
-    if not isinstance(body, dict) or body.get("query_status") != "ok":
+    if not isinstance(body, dict):
+        logger.warning("URLhaus returned non-object body: %r", body)
+        raise FeedFetchError("URLhaus non-object body")
+    if body.get("query_status") != "ok":
         logger.warning("URLhaus query_status: %s", body.get("query_status"))
         raise FeedFetchError(f"URLhaus query_status: {body.get('query_status')}")
 
     urls = body.get("urls")
     if not isinstance(urls, list):
-        logger.warning("URLhaus response 'urls' is not a list — treating as empty")
-        return []
+        raise FeedFetchError("URLhaus urls payload is not a list")
 
     parsed: list[dict[str, str]] = []
     for entry in urls:
