@@ -76,7 +76,7 @@ API_LIMITS: dict[str, dict] = {
         "daily_limit": None,
         "monthly_limit": None,
         "rate_limit": "Fair use · Auth-Key required",
-        "notes": "One POST per hash lookup. Same ABUSECH_AUTH_KEY as URLhaus. IOC cache 6h.",
+        "notes": "Scheduled recent_detections catalog sync (catalog mirror). Same ABUSECH_AUTH_KEY as URLhaus. IOC cache 6h.",
         "docs_url": "https://bazaar.abuse.ch/api/",
         "cache_hours": 6,
     },

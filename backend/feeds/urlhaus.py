@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from correlation.ioc_normalize import _url_host, normalize_ioc
+from feeds.errors import FeedFetchError
 from feeds.extended import abusech_headers
 from resilient_client import CircuitOpenError, resilient_request
 from tracking import record_api_call
@@ -83,28 +84,35 @@ async def fetch_urlhaus_iocs(auth_key: str, *, days: int = 7) -> list[dict[str, 
             queue_context_id="urlhaus_sync",
         )
         await record_api_call("urlhaus", 1)
-    except CircuitOpenError:
-        logger.warning("URLhaus circuit open — skipping sync")
-        return []
+    except CircuitOpenError as exc:
+        logger.warning("URLhaus circuit open — sync failed")
+        raise FeedFetchError("URLhaus circuit open") from exc
     except Exception as exc:
         logger.error("URLhaus fetch failed: %s", exc)
-        return []
+        raise FeedFetchError("URLhaus request failed") from exc
 
     if response.status_code != 200:
         logger.warning("URLhaus HTTP %s", response.status_code)
-        return []
+        raise FeedFetchError(f"URLhaus HTTP {response.status_code}")
 
     try:
         body = response.json()
     except (ValueError, TypeError) as exc:
         logger.warning("URLhaus returned non-JSON body: %s", exc)
-        return []
+        raise FeedFetchError("URLhaus non-JSON body") from exc
     if not isinstance(body, dict) or body.get("query_status") != "ok":
         logger.warning("URLhaus query_status: %s", body.get("query_status"))
+        raise FeedFetchError(f"URLhaus query_status: {body.get('query_status')}")
+
+    urls = body.get("urls")
+    if not isinstance(urls, list):
+        logger.warning("URLhaus response 'urls' is not a list — treating as empty")
         return []
 
     parsed: list[dict[str, str]] = []
-    for entry in body.get("urls") or []:
+    for entry in urls:
+        if not isinstance(entry, dict):
+            continue
         row = parse_urlhaus_entry(entry)
         if row:
             parsed.append(row)

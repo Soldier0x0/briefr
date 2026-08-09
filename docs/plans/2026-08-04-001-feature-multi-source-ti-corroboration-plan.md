@@ -230,7 +230,7 @@ Exemplar config/env (all with sensible defaults, matching existing conventions):
 |--------|-------------|------------------------|-----------------------|------------|
 | ThreatFox (existing) | `ABUSECH_AUTH_KEY` | `THREATFOX_SYNC_INTERVAL_HOURS` (24) | `THREATFOX_SYNC_DAYS` (7) | `threatfox` |
 | URLhaus | `ABUSECH_AUTH_KEY` | `URLHAUS_SYNC_INTERVAL_HOURS` (24) | `URLHAUS_SYNC_DAYS` (7) | `urlhaus` |
-| MalwareBazaar | `ABUSECH_AUTH_KEY` | `MALWAREBAAZAAR_SYNC_INTERVAL_HOURS` (24) | `MALWAREBAAZAAR_SYNC_DAYS` (7) | `malwarebazaar` |
+| MalwareBazaar | `ABUSECH_AUTH_KEY` | `MALWAREBAZAAR_SYNC_INTERVAL_HOURS` (24) | `MALWAREBAZAAR_SYNC_DAYS` (7) | `malwarebazaar` |
 | (next sources…) | … | … | … | … |
 
 Pacing profiles for `urlhaus`, `malwarebazaar`, `threatfox`, `circl`, `virustotal`, `abuseipdb` already exist (`source_rate_limits.py:93-168`); new upstreams get one-line additions to `PACING_PROFILES` plus `API_LIMITS` in `tracking.py`.
@@ -299,7 +299,7 @@ This is a distinct, larger workstream and intentionally excluded here. The catal
 ### Phase 3 — Second source (MalwareBazaar) + retro-match cutover
 - Generalize `retro_match.py` UNION to `ti_mirror_iocs`.
 - **Verify:** watchlist retro-match hits across ThreatFox + URLhaus + MalwareBazaar mirrors; drop legacy physical table after soak.
-- **Status: implemented (2026-08-08).** `feeds/malwarebazaar.py` (recent_detections, hours↔days window), registry descriptor, scheduler job `malwarebazaar_sync` (env `MALWAREBAAZAAR_SYNC_ENABLED`/`_HOURS`/`_DAYS`), frontend `JOB_CATALOG` entry. `retro_match` now joins the unified `ti_mirror_iocs` across every catalog source (URL↔DOMAIN via `host_ioc`), webhook evidence columns generalized to `mirror_*`. Hash corroboration reaches three distinct sources. Legacy `threatfox_iocs` view (`alembic 039`) still exists for soak; a later PR can drop it.
+- **Status: implemented (2026-08-08).** `feeds/malwarebazaar.py` (recent_detections, hours↔days window), registry descriptor, scheduler job `malwarebazaar_sync` (env `MALWAREBAZAAR_SYNC_ENABLED`/`_HOURS`/`_DAYS`), frontend `JOB_CATALOG` entry. `retro_match` now joins the unified `ti_mirror_iocs` across every catalog source (URL↔DOMAIN via `host_ioc`), webhook evidence columns generalized to `mirror_*`. Hash corroboration reaches three distinct sources. Legacy `threatfox_iocs` view (`alembic 039`) still exists for soak; a later PR can drop it.
 
 ### Merge gate
 - `./scripts/verify-local.sh` green (per AGENTS.md).

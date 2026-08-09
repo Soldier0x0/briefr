@@ -970,13 +970,18 @@ async def run_catalog_sync(source_key: str) -> bool:
 
 
 def _catalog_window_days(desc) -> int:
-    """Window days for a catalog source from its registry env (default 7)."""
+    """Window days for a catalog source from its registry env (default 7).
+
+    Clamped to the 7-day catalog ceiling shared by every mirror source
+    (ThreatFox max 7, MalwareBazaar recent_detections max 168 h), so an
+    over-large env value can't silently diverge between sources.
+    """
     env_key = desc.sync_window_days_env
     if not env_key:
         return 7
     raw = os.environ.get(env_key, "7").strip()
     try:
-        return max(1, int(raw))
+        return max(1, min(int(raw), 7))
     except ValueError:
         return 7
 
@@ -2330,7 +2335,7 @@ def start_scheduler() -> AsyncIOScheduler:
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
     )
 
-    malwarebazaar_hours = int(os.environ.get("MALWAREBAAZAAR_SYNC_INTERVAL_HOURS", "24"))
+    malwarebazaar_hours = int(os.environ.get("MALWAREBAZAAR_SYNC_INTERVAL_HOURS", "24"))
     scheduler.add_job(
         run_malwarebazaar_sync,
         trigger=IntervalTrigger(hours=max(1, malwarebazaar_hours), timezone=sched_tz),

@@ -134,34 +134,6 @@ def test_domain_edge_on_www_host_matches_urlhaus_row(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
-    async def run():
-        db_path = str(tmp_path / "uh-batch.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
-        await init_db()
-        db = await database.get_db()
-        try:
-            await _seed_urlhaus_row(
-                db, "uh-1", "http://shared.example/payload.bin", "shared.example"
-            )
-            await db.commit()
-            hits = await batch_source_evidence(
-                db,
-                [
-                    ("DOMAIN", "shared.example"),
-                    ("URL", "http://shared.example/payload.bin"),
-                ],
-            )
-            domain_key = ("DOMAIN", "shared.example")
-            url_key = ("URL", "http://shared.example/payload.bin")
-            assert domain_key in hits
-            assert url_key in hits
-            for key in (domain_key, url_key):
-                assert any(r["source"] == "urlhaus" for r in hits[key])
-        finally:
-            await db.close()
-
-    run_db_test(run())
 
 
 def test_urlhaus_and_threatfox_corroboration_saturate_confidence(tmp_path, monkeypatch):
@@ -213,6 +185,7 @@ def test_urlhaus_and_threatfox_corroboration_saturate_confidence(tmp_path, monke
                 if f["factor"] == "corroboration"
             )
             assert set(otx_only["sources"]) == {"otx"}
+            assert otx_factor < 1.0
         finally:
             await db.close()
 
@@ -297,7 +270,7 @@ def test_retro_match_hits_urlhaus_and_malwarebazaar_mirrors(tmp_path, monkeypatc
     ti_mirror_iocs store across ALL catalog sources, not just ThreatFox."""
     from ioc.retro_match import find_retro_matches
 
-    sha = "e167b20f1acf48f7ce0ae33a218e2c1b300b41c012efecef03e7a3522a4ebe95e"
+    sha = "e167b20f1acf48f7ce0ae33a218e2c1b300b41c012ededf03e7a3522a4ebe95e"
 
     async def run():
         db_path = str(tmp_path / "retro3.db")

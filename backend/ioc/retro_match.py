@@ -44,6 +44,10 @@ _RETRO_MATCH_SQL = """
            m.first_seen AS mirror_first_seen
     FROM ioc_watchlist w
     INNER JOIN ti_mirror_iocs m
+        -- LOWER() wraps defeat plain index usage on ioc_value/host_ioc.
+        -- Mirror values are stored lowercased at ingest, so this is defensive;
+        -- if the mirror grows large, add expression indexes on LOWER(ioc_value)
+        -- and LOWER(host_ioc) (PostgreSQL 16) to keep the join index-served.
         ON (
             (m.ioc_type = w.ioc_type AND LOWER(m.ioc_value) = LOWER(w.ioc_value))
             OR (m.ioc_type = 'url' AND UPPER(w.ioc_type) IN ('DOMAIN', 'URL')

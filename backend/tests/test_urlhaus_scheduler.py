@@ -125,3 +125,5 @@ def test_catalog_window_days_defaults_and_clamps(monkeypatch):
     assert _catalog_window_days(_urlhaus_desc()) == 1
     monkeypatch.setenv("URLHAUS_SYNC_DAYS", "not-a-number")
     assert _catalog_window_days(_urlhaus_desc()) == 7
+    monkeypatch.setenv("URLHAUS_SYNC_DAYS", "3650")
+    assert _catalog_window_days(_urlhaus_desc()) == 7

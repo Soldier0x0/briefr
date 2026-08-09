@@ -77,11 +77,11 @@ CATALOG_SOURCES: tuple[SourceDescriptor, ...] = (
     ),
     SourceDescriptor(
         source_key="malwarebazaar",
-        enabled_env="MALWAREBAAZAAR_SYNC_ENABLED",
+        enabled_env="MALWAREBAZAAR_SYNC_ENABLED",
         key_env="ABUSECH_AUTH_KEY",
         pacing_key="malwarebazaar",
-        sync_interval_hours_env="MALWAREBAAZAAR_SYNC_INTERVAL_HOURS",
-        sync_window_days_env="MALWAREBAAZAAR_SYNC_DAYS",
+        sync_interval_hours_env="MALWAREBAZAAR_SYNC_INTERVAL_HOURS",
+        sync_window_days_env="MALWAREBAZAAR_SYNC_DAYS",
         fetch=fetch_malwarebazaar_iocs,
         mirror_type_map=MappingProxyType(
             {

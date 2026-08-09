@@ -24,7 +24,7 @@ export default function LogoMark({ size = 'md', className = '', title, ...props 
       <path d="M11 13v22M16 13v22" stroke="var(--border-strong)" strokeWidth="2" strokeLinecap="round" />
       <rect x="22" y="14" width="22" height="3" rx="1" fill="var(--accent-primary)" />
       <rect x="22" y="22" width="15" height="2.5" rx="1" fill="var(--text-heading)" opacity="0.75" />
-      <rect x="22" y="29" width="10" height="2.5" rx="1" fill="var(--text-muted)" opacity="0.55" />
+      <rect x="22" y="29" width="10" height="2.5" rx="1" fill="var(--text-muted)" />
     </svg>
   )
 }

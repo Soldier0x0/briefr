@@ -6,8 +6,11 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from feeds.errors import FeedFetchError
 from feeds.urlhaus import URLHAUS_RECENT_API, fetch_urlhaus_iocs, parse_urlhaus_entry
 
 SAMPLE_ENTRY = {
@@ -117,7 +120,39 @@ def test_fetch_urlhaus_iocs_handles_bad_status(monkeypatch):
     monkeypatch.setattr("feeds.urlhaus.resilient_request", fake_request)
     monkeypatch.setattr("feeds.urlhaus.record_api_call", fake_record)
 
+    with pytest.raises(FeedFetchError, match="HTTP 429"):
+        asyncio.run(fetch_urlhaus_iocs("test-key"))
+
+
+def test_fetch_urlhaus_iocs_handles_non_list_urls(monkeypatch):
+    async def fake_request(*args, **kwargs):
+        return _FakeResponse(200, {"query_status": "ok", "urls": "not-a-list"})
+
+    async def fake_record(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("feeds.urlhaus.resilient_request", fake_request)
+    monkeypatch.setattr("feeds.urlhaus.record_api_call", fake_record)
+
     assert asyncio.run(fetch_urlhaus_iocs("test-key")) == []
+
+
+def test_fetch_urlhaus_iocs_skips_non_dict_entries(monkeypatch):
+    async def fake_request(*args, **kwargs):
+        return _FakeResponse(
+            200,
+            {"query_status": "ok", "urls": [SAMPLE_ENTRY, "not-a-dict", None, {"id": "bad"}]},
+        )
+
+    async def fake_record(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("feeds.urlhaus.resilient_request", fake_request)
+    monkeypatch.setattr("feeds.urlhaus.record_api_call", fake_record)
+
+    rows = asyncio.run(fetch_urlhaus_iocs("test-key"))
+    assert len(rows) == 1
+    assert rows[0]["ioc_id"] == "223622"
 
 
 def test_fetch_urlhaus_iocs_requires_key(monkeypatch):
