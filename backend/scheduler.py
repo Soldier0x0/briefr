@@ -921,43 +921,81 @@ async def run_kev_backlog_reconcile() -> bool:
     return True
 
 
-async def run_threatfox_sync() -> bool:
-    if get_lock("threatfox_sync").locked():
-        logger.warning("ThreatFox sync already in progress — skipping")
+async def run_catalog_sync(source_key: str) -> bool:
+    from sources.registry import SOURCES_BY_KEY
+
+    desc = SOURCES_BY_KEY[source_key]
+    job_id = f"{source_key}_sync"
+    if desc.enabled_env and os.environ.get(desc.enabled_env, "1").strip() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        logger.info("%s sync disabled (%s) — skipping", source_key, desc.enabled_env)
+        return True
+    if get_lock(job_id).locked():
+        logger.warning("%s sync already in progress — skipping", source_key)
         return False
 
     _start = datetime.now(timezone.utc)
     _had_error = False
     _error_msg = ""
     try:
-        async with get_lock("threatfox_sync"):
-            import os
+        async with get_lock(job_id):
+            from db.ti_mirror import upsert_ti_mirror_iocs
 
-            from db.threatfox import upsert_threatfox_iocs
-            from feeds.threatfox import fetch_threatfox_iocs, threatfox_sync_days
-
-            auth_key = os.environ.get("ABUSECH_AUTH_KEY", "")
-            if not auth_key.strip():
-                logger.debug("ThreatFox sync skipped: ABUSECH_AUTH_KEY not set")
+            api_key = os.environ.get(desc.key_env, "")
+            if not api_key.strip():
+                logger.debug("%s sync skipped: %s not set", source_key, desc.key_env)
                 return True
 
-            _job_progress["threatfox_sync"] = "Fetching ThreatFox IOC catalog…"
-            rows = await fetch_threatfox_iocs(auth_key, days=threatfox_sync_days())
+            window_days = _catalog_window_days(desc)
+            _job_progress[job_id] = f"Fetching {desc.source_key} IOC catalog…"
+            rows = await desc.fetch(api_key, days=window_days)
             db = await get_db()
             try:
-                written = await upsert_threatfox_iocs(db, rows)
+                written = await upsert_ti_mirror_iocs(db, desc.source_key, rows)
                 await db.commit()
             finally:
                 await db.close()
-            logger.info("ThreatFox sync complete: %d IOC(s)", written)
+            logger.info("%s sync complete: %d IOC(s)", desc.source_key, written)
     except Exception as _exc:
         _had_error = True
         _error_msg = str(_exc)[:500]
         raise
     finally:
-        _job_progress.pop("threatfox_sync", None)
-        await _write_job_last_run("threatfox_sync", _start, had_error=_had_error, error_message=_error_msg)
+        _job_progress.pop(job_id, None)
+        await _write_job_last_run(job_id, _start, had_error=_had_error, error_message=_error_msg)
     return True
+
+
+def _catalog_window_days(desc) -> int:
+    """Window days for a catalog source from its registry env (default 7).
+
+    Clamped to the 7-day catalog ceiling shared by every mirror source
+    (ThreatFox max 7, MalwareBazaar recent_detections max 168 h), so an
+    over-large env value can't silently diverge between sources.
+    """
+    env_key = desc.sync_window_days_env
+    if not env_key:
+        return 7
+    raw = os.environ.get(env_key, "7").strip()
+    try:
+        return max(1, min(int(raw), 7))
+    except ValueError:
+        return 7
+
+
+async def run_threatfox_sync() -> bool:
+    return await run_catalog_sync("threatfox")
+
+
+async def run_urlhaus_sync() -> bool:
+    return await run_catalog_sync("urlhaus")
+
+
+async def run_malwarebazaar_sync() -> bool:
+    return await run_catalog_sync("malwarebazaar")
 
 
 async def run_vulncheck_kev_sync() -> bool:
@@ -1019,7 +1057,7 @@ async def run_ioc_retro_match() -> bool:
             from ioc.retro_match import run_ioc_retro_match as _retro
             from webhooks.alerts import process_ioc_watchlist_hit_webhooks
 
-            _job_progress["ioc_retro_match"] = "Matching IOC watchlist against local OTX + ThreatFox mirrors…"
+            _job_progress["ioc_retro_match"] = "Matching IOC watchlist against local OTX + catalog mirrors…"
             matches = await _retro()
             if matches:
                 sent = await process_ioc_watchlist_hit_webhooks(matches)
@@ -2283,6 +2321,30 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=90),
+    )
+
+    urlhaus_hours = int(os.environ.get("URLHAUS_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_urlhaus_sync,
+        trigger=IntervalTrigger(hours=max(1, urlhaus_hours), timezone=sched_tz),
+        id="urlhaus_sync",
+        name="URLhaus IOC Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=120),
+    )
+
+    malwarebazaar_hours = int(os.environ.get("MALWAREBAZAAR_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_malwarebazaar_sync,
+        trigger=IntervalTrigger(hours=max(1, malwarebazaar_hours), timezone=sched_tz),
+        id="malwarebazaar_sync",
+        name="MalwareBazaar IOC Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=150),
     )
 
     vulncheck_hours = int(os.environ.get("VULNCHECK_KEV_SYNC_INTERVAL_HOURS", "24"))

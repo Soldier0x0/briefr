@@ -23,10 +23,10 @@ _RETRO_MATCH_SQL = """
            camp.lifecycle AS campaign_lifecycle,
            camp.confidence AS campaign_confidence,
            camp.member_count AS campaign_member_count,
-           NULL AS threatfox_confidence,
-           NULL AS threatfox_malware,
-           NULL AS threatfox_threat_type,
-           NULL AS threatfox_first_seen
+           NULL AS mirror_confidence,
+           NULL AS mirror_malware,
+           NULL AS mirror_threat_type,
+           NULL AS mirror_first_seen
     FROM ioc_watchlist w
     INNER JOIN otx_pulse_iocs o
         -- LOWER() on both sides: OTX mirror keeps upstream IOC casing (e.g. DOMAIN).
@@ -35,21 +35,29 @@ _RETRO_MATCH_SQL = """
         ON camp.primary_pulse_id = o.pulse_id
     UNION ALL
     SELECT w.id, w.user_id, w.ioc_type, w.ioc_value, w.label,
-           'threatfox' AS source, t.ioc_id AS ref_id,
-           COALESCE(t.malware, t.threat_type, '') AS detail,
+           m.source AS source, m.ref_id AS ref_id,
+           COALESCE(m.malware, m.threat_type, '') AS detail,
            NULL, NULL, NULL, NULL, NULL,
-           t.confidence_level,
-           t.malware,
-           t.threat_type,
-           t.first_seen
+           m.confidence_level AS mirror_confidence,
+           m.malware AS mirror_malware,
+           m.threat_type AS mirror_threat_type,
+           m.first_seen AS mirror_first_seen
     FROM ioc_watchlist w
-    INNER JOIN threatfox_iocs t
-        ON t.ioc_type = w.ioc_type AND LOWER(t.ioc_value) = LOWER(w.ioc_value)
+    INNER JOIN ti_mirror_iocs m
+        -- LOWER() wraps defeat plain index usage on ioc_value/host_ioc.
+        -- Mirror values are stored lowercased at ingest, so this is defensive;
+        -- if the mirror grows large, add expression indexes on LOWER(ioc_value)
+        -- and LOWER(host_ioc) (PostgreSQL 16) to keep the join index-served.
+        ON (
+            (m.ioc_type = w.ioc_type AND LOWER(m.ioc_value) = LOWER(w.ioc_value))
+            OR (m.ioc_type = 'url' AND UPPER(w.ioc_type) IN ('DOMAIN', 'URL')
+                AND m.host_ioc != '' AND LOWER(m.host_ioc) = LOWER(w.ioc_value))
+        )
 """
 
 
 async def find_retro_matches(db: DbConnection) -> list[dict[str, Any]]:
-    """Join saved IOC watchlist entries against local OTX + ThreatFox mirrors."""
+    """Join saved IOC watchlist entries against local OTX + catalog mirrors."""
     rows = await db.execute_fetchall(_RETRO_MATCH_SQL)
     return [dict(row) for row in rows]
 

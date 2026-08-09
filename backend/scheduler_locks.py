@@ -11,6 +11,8 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "kev_metadata_sync": asyncio.Lock(),
     "kev_backlog_reconcile": asyncio.Lock(),
     "threatfox_sync": asyncio.Lock(),
+    "urlhaus_sync": asyncio.Lock(),
+    "malwarebazaar_sync": asyncio.Lock(),
     "vulncheck_kev_sync": asyncio.Lock(),
     "ioc_retro_match": asyncio.Lock(),
     "epss_score_sync": asyncio.Lock(),

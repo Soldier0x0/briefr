@@ -186,7 +186,7 @@ export const SOURCE_DISPLAY = {
   embeddings: 'CVE Embeddings', llm: 'Groq Product Extraction',
   exploitdb: 'ExploitDB', metasploit: 'Metasploit',
   nuclei: 'Nuclei Templates', poc_github: 'PoC-in-GitHub',
-  threatfox: 'ThreatFox', vulncheck: 'VulnCheck',
+  threatfox: 'ThreatFox', urlhaus: 'URLhaus', malwarebazaar: 'MalwareBazaar', vulncheck: 'VulnCheck',
   sigmahq: 'SigmaHQ index',
   'webhook.discord': 'Discord Webhook', 'webhook.telegram': 'Telegram Webhook',
 }

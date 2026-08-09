@@ -329,6 +329,18 @@
       ]
     },
     {
+      "id": "job:malwarebazaar_sync",
+      "label": "MalwareBazaar IOC Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "malwarebazaar_sync"
+        }
+      ]
+    },
+    {
       "id": "job:nightly_correlation",
       "label": "BRIEFR Nightly Correlation Engine",
       "kind": "job",
@@ -433,6 +445,18 @@
         {
           "type": "job",
           "ref": "threatfox_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:urlhaus_sync",
+      "label": "URLhaus IOC Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "urlhaus_sync"
         }
       ]
     },
@@ -3153,6 +3177,30 @@
       "kind": "references_table"
     },
     {
+      "id": "job:malwarebazaar_sync->table:cve_exploits",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:cves",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:otx_pulse_iocs",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:malwarebazaar_sync->table:ti_mirror_iocs",
+      "source": "job:malwarebazaar_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:nightly_correlation->table:atlas_case_studies",
       "source": "job:nightly_correlation",
       "target": "table:atlas_case_studies",
@@ -3705,33 +3753,9 @@
       "kind": "fetches_external"
     },
     {
-      "id": "job:threatfox_sync->table:atlas_case_studies",
-      "source": "job:threatfox_sync",
-      "target": "table:atlas_case_studies",
-      "kind": "references_table"
-    },
-    {
-      "id": "job:threatfox_sync->table:atlas_techniques",
-      "source": "job:threatfox_sync",
-      "target": "table:atlas_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "job:threatfox_sync->table:cve_atlas_map",
-      "source": "job:threatfox_sync",
-      "target": "table:cve_atlas_map",
-      "kind": "references_table"
-    },
-    {
       "id": "job:threatfox_sync->table:cve_exploits",
       "source": "job:threatfox_sync",
       "target": "table:cve_exploits",
-      "kind": "references_table"
-    },
-    {
-      "id": "job:threatfox_sync->table:cve_technique_map",
-      "source": "job:threatfox_sync",
-      "target": "table:cve_technique_map",
       "kind": "references_table"
     },
     {
@@ -3741,38 +3765,38 @@
       "kind": "references_table"
     },
     {
-      "id": "job:threatfox_sync->table:group_technique_map",
-      "source": "job:threatfox_sync",
-      "target": "table:group_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "job:threatfox_sync->table:mitre_groups",
-      "source": "job:threatfox_sync",
-      "target": "table:mitre_groups",
-      "kind": "references_table"
-    },
-    {
-      "id": "job:threatfox_sync->table:mitre_techniques",
-      "source": "job:threatfox_sync",
-      "target": "table:mitre_techniques",
-      "kind": "references_table"
-    },
-    {
       "id": "job:threatfox_sync->table:otx_pulse_iocs",
       "source": "job:threatfox_sync",
       "target": "table:otx_pulse_iocs",
       "kind": "references_table"
     },
     {
-      "id": "job:threatfox_sync->table:sync_state",
+      "id": "job:threatfox_sync->table:ti_mirror_iocs",
       "source": "job:threatfox_sync",
-      "target": "table:sync_state",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
-      "id": "job:threatfox_sync->table:ti_mirror_iocs",
-      "source": "job:threatfox_sync",
+      "id": "job:urlhaus_sync->table:cve_exploits",
+      "source": "job:urlhaus_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:urlhaus_sync->table:cves",
+      "source": "job:urlhaus_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:urlhaus_sync->table:otx_pulse_iocs",
+      "source": "job:urlhaus_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:urlhaus_sync->table:ti_mirror_iocs",
+      "source": "job:urlhaus_sync",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },

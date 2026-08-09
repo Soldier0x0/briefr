@@ -81,13 +81,18 @@ def _normalize_url(value: str) -> str:
 
 
 def _url_host(value: str) -> str:
-    """Host of a canonical URL — lowercased, port stripped, trailing dot cut.
+    """Host of a canonical URL — lowercased, port stripped, trailing dot cut,
+    and a leading ``www.`` dropped so it matches ``_normalize_domain`` output.
 
-    Mirrors the read-time URL→domain join in threatfox_corroboration
-    (_threatfox_lookup_pair) so persisted host_ioc matches what corroboration
-    would derive on its own."""
+    Keeps persisted ``host_ioc`` and URL→domain downcasts aligned with what
+    corroboration joins derive from a canonical DOMAIN edge (which strips
+    ``www.``), so a URL hosted on ``www.example.com`` corroborates a DOMAIN
+    edge for ``example.com`` and vice versa."""
     parsed = urlparse(value if "://" in value else f"http://{value}")
-    return (parsed.hostname or "").lower().rstrip(".")
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if host.startswith("www."):
+        host = host[4:]
+    return host
 
 
 def is_noise_ip(value: str) -> bool:

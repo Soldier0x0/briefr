@@ -6,9 +6,8 @@ import ipaddress
 import logging
 import os
 from typing import Any
-from urllib.parse import urlparse
 
-from correlation.ioc_normalize import normalize_ioc
+from correlation.ioc_normalize import _url_host, normalize_ioc
 from feeds.extended import abusech_headers
 from resilient_client import CircuitOpenError, resilient_request
 from tracking import record_api_call
@@ -45,8 +44,7 @@ def _extract_match_value(raw_ioc: str, threatfox_type: str, lookup_type: str) ->
 
     if lookup_type == "domain" and threatfox_type == "url":
         try:
-            parsed = urlparse(raw if "://" in raw else f"http://{raw}")
-            host = (parsed.hostname or "").lower().rstrip(".")
+            host = _url_host(raw)
             return host or None
         except ValueError:
             return None

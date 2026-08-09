@@ -11,7 +11,9 @@ from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from correlation.ioc_normalize import normalize_ioc_type
+from feeds.malwarebazaar import fetch_malwarebazaar_iocs
 from feeds.threatfox import fetch_threatfox_iocs
+from feeds.urlhaus import fetch_urlhaus_iocs
 
 FetchFn = Callable[..., Any]
 
@@ -54,6 +56,39 @@ CATALOG_SOURCES: tuple[SourceDescriptor, ...] = (
             }
         ),
         receipt_prefix="threatfox",
+        retention_hours=24 * 7,
+    ),
+    SourceDescriptor(
+        source_key="urlhaus",
+        enabled_env="URLHAUS_SYNC_ENABLED",
+        key_env="ABUSECH_AUTH_KEY",
+        pacing_key="urlhaus",
+        sync_interval_hours_env="URLHAUS_SYNC_INTERVAL_HOURS",
+        sync_window_days_env="URLHAUS_SYNC_DAYS",
+        fetch=fetch_urlhaus_iocs,
+        mirror_type_map=MappingProxyType(
+            {
+                "URL": "url",
+                "DOMAIN": "url",
+            }
+        ),
+        receipt_prefix="urlhaus",
+        retention_hours=24 * 7,
+    ),
+    SourceDescriptor(
+        source_key="malwarebazaar",
+        enabled_env="MALWAREBAZAAR_SYNC_ENABLED",
+        key_env="ABUSECH_AUTH_KEY",
+        pacing_key="malwarebazaar",
+        sync_interval_hours_env="MALWAREBAZAAR_SYNC_INTERVAL_HOURS",
+        sync_window_days_env="MALWAREBAZAAR_SYNC_DAYS",
+        fetch=fetch_malwarebazaar_iocs,
+        mirror_type_map=MappingProxyType(
+            {
+                "HASH": "hash",
+            }
+        ),
+        receipt_prefix="malwarebazaar",
         retention_hours=24 * 7,
     ),
 )

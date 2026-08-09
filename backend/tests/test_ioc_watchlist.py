@@ -122,6 +122,24 @@ def test_parse_threatfox_ioc_url_extracts_domain():
     assert row["ioc_value"] == "116.202.5.101"
 
 
+def test_parse_threatfox_ioc_url_downcast_drops_www():
+    """URL→DOMAIN downcast must drop a leading ``www.`` to match the canonical
+    DOMAIN edge value used by corroboration joins."""
+    row = parse_threatfox_ioc(
+        {
+            "id": "100",
+            "ioc": "http://www.evil.example/download.exe",
+            "ioc_type": "url",
+            "malware_printable": "Emotet",
+            "confidence_level": 100,
+            "first_seen": "2024-01-01",
+        }
+    )
+    assert row is not None
+    assert row["ioc_type"] == "domain"
+    assert row["ioc_value"] == "evil.example"
+
+
 def test_retro_match_local_join(tmp_path, monkeypatch):
     db_path = tmp_path / "retro.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
@@ -182,10 +200,10 @@ def test_retro_match_local_join(tmp_path, monkeypatch):
     assert otx["campaign_member_count"] == 4
 
     tf = next(m for m in matches if m["source"] == "threatfox")
-    assert tf["threatfox_confidence"] == 90
-    assert tf["threatfox_malware"] == "vidar"
-    assert tf["threatfox_threat_type"] == "botnet_cc"
-    assert tf["threatfox_first_seen"] == "2024-06-01"
+    assert tf["mirror_confidence"] == 90
+    assert tf["mirror_malware"] == "vidar"
+    assert tf["mirror_threat_type"] == "botnet_cc"
+    assert tf["mirror_first_seen"] == "2024-06-01"
 
 
 def test_ioc_watchlist_hit_webhook_format(tmp_path, monkeypatch):
@@ -215,13 +233,13 @@ def test_ioc_watchlist_hit_webhook_format(tmp_path, monkeypatch):
             "ioc_type": "domain",
             "source": "threatfox",
             "detail": "vidar",
-            "threatfox_confidence": 90,
-            "threatfox_malware": "vidar",
-            "threatfox_threat_type": "botnet_cc",
-            "threatfox_first_seen": "2024-06-01",
+            "mirror_confidence": 90,
+            "mirror_malware": "vidar",
+            "mirror_threat_type": "botnet_cc",
+            "mirror_first_seen": "2024-06-01",
         }
     )
-    assert "ThreatFox confidence: 90/100" in tf_msg
+    assert "THREATFOX confidence: 90/100" in tf_msg
     assert "Threat type: botnet_cc" in tf_msg
     assert "First seen: 2024-06-01" in tf_msg
 

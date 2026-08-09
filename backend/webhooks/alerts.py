@@ -410,20 +410,21 @@ def _format_ioc_watchlist_hit(match: dict) -> str:
             f"Campaign: {camp_label} ({lifecycle}, {member_note}, {confidence} confidence)"
         )
 
-    tf_conf = match.get("threatfox_confidence")
-    if tf_conf is not None:
+    mirror_conf = match.get("mirror_confidence")
+    if mirror_conf is not None:
         try:
-            conf_val = int(tf_conf)
-            lines.append(f"ThreatFox confidence: {conf_val}/100")
+            conf_val = int(mirror_conf)
+            source_label = (match.get("source") or "mirror").upper()
+            lines.append(f"{source_label} confidence: {conf_val}/100")
         except (TypeError, ValueError):
             pass
-    malware = (match.get("threatfox_malware") or "").strip()
-    threat_type = (match.get("threatfox_threat_type") or "").strip()
+    malware = (match.get("mirror_malware") or "").strip()
+    threat_type = (match.get("mirror_threat_type") or "").strip()
     if malware and malware.lower() not in detail.lower():
         lines.append(f"Malware: {malware[:120]}")
     if threat_type and threat_type.lower() not in detail.lower():
         lines.append(f"Threat type: {threat_type[:120]}")
-    first_seen = (match.get("threatfox_first_seen") or "").strip()
+    first_seen = (match.get("mirror_first_seen") or "").strip()
     if first_seen:
         lines.append(f"First seen: {first_seen[:32]}")
 
