@@ -237,7 +237,7 @@ Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` a
 |----------|---------|---------|
 | `ALLOWED_ORIGINS` | localhost dev URLs | CORS origins (comma-separated) |
 | `DEFAULT_TIMEZONE` | `Asia/Kolkata` | Health / time display default |
-| `BRIEFR_ENV` | `development` | `production` disables Swagger/OpenAPI docs |
+| `BRIEFR_ENV` | `production` | `production` disables Swagger/OpenAPI docs and requires `JWT_SECRET`; set `development` for local dev |
 | `RATE_LIMIT_ENABLED` | `1` | Token-bucket rate limiting on `/api/ioc/lookup` + `/api/refresh*` (429 + `Retry-After`) |
 | `RATE_LIMIT_IOC_PER_MINUTE` | `30` | Per-client-IP budget for `POST /api/ioc/lookup` |
 | `RATE_LIMIT_REFRESH_PER_MINUTE` | `10` | Per-client-IP budget shared by all `POST /api/refresh*` routes |

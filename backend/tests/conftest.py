@@ -25,6 +25,20 @@ SEED_SCRIPT = REPO_ROOT / "scripts" / "seed_screenshot_data.py"
 
 sys.path.insert(0, str(BACKEND_DIR))
 
+# Defaults flipped to production + Postgres-only at the product level
+# (settings.py). The test suite explicitly opts back into dev/SQLite so it runs
+# identically with no env (bare `pytest tests/`) and under CI:
+# - BRIEFR_ENV=development keeps /api/docs + openapi visible (router tests)
+#   and disables the production JWT_SECRET import guard (settings.py).
+# - JWT_SECRET setdefault keeps a production-override CI run green.
+# - BRIEFR_REQUIRE_POSTGRES=0 lets the suite run on the SQLite fallback when
+#   DATABASE_URL is unset; Postgres CI sets it to 1 explicitly (setdefault wins
+#   only when absent). These are set BEFORE any settings import — settings is a
+#   module-level singleton instantiated at import time.
+os.environ.setdefault("BRIEFR_ENV", "development")
+os.environ.setdefault("JWT_SECRET", "ci-test-jwt-secret-not-for-production")
+os.environ.setdefault("BRIEFR_REQUIRE_POSTGRES", "0")
+
 
 def _postgres_dsn_or_none() -> str | None:
     """PG-001: use the settings-safe resolver, not a raw os.environ read.

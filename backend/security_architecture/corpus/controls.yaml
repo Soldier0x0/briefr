@@ -132,10 +132,9 @@ controls:
       BRIEFR refuses to start against a non-Postgres DATABASE_URL when
       BRIEFR_REQUIRE_POSTGRES is set -- SQLite survives only as a
       zero-config dev/test fallback, never a silent production footgun.
-      Opt-in: settings.briefr_require_postgres defaults to False, unlike
-      this inventory's other *_ENABLED flags which default on -- an unset
-      DATABASE_URL production box is not enforcing this control, and the
-      active flag below says so.
+      Enforced by default: settings.briefr_require_postgres defaults to
+      True, so an unset BRIEFR_REQUIRE_POSTGRES production box is still
+      enforcing this control -- the active flag below says so.
     owner: platform
     status: active
     origin: curated
@@ -149,7 +148,7 @@ controls:
     related_apis: []
     review_status: current
     live_flag: BRIEFR_REQUIRE_POSTGRES
-    live_flag_default_when_unset: false
+    live_flag_default_when_unset: true
 
   - id: structured-logging-redaction
     title: Structured logging secret redaction

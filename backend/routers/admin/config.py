@@ -158,7 +158,7 @@ def _get_config_response() -> dict[str, Any]:
             "BACKUP_AGE_KEY_FILE": age_key_masked,
         },
         "app": {
-            "BRIEFR_ENV": _env("BRIEFR_ENV", "development"),
+            "BRIEFR_ENV": _env("BRIEFR_ENV", "production"),
             "DEFAULT_TIMEZONE": _env("DEFAULT_TIMEZONE", "Asia/Kolkata"),
             "ALLOWED_ORIGINS": allowed_origins_list,
             "BRIEFR_STACK_TERMS": _env("BRIEFR_STACK_TERMS", ""),

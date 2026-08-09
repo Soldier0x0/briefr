@@ -271,20 +271,20 @@ def test_controls_active_flag_respects_env_override(client, monkeypatch):
     assert backup["active"] is False
 
 
-def test_postgres_required_control_defaults_inactive_when_unset(client, monkeypatch):
-    """Codex review on PR #494: BRIEFR_REQUIRE_POSTGRES is opt-in (default
-    False in settings.py), unlike this inventory's other *_ENABLED flags --
-    an unset env var must not read as ACTIVE."""
+def test_postgres_required_control_defaults_active_when_unset(client, monkeypatch):
+    """BRIEFR_REQUIRE_POSTGRES is enforced by default: settings.py defaults
+    settings.briefr_require_postgres to True, so an unset env var must read
+    as ACTIVE (flipped from opt-in default-False behavior on PR #494)."""
     monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
     res = client.get("/api/security-architecture/section/controls")
     body = res.json()
     control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
-    assert control["active"] is False
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "1")
+    assert control["active"] is True
+    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
     res = client.get("/api/security-architecture/section/controls")
     body = res.json()
     control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
-    assert control["active"] is True
+    assert control["active"] is False
 
 
 def test_rate_limiting_control_reflects_real_toggle(client, monkeypatch):
@@ -509,8 +509,7 @@ def test_resolve_control_active_unset_opt_out_flag_defaults_active(monkeypatch):
 
 
 def test_resolve_control_active_unset_opt_in_flag_defaults_inactive(monkeypatch):
-    """An opt-in flag (default False when unset, e.g. BRIEFR_REQUIRE_POSTGRES /
-    settings.briefr_require_postgres: bool = False) must not be reported
+    """An opt-in flag (default False when unset) must not be reported
     active just because merge.py's blanket 'missing env var = enabled'
     assumption doesn't hold for it -- the corpus record says so explicitly
     via live_flag_default_when_unset: false (Codex review, PR #494)."""

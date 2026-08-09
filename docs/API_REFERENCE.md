@@ -2301,15 +2301,15 @@ Aggregated intel posture payload for the `/wallboard` kiosk view. Built from exi
 
 ## OpenAPI / Swagger
 
-FastAPI auto-generates OpenAPI spec at runtime. It is exposed at `/api/openapi.json` outside production only; `BRIEFR_ENV=production` sets `openapi_url=None`, `docs_url=None`, and `redoc_url=None`.
+FastAPI auto-generates OpenAPI spec at runtime. It is exposed at `/api/openapi.json` outside production only; `BRIEFR_ENV=production` (the default) sets `openapi_url=None`, `docs_url=None`, and `redoc_url=None`.
 
 To export:
 
-1. Start backend with `BRIEFR_ENV` unset or set to `development`: `cd backend && uvicorn main:app --host 0.0.0.0 --port 8000`
+1. Start backend with `BRIEFR_ENV=development`: `cd backend && BRIEFR_ENV=development uvicorn main:app --host 0.0.0.0 --port 8000`
 2. `curl http://localhost:8000/api/openapi.json > docs/openapi.json`
 3. Import `openapi.json` into Postman or Swagger UI for interactive docs
 
-The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api/docs` when running locally.
+The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api/docs` when running locally in development.
 
 **NOTE:** `/api/docs`, `/api/redoc`, and `/api/openapi.json` are intentionally unprotected in development; production disables them in `main.py`.
 
