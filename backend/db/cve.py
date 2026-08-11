@@ -327,6 +327,11 @@ def _values_differ(old: object, new: object) -> bool:
 
 
 def _cve_upsert_params(cve: dict) -> tuple:
+    cpe_matches = cve.get("cpe_matches")
+    if cpe_matches is None:
+        # json.dumps(None) == "null", which the ON CONFLICT preservation CASE
+        # treats as present data and would overwrite stored matches with.
+        cpe_matches = []
     return (
         cve.get("cve_id", ""),
         cve.get("description", ""),
@@ -335,7 +340,7 @@ def _cve_upsert_params(cve: dict) -> tuple:
         cve.get("published", ""),
         cve.get("modified", ""),
         json.dumps(cve.get("affected_products", [])),
-        json.dumps(cve.get("cpe_matches", [])),
+        json.dumps(cpe_matches),
         cve.get("mitre_technique"),
         cve.get("summary"),
         1 if cve.get("is_kev") else 0,

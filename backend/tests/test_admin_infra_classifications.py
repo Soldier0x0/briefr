@@ -204,6 +204,29 @@ def test_create_rejects_invalid_classification(admin_client, infra_stubs):
     assert resp.status_code == 400
 
 
+def test_create_rejects_non_string_classification(admin_client, infra_stubs):
+    """A non-string classification (int/bool) must 400, not raise a 500."""
+    for bad in (1, True, {"a": 1}, ["UNKNOWN"]):
+        resp = admin_client.post(
+            "/api/admin/infra-classifications",
+            json={"host": "example.com", "classification": bad},
+        )
+        assert resp.status_code == 400, f"classification={bad!r} must be rejected"
+
+
+def test_patch_rejects_non_string_classification(admin_client, infra_stubs):
+    created = admin_client.post(
+        "/api/admin/infra-classifications",
+        json={"host": "example.com", "classification": "UNKNOWN"},
+    ).json()
+    for bad in (1, True, {"a": 1}):
+        resp = admin_client.patch(
+            f"/api/admin/infra-classifications/{created['id']}",
+            json={"classification": bad},
+        )
+        assert resp.status_code == 400, f"classification={bad!r} must be rejected"
+
+
 def test_create_rejects_invalid_enabled(admin_client, infra_stubs):
     resp = admin_client.post(
         "/api/admin/infra-classifications",
@@ -373,6 +396,128 @@ def test_infra_classifications_pg_round_trip():
             assert updated["classification"] == TRUSTED_SERVICE
 
             assert await dbbl.delete_infra_classification(db, row["id"]) is True
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+@pytest.mark.skipif(
+    not _postgres_is_live(),
+    reason="requires live Postgres (app.infra_classifications is PG-only)",
+)
+def test_infra_classifications_pg_seed_is_atomic_under_concurrency():
+    """Two concurrent seeders must both complete without error and the seed
+    set must be intact (INSERT .. ON CONFLICT (host) DO NOTHING races safely)."""
+
+    async def _run():
+        import asyncio
+
+        from blocklist.infra_seed import seed_infra_classifications
+        from database import get_db
+
+        async def _seed_once() -> int:
+            db = await get_db()
+            try:
+                written = await seed_infra_classifications(db)
+                await db.commit()
+                return written
+            finally:
+                await db.close()
+
+        results = await asyncio.gather(_seed_once(), _seed_once(), _seed_once())
+        for r in results:
+            assert r in (0, len(_SEED_HOSTS)), (
+                "each seeder must write the full seed or none (atomic per host)"
+            )
+
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT host FROM app.infra_classifications"
+            )
+            hosts = {dict(r)["host"] for r in rows}
+            assert {host for host, _, _ in _SEED_HOSTS} <= hosts
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+@pytest.mark.skipif(
+    not _postgres_is_live(),
+    reason="requires live Postgres (app.infra_classifications is PG-only)",
+)
+def test_infra_classifications_pg_rejects_invalid_writes():
+    """Direct SQL writes must respect the migration 040 CHECK constraints —
+    invalid classification/enabled values are rejected at the DB layer, not
+    just by API validation (which never guards direct SQL writes)."""
+
+    async def _run():
+        from db.blocklist import insert_infra_classification, update_infra_classification
+        from db.errors import DatabaseError
+        from database import get_db
+
+        db = await get_db()
+        try:
+            # Baseline: valid writes still succeed.
+            row = await insert_infra_classification(
+                db,
+                host="pg-invalid-writes.example.com",
+                classification=UNKNOWN,
+                enabled=0,
+                reason="CHECK constraint test",
+            )
+            await db.commit()
+            assert row["host"] == "pg-invalid-writes.example.com"
+
+            # Invalid classification on INSERT is rejected.
+            with pytest.raises(DatabaseError):
+                await insert_infra_classification(
+                    db,
+                    host="pg-invalid-writes-bad.example.com",
+                    classification="NOT_A_REAL_CLASSIFICATION",
+                    enabled=1,
+                )
+            await db.rollback()
+
+            # Invalid enabled on INSERT is rejected.
+            with pytest.raises(DatabaseError):
+                await insert_infra_classification(
+                    db,
+                    host="pg-invalid-writes-bad2.example.com",
+                    classification=UNKNOWN,
+                    enabled=5,
+                )
+            await db.rollback()
+
+            # Invalid classification on UPDATE is rejected.
+            with pytest.raises(DatabaseError):
+                await update_infra_classification(
+                    db, row["id"], classification="NOT_A_REAL_CLASSIFICATION"
+                )
+            await db.rollback()
+
+            # Invalid enabled on UPDATE is rejected.
+            with pytest.raises(DatabaseError):
+                await update_infra_classification(db, row["id"], enabled=9)
+            await db.rollback()
+
+            # Row is unchanged after the rejected updates.
+            rows = await db.execute_fetchall(
+                "SELECT id, host, classification, enabled FROM app.infra_classifications"
+                " WHERE id = ?",
+                (row["id"],),
+            )
+            intact = dict(rows[0])
+            assert intact["classification"] == UNKNOWN
+            assert intact["enabled"] == 0
+
+            cursor = await db.execute(
+                "DELETE FROM app.infra_classifications WHERE id = ?", (row["id"],)
+            )
+            assert (getattr(cursor, "rowcount", 0) or 0) > 0
             await db.commit()
         finally:
             await db.close()

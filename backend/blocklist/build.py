@@ -82,11 +82,17 @@ def _otx_domain_for_row(row: dict[str, Any]) -> str:
     return canonical_host(row.get("ioc_value") or "")
 
 
-def _first(list_values: list[str | None]) -> str:
-    for v in list_values:
-        if v:
-            return str(v)
-    return ""
+def _earliest_observed_at(evidence: list[dict[str, Any]]) -> str:
+    """Explicit, deterministic OTX timestamp policy: the earliest observation
+    drives the freshness score. Picking the minimum (not the first row seen)
+    keeps the confidence result stable regardless of query row order and never
+    lets a fresh row mask a stale one."""
+    timestamps = [
+        e["first_seen"] for e in _sorted_evidence(evidence) if e.get("first_seen")
+    ]
+    if not timestamps:
+        return ""
+    return str(min(timestamps))
 
 
 def _evidence_row(row: dict[str, Any]) -> dict[str, Any]:
@@ -105,6 +111,23 @@ def _evidence_row(row: dict[str, Any]) -> dict[str, Any]:
         "pulse_id": row.get("pulse_id") or "",
         "description": row.get("description") or "",
     }
+
+
+def _evidence_sort_key(e: dict[str, Any]) -> tuple[str, str, str, str, str]:
+    """Total order over evidence rows so payloads are byte-stable even when
+    the backing queries return rows in a different physical order."""
+    return (
+        e["source"],
+        e["ref_id"],
+        e["pulse_id"],
+        e["first_seen"],
+        e["fetched_at"],
+    )
+
+
+def _sorted_evidence(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Deterministically order an evidence list (total key, stable)."""
+    return sorted(evidence, key=_evidence_sort_key)
 
 
 def _catalog_receipts(rows: list[dict[str, Any]]) -> list[str]:
@@ -195,7 +218,7 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
         otx_ev = otx_by_domain.get(domain, [])
         classified = classify_host(domain, _index=classification_index)
 
-        evidence = list(catalog_ev) + list(otx_ev)
+        evidence = _sorted_evidence(list(catalog_ev) + list(otx_ev))
         sources = sorted({e["source"] for e in evidence if e["source"]})
         malware = sorted({e["malware"] for e in evidence if e["malware"]})
         threat_types = sorted({e["threat_type"] for e in evidence if e["threat_type"]})
@@ -247,7 +270,7 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
                 level, why, factors = confidence_for_ioc_edge(
                     "DOMAIN",
                     corroborated_by=corroborating_receipts,
-                    observed_at=_first([e["first_seen"] for e in otx_ev]),
+                    observed_at=_earliest_observed_at(otx_ev),
                     ingested_at=fetched_at,
                 )
                 confidence = level
@@ -293,7 +316,7 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
         level, why, factors = confidence_for_ioc_edge(
             "DOMAIN",
             corroborated_by=corroborating_receipts,
-            observed_at=_first([e["first_seen"] for e in otx_ev]),
+            observed_at=_earliest_observed_at(otx_ev),
             ingested_at=fetched_at,
         )
         if _LEVEL_INDEX.get(level, 0) < _LEVEL_INDEX[_MIN_OTX_CONFIDENCE]:

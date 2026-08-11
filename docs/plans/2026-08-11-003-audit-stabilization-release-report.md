@@ -69,7 +69,10 @@ follow-up project (NOT implemented), and the full test matrix is green.
   `2026-08-11-002-data-utilization-future-findings.md`.
 
 ### 1.4 Verification results (Part J)
-- Backend full suite: **1766 passed, 21 skipped** (baseline 1753 → +13 new).
+- Backend full suite (live PostgreSQL 16, venv): **1783 passed, 40 skipped**
+  (baseline 1753 → +30 new + prior deltas). The 40 skips are all environment-
+  or dialect-gated (SQLite-only tests when PG is selected, pg_dump/pg_restore
+  not on host PATH, unset API tokens) — no silent pass-skipping of PR code.
 - Frontend: `npm run build` green; `npm run test:unit` **378 pass / 0 fail**.
 - Lint: `ruff check --select F,E9,B .` clean (6 unused imports removed from
   `backend/routers/threat_intel.py`).
@@ -81,9 +84,14 @@ follow-up project (NOT implemented), and the full test matrix is green.
   - `intel.otx_pulse_iocs` has `observed_at`, `raw_ioc`, `host_ioc` ✓
   - `app.ti_mirror_iocs` has `confidence_level`, `host_ioc`, `ioc_value` ✓
   - `alembic/versions/001_initial_schema.py` declares `cves.cpe_matches` ✓
-- `./scripts/verify-local.sh` requires system `python3` with pytest; not
-  available on this machine (`/usr/bin/python3: No module named pytest`).
-  All constituent gates were run individually via `backend/.venv` and passed.
+- `./scripts/verify-local.sh` runs Postgres-first and requires system `python3`
+  with pytest; not available on this machine (`/usr/bin/python3: No module
+  named pytest`). The full suite was run instead via `backend/.venv`
+  (`source backend/.venv/bin/activate && cd backend && pytest tests/ -q`)
+  against the live `briefr-pg-test` Postgres, plus the two intel-snapshot
+  round-trip tests skip locally because host `pg_dump`/`pg_restore` are only
+  present inside the container (CI installs `postgresql-client`, so they run
+  there). All other constituent gates passed individually.
 
 ### 1.5 Interface changes for consumers
 - Schema: `cves.cpe_matches` (PG alembic 001), `otx_pulse_iocs.observed_at`.

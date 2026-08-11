@@ -1209,6 +1209,41 @@
   margin-top: 16px;
 }
 
+/* Compact action button (existing pages use the single-dash class name). */
+.admin-btn-sm {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+/* ── Threat-intel classification form / download row ──────────────────────── */
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+}
+
+.admin-download-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.admin-checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--type-meta, 0.75rem);
+}
+
+.admin-cell-sm {
+  font-size: var(--type-meta, 0.75rem);
+}
+
+.admin-card-spaced {
+  margin-bottom: var(--space-4);
+}
+
 /* ── Danger zone ──────────────────────────────────────────────────────────── */
 
 .admin-danger-zone {

@@ -83,25 +83,22 @@ async def seed_infra_classifications(db: DbConnection) -> int:
     """Idempotently insert the curated seed; returns rows written.
 
     Operator-edited rows (classification, enabled, reason, notes) are never
-    overwritten — only hosts missing entirely are inserted.
+    overwritten — only hosts missing entirely are inserted. Insertion is a
+    single atomic statement per host (`INSERT ... ON CONFLICT (host) DO
+    NOTHING`), so concurrent seeders cannot race a SELECT-then-INSERT pair.
     """
     now = utcnow_str()
     written = 0
     for host, classification, reason in _SEED_HOSTS:
-        rows = await db.execute_fetchall(
-            "SELECT id FROM app.infra_classifications WHERE host = ?",
-            (host,),
-        )
-        if rows:
-            continue
-        await db.execute(
+        cursor = await db.execute(
             """
             INSERT INTO app.infra_classifications (
                 host, classification, enabled, provenance, reason, notes,
                 created_at, updated_at
             ) VALUES (?, ?, 1, 'curated', ?, '', ?, ?)
+            ON CONFLICT (host) DO NOTHING
             """,
             (host, classification, reason, now, now),
         )
-        written += 1
+        written += getattr(cursor, "rowcount", 0) or 0
     return written

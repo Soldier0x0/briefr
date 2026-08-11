@@ -45,7 +45,10 @@ async def blocklist_txt():
     return PlainTextResponse(
         to_txt(payload),
         media_type="text/plain",
-        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.txt"'},
+        headers={
+            "Content-Disposition": 'attachment; filename="briefr-blocklist.txt"',
+            "Cache-Control": "no-store",
+        },
     )
 
 
@@ -58,4 +61,4 @@ async def blocklist_json():
     """Full structured payload: eligible candidates plus excluded domains with
     their reasons, and the exact eligibility criteria."""
     payload = await _build_payload()
-    return JSONResponse(to_json(payload))
+    return JSONResponse(to_json(payload), headers={"Cache-Control": "no-store"})

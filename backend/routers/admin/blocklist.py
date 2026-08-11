@@ -94,7 +94,15 @@ async def list_infra_classifications():
 
 
 def _validate_classification(classification: str) -> str:
-    classification = (classification or "").strip().upper()
+    if not isinstance(classification, str):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"classification must be one of: "
+                f"{', '.join(sorted(CLASSIFICATIONS))}"
+            ),
+        )
+    classification = classification.strip().upper()
     if classification not in CLASSIFICATIONS:
         raise HTTPException(
             status_code=400,

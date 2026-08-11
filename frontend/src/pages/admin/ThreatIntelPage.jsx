@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
 import { fmtIso } from './formatters.js'
-import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import Select from '../../components/ui/Select.jsx'
+import Checkbox from '../../components/ui/Checkbox.jsx'
+import AsyncSection from './shared/AsyncSection.jsx'
+import AdminDataGrid from './shared/AdminDataGrid.jsx'
 
 const CLASSIFICATION_LABELS = [
   { value: 'LEGITIMATE_DOMAIN', label: 'Legitimate domain' },
@@ -15,25 +17,54 @@ const CLASSIFICATION_LABELS = [
 
 const emptyForm = { host: '', classification: 'SHARED_LEGITIMATE_INFRASTRUCTURE', enabled: 1, reason: '', notes: '' }
 
+const EMPTY_MESSAGE =
+  'No classifications yet — the curated seed (google.com, drive.google.com, t.me, …) is inserted on first boot.'
+
 export default function ThreatIntelPage({ toast }) {
   const [status, setStatus] = useState(null)
+  const [statusLoading, setStatusLoading] = useState(true)
+  const [statusError, setStatusError] = useState(null)
   const [rows, setRows] = useState(null)
+  const [rowsLoading, setRowsLoading] = useState(true)
+  const [rowsError, setRowsError] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
 
   const loadStatus = useCallback(async () => {
+    setStatusLoading(true)
+    setStatusError(null)
     try {
       const res = await adminApi.get('/threat-intel/status')
-      if (res.ok) setStatus(await res.json())
-    } catch { /* status is best-effort */ }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setStatusError(String(data.detail || `HTTP ${res.status}`))
+        return
+      }
+      setStatus(await res.json())
+    } catch (err) {
+      setStatusError(String(err.message || 'Failed to load status'))
+    } finally {
+      setStatusLoading(false)
+    }
   }, [])
 
   const loadRows = useCallback(async () => {
+    setRowsLoading(true)
+    setRowsError(null)
     try {
       const res = await adminApi.get('/infra-classifications')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setRowsError(String(data.detail || `HTTP ${res.status}`))
+        return
+      }
       const data = await res.json()
       setRows(data.data || [])
-    } catch { setRows([]) }
+    } catch (err) {
+      setRowsError(String(err.message || 'Failed to load classifications'))
+    } finally {
+      setRowsLoading(false)
+    }
   }, [])
 
   useEffect(() => { loadStatus(); loadRows() }, [loadStatus, loadRows])
@@ -56,7 +87,7 @@ export default function ThreatIntelPage({ toast }) {
     } catch (err) { toast(String(err.message || 'Failed to save classification'), false) }
   }
 
-  function startEdit(row) {
+  const startEdit = useCallback((row) => {
     setEditingId(row.id)
     setForm({
       host: row.host,
@@ -65,28 +96,115 @@ export default function ThreatIntelPage({ toast }) {
       reason: row.reason || '',
       notes: row.notes || '',
     })
-  }
+  }, [])
 
-  async function toggleEnabled(row) {
+  const toggleEnabled = useCallback(async (row) => {
     try {
       await adminApi.patchJson(`/infra-classifications/${row.id}`, { enabled: row.enabled ? 0 : 1 })
       toast(row.enabled ? 'Classification disabled' : 'Classification enabled', true)
       loadRows()
     } catch (err) { toast(String(err.message || 'Failed to update'), false) }
-  }
+  }, [loadRows, toast])
 
-  async function remove(row) {
+  const remove = useCallback(async (row) => {
     try {
       await adminApi.del(`/infra-classifications/${row.id}`)
       toast(`Removed ${row.host}`, true)
       loadRows()
       loadStatus()
     } catch (err) { toast(String(err.message || 'Failed to remove'), false) }
+  }, [loadRows, loadStatus, toast])
+
+  async function downloadBlocklist(fmt) {
+    try {
+      const res = await adminApi.get(`/threat-intel/blocklist.${fmt}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast(String(data.detail || `Download failed (${res.status})`), false)
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `briefr-blocklist.${fmt}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) { toast(String(err.message || 'Download failed'), false) }
   }
 
+  const classificationBadge = (classification) => (
+    <span className={`badge ${classification === 'LEGITIMATE_DOMAIN' ? 'badge-error' : classification === 'UNKNOWN' ? 'badge-warn' : 'badge-info'}`}>
+      {classification}
+    </span>
+  )
+
+  const columns = useMemo(() => [
+    {
+      id: 'host',
+      label: 'HOST',
+      align: 'left',
+      defaultVisible: true,
+      minWidth: 180,
+      render: (r) => <span className="mono admin-cell-sm">{r.host}</span>,
+    },
+    {
+      id: 'classification',
+      label: 'CLASSIFICATION',
+      defaultVisible: true,
+      width: 220,
+      render: (r) => classificationBadge(r.classification),
+    },
+    {
+      id: 'state',
+      label: 'STATE',
+      defaultVisible: true,
+      width: 100,
+      render: (r) => (r.enabled ? <span className="badge badge-ok">active</span> : <span className="badge badge-warn">disabled</span>),
+    },
+    {
+      id: 'provenance',
+      label: 'PROVENANCE',
+      align: 'left',
+      defaultVisible: true,
+      width: 160,
+      render: (r) => <span className="admin-cell-sm">{r.provenance}</span>,
+    },
+    {
+      id: 'reason',
+      label: 'REASON',
+      align: 'left',
+      defaultVisible: true,
+      width: 260,
+      render: (r) => <span className="admin-cell-sm">{r.reason}</span>,
+    },
+    {
+      id: 'updated_at',
+      label: 'UPDATED',
+      align: 'left',
+      defaultVisible: true,
+      width: 160,
+      render: (r) => <span className="admin-cell-sm">{fmtIso(r.updated_at)}</span>,
+    },
+    {
+      id: 'actions',
+      label: '',
+      defaultVisible: true,
+      width: 220,
+      sortable: false,
+      render: (r) => (
+        <>
+          <button className="admin-btn admin-btn-sm" onClick={() => startEdit(r)}>Edit</button>{' '}
+          <button className="admin-btn admin-btn-sm" onClick={() => toggleEnabled(r)}>{r.enabled ? 'Disable' : 'Enable'}</button>{' '}
+          <button className="admin-btn admin-btn-sm admin-btn-danger" onClick={() => remove(r)}>Remove</button>
+        </>
+      ),
+    },
+  ], [startEdit, toggleEnabled, remove])
+
+  const tokenState = status?.token_configured ? 'Configured' : 'Not set (503)'
   const eligibleCount = status?.eligible_count ?? '—'
   const excludedCount = status?.excluded_count ?? '—'
-  const tokenState = status?.token_configured ? 'Configured' : 'Not set (503)'
 
   return (
     <div>
@@ -96,11 +214,18 @@ export default function ThreatIntelPage({ toast }) {
         infrastructure classification only controls host-level corroboration and export eligibility.
       </p>
 
+      {statusError && (
+        <div className="admin-callout admin-callout-red" role="alert">
+          <span>Failed to load export status: {statusError}</span>
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={loadStatus}>Retry</button>
+        </div>
+      )}
+
       <div className="stat-card-row">
         <StatCard
           label="Publish"
-          value={<span className={`badge ${status?.token_configured ? 'badge-info' : 'badge-warn'}`}>{tokenState}</span>}
-          subLabel={<code>/api/threat-intel/blocklist.txt</code>}
+          value={statusLoading && !status ? '—' : <span className={`badge ${status?.token_configured ? 'badge-info' : 'badge-warn'}`}>{tokenState}</span>}
+          subLabel={<code>/api/admin/threat-intel/blocklist.txt</code>}
         />
         <StatCard
           label="Candidates"
@@ -125,17 +250,17 @@ export default function ThreatIntelPage({ toast }) {
           subLabel="blocklist regeneration"
         />
       </div>
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.4rem' }}>
-        <a className="admin-btn" href="/api/threat-intel/blocklist.txt">Download TXT</a>
-        <a className="admin-btn" href="/api/threat-intel/blocklist.json">Download JSON</a>
+      <div className="admin-download-row">
+        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('txt')}>Download TXT</button>
+        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('json')}>Download JSON</button>
       </div>
 
-      <div className="admin-card" style={{ marginBottom: '1rem' }}>
-        <h3 style={{ margin: '0 0 0.5rem' }}>
+      <div className="admin-card admin-card-spaced">
+        <h3 className="admin-card-title">
           {editingId ? 'Edit classification' : 'Add infrastructure classification'}
           <HelpTip text="Classified hosts are excluded from the malicious-domain export and from host-level corroboration. Exact-path IOC evidence (e.g. https://drive.google.com/uc?…) is never deleted." />
         </h3>
-        <form onSubmit={submit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
+        <form onSubmit={submit} className="admin-form-grid">
           <input className="admin-input" placeholder="host (e.g. drive.google.com)" value={form.host} onChange={e => setForm({ ...form, host: e.target.value })} required />
           <Select
             className="admin-select"
@@ -143,10 +268,13 @@ export default function ThreatIntelPage({ toast }) {
             onValueChange={v => setForm({ ...form, classification: v })}
             options={CLASSIFICATION_LABELS}
           />
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
-            <input type="checkbox" checked={Boolean(form.enabled)} onChange={e => setForm({ ...form, enabled: e.target.checked ? 1 : 0 })} />
-            enabled
-          </label>
+          <Checkbox
+            id="classification-enabled"
+            checked={Boolean(form.enabled)}
+            onCheckedChange={checked => setForm({ ...form, enabled: checked ? 1 : 0 })}
+            label="enabled"
+            className="admin-checkbox-inline"
+          />
           <input className="admin-input" placeholder="reason" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
           <input className="admin-input" placeholder="notes (optional)" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
           <button className="admin-btn admin-btn-primary" type="submit">{editingId ? 'Save' : 'Add'}</button>
@@ -156,39 +284,23 @@ export default function ThreatIntelPage({ toast }) {
         </form>
       </div>
 
-      <div className="admin-card">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>HOST</th>
-              <th>CLASSIFICATION</th>
-              <th>STATE</th>
-              <th>PROVENANCE</th>
-              <th>REASON</th>
-              <th>UPDATED</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows === null && <AdminTableBodySkeletonRows rows={5} cols={7} />}
-            {rows?.length === 0 && <tr><td colSpan={7} className="admin-empty">No classifications yet — the curated seed (google.com, drive.google.com, t.me, …) is inserted on first boot.</td></tr>}
-            {rows?.map(r => (
-              <tr key={r.id}>
-                <td className="mono" style={{ fontSize: '0.75rem' }}>{r.host}</td>
-                <td><span className={`badge ${r.classification === 'LEGITIMATE_DOMAIN' ? 'badge-error' : r.classification === 'UNKNOWN' ? 'badge-warn' : 'badge-info'}`}>{r.classification}</span></td>
-                <td>{r.enabled ? <span className="badge badge-ok">active</span> : <span className="badge badge-warn">disabled</span>}</td>
-                <td style={{ fontSize: '0.75rem' }}>{r.provenance}</td>
-                <td style={{ fontSize: '0.75rem', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.reason}</td>
-                <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.updated_at)}</td>
-                <td>
-                  <button className="admin-btn" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }} onClick={() => startEdit(r)}>Edit</button>{' '}
-                  <button className="admin-btn" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }} onClick={() => toggleEnabled(r)}>{r.enabled ? 'Disable' : 'Enable'}</button>{' '}
-                  <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }} onClick={() => remove(r)}>Remove</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="admin-card admin-card-spaced">
+        <AsyncSection
+          data={rowsLoading && !rows ? null : rows}
+          error={rowsError}
+          onRetry={loadRows}
+          emptyMessage={EMPTY_MESSAGE}
+        >
+          {(rowData) => (
+            <AdminDataGrid
+              gridId="threat-intel-classifications"
+              columns={columns}
+              rows={rowData}
+              rowKey={(r) => String(r.id)}
+              emptyMessage={EMPTY_MESSAGE}
+            />
+          )}
+        </AsyncSection>
       </div>
     </div>
   )

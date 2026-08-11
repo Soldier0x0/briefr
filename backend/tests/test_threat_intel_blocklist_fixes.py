@@ -84,8 +84,8 @@ def test_otx_observed_at_feeds_blocklist_freshness(tmp_path, monkeypatch):
         await init_db()
         db = await database.get_db()
         try:
-            db_blocklist.fetch_infra_classifications = _no_infra
-            build_mod.fetch_infra_classifications = _no_infra
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
 
             # OTX IOC observed a long time ago; ThreatFox backs the same domain.
             await replace_otx_cve_pulses(db, "CVE-2024-6001", _OTX_PULSE)
@@ -137,8 +137,8 @@ def test_otx_observed_at_absent_falls_back(tmp_path, monkeypatch):
         await init_db()
         db = await database.get_db()
         try:
-            db_blocklist.fetch_infra_classifications = _no_infra
-            build_mod.fetch_infra_classifications = _no_infra
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
 
             await replace_otx_cve_pulses(db, "CVE-2024-6002", _OTX_PULSE)
             await replace_otx_pulse_iocs(db, "pulse-fix", [{
@@ -175,8 +175,8 @@ def test_exact_ioc_distinct_from_host_in_evidence(tmp_path, monkeypatch):
         await init_db()
         db = await database.get_db()
         try:
-            db_blocklist.fetch_infra_classifications = _no_infra
-            build_mod.fetch_infra_classifications = _no_infra
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
 
             for url, host in [
                 ("https://drive.google.com/uc?export=download&id=ABC", "drive.google.com"),
@@ -224,8 +224,8 @@ def test_txt_export_is_single_domain_per_line(tmp_path, monkeypatch):
         await init_db()
         db = await database.get_db()
         try:
-            db_blocklist.fetch_infra_classifications = _no_infra
-            build_mod.fetch_infra_classifications = _no_infra
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
 
             await _seed_catalog_row(db, domain="drive.google.com", raw_ioc="https://drive.google.com/uc?export=download&id=ABC", host_ioc="drive.google.com")
             await _seed_catalog_row(db, domain="t.me", raw_ioc="https://t.me/example", host_ioc="t.me")
@@ -256,8 +256,8 @@ def test_json_export_preserves_provenance(tmp_path, monkeypatch):
         await init_db()
         db = await database.get_db()
         try:
-            db_blocklist.fetch_infra_classifications = _no_infra
-            build_mod.fetch_infra_classifications = _no_infra
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
 
             await _seed_catalog_row(
                 db,
@@ -279,6 +279,110 @@ def test_json_export_preserves_provenance(tmp_path, monkeypatch):
             evidence = rec["evidence"][0]
             for field in ("source", "ref_id", "ioc_type", "ioc_value", "raw_ioc", "host_ioc"):
                 assert field in evidence, f"missing evidence field {field}"
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_evidence_ordering_is_deterministic(tmp_path, monkeypatch):
+    """Equivalent input rows in a different physical order must produce an
+    identical payload (evidence lists, freshness factor, confidence)."""
+    from blocklist.serialize import to_json
+
+    async def run():
+        dbs = []
+        for variant, order in (
+            ("a", ["a", "b", "c"]),
+            ("b", ["c", "a", "b"]),
+            ("c", ["b", "c", "a"]),
+        ):
+            db_path = str(tmp_path / f"det-{variant}.db")
+            monkeypatch.setenv("DB_PATH", db_path)
+            monkeypatch.setattr(database, "DB_PATH", db_path)
+            await init_db()
+            db = await database.get_db()
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
+
+            # The three variants share one backend connection when running
+            # against live PostgreSQL (DB_PATH only isolates SQLite files), so
+            # clear this test's rows before each variant to avoid unique-key
+            # collisions on re-insert -- the comparison is about physical insert
+            # order, not persistent table state.
+            await db.execute(
+                "DELETE FROM ti_mirror_iocs "
+                "WHERE source = 'threatfox' AND ref_id IN ("
+                "'tf-det-a.example', 'tf-det-b.example', 'tf-det-c.example')"
+            )
+            await db.commit()
+
+            # Three catalog rows with different observed first_seen values,
+            # inserted in different physical orders per variant.
+            stamps = {"a": "2024-06-01", "b": "2024-06-02", "c": "2024-06-03"}
+            for key in order:
+                await _seed_catalog_row(
+                    db,
+                    domain=f"det-{key}.example",
+                    first_seen=stamps[key],
+                )
+
+            payload = await build_mod.build_blocklist(db)
+            dbs.append((to_json(payload), payload))
+            await db.close()
+
+        ref_json, ref_payload = dbs[0]
+        for json_doc, payload in dbs[1:]:
+            assert json_doc == ref_json, (
+                "evidence ordering must be identical across row orderings"
+            )
+            for rec in ref_payload["domains"]:
+                other = next(
+                    r for r in payload["domains"] if r["domain"] == rec["domain"]
+                )
+                assert rec["evidence"] == other["evidence"]
+                assert rec["confidence_factors"] == other["confidence_factors"]
+                assert rec["confidence"] == other["confidence"]
+
+    run_db_test(run())
+
+
+def test_otx_earliest_observation_drives_freshness(tmp_path, monkeypatch):
+    """When several OTX rows share a domain, the *earliest* observed_at must
+    drive the freshness score (a fresh row never masks a stale one)."""
+    async def run():
+        db_path = str(tmp_path / "b1-min.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            monkeypatch.setattr(db_blocklist, "fetch_infra_classifications", _no_infra)
+            monkeypatch.setattr(build_mod, "fetch_infra_classifications", _no_infra)
+
+            await replace_otx_cve_pulses(db, "CVE-2024-6003", _OTX_PULSE)
+            # Insert fresh first, stale second — the earliest must win.
+            await replace_otx_pulse_iocs(db, "pulse-fix", [
+                {"ioc_type": "DOMAIN", "ioc_value": "min-stale.example",
+                 "description": "C2", "observed_at": "2021-01-01T00:00:00Z"},
+                {"ioc_type": "DOMAIN", "ioc_value": "min-stale.example",
+                 "description": "C2", "observed_at": "2026-01-01T00:00:00Z"},
+            ])
+            await _seed_catalog_row(db, domain="min-stale.example", first_seen="2021-01-02")
+
+            payload = await build_mod.build_blocklist(db)
+            rec = next(
+                r for r in payload["domains"] if r["domain"] == "min-stale.example"
+            )
+            freshness = next(
+                (f for f in rec.get("confidence_factors") or [] if f["factor"] == "freshness"),
+                None,
+            )
+            assert freshness is not None
+            assert freshness.get("freshness_fallback") is not True
+            assert freshness["value"] < 0.6, (
+                "stale 2021 observation must dominate; fresh 2026 row must not mask it"
+            )
         finally:
             await db.close()
 

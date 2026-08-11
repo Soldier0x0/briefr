@@ -1365,6 +1365,18 @@
       ]
     },
     {
+      "id": "table:infra_classifications",
+      "label": "infra_classifications",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "infra_classifications"
+        }
+      ]
+    },
+    {
       "id": "table:ioc_cache",
       "label": "ioc_cache",
       "kind": "table",
@@ -4337,6 +4349,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-blocklist->table:infra_classifications",
+      "source": "routers-admin-blocklist",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-blocklist->table:kev_deadlines",
       "source": "routers-admin-blocklist",
       "target": "table:kev_deadlines",
@@ -6728,6 +6746,12 @@
       "id": "routers-threat_intel->table:cves",
       "source": "routers-threat_intel",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_intel->table:infra_classifications",
+      "source": "routers-threat_intel",
+      "target": "table:infra_classifications",
       "kind": "references_table"
     },
     {

@@ -24,6 +24,7 @@ SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
 FROM ti_mirror_iocs
 WHERE source IN ('threatfox', 'urlhaus')
   AND ioc_type IN ('domain', 'url')
+ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
 
 _CATALOG_EVIDENCE_PG = """
@@ -32,6 +33,7 @@ SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
 FROM app.ti_mirror_iocs
 WHERE source IN ('threatfox', 'urlhaus')
   AND ioc_type IN ('domain', 'url')
+ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
 
 # OTX pulse IOCs that can back a domain candidate. OTX is only ever used as
@@ -42,6 +44,7 @@ SELECT pulse_id, ioc_type, ioc_value, raw_ioc, host_ioc, description,
        fetched_at, observed_at
 FROM otx_pulse_iocs
 WHERE UPPER(ioc_type) IN ('DOMAIN', 'HOSTNAME', 'URL')
+ORDER BY pulse_id, ioc_type, ioc_value, observed_at, fetched_at
 """
 
 _OTX_CANDIDATE_PG = """
@@ -49,6 +52,7 @@ SELECT pulse_id, ioc_type, ioc_value, raw_ioc, host_ioc, description,
        fetched_at, observed_at
 FROM intel.otx_pulse_iocs
 WHERE UPPER(ioc_type) IN ('DOMAIN', 'HOSTNAME', 'URL')
+ORDER BY pulse_id, ioc_type, ioc_value, observed_at, fetched_at
 """
 
 # pg-only: infra_classifications exists only in the Postgres app schema
@@ -101,6 +105,13 @@ async def insert_infra_classification(
 ) -> dict[str, Any]:
     """Insert one classification row; raises ValueError on duplicate host."""
     now = utcnow_str()
+    # Fast path: a duplicate host is a domain-logic error, not a DB error, so
+    # surface it before touching the write (keeps the failure deterministic).
+    existing = await db.execute_fetchall(
+        "SELECT host FROM app.infra_classifications WHERE host = ?", (host,)
+    )
+    if existing:
+        raise ValueError(f"Host already classified: {host}")
     try:
         await db.execute(
             "INSERT INTO app.infra_classifications ("
@@ -109,7 +120,13 @@ async def insert_infra_classification(
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (host, classification, enabled, provenance, reason, notes, now, now),
         )
-    except Exception as exc:  # duplicate host (UNIQUE) or dialect error
+    except Exception as exc:  # concurrent duplicate (UNIQUE) or dialect error
+        # On Postgres a failed statement aborts the whole transaction; roll
+        # back before probing so the next statement is not rejected.
+        try:
+            await db.rollback()
+        except Exception:
+            pass
         existing = await db.execute_fetchall(
             "SELECT host FROM app.infra_classifications WHERE host = ?", (host,)
         )

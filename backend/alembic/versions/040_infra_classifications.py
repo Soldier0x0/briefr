@@ -21,6 +21,8 @@ depends_on = None
 
 def upgrade() -> None:
     # Alembic runs without the app pool's search_path, so qualify explicitly.
+    # CHECK constraints mirror blocklist/infra_seed.py CLASSIFICATIONS and the
+    # boolean-like `enabled` contract so direct SQL writes can't violate them.
     op.execute(
         """
         CREATE TABLE IF NOT EXISTS app.infra_classifications (
@@ -33,7 +35,16 @@ def upgrade() -> None:
             notes          TEXT NOT NULL DEFAULT '',
             created_at     TEXT NOT NULL,
             updated_at     TEXT NOT NULL,
-            UNIQUE (host)
+            UNIQUE (host),
+            CONSTRAINT chk_infra_classifications_classification CHECK (
+                classification IN (
+                    'LEGITIMATE_DOMAIN',
+                    'SHARED_LEGITIMATE_INFRASTRUCTURE',
+                    'TRUSTED_SERVICE',
+                    'UNKNOWN'
+                )
+            ),
+            CONSTRAINT chk_infra_classifications_enabled CHECK (enabled IN (0, 1))
         )
         """
     )

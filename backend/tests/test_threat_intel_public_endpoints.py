@@ -57,18 +57,10 @@ def client(tmp_path, monkeypatch):
         yield client
 
 
-def test_public_blocklist_unconfigured_token_returns_503(client):
+def test_public_blocklist_unconfigured_token_returns_503(client, monkeypatch):
     """Fails closed: with nothing set for THREAT_INTEL_TOKEN both export
-    routes return 503 before any token comparison happens."""
-    assert settings.threat_intel_token == ""
-    for path in _BLOCKLIST_PATHS:
-        resp = client.get(path)
-        assert resp.status_code == 503, f"{path} must 503 when token is unset"
-
-
-def test_public_blocklist_unconfigured_returns_503_when_token_unset(client, monkeypatch):
-    """Same fail-closed contract, but with the token explicitly forced to ''
-    so the assertion is deterministic regardless of ambient env."""
+    routes return 503 before any token comparison happens. The token is
+    forced to '' so the assertion is independent of ambient env."""
     monkeypatch.setattr(settings, "threat_intel_token", "")
     for path in _BLOCKLIST_PATHS:
         resp = client.get(path)
@@ -104,10 +96,16 @@ def test_public_blocklist_correct_token_returns_200_txt_and_json(client, monkeyp
     txt = client.get("/api/threat-intel/blocklist.txt", headers=headers)
     assert txt.status_code == 200
     assert txt.headers["content-type"].startswith("text/plain")
+    assert txt.headers["cache-control"] == "no-store", (
+        "TXT export must not be cacheable by a shared proxy"
+    )
 
     exported = client.get("/api/threat-intel/blocklist.json", headers=headers)
     assert exported.status_code == 200
     assert exported.headers["content-type"].startswith("application/json")
+    assert exported.headers["cache-control"] == "no-store", (
+        "JSON export must not be cacheable by a shared proxy"
+    )
 
 
 def test_public_blocklist_rate_limited_returns_429(client, monkeypatch):
