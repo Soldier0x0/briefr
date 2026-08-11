@@ -184,10 +184,23 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/ratelimit"),
     ("GET", "/api/admin/intel-snapshot/status"),
     ("POST", "/api/admin/intel-snapshot/import"),
+    # Threat-intel blocklist: admin management + exports (appended after
+    # intel-snapshot routes).
+    ("GET", "/api/admin/threat-intel/status"),
+    ("GET", "/api/admin/threat-intel/blocklist.txt"),
+    ("GET", "/api/admin/threat-intel/blocklist.json"),
+    ("GET", "/api/admin/infra-classifications"),
+    ("POST", "/api/admin/infra-classifications"),
+    ("PATCH", "/api/admin/infra-classifications/{row_id}"),
+    ("DELETE", "/api/admin/infra-classifications/{row_id}"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
     ("POST", "/api/wallboard/session"),
     ("DELETE", "/api/wallboard/session"),
     ("GET", "/api/wallboard"),
+    # Threat-intel public export (token-gated, appended after wallboard
+    # routes — additive only).
+    ("GET", "/api/threat-intel/blocklist.txt"),
+    ("GET", "/api/threat-intel/blocklist.json"),
     # Built-in app login (decision 2026-06-11): appended after wallboard
     # routes — additive only.
     ("POST", "/api/auth/login"),

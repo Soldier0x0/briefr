@@ -12,6 +12,7 @@ export const NAV = [
     { id: 'scheduler', label: 'Scheduler', icon: 'Clock' },
     { id: 'webhooks', label: 'Webhooks', icon: 'Webhook' },
     { id: 'aiops', label: 'AI operations', icon: 'Sparkles' },
+    { id: 'threatintel', label: 'Threat-intel blocklist', icon: 'ShieldAlert' },
     { id: 'security', label: 'Security', icon: 'ShieldAlert', badgeKey: 'failed_auth_last_24h' },
     { id: 'ratelimit', label: 'Inbound limits', icon: 'Gauge' },
   ]},

@@ -71,12 +71,21 @@ def _mirror_clauses(
 
 
 async def batch_source_evidence(
-    db, iocs: list[tuple[str, str]]
+    db,
+    iocs: list[tuple[str, str]],
+    *,
+    suppress_host_level: frozenset[str] = frozenset(),
 ) -> dict[tuple[str, str], list[dict[str, Any]]]:
     """
     Map canonical (OTX ioc_type, lowercased value) -> mirror rows across all
     catalog sources. Each returned row carries `source` and `ref_id` so
     callers can build receipts via corroboration_receipt(source, ref_id).
+
+    ``suppress_host_level``: canonical hosts whose *host-level* URL->domain
+    corroboration is suppressed (shared/legitimate infrastructure). Only the
+    ``host_ioc`` join for a DOMAIN edge is skipped — exact ``ioc_value``
+    matches always survive, so precise IOC evidence is never lost. When the
+    set is empty (default) the behaviour is byte-identical to the original.
     """
     if not iocs:
         return {}
@@ -96,8 +105,14 @@ async def batch_source_evidence(
         lookup: dict[tuple[str, str], tuple[tuple[str, str], str]] = {}
         for key, (ioc_type, ioc_value) in edge_keys.items():
             pair = _mirror_lookup_pair(desc, ioc_type, ioc_value)
-            if pair is not None:
-                lookup[key] = pair
+            if pair is None:
+                continue
+            # Host-level corroboration control: a DOMAIN edge corroborating a
+            # URL row via its derived host is skipped for classified shared
+            # hosts. Exact URL/domain ioc_value matches are unaffected.
+            if pair[0][0] == "host_ioc" and pair[1] in suppress_host_level:
+                continue
+            lookup[key] = pair
         if not lookup:
             continue
 

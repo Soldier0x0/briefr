@@ -22,10 +22,10 @@ _CVE_EXISTS_PG = "SELECT 1 FROM cves WHERE cve_id = $1 LIMIT 1"
 _UPSERT_CVE_SQLITE = """
 INSERT INTO cves (
     cve_id, description, cvss_score, severity, published, modified,
-    affected_products, mitre_technique, summary, is_kev, epss_score,
+    affected_products, cpe_matches, mitre_technique, summary, is_kev, epss_score,
     has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 ON CONFLICT(cve_id) DO UPDATE SET
     description = excluded.description,
@@ -47,7 +47,12 @@ ON CONFLICT(cve_id) DO UPDATE SET
         THEN 'llm'
         ELSE ''
     END,
-    cpe_matches = excluded.cpe_matches,
+    cpe_matches = CASE
+        WHEN (excluded.cpe_matches IS NULL
+              OR excluded.cpe_matches IN ('', '[]'))
+        THEN cves.cpe_matches
+        ELSE excluded.cpe_matches
+    END,
     mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
     summary = COALESCE(excluded.summary, cves.summary),
     has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
@@ -61,10 +66,10 @@ ON CONFLICT(cve_id) DO UPDATE SET
 _UPSERT_CVE_PG = """
 INSERT INTO cves (
     cve_id, description, cvss_score, severity, published, modified,
-    affected_products, mitre_technique, summary, is_kev, epss_score,
+    affected_products, cpe_matches, mitre_technique, summary, is_kev, epss_score,
     has_poc, patch_available, has_ai_context, source_urls, cwe_ids, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 )
 ON CONFLICT(cve_id) DO UPDATE SET
     description = excluded.description,
@@ -86,7 +91,12 @@ ON CONFLICT(cve_id) DO UPDATE SET
         THEN 'llm'
         ELSE ''
     END,
-    cpe_matches = excluded.cpe_matches,
+    cpe_matches = CASE
+        WHEN (excluded.cpe_matches IS NULL
+              OR excluded.cpe_matches IN ('', '[]'))
+        THEN cves.cpe_matches
+        ELSE excluded.cpe_matches
+    END,
     mitre_technique = COALESCE(excluded.mitre_technique, cves.mitre_technique),
     summary = COALESCE(excluded.summary, cves.summary),
     has_poc = CASE WHEN excluded.has_poc = 1 THEN 1 ELSE cves.has_poc END,
@@ -325,6 +335,7 @@ def _cve_upsert_params(cve: dict) -> tuple:
         cve.get("published", ""),
         cve.get("modified", ""),
         json.dumps(cve.get("affected_products", [])),
+        json.dumps(cve.get("cpe_matches", [])),
         cve.get("mitre_technique"),
         cve.get("summary"),
         1 if cve.get("is_kev") else 0,

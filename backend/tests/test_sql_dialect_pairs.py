@@ -46,7 +46,9 @@ DB_DIR = BACKEND / "db"
 # Raised 133→136 for Program E (2026-07-22): ai_operation_payloads INSERT +
 # SELECT_BY_OPERATION_ID + cache_retention purge pair (SQLite parity required).
 # Raised 136→137 for OTX stale fallback (#742): _READ_OTX_CVE_PULSES_ANY_AGE pair.
-ALLOWED_MAX = 137
+# Raised 137→138 for threat-intel blocklist (db/blocklist.py): catalog-evidence
+# + OTX-candidate read pairs — both tables exist in the SQLite bootstrap too.
+ALLOWED_MAX = 138
 
 _ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*=")
 _PG_ONLY_RE = re.compile(r"#\s*pg-only\b", re.IGNORECASE)

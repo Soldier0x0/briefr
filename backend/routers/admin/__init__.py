@@ -39,6 +39,7 @@ from . import webhooks_logs as webhooks_logs  # noqa: F401
 from . import ai_ops as ai_ops  # noqa: F401
 from . import diagnostics as diagnostics  # noqa: F401
 from . import intel_snapshot as intel_snapshot  # noqa: F401
+from . import blocklist as blocklist  # noqa: F401
 
 from .config import _get_config_response
 from .jobs import _JOB_RUN_MAP

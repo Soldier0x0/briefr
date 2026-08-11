@@ -177,6 +177,9 @@ def _get_config_response() -> dict[str, Any]:
             "RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE": _env_int(
                 "RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE", 30
             ),
+            "RATE_LIMIT_THREAT_INTEL_PER_MINUTE": _env_int(
+                "RATE_LIMIT_THREAT_INTEL_PER_MINUTE", 10
+            ),
             "DATABASE_URL": (
                 re.sub(r"://[^@]+@", "://***@", _env("DATABASE_URL"))
                 if _env("DATABASE_URL") else "not configured"
@@ -205,6 +208,7 @@ def _get_config_response() -> dict[str, Any]:
         },
         "security": {
             "WALLBOARD_TOKEN": _mask_key(_env("WALLBOARD_TOKEN")),
+            "THREAT_INTEL_TOKEN": _mask_key(_env("THREAT_INTEL_TOKEN")),
         },
         "webhooks": {
             "DISCORD_WEBHOOK_URL": _mask_url(_env("DISCORD_WEBHOOK_URL")),

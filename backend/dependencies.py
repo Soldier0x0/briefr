@@ -43,6 +43,27 @@ async def require_wallboard_token(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Wallboard token required")
 
 
+async def require_threat_intel_token(request: Request) -> None:
+    """Threat-intel export routes require X-BRIEFR-Intel-Token.
+
+    Fails closed: when THREAT_INTEL_TOKEN is unset the endpoint is not
+    available at all (503). When set, a missing/mismatched header returns 401.
+    Comparison is over SHA-256 digests so a length mismatch cannot leak the
+    configured token's length via timing.
+    """
+    if not settings.threat_intel_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Threat-intel export not configured (THREAT_INTEL_TOKEN unset)",
+        )
+    provided = request.headers.get("X-BRIEFR-Intel-Token", "")
+    if not secrets.compare_digest(
+        hashlib.sha256(provided.encode()).digest(),
+        hashlib.sha256(settings.threat_intel_token.encode()).digest(),
+    ):
+        raise HTTPException(status_code=401, detail="Threat-intel token required")
+
+
 async def require_user(request: Request) -> dict:
     """Built-in app login (decision 2026-06-11): require a valid `briefr_at`
     access-token cookie, and populate request.state.user_username/user_role for

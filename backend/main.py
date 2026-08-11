@@ -55,6 +55,7 @@ from routers import proof as proof_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
 from security_architecture.routers import security_architecture as security_architecture_router
+from routers import threat_intel as threat_intel_router
 from routers import wallboard as wallboard_router
 from routers import watchlist as watchlist_router
 from routers import search as search_router
@@ -372,6 +373,7 @@ app.include_router(watchlist_router.router)
 app.include_router(admin_router.router)
 app.include_router(wallboard_router.public_router)
 app.include_router(wallboard_router.router)
+app.include_router(threat_intel_router.router)
 # Built-in app login (decision 2026-06-11): appended after wallboard_router —
 # additive only, see test_router_split.py's EXPECTED_ROUTES comment.
 app.include_router(auth_router.router)

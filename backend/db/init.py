@@ -167,6 +167,9 @@ async def _init_postgres_schema() -> None:
     db = await get_db()
     try:
         await _normalize_epss_scores(db)
+        from blocklist.infra_seed import seed_infra_classifications
+
+        await seed_infra_classifications(db)
         await db.commit()
     finally:
         await db.close()

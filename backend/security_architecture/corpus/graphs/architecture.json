@@ -522,6 +522,19 @@
       ]
     },
     {
+      "id": "routers-admin-blocklist",
+      "label": "routers.admin.blocklist",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 7,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/admin/blocklist.py"
+        }
+      ]
+    },
+    {
       "id": "routers-admin-catchup",
       "label": "routers.admin.catchup",
       "kind": "component",
@@ -947,6 +960,19 @@
         {
           "type": "file",
           "ref": "backend/routers/stack_catalog.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-threat_intel",
+      "label": "routers.threat_intel",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 2,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/threat_intel.py"
         }
       ]
     },
@@ -4269,6 +4295,66 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-blocklist->table:audit_log",
+      "source": "routers-admin-blocklist",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:cve_change_history",
+      "source": "routers-admin-blocklist",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:cve_embeddings",
+      "source": "routers-admin-blocklist",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:cve_exploits",
+      "source": "routers-admin-blocklist",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:cves",
+      "source": "routers-admin-blocklist",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:epss_history",
+      "source": "routers-admin-blocklist",
+      "target": "table:epss_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:feed_cache",
+      "source": "routers-admin-blocklist",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:kev_deadlines",
+      "source": "routers-admin-blocklist",
+      "target": "table:kev_deadlines",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:otx_pulse_iocs",
+      "source": "routers-admin-blocklist",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-blocklist->table:ti_mirror_iocs",
+      "source": "routers-admin-blocklist",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-catchup->table:audit_log",
       "source": "routers-admin-catchup",
       "target": "table:audit_log",
@@ -6630,6 +6716,30 @@
       "id": "routers-stack_catalog->table:user_preferences",
       "source": "routers-stack_catalog",
       "target": "table:user_preferences",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_intel->table:cve_exploits",
+      "source": "routers-threat_intel",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_intel->table:cves",
+      "source": "routers-threat_intel",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_intel->table:otx_pulse_iocs",
+      "source": "routers-threat_intel",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-threat_intel->table:ti_mirror_iocs",
+      "source": "routers-threat_intel",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {

@@ -18,11 +18,12 @@ from tests.conftest import run_db_test
 
 def test_table_inventory_counts():
     assert len(INTEL_TABLES) == 30
-    assert len(APP_TABLES) == 28
+    assert len(APP_TABLES) == 29
     assert len(set(INTEL_TABLES) & set(APP_TABLES)) == 0
     assert "correlation_cve_snapshot" in INTEL_TABLES
     assert "embeddings" in INTEL_TABLES
     assert "software_catalog" in INTEL_TABLES
+    assert "infra_classifications" in APP_TABLES
 
 
 def test_sync_state_ingest_allowlist_includes_epss_csv_identity():
