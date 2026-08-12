@@ -154,7 +154,8 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
 # False positives are not acceptable. No x/y layout in the corpus.
 
 _SQL_TABLE_REF_RE = re.compile(
-    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+(?:(?:app|intel|public)\.)?(\w+)"
+    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+"
+    r"(?:(?:app|intel|public)\.)?(\w+)(?!\s+import\b)"
 )
 
 # Tables created by Alembic migrations rather than db/init.py. db/init.py

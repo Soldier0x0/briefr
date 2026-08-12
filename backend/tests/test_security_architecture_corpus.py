@@ -323,6 +323,18 @@ def test_extract_table_refs_ignores_unknown_schema_prefixes():
     assert gen.extract_table_refs(source, known) == []
 
 
+def test_extract_table_refs_ignores_known_schema_python_imports():
+    """`from app.<table> import ...` must not be read as a SQL reference even
+    though `app` is a recognized schema -- the `import` keyword marks Python
+    syntax, not a FROM clause (a false edge would fabricate a dependency)."""
+    known = {"infra_classifications", "users"}
+    source = (
+        "from app.infra_classifications import add_infra_classification\n"
+        "SELECT host FROM app.infra_classifications WHERE enabled = 1"
+    )
+    assert gen.extract_table_refs(source, known) == ["infra_classifications"]
+
+
 def test_build_db_tables_yaml_distinguishes_migration_only_tables():
     out = gen.build_db_tables_yaml(["cves", "infra_classifications"])
     by_id = {t["id"]: t for t in out}

@@ -408,8 +408,13 @@ def test_infra_classifications_pg_round_trip():
     reason="requires live Postgres (app.infra_classifications is PG-only)",
 )
 def test_infra_classifications_pg_seed_is_atomic_under_concurrency():
-    """Two concurrent seeders must both complete without error and the seed
-    set must be intact (INSERT .. ON CONFLICT (host) DO NOTHING races safely)."""
+    """Concurrent seeders on an ISOLATED empty table race safely: exactly one
+    writes the full seed and the others write zero.
+
+    Isolated empty seed state is required — the round-trip test above commits
+    the complete seed set, and a pre-seeded table would let every concurrent
+    seeder return 0 without ever contending (a vacuous pass).
+    """
 
     async def _run():
         import asyncio
@@ -426,11 +431,25 @@ def test_infra_classifications_pg_seed_is_atomic_under_concurrency():
             finally:
                 await db.close()
 
+        async def _clear_seed() -> None:
+            db = await get_db()
+            try:
+                placeholders = ", ".join("?" for _ in _SEED_HOSTS)
+                await db.execute(
+                    f"DELETE FROM app.infra_classifications WHERE host IN ({placeholders})",
+                    tuple(host for host, _, _ in _SEED_HOSTS),
+                )
+                await db.commit()
+            finally:
+                await db.close()
+
+        await _clear_seed()
+
         results = await asyncio.gather(_seed_once(), _seed_once(), _seed_once())
-        for r in results:
-            assert r in (0, len(_SEED_HOSTS)), (
-                "each seeder must write the full seed or none (atomic per host)"
-            )
+        assert sorted(results) == [0, 0, len(_SEED_HOSTS)], (
+            "exactly one concurrent seeder must write the full seed and the "
+            "others must write zero (INSERT .. ON CONFLICT (host) DO NOTHING)"
+        )
 
         db = await get_db()
         try:
