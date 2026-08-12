@@ -298,6 +298,50 @@ def test_extract_table_refs_covers_join_into_update_delete():
     assert gen.extract_table_refs(source, known) == ["a", "b", "c", "d"]
 
 
+def test_extract_table_refs_resolves_schema_qualified_names():
+    """Migration-only tables live behind a schema prefix (app./intel./public.);
+    the graph must record the dependency rather than matching the schema name."""
+    known = {"infra_classifications", "sync_state", "ti_mirror_iocs"}
+    source = (
+        "FROM app.infra_classifications WHERE enabled = 1; "
+        "FROM intel.sync_state; "
+        "FROM app.ti_mirror_iocs"
+    )
+    assert gen.extract_table_refs(source, known) == [
+        "infra_classifications",
+        "sync_state",
+        "ti_mirror_iocs",
+    ]
+
+
+def test_extract_table_refs_ignores_unknown_schema_prefixes():
+    """Only known schemas (app/intel/public) may qualify a table ref. A Python
+    import like `from db.resource_metrics import ...` must NOT be treated as a
+    SQL reference -- the graph can't fabricate a dependency from an import."""
+    known = {"resource_metrics"}
+    source = "from db.resource_metrics import fetch_resources_response"
+    assert gen.extract_table_refs(source, known) == []
+
+
+def test_extract_table_refs_ignores_known_schema_python_imports():
+    """`from app.<table> import ...` must not be read as a SQL reference even
+    though `app` is a recognized schema -- the `import` keyword marks Python
+    syntax, not a FROM clause (a false edge would fabricate a dependency)."""
+    known = {"infra_classifications", "users"}
+    source = (
+        "from app.infra_classifications import add_infra_classification\n"
+        "SELECT host FROM app.infra_classifications WHERE enabled = 1"
+    )
+    assert gen.extract_table_refs(source, known) == ["infra_classifications"]
+
+
+def test_build_db_tables_yaml_distinguishes_migration_only_tables():
+    out = gen.build_db_tables_yaml(["cves", "infra_classifications"])
+    by_id = {t["id"]: t for t in out}
+    assert "db/init.py" in by_id["cves"]["summary"]
+    assert "migration" in by_id["infra_classifications"]["summary"]
+
+
 def test_resolve_table_refs_follows_database_shim_and_same_module(tmp_path: Path):
     """Job wrappers call `_run_*` helpers that use `from database import …`;
     edges must resolve through the shim into db.* SQL without treating a

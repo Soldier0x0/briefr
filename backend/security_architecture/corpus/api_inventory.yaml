@@ -138,6 +138,18 @@ endpoints:
 - method: POST
   path: /api/admin/incidents/refresh
   component_id: routers-admin-feeds
+- method: GET
+  path: /api/admin/infra-classifications
+  component_id: routers-admin-blocklist
+- method: POST
+  path: /api/admin/infra-classifications
+  component_id: routers-admin-blocklist
+- method: DELETE
+  path: /api/admin/infra-classifications/{row_id}
+  component_id: routers-admin-blocklist
+- method: PATCH
+  path: /api/admin/infra-classifications/{row_id}
+  component_id: routers-admin-blocklist
 - method: POST
   path: /api/admin/intel-snapshot/import
   component_id: routers-admin-intel_snapshot
@@ -234,6 +246,15 @@ endpoints:
 - method: GET
   path: /api/admin/system
   component_id: routers-admin-system
+- method: GET
+  path: /api/admin/threat-intel/blocklist.json
+  component_id: routers-admin-blocklist
+- method: GET
+  path: /api/admin/threat-intel/blocklist.txt
+  component_id: routers-admin-blocklist
+- method: GET
+  path: /api/admin/threat-intel/status
+  component_id: routers-admin-blocklist
 - method: GET
   path: /api/admin/watchlist
   component_id: routers-admin-data_ops
@@ -531,6 +552,12 @@ endpoints:
 - method: GET
   path: /api/techniques/top
   component_id: routers-cves-list
+- method: GET
+  path: /api/threat-intel/blocklist.json
+  component_id: routers-threat_intel
+- method: GET
+  path: /api/threat-intel/blocklist.txt
+  component_id: routers-threat_intel
 - method: GET
   path: /api/threat-model/scenarios
   component_id: routers-threat_model

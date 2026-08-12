@@ -12,10 +12,13 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.responses import Response
 
-# Public without app login — wallboard uses its own token on /api/wallboard data routes.
+# Public without app login — wallboard uses its own token on /api/wallboard
+# data routes; /api/threat-intel/ is token-gated (require_threat_intel_token)
+# and fails closed when the token is unset.
 _PUBLIC_PREFIXES = (
     "/api/auth/",
     "/api/wallboard/",
+    "/api/threat-intel/",
 )
 
 _PUBLIC_EXACT = frozenset(

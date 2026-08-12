@@ -129,7 +129,11 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
         {
             "id": table,
             "title": table,
-            "summary": f"Database table defined in db/init.py (name={table}).",
+            "summary": (
+                f"Database table created by Alembic migration (name={table})."
+                if table in _MIGRATION_ONLY_TABLES
+                else f"Database table defined in db/init.py (name={table})."
+            ),
             "owner": "platform",
             "status": "active",
             "origin": "generated",
@@ -150,8 +154,17 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
 # False positives are not acceptable. No x/y layout in the corpus.
 
 _SQL_TABLE_REF_RE = re.compile(
-    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+(\w+)"
+    r"(?i)\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM)\s+"
+    r"(?:(?:app|intel|public)\.)?(\w+)(?!\s+import\b)"
 )
+
+# Tables created by Alembic migrations rather than db/init.py. db/init.py
+# defines the SQLite bootstrap schema; Postgres-only tables added by later
+# migrations (e.g. app.infra_classifications in 040) live only in
+# backend/alembic/versions. Curated explicitly instead of scanning the
+# migrations directory: migrations also drop/rename tables and create views,
+# and a scan would fabricate stale nodes.
+_MIGRATION_ONLY_TABLES: frozenset[str] = frozenset({"infra_classifications"})
 
 # Allowlisted platform modules (not every backend file — keeps the graph readable).
 _CORE_MODULES: list[dict[str, str]] = [
@@ -766,7 +779,7 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
     package_json_text = (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
 
     jobs = extract_scheduler_jobs(scheduler_source)
-    tables = extract_db_tables(db_source)
+    tables = sorted(set(extract_db_tables(db_source)) | set(_MIGRATION_ONLY_TABLES))
     requirements_entries = extract_requirements_entries(requirements_text)
     package_json_entries = extract_package_json_entries(package_json_text)
 

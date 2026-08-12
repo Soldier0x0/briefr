@@ -252,6 +252,15 @@ tables:
   source_refs:
   - type: table
     ref: hunt_packs
+- id: infra_classifications
+  title: infra_classifications
+  summary: Database table created by Alembic migration (name=infra_classifications).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: infra_classifications
 - id: ioc_cache
   title: ioc_cache
   summary: Database table defined in db/init.py (name=ioc_cache).

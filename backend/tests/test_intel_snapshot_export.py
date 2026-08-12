@@ -22,6 +22,24 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _pg_tools_present() -> bool:
+    try:
+        from backup.postgres_util import _pg_tool
+
+        _pg_tool("pg_dump")
+        _pg_tool("pg_restore")
+        return True
+    except RuntimeError:
+        return False
+
+
+if not _pg_tools_present():
+    pytestmark = [
+        pytestmark,
+        pytest.mark.skipif(True, reason="pg_dump/pg_restore not found on PATH"),
+    ]
+
+
 def _pg_tool(name: str) -> str:
     from backup.postgres_util import _pg_tool as tool
 

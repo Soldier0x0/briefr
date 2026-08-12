@@ -274,6 +274,7 @@ def test_get_bucket_stats_lists_every_live_bucket():
         "auth_refresh": settings.rate_limit_auth_refresh_per_minute,
         "db_explorer": 30,
         "search_token": settings.rate_limit_search_token_per_minute,
+        "threat_intel": settings.rate_limit_threat_intel_per_minute,
     }
     assert set(by_name) == set(expected)
     for name, rate in expected.items():

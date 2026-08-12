@@ -136,6 +136,9 @@ db_explorer_bucket = TokenBucket(30, name="db_explorer")
 search_token_bucket = TokenBucket(
     settings.rate_limit_search_token_per_minute, name="search_token"
 )
+threat_intel_bucket = TokenBucket(
+    settings.rate_limit_threat_intel_per_minute, name="threat_intel"
+)
 
 
 def client_key(request: Request) -> str:
@@ -226,6 +229,11 @@ def rate_limit_search_token(request: Request) -> None:
     _enforce(search_token_bucket, request)
 
 
+def rate_limit_threat_intel(request: Request) -> None:
+    """Dedicated bucket for /api/threat-intel export routes."""
+    _enforce(threat_intel_bucket, request)
+
+
 def check_login_username_rate_limit(username: str) -> None:
     """Per-username companion to rate_limit_login — called directly from the
     login handler (the username lives in the request body, not the dependency-
@@ -256,6 +264,7 @@ def get_bucket_stats() -> list[dict]:
         auth_refresh_bucket,
         db_explorer_bucket,
         search_token_bucket,
+        threat_intel_bucket,
     ]
     result = []
     for b in buckets:
@@ -283,6 +292,7 @@ def get_top_consumers(n: int = 5) -> list[dict]:
         ("auth_refresh", auth_refresh_bucket),
         ("db_explorer", db_explorer_bucket),
         ("search_token", search_token_bucket),
+        ("threat_intel", threat_intel_bucket),
     ):
         for key, hits in getattr(bucket, "_hits", {}).items():
             merged.append({"key": key, "hits": hits, "bucket": bucket_name})

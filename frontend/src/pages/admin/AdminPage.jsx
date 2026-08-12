@@ -33,6 +33,7 @@ import RateLimitPage from './RateLimitPage.jsx'
 import ResourcesPage from './ResourcesPage.jsx'
 import AiOperationsPage from './AiOperationsPage.jsx'
 import SecurityPosturePage from './SecurityPosturePage.jsx'
+import ThreatIntelPage from './ThreatIntelPage.jsx'
 import UserMenu from '../../components/UserMenu.jsx'
 import { loadJobAcks, markAllJobErrorsRead, filterUnacknowledgedErrors } from './adminJobAck.js'
 import { jobErrorsFromSystem } from './shared/JobErrorsPanel.jsx'
@@ -45,7 +46,7 @@ import '../AdminPage.css'
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
 const VALID_ADMIN_PAGES = new Set([
   'overview', 'backups', 'storage', 'resources', 'database', 'watchlist', 'apikeys', 'scheduler',
-  'webhooks', 'aiops', 'alerts', 'security', 'securityposture', 'feedhealth', 'ingestlog', 'auditlog', 'display',
+  'webhooks', 'aiops', 'threatintel', 'alerts', 'security', 'securityposture', 'feedhealth', 'ingestlog', 'auditlog', 'display',
   'sessions', 'ratelimit',
 ])
 
@@ -240,6 +241,7 @@ function AdminPageBody({ toast }) {
     scheduler: <SchedulerPage toast={toast} system={system} active={page === 'scheduler'} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
     aiops: <AiOperationsPage toast={toast} setPage={setPage} />,
+    threatintel: <ThreatIntelPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,
     security: <SecurityPage />,
     securityposture: <SecurityPosturePage mode={mode} />,

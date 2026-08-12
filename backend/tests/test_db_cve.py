@@ -1,5 +1,6 @@
 """Postgres-native cve module (Post-B Phase 1)."""
 
+import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -37,6 +38,88 @@ def test_cve_sql_uses_native_placeholders():
     assert "ON CONFLICT(cve_id)" in cve_mod._UPSERT_CVE_SQLITE
     assert "$5" in cve_mod._INSERT_CVE_CHANGE_PG
     assert "$2" in cve_mod._GET_CVES_FOR_LLM_PG
+
+
+def test_cpe_matches_persist_across_upsert_without_field(tmp_path, monkeypatch):
+    """Stored cpe_matches must not be wiped when a later upsert omits the field.
+
+    Regression for the B3 data-integrity fix: cpe_matches was previously
+    missing from the INSERT column list while still asserted in the
+    ON CONFLICT SET clause, so every re-update reset it to the default '[]'.
+    """
+    if not is_postgres():
+        db_path = tmp_path / "cpe_upsert.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    cpe = [
+        {"vendor": "apache", "product": "http_server", "version_start_including": "2.4.0", "version_end_excluding": "2.4.53"},
+        {"vendor": "nginx", "product": "nginx", "version": "1.20.0"},
+    ]
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await upsert_cves(db, [{"cve_id": CVE_B, "description": "with cpes", "cpe_matches": cpe}])
+            await db.commit()
+            rows = await db.execute_fetchall(
+                "SELECT cpe_matches FROM cves WHERE cve_id = ?"
+                if not is_postgres()
+                else "SELECT cpe_matches FROM cves WHERE cve_id = $1",
+                (CVE_B,),
+            )
+            assert rows and json.loads(rows[0]["cpe_matches"]) == cpe
+
+            await upsert_cves(db, [{"cve_id": CVE_B, "description": "no cpes"}])
+            await db.commit()
+            rows = await db.execute_fetchall(
+                "SELECT cpe_matches FROM cves WHERE cve_id = ?"
+                if not is_postgres()
+                else "SELECT cpe_matches FROM cves WHERE cve_id = $1",
+                (CVE_B,),
+            )
+            assert json.loads(rows[0]["cpe_matches"]) == cpe, (
+                "stored cpe_matches must survive an upsert that omits the field"
+            )
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_cpe_matches_none_preserves_stored_value(tmp_path, monkeypatch):
+    """An explicit cpe_matches=None must be treated as 'no data', not as a
+    JSON null that overwrites stored matches."""
+    if not is_postgres():
+        db_path = tmp_path / "cpe_none.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    cpe = [{"vendor": "apache", "product": "http_server", "version": "2.4.53"}]
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            await upsert_cves(db, [{"cve_id": CVE_B, "description": "with cpes", "cpe_matches": cpe}])
+            await db.commit()
+            await upsert_cves(db, [{"cve_id": CVE_B, "description": "explicit none", "cpe_matches": None}])
+            await db.commit()
+            rows = await db.execute_fetchall(
+                "SELECT cpe_matches FROM cves WHERE cve_id = ?"
+                if not is_postgres()
+                else "SELECT cpe_matches FROM cves WHERE cve_id = $1",
+                (CVE_B,),
+            )
+            stored = json.loads(rows[0]["cpe_matches"])
+            assert stored == cpe, (
+                f"explicit None must preserve stored cpe_matches, got {stored!r}"
+            )
+        finally:
+            await db.close()
+
+    run_db_test(_run())
 
 
 def test_upsert_cves_and_exists_round_trip(tmp_path, monkeypatch):

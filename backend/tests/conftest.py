@@ -491,6 +491,7 @@ def playwright_smoke_stack(tmp_path_factory):
         cwd=str(BACKEND_DIR),
         env=env,
         check=True,
+        timeout=180,
     )
     _build_incident_snapshot(env)
 
