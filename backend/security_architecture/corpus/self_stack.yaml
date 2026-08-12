@@ -279,7 +279,7 @@ terms:
   term: pydantic-settings
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 2.14.2
+  version: 2.15.0
 - id: self-stack-pyjwt
   title: PyJWT
   summary: BRIEFR dependency term derived from backend/requirements.txt.
