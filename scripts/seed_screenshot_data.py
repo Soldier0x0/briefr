@@ -20,7 +20,11 @@ sys.path.insert(0, str(BACKEND_DIR))
 os.chdir(BACKEND_DIR)
 
 from database import get_cve_count, get_db, init_db  # noqa: E402
-from feeds.incident_news import fetch_all_incident_news  # noqa: E402
+from feeds.incident_news import (  # noqa: E402
+    fetch_all_incident_news_parallel,
+    rss_cache_key,
+)
+from database import set_feed_cache  # noqa: E402
 
 
 def _days_ago(days: int) -> str:
@@ -312,7 +316,34 @@ async def _seed_cves(db) -> int:
 
 
 async def _warm_incident_feeds(db) -> tuple[int, list[dict]]:
-    cards, errors = await fetch_all_incident_news(db)
+    """Warm feeds without letting an unavailable RSS provider block smoke tests."""
+    if os.environ.get("CI") == "true" or os.environ.get("PLAYWRIGHT_SMOKE") == "1":
+        cards = []
+        errors = [{"source": "RSS feeds", "message": "network warm-up skipped in CI"}]
+    else:
+        try:
+            cards, errors = await asyncio.wait_for(
+                fetch_all_incident_news_parallel(db), timeout=45
+            )
+        except asyncio.TimeoutError:
+            cards = []
+            errors = [{"source": "RSS feeds", "message": "warm-up timed out"}]
+
+    if not cards:
+        # The smoke test needs one deterministic card, even when CI has no
+        # outbound RSS access. Keep it in the normal per-source cache shape.
+        cards = [{
+            "title": "BRIEFR smoke-test incident",
+            "url": "https://github.com/Soldier0x0/briefr",
+            "publishedAt": datetime.now(timezone.utc).isoformat(),
+            "description": "Synthetic incident used for isolated UI smoke tests.",
+            "source": "BRIEFR test fixture",
+            "techniques": [],
+            "tags": ["BRIEFR"],
+            "cve_ids": [],
+            "kind": "news",
+        }]
+        await set_feed_cache(db, rss_cache_key("hackernews"), {"items": cards})
     await db.commit()
     return len(cards), errors
 
