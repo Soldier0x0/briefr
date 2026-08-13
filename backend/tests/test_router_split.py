@@ -189,6 +189,7 @@ EXPECTED_ROUTES = [
     ("GET", "/api/admin/threat-intel/status"),
     ("GET", "/api/admin/threat-intel/blocklist.txt"),
     ("GET", "/api/admin/threat-intel/blocklist.json"),
+    ("GET", "/api/admin/threat-intel/blocklist.csv"),
     ("GET", "/api/admin/infra-classifications"),
     ("POST", "/api/admin/infra-classifications"),
     ("PATCH", "/api/admin/infra-classifications/{row_id}"),
@@ -201,6 +202,7 @@ EXPECTED_ROUTES = [
     # routes — additive only).
     ("GET", "/api/threat-intel/blocklist.txt"),
     ("GET", "/api/threat-intel/blocklist.json"),
+    ("GET", "/api/threat-intel/blocklist.csv"),
     # Built-in app login (decision 2026-06-11): appended after wallboard
     # routes — additive only.
     ("POST", "/api/auth/login"),

@@ -11,13 +11,13 @@ re-exported from `routers.admin`.
 
 from __future__ import annotations
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from blocklist.build import build_blocklist
 from blocklist.classify import canonical_host
 from blocklist.infra_seed import CLASSIFICATIONS
-from blocklist.serialize import to_json, to_txt
+from blocklist.serialize import to_csv, to_json, to_txt
 from database import get_db
 from db.blocklist import (
     delete_infra_classification,
@@ -52,6 +52,7 @@ async def threat_intel_status():
         "publish_urls": {
             "txt": "/api/threat-intel/blocklist.txt",
             "json": "/api/threat-intel/blocklist.json",
+            "csv": "/api/threat-intel/blocklist.csv",
         },
     }
 
@@ -80,6 +81,21 @@ async def admin_blocklist_json():
     finally:
         await db.close()
     return JSONResponse(to_json(payload))
+
+
+@router.get("/threat-intel/blocklist.csv")
+async def admin_blocklist_csv():
+    """Admin-authorized CSV export (no export token required)."""
+    db = await get_db()
+    try:
+        payload = await build_blocklist(db)
+    finally:
+        await db.close()
+    return Response(
+        to_csv(payload),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.csv"'},
+    )
 
 
 @router.get("/infra-classifications")

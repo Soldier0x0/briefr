@@ -1,7 +1,17 @@
-"""TXT/JSON serialization for the malicious-domain-candidates blocklist."""
+"""TXT/CSV/JSON serialization for the malicious-domain-candidates blocklist.
+
+All serializers read from the same canonical payload produced by
+`blocklist.build.build_blocklist` (one build, three representations) so the
+formats cannot diverge:
+- TXT   — simple machine consumption, one canonical domain per line.
+- CSV   — analyst-friendly rows with explicit IOC type + exact value.
+- JSON  — lossless/complete representation (full evidence provenance).
+"""
 
 from __future__ import annotations
 
+import csv
+import io
 from typing import Any
 
 
@@ -22,6 +32,52 @@ def to_txt(payload: dict[str, Any]) -> str:
     )
     body = "\n".join(lines)
     return (header + body + "\n") if body else header
+
+
+def _escape_spreadsheet_value(value: str) -> str:
+    """Escape a value for spreadsheet consumption.
+
+    Excel and Google Sheets interpret cell values starting with ``=``, ``+``,
+    ``-``, or ``@`` as formulas.  Prefixing with ``'`` (single quote) forces
+    the value to be treated as literal text.
+    """
+    if value and value[0] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
+
+def to_csv(payload: dict[str, Any]) -> str:
+    """Analyst-friendly CSV with explicit IOC type + exact value per row.
+
+    Columns: type, value, source, confidence, first_seen, malware, threat_type.
+    ``value`` is the exact upstream IOC (``raw_ioc``/``ioc_value``) — a URL is
+    preserved verbatim and never replaced by its derived domain. Multi-valued
+    cells (source/malware/threat_type) are joined with ``;`` so the CSV stays
+    parseable. Eligible candidates only, matching the TXT body semantics.
+
+    All textual cells are escaped for spreadsheet safety: values beginning
+    with ``=``, ``+``, ``-``, or ``@`` are prefixed with ``'`` (single quote)
+    so that Excel and Google Sheets treat them as literal text rather than
+    formulas.
+    """
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(
+        ["type", "value", "source", "confidence", "first_seen", "malware", "threat_type"]
+    )
+    for record in payload.get("domains", []):
+        if not record.get("eligible"):
+            continue
+        writer.writerow([
+            _escape_spreadsheet_value(record.get("ioc_type") or "domain"),
+            _escape_spreadsheet_value(record.get("exact_ioc") or ""),
+            ";".join(record.get("sources") or []),
+            record.get("confidence") or "",
+            record.get("first_seen") or "",
+            ";".join(record.get("malware") or []),
+            ";".join(record.get("threat_type") or []),
+        ])
+    return out.getvalue()
 
 
 def to_json(payload: dict[str, Any]) -> dict[str, Any]:

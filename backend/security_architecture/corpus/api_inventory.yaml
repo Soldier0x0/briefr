@@ -247,6 +247,9 @@ endpoints:
   path: /api/admin/system
   component_id: routers-admin-system
 - method: GET
+  path: /api/admin/threat-intel/blocklist.csv
+  component_id: routers-admin-blocklist
+- method: GET
   path: /api/admin/threat-intel/blocklist.json
   component_id: routers-admin-blocklist
 - method: GET
@@ -552,6 +555,9 @@ endpoints:
 - method: GET
   path: /api/techniques/top
   component_id: routers-cves-list
+- method: GET
+  path: /api/threat-intel/blocklist.csv
+  component_id: routers-threat_intel
 - method: GET
   path: /api/threat-intel/blocklist.json
   component_id: routers-threat_intel

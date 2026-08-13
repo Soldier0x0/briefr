@@ -12,11 +12,11 @@ components:
     ref: backend/routers/admin/ai_ops.py
 - id: routers-admin-blocklist
   title: routers.admin.blocklist
-  summary: FastAPI router module with 7 endpoint(s).
+  summary: FastAPI router module with 8 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 7
+  endpoint_count: 8
   source_refs:
   - type: file
     ref: backend/routers/admin/blocklist.py
@@ -352,11 +352,11 @@ components:
     ref: backend/routers/stack_catalog.py
 - id: routers-threat_intel
   title: routers.threat_intel
-  summary: FastAPI router module with 2 endpoint(s).
+  summary: FastAPI router module with 3 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 2
+  endpoint_count: 3
   source_refs:
   - type: file
     ref: backend/routers/threat_intel.py
