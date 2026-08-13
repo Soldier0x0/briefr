@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Evolve BRIEFR from a strong CVE-centric intelligence application into an evidence-backed, investigation-oriented vulnerability and threat-intelligence platform without replacing the existing PostgreSQL architecture.
+**Goal:** Evolve improve BRIEFR from a strong CVE-centric intelligence application into an evidence-backed, investigation-oriented vulnerability and threat-intelligence platform without replacing the existing PostgreSQL architecture.
 
 **Architecture:** Preserve the current FastAPI + PostgreSQL 16 + React/Vite design, and add a typed investigation projection over existing CVE, IOC, ATT&CK, campaign, correlation, detection, and embedding data. Introduce durable assertions/evidence and canonical identity only where the current schema cannot explain or persist a relationship; use bounded SQL expansion and lazy frontend loading instead of a graph database.
 
@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- PostgreSQL remains the production database; SQLite remains a development/test fallback only.
+- PostgreSQL remains the production database
 - Do not introduce Neo4j, Memgraph, ArangoDB, or another graph database unless measured Postgres limits demonstrate a concrete requirement.
 - Do not flatten source disagreements, inferred relationships, semantic similarity, or analyst feedback into confirmed facts.
 - Every new relationship API must expose relationship class, provenance, confidence, freshness, and evidence references.
