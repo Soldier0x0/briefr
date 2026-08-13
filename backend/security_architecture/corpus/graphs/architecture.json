@@ -526,7 +526,7 @@
       "label": "routers.admin.blocklist",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 7,
+      "endpoint_count": 8,
       "source_refs": [
         {
           "type": "file",
@@ -968,7 +968,7 @@
       "label": "routers.threat_intel",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 2,
+      "endpoint_count": 3,
       "source_refs": [
         {
           "type": "file",

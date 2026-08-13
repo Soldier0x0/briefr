@@ -253,6 +253,7 @@ export default function ThreatIntelPage({ toast }) {
       <div className="admin-download-row">
         <button type="button" className="admin-btn" onClick={() => downloadBlocklist('txt')}>Download TXT</button>
         <button type="button" className="admin-btn" onClick={() => downloadBlocklist('json')}>Download JSON</button>
+        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('csv')}>Download CSV</button>
       </div>
 
       <div className="admin-card admin-card-spaced">
