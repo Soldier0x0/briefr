@@ -29,6 +29,7 @@ export default function ThreatIntelPage({ toast }) {
   const [rowsError, setRowsError] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [downloading, setDownloading] = useState(null)
 
   const loadStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -116,6 +117,8 @@ export default function ThreatIntelPage({ toast }) {
   }, [loadRows, loadStatus, toast])
 
   async function downloadBlocklist(fmt) {
+    if (downloading) return
+    setDownloading(fmt)
     try {
       const res = await adminApi.get(`/threat-intel/blocklist.${fmt}`)
       if (!res.ok) {
@@ -130,7 +133,9 @@ export default function ThreatIntelPage({ toast }) {
       a.download = `briefr-blocklist.${fmt}`
       a.click()
       URL.revokeObjectURL(url)
+      toast(`Blocklist downloaded (.${fmt})`, true)
     } catch (err) { toast(String(err.message || 'Download failed'), false) }
+    finally { setDownloading(null) }
   }
 
   const classificationBadge = (classification) => (
@@ -251,9 +256,15 @@ export default function ThreatIntelPage({ toast }) {
         />
       </div>
       <div className="admin-download-row">
-        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('txt')}>Download TXT</button>
-        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('json')}>Download JSON</button>
-        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('csv')}>Download CSV</button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('txt')}>
+          {downloading === 'txt' ? 'Exporting…' : 'Download TXT'}
+        </button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('json')}>
+          {downloading === 'json' ? 'Exporting…' : 'Download JSON'}
+        </button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('csv')}>
+          {downloading === 'csv' ? 'Exporting…' : 'Download CSV'}
+        </button>
       </div>
 
       <div className="admin-card admin-card-spaced">
