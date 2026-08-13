@@ -34,6 +34,18 @@ def to_txt(payload: dict[str, Any]) -> str:
     return (header + body + "\n") if body else header
 
 
+def _escape_spreadsheet_value(value: str) -> str:
+    """Escape a value for spreadsheet consumption.
+
+    Excel and Google Sheets interpret cell values starting with ``=``, ``+``,
+    ``-``, or ``@`` as formulas.  Prefixing with ``'`` (single quote) forces
+    the value to be treated as literal text.
+    """
+    if value and value[0] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
+
 def to_csv(payload: dict[str, Any]) -> str:
     """Analyst-friendly CSV with explicit IOC type + exact value per row.
 
@@ -42,6 +54,11 @@ def to_csv(payload: dict[str, Any]) -> str:
     preserved verbatim and never replaced by its derived domain. Multi-valued
     cells (source/malware/threat_type) are joined with ``;`` so the CSV stays
     parseable. Eligible candidates only, matching the TXT body semantics.
+
+    All textual cells are escaped for spreadsheet safety: values beginning
+    with ``=``, ``+``, ``-``, or ``@`` are prefixed with ``'`` (single quote)
+    so that Excel and Google Sheets treat them as literal text rather than
+    formulas.
     """
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
@@ -52,8 +69,8 @@ def to_csv(payload: dict[str, Any]) -> str:
         if not record.get("eligible"):
             continue
         writer.writerow([
-            record.get("ioc_type") or "domain",
-            record.get("exact_ioc") or "",
+            _escape_spreadsheet_value(record.get("ioc_type") or "domain"),
+            _escape_spreadsheet_value(record.get("exact_ioc") or ""),
             ";".join(record.get("sources") or []),
             record.get("confidence") or "",
             record.get("first_seen") or "",
