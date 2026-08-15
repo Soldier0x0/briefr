@@ -22,9 +22,7 @@ _requires_sqlite = pytest.mark.skipif(
 
 @pytest.fixture
 def admin_client(tmp_path, monkeypatch, auth_token):
-    db_path = tmp_path / "storage.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    # Use the real Postgres database (migrations applied by _postgres_schema_once)
     monkeypatch.setenv("BACKUP_DIR", str(tmp_path / "backups"))
 
     import rate_limit as _rl

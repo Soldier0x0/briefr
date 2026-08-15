@@ -11,11 +11,8 @@ pytestmark = pytest.mark.no_auth
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
-    db_path = tmp_path / "health.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-
+def client(monkeypatch):
+    # Use the real Postgres database (migrations applied by _postgres_schema_once)
     from fastapi.testclient import TestClient
     from main import app
 

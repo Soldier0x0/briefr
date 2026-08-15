@@ -141,10 +141,8 @@ async def get_system(request: Request):
     backup_interval_hours = int(os.environ.get("BACKUP_INTERVAL_HOURS", "6"))
     backup_threshold_seconds = 2 * backup_interval_hours * 3600
 
-    # Disk usage for DB (read at call time so test monkeypatches apply)
-    import database as _database
-    db_dir = os.path.dirname(os.path.abspath(_database.DB_PATH)) or "."
-    du = shutil.disk_usage(db_dir)
+    # Disk usage for DB (Postgres uses current working directory)
+    du = shutil.disk_usage(".")
     disk_free_bytes = du.free
     disk_total_bytes = du.total
 

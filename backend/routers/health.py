@@ -39,9 +39,9 @@ router = APIRouter()
 
 def _database_meta() -> dict:
     db_url = resolve_database_url()
-    db_host = db_url.split("@")[-1] if "@" in db_url else ("sqlite" if not is_postgres() else db_url)
+    db_host = db_url.split("@")[-1] if "@" in db_url else db_url
     meta: dict = {
-        "backend": "postgresql" if is_postgres() else "sqlite",
+        "backend": "postgresql",
         "host": db_host,
     }
     pool = get_pool_stats()
