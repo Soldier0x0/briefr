@@ -91,6 +91,7 @@
 | Forge redesign FR-1…FR-3 (#490, #492, #495) | ONBOARDING refresh (ongoing) |
 | Threat modeling TM-0…TM-5 (#491, #493–#497); **TM-6 CWE/OWASP/CAPEC/STRIDE framework workspaces** | TM-6 NIST CSF / ASVS (operator control-backed, follow-up); self-monitoring/remediation job |
 | Admin ops, webhooks (#413–#415), wallboard v2 (#430), O-3 kiosk config (#514), AI ops (#416–#420), 12-PR operator bundle (#428–#439), 4-PR tail (#441–#444), LLM summary auth; **admin operator hardening A–H** (#776–#781, #783, #784) | |
+| **Threat-intel blocklist export** (#836) — canonical TXT/JSON/CSV from one build; admin page shows `Exporting…` on the active format, disables the other export buttons while a download is in flight, and toasts `Blocklist downloaded (.fmt)` on completion | |
 | **PM-3 ARCH graph** (cursor zoom, fit-to-view, viewport-locked shell, strong focus dim, truncated labels, toggle-deselect, one-hop SQL edges via db helpers/`database` shim, focus-only edge draw, core/external nodes, inline node detail, admin corpus drift) | Detection composer (parked); G0–G4 end-of-lifecycle |
 | **PM-4a** Admin → Security posture (`?p=securityposture`) — Overview / System Architecture / Trust Boundaries / Attack Surface / Risks; analyst read-only | |
 | **TM-6** Admin → Security posture FRAMEWORKS group — CWE / OWASP Top 10 (2021) / CAPEC / STRIDE workspaces over the user's own live CVE data (Scope: All / My Stack / Watchlist / KEV + severity), projected from live `cves.cwe_ids`; every count drills through to `example_cves`, unmapped bucket keeps totals honest | |
