@@ -270,8 +270,11 @@ export default function ThreatIntelPage({ toast }) {
       <div className="admin-card admin-card-spaced">
         <h3 className="admin-card-title">
           {editingId ? 'Edit classification' : 'Add infrastructure classification'}
-          <HelpTip text="Classified hosts are excluded from the malicious-domain export and from host-level corroboration. Exact-path IOC evidence (e.g. https://drive.google.com/uc?…) is never deleted." />
+          <HelpTip text="Classified hosts are excluded from the malicious-domain export and from host-level corroboration. Exact-path IOC evidence (e.g. https://drive.google.com/uc?…) is never deleted. Add infra-classifications for hosts that are frequently flagged as false positives so they are excluded from export and do not generate corroboration noise. The 6 curated seed entries (google.com, microsoft.com, apple.com, drive.google.com, t.me, steamcommunity.com) are provided as a starting point — you may add, edit, or remove entries as needed for your environment." />
         </h3>
+        <p className="admin-page-subtitle">
+          Infrastructure classifications control whether a host appears in the blocklist export and whether it triggers host-level corroboration. Each entry consists of a canonical host, a classification (Legitimate domain / Shared legitimate infrastructure / Trusted service / Unknown), and an optional reason. Add entries for hosts that are frequently flagged as false positives so they are excluded from export and do not generate corroboration noise. The 6 curated seed entries (google.com, microsoft.com, apple.com, drive.google.com, t.me, steamcommunity.com) are provided as a starting point — you may add, edit, or remove entries as needed for your environment.
+        </p>
         <form onSubmit={submit} className="admin-form-grid">
           <input className="admin-input" placeholder="host (e.g. drive.google.com)" value={form.host} onChange={e => setForm({ ...form, host: e.target.value })} required />
           <Select
