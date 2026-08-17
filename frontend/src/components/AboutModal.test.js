@@ -24,8 +24,8 @@ describe('About / Privacy / Terms stay aligned with product truth', () => {
       path.join(ROOT, 'components/AboutModal.css'),
       'utf8',
     )
-    assert.match(css, /max-width:\s*920px/)
-    assert.match(css, /max-height:\s*72vh/)
+    assert.match(css, /max-width:\s*1080px/)
+    assert.match(css, /max-height:\s*84vh/)
     assert.match(css, /grid-template-columns:\s*1fr 1fr/)
   })
 
