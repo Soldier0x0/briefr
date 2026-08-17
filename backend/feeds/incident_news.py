@@ -16,7 +16,7 @@ from xml.etree import ElementTree as ET
 
 from database import get_feed_cache, set_feed_cache
 from feeds.incident_sources import INCIDENT_RSS_SOURCES
-from publications.extract import CVE_RE, TECHNIQUE_RE, extract_cve_ids
+from publications.extract import TECHNIQUE_RE, extract_cve_ids
 from resilient_client import resilient_get
 
 logger = logging.getLogger(__name__)

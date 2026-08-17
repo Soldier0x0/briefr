@@ -51,6 +51,7 @@ from routers import health as health_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import detection_backlog as detection_backlog_router
+from routers import proof as proof_router
 from routers import publications as publications_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
