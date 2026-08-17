@@ -48,6 +48,7 @@ from routers import config as config_router
 from routers import cves as cves_router
 from routers import forge as forge_router
 from routers import health as health_router
+from routers import investigations as investigations_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import detection_backlog as detection_backlog_router
@@ -383,6 +384,7 @@ app.include_router(me_router.router)
 app.include_router(notifications_me_router.router)
 app.include_router(stack_catalog_router.router)
 app.include_router(search_router.router)
+app.include_router(investigations_router.router)
 
 
 if __name__ == "__main__":
