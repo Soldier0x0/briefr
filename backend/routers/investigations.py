@@ -16,7 +16,7 @@ from investigations.contracts import (
     make_node_id,
 )
 from investigations.projection import expand_relationships, get_entity
-from investigations.resolve import is_resolve_root_entity_type, resolve_entity
+from investigations.resolve import is_graph_entity_type, resolve_entity
 
 router = APIRouter()
 
@@ -33,7 +33,7 @@ def _entity_to_graph_node(ref) -> GraphNode:
 
 def _validate_entity_type(entity_type: str) -> str:
     normalized = entity_type.strip().lower()
-    if not is_resolve_root_entity_type(normalized):
+    if not is_graph_entity_type(normalized):
         raise HTTPException(status_code=422, detail=f"Invalid entity_type: {entity_type}")
     return normalized
 

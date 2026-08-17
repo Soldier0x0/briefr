@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 RESOLVE_ROOT_ENTITY_TYPES = frozenset({"cve", "ioc", "technique", "campaign"})
+GRAPH_ENTITY_TYPES = RESOLVE_ROOT_ENTITY_TYPES | {"publication"}
 
 
 class EntityType(StrEnum):
@@ -17,6 +18,7 @@ class EntityType(StrEnum):
     TECHNIQUE = "technique"
     CAMPAIGN = "campaign"
     SIGMA_RULE = "sigma_rule"
+    PUBLICATION = "publication"
 
 
 class IocKind(StrEnum):
