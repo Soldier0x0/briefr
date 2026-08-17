@@ -41,6 +41,45 @@
   margin: 0 0 8px;
 }
 
+.cs-publication-wrap {
+  position: relative;
+}
+
+.cs-headline-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.cs-detail-toggle {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cs-detail-toggle:hover {
+  color: var(--accent);
+}
+
+.cs-publication-detail {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.cs-detail-links {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+
 
 .cs-hero {
   padding: 40px 0 24px;

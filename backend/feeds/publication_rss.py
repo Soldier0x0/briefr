@@ -18,11 +18,21 @@ from feeds.incident_news import (
     _strip_html,
 )
 from publications.extract import extract_cve_ids
+from publications.actors import link_publication_actor, upsert_publication_actor
 from publications.registry import PublicationSourceDescriptor
 
 logger = logging.getLogger(__name__)
 
 CONTENT_NS = {"content": "http://purl.org/rss/1.0/modules/content/"}
+DC_NS = {"dc": "http://purl.org/dc/elements/1.1/"}
+
+
+def _item_author(node: ET.Element) -> str:
+    for tag, ns in (("author", {}), ("dc:creator", DC_NS), ("creator", {})):
+        field = node.find(tag, ns)
+        if field is not None and _node_text(field):
+            return _strip_html(_node_text(field))
+    return ""
 
 
 def _source_feed_dict(desc: PublicationSourceDescriptor) -> dict[str, str]:
@@ -74,6 +84,7 @@ def parse_publication_rss_items(xml_text: str, desc: PublicationSourceDescriptor
                 "published_at": published_at,
                 "updated_at": updated_at,
                 "document_kind": desc.document_kind_default,
+                "author": _item_author(node),
             }
         )
     return items
@@ -119,6 +130,17 @@ async def sync_publication_rss_source(db: DbConnection, desc: PublicationSourceD
             body=item["body"],
             retrieved_at=retrieved_at,
         )
+        author = (item.get("author") or "").strip()
+        if author:
+            actor_id = await upsert_publication_actor(
+                db,
+                source_key=desc.source_key,
+                display_name=author,
+            )
+            if actor_id:
+                await link_publication_actor(
+                    db, pub_id, actor_id, observed_at=retrieved_at
+                )
 
     logger.info(
         "Publication RSS sync %s: %d items (%d new, %d updated), %d links",
