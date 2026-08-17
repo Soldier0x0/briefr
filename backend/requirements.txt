@@ -7,7 +7,7 @@ pydantic==2.13.4
 pydantic-settings==2.15.0
 aiosqlite==0.22.1
 asyncpg==0.31.0
-alembic==1.19.0
+alembic==1.19.1
 psycopg[binary]==3.3.4
 procrastinate==3.9.0
 PyYAML==6.0.3
