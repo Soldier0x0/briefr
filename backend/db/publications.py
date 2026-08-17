@@ -219,6 +219,7 @@ async def list_publications(
     cve_id: str | None = None,
     source_key: str | None = None,
     document_kind: str | None = None,
+    q: str | None = None,
     limit: int = 50,
     cursor: int | None = None,
     mark_headlines: bool = False,
@@ -245,6 +246,10 @@ async def list_publications(
     if document_kind:
         clauses.append("document_kind = ?")
         params.append(document_kind.strip())
+
+    if q:
+        clauses.append("title LIKE ?")
+        params.append(f"%{q.strip()}%")
 
     if cursor is not None:
         clauses.append("publication_id < ?")

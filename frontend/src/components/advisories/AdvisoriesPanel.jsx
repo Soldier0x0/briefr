@@ -5,17 +5,28 @@ import { PublicationCard, SkeletonCards } from './shared.jsx'
 
 export default function AdvisoriesPanel({ onOpenCve }) {
   const [rows, setRows] = useState([])
+  const [search, setSearch] = useState('')
+  const [debounced, setDebounced] = useState('')
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(search), 400)
+    return () => clearTimeout(id)
+  }, [search])
+
   const load = useCallback(() => {
     let cancelled = false
     setLoading(true)
     setFailed(false)
-    fetchPublications({ limit: 50, mark_headlines: true })
+    fetchPublications({
+      limit: 50,
+      mark_headlines: true,
+      q: debounced || undefined,
+    })
       .then(body => {
         if (cancelled) return
         setRows(Array.isArray(body?.data) ? body.data : [])
@@ -31,7 +42,7 @@ export default function AdvisoriesPanel({ onOpenCve }) {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [debounced])
 
   useEffect(() => load(), [load])
 
@@ -57,6 +68,16 @@ export default function AdvisoriesPanel({ onOpenCve }) {
   return (
     <section className="cs-panel" aria-labelledby="cs-advisories-heading">
       <h2 id="cs-advisories-heading" className="cs-section-label mono">ADVISORIES</h2>
+      <div className="cs-search-row">
+        <input
+          type="search"
+          className="cs-search-input"
+          placeholder="Filter advisories by title…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          aria-label="Filter advisories"
+        />
+      </div>
       {loading ? (
         <SkeletonCards count={4} />
       ) : failed ? (
