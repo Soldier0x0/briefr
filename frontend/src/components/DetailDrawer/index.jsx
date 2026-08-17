@@ -6,6 +6,7 @@ import {
   fetchCVECorrelation,
   fetchCVEDetection,
   fetchCVEGreynoiseScans,
+  fetchCVEPublications,
   fetchCVERisk,
   fetchCorrelationSuppressions,
   fetchCorrelationFeedback,
@@ -96,6 +97,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [greynoiseLoading, setGreynoiseLoading] = useState(false)
   const [greynoiseLoaded, setGreynoiseLoaded] = useState(false)
   const [greynoiseQuota, setGreynoiseQuota] = useState(null)
+  const [publications, setPublications] = useState([])
+  const [publicationsLoading, setPublicationsLoading] = useState(false)
+  const [publicationsLoaded, setPublicationsLoaded] = useState(false)
   const [detection, setDetection] = useState(null)
   const [detectionLoading, setDetectionLoading] = useState(false)
   const [detectionError, setDetectionError] = useState(null)
@@ -394,6 +398,38 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     setGreynoiseLoading(false)
     setGreynoiseLoaded(false)
   }, [cve?.cve_id])
+
+  useEffect(() => {
+    if (!cve?.cve_id) {
+      setPublications([])
+      setPublicationsLoading(false)
+      setPublicationsLoaded(false)
+      return
+    }
+    setPublications([])
+    setPublicationsLoaded(false)
+  }, [cve?.cve_id])
+
+  useEffect(() => {
+    if (activeTab !== 'intel' || !cve?.cve_id) return
+    let cancelled = false
+    setPublicationsLoading(true)
+    fetchCVEPublications(cve.cve_id)
+      .then(data => {
+        if (cancelled) return
+        setPublications(Array.isArray(data?.data) ? data.data : [])
+      })
+      .catch(() => {
+        if (!cancelled) setPublications([])
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPublicationsLoading(false)
+          setPublicationsLoaded(true)
+        }
+      })
+    return () => { cancelled = true }
+  }, [activeTab, cve?.cve_id])
 
   useEffect(() => {
     if (activeTab !== 'intel' || !cve?.greynoise_configured) return
@@ -928,6 +964,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
               <DrawerTabErrorBoundary>
                 <TabIntel
                   techniques={techniques}
+                  publications={publications}
+                  publicationsLoading={publicationsLoading}
+                  publicationsLoaded={publicationsLoaded}
                   publicExploits={cve.public_exploits}
                   exploitProvenance={cve.exploit_provenance}
                   greynoiseConfigured={cve.greynoise_configured}

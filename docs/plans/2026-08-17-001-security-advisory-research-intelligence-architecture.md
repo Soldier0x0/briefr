@@ -1,6 +1,6 @@
 # Security Advisory & Research Intelligence — Architecture Proposal
 
-> **Status:** architecture **approved for implementation** (2026-08-17) — discovery complete; UI direction locked (§18). No code until Milestone A tasks in §30.  
+> **Status:** Milestone A + B **implemented** (2026-08-17) — backend publications layer, drawer Intel subsection, ADVISORIES & INTEL tab shell with Headlines | Advisories | ATLAS sub-nav. Milestones C–E remain future work.  
 > **Date:** 2026-08-17 (rev. b — tab shell + sub-nav)  
 > **Repo inspected:** `briefr` at current checkout (Alembic head **040** `infra_classifications`; investigation graph APIs **planned, not implemented**).  
 > **Related living docs:** `docs/PRODUCT.md`, `docs/PRODUCT_STATUS.md`, `docs/SYSTEM_DESIGN.md`, `docs/DATA_SNAPSHOT.md`, `backend/db/schema_inventory.py`.  

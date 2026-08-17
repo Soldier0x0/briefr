@@ -375,6 +375,47 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_atlas_case_studies_date
                 ON atlas_case_studies(date);
 
+            CREATE TABLE IF NOT EXISTS publications (
+                publication_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_key TEXT NOT NULL,
+                canonical_url TEXT NOT NULL,
+                url_hash TEXT NOT NULL,
+                content_sha256 TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                document_kind TEXT NOT NULL DEFAULT 'unknown',
+                published_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT '',
+                retrieved_at TEXT NOT NULL DEFAULT '',
+                canonical_external_id TEXT NOT NULL DEFAULT '',
+                language TEXT NOT NULL DEFAULT '',
+                knowledge_state TEXT NOT NULL DEFAULT 'known',
+                extraction_status TEXT NOT NULL DEFAULT 'pending',
+                UNIQUE (source_key, canonical_url)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_publications_published
+                ON publications(published_at);
+            CREATE INDEX IF NOT EXISTS idx_publications_source
+                ON publications(source_key);
+
+            CREATE TABLE IF NOT EXISTS publication_entity_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                publication_id INTEGER NOT NULL,
+                entity_type TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                extractor TEXT NOT NULL DEFAULT '',
+                evidence_field TEXT NOT NULL DEFAULT '',
+                confidence TEXT NOT NULL DEFAULT 'medium',
+                observed_at TEXT NOT NULL DEFAULT '',
+                retrieved_at TEXT NOT NULL DEFAULT '',
+                UNIQUE (publication_id, entity_type, entity_id, extractor, evidence_field)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_publication_entity_links_entity
+                ON publication_entity_links(entity_type, entity_id);
+            CREATE INDEX IF NOT EXISTS idx_publication_entity_links_pub
+                ON publication_entity_links(publication_id);
+
             CREATE TABLE IF NOT EXISTS cve_atlas_map (
                 cve_id TEXT NOT NULL,
                 technique_id TEXT NOT NULL,

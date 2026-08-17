@@ -51,7 +51,7 @@ from routers import health as health_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import detection_backlog as detection_backlog_router
-from routers import proof as proof_router
+from routers import publications as publications_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
 from security_architecture.routers import security_architecture as security_architecture_router
@@ -357,6 +357,7 @@ app.include_router(cves_router.changes_router)
 app.include_router(meta_router.info_router)
 app.include_router(cves_router.list_router)
 app.include_router(atlas_router.router)
+app.include_router(publications_router.router)
 app.include_router(cves_router.detail_router)
 app.include_router(ioc_router.router)
 app.include_router(cves_router.intel_router)
