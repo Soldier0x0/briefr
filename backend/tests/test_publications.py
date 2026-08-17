@@ -55,7 +55,7 @@ def test_parse_publication_rss_items_extracts_metadata():
     assert len(items) == 1
     assert items[0]["title"].startswith("CISA Advisory")
     assert items[0]["document_kind"] == "advisory"
-    assert "cisa.gov" in items[0]["canonical_url"]
+    assert urlparse(items[0]["canonical_url"]).hostname == "www.cisa.gov"
 
 
 @pytest.mark.asyncio
