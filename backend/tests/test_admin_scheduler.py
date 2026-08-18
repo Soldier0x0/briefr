@@ -207,7 +207,27 @@ def test_run_locked_job_returns_409(admin_client, monkeypatch):
         lock.locked = original_locked
 
 
+def test_run_reserved_job_returns_409(admin_client, monkeypatch):
+    import scheduler_locks
+
+    scheduler_locks.reserve_job_run("nvd_incremental_sync")
+    try:
+        resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "nvd_incremental_sync"})
+        assert resp.status_code == 409
+    finally:
+        scheduler_locks.release_job_run("nvd_incremental_sync")
+
+
 def test_run_disabled_job_returns_400(admin_client, monkeypatch):
+    import routers.admin as admin_router
+
+    monkeypatch.setattr(admin_router, "_job_is_disabled", lambda job_id: job_id == "detection_context_sync")
+    resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "detection_context_sync"})
+    assert resp.status_code == 400
+    assert "disabled" in resp.json()["detail"].lower()
+
+
+def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     import routers.admin as admin_router
 
     monkeypatch.setattr(admin_router, "_job_is_disabled", lambda job_id: job_id == "detection_context_sync")
@@ -234,6 +254,7 @@ def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     data = resp.json()
     assert data["ok"] is True
     assert data["job_id"] == "nvd_incremental_sync"
+    assert data.get("status") == "started"
 
 
 def test_run_llm_product_extraction_defers_manual_durable_job(admin_client, monkeypatch):

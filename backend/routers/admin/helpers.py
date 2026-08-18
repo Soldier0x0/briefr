@@ -25,7 +25,7 @@ import aiosqlite
 from config_schema import SCHEDULER_RESCHEDULE_KEYS
 from database import get_db
 from redact import mask_secret_value, mask_url_value
-from scheduler_locks import get_lock, locked_jobs
+from scheduler_locks import get_lock, job_run_in_flight, locked_jobs, release_job_run, reserve_job_run
 from settings import settings
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -171,8 +171,7 @@ def _get_scheduler_module():
 
 
 def _job_lock_held(job_id: str) -> bool:
-    lock = get_lock(job_id)
-    return lock.locked() if lock else False
+    return job_run_in_flight(job_id)
 
 
 _OPT_IN_DISABLED_JOBS = {
