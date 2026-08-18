@@ -342,6 +342,24 @@ tables:
   source_refs:
   - type: table
     ref: otx_pulses
+- id: publication_entity_links
+  title: publication_entity_links
+  summary: Database table defined in db/init.py (name=publication_entity_links).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_entity_links
+- id: publications
+  title: publications
+  summary: Database table defined in db/init.py (name=publications).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publications
 - id: pulse_families
   title: pulse_families
   summary: Database table defined in db/init.py (name=pulse_families).

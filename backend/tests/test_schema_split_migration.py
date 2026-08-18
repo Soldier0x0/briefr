@@ -17,7 +17,7 @@ from tests.conftest import run_db_test
 
 
 def test_table_inventory_counts():
-    assert len(INTEL_TABLES) == 30
+    assert len(INTEL_TABLES) == 32
     assert len(APP_TABLES) == 29
     assert len(set(INTEL_TABLES) & set(APP_TABLES)) == 0
     assert "correlation_cve_snapshot" in INTEL_TABLES

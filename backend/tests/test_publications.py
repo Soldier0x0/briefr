@@ -13,8 +13,6 @@ from db.publications import upsert_publication, replace_publication_entity_links
 from feeds.publication_rss import parse_publication_rss_items
 from publications.registry import SOURCES_BY_KEY
 
-pytestmark = pytest.mark.no_auth
-
 
 CISA_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -30,7 +28,7 @@ CISA_XML = """<?xml version="1.0" encoding="UTF-8"?>
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "publications.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
@@ -39,14 +37,16 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
 
-    from database import get_db, init_db
+    from database import init_db
     from tests.conftest import run_db_test
 
     run_db_test(init_db())
 
     from main import app
 
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        test_client.cookies.set("briefr_at", auth_token())
+        yield test_client
 
 
 def test_parse_publication_rss_items_extracts_metadata():
@@ -65,9 +65,8 @@ async def test_upsert_dedupes_by_url(tmp_path, monkeypatch):
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     from database import get_db, init_db
-    from tests.conftest import run_db_test
 
-    await run_db_test(init_db())
+    await init_db()
     db = await get_db()
     try:
         pid1, new1 = await upsert_publication(
@@ -120,9 +119,8 @@ async def test_publication_sync_does_not_touch_correlation(tmp_path, monkeypatch
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     from database import get_db, init_db
-    from tests.conftest import run_db_test
 
-    await run_db_test(init_db())
+    await init_db()
     db = await get_db()
     try:
         await db.execute(
@@ -175,13 +173,11 @@ def test_publications_api_list_and_detail(client):
 
 
 def _seed_publication(client: TestClient) -> dict:
-    import asyncio
-
     from database import get_db, init_db
     from tests.conftest import run_db_test
 
     async def _seed() -> dict:
-        await run_db_test(init_db())
+        await init_db()
         db = await get_db()
         try:
             pid, _ = await upsert_publication(
@@ -207,4 +203,4 @@ def _seed_publication(client: TestClient) -> dict:
         finally:
             await db.close()
 
-    return asyncio.run(_seed())
+    return run_db_test(_seed())
