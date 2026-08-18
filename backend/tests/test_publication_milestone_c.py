@@ -27,9 +27,8 @@ async def test_headline_url_set_empty_without_snapshot(tmp_path, monkeypatch):
 
     from database import get_db, init_db
     from db.publications import get_headline_url_set
-    from tests.conftest import run_db_test
 
-    await run_db_test(init_db())
+    await init_db()
     db = await get_db()
     try:
         urls = await get_headline_url_set(db)

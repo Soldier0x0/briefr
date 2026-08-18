@@ -1510,6 +1510,30 @@
       ]
     },
     {
+      "id": "table:publication_actor_links",
+      "label": "publication_actor_links",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_actor_links"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_actors",
+      "label": "publication_actors",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_actors"
+        }
+      ]
+    },
+    {
       "id": "table:publication_entity_links",
       "label": "publication_entity_links",
       "kind": "table",
@@ -1518,6 +1542,30 @@
         {
           "type": "table",
           "ref": "publication_entity_links"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_event_members",
+      "label": "publication_event_members",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_event_members"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_events",
+      "label": "publication_events",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_events"
         }
       ]
     },
@@ -6684,9 +6732,27 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-publications->table:feed_cache",
+      "source": "routers-publications",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-publications->table:otx_pulse_iocs",
       "source": "routers-publications",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publication_actor_links",
+      "source": "routers-publications",
+      "target": "table:publication_actor_links",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publication_actors",
+      "source": "routers-publications",
+      "target": "table:publication_actors",
       "kind": "references_table"
     },
     {
