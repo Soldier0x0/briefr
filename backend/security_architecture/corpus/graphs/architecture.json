@@ -872,19 +872,6 @@
       ]
     },
     {
-      "id": "routers-investigations",
-      "label": "routers.investigations",
-      "kind": "component",
-      "cluster": "api",
-      "endpoint_count": 3,
-      "source_refs": [
-        {
-          "type": "file",
-          "ref": "backend/routers/investigations.py"
-        }
-      ]
-    },
-    {
       "id": "routers-ioc",
       "label": "routers.ioc",
       "kind": "component",
@@ -6483,78 +6470,6 @@
     {
       "id": "routers-health->table:ti_mirror_iocs",
       "source": "routers-health",
-      "target": "table:ti_mirror_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:correlation_campaign_members",
-      "source": "routers-investigations",
-      "target": "table:correlation_campaign_members",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:correlation_campaigns",
-      "source": "routers-investigations",
-      "target": "table:correlation_campaigns",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:cve_change_history",
-      "source": "routers-investigations",
-      "target": "table:cve_change_history",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:cve_embeddings",
-      "source": "routers-investigations",
-      "target": "table:cve_embeddings",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:cve_exploits",
-      "source": "routers-investigations",
-      "target": "table:cve_exploits",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:cve_technique_map",
-      "source": "routers-investigations",
-      "target": "table:cve_technique_map",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:cves",
-      "source": "routers-investigations",
-      "target": "table:cves",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:feed_cache",
-      "source": "routers-investigations",
-      "target": "table:feed_cache",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:mitre_techniques",
-      "source": "routers-investigations",
-      "target": "table:mitre_techniques",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:otx_cve_pulses",
-      "source": "routers-investigations",
-      "target": "table:otx_cve_pulses",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:otx_pulse_iocs",
-      "source": "routers-investigations",
-      "target": "table:otx_pulse_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:ti_mirror_iocs",
-      "source": "routers-investigations",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
