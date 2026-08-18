@@ -10,7 +10,7 @@ Pipeline (deliberately layered, never one giant SQL):
   6. deterministic dedup     -> by canonical domain
   7. candidate construction  -> this module
   8. serialization           -> blocklist/serialize
-  9. API                     -> routers/threat_intel
+  9. API                     -> routers/admin/blocklist
 
 Semantics (locked):
 - Catalog sources (ThreatFox/URLhaus) back a candidate unconditionally.

@@ -350,16 +350,6 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/stack_catalog.py
-- id: routers-threat_intel
-  title: routers.threat_intel
-  summary: FastAPI router module with 3 endpoint(s).
-  owner: platform
-  status: active
-  origin: generated
-  endpoint_count: 3
-  source_refs:
-  - type: file
-    ref: backend/routers/threat_intel.py
 - id: routers-threat_model
   title: routers.threat_model
   summary: FastAPI router module with 1 endpoint(s).

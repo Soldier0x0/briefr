@@ -1000,19 +1000,6 @@
       ]
     },
     {
-      "id": "routers-threat_intel",
-      "label": "routers.threat_intel",
-      "kind": "component",
-      "cluster": "api",
-      "endpoint_count": 3,
-      "source_refs": [
-        {
-          "type": "file",
-          "ref": "backend/routers/threat_intel.py"
-        }
-      ]
-    },
-    {
       "id": "routers-threat_model",
       "label": "routers.threat_model",
       "kind": "component",
@@ -6890,36 +6877,6 @@
       "id": "routers-stack_catalog->table:user_preferences",
       "source": "routers-stack_catalog",
       "target": "table:user_preferences",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:cve_exploits",
-      "source": "routers-threat_intel",
-      "target": "table:cve_exploits",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:cves",
-      "source": "routers-threat_intel",
-      "target": "table:cves",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:infra_classifications",
-      "source": "routers-threat_intel",
-      "target": "table:infra_classifications",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:otx_pulse_iocs",
-      "source": "routers-threat_intel",
-      "target": "table:otx_pulse_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:ti_mirror_iocs",
-      "source": "routers-threat_intel",
-      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {

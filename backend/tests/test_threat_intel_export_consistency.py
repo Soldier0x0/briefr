@@ -397,21 +397,12 @@ def test_ip_hash_rows_outside_blocklist_scope_today(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_public_and_admin_csv_endpoints(client_scoped, tmp_path, monkeypatch):
-    """The CSV endpoint renders on both the public token-gated route and the
-    admin route (smoke coverage; full auth semantics live in the existing
-    public-endpoint and admin-router test files)."""
-    monkeypatch.setattr(settings, "threat_intel_token", "test-export-token")
+def test_admin_csv_endpoint(client_scoped, monkeypatch):
+    """Admin CSV export renders for authenticated operators."""
     _patch_fetch_no_infra(monkeypatch)
 
     from tests.conftest import seed_pytest_auth_user_if_missing
     seed_pytest_auth_user_if_missing()
-
-    headers = {"X-BRIEFR-Intel-Token": "test-export-token"}
-
-    public = client_scoped.get("/api/threat-intel/blocklist.csv", headers=headers)
-    assert public.status_code == 200
-    assert public.headers["content-type"].startswith("text/csv")
 
     admin = client_scoped.get("/api/admin/threat-intel/blocklist.csv")
     assert admin.status_code == 200

@@ -21,7 +21,6 @@ def test_all_unsafe_flags_reported():
         rate_limit_enabled=False,
         auth_cookie_secure=False,
         wallboard_token="",
-        threat_intel_token="",
     )
 
     warnings = production_posture_warnings(unsafe)
@@ -31,7 +30,6 @@ def test_all_unsafe_flags_reported():
         "RATE_LIMIT_ENABLED=0",
         "AUTH_COOKIE_SECURE=0",
         "WALLBOARD_TOKEN unset",
-        "THREAT_INTEL_TOKEN unset",
     ]
     for w in warnings:
         assert w["message"]
@@ -42,7 +40,6 @@ def test_safe_configuration_reports_nothing():
         rate_limit_enabled=True,
         auth_cookie_secure=True,
         wallboard_token="kiosk-token",
-        threat_intel_token="export-token",
     )
 
     assert production_posture_warnings(safe) == []
@@ -65,7 +62,6 @@ def client(tmp_path, monkeypatch):
 def test_security_readout_includes_posture(client, auth_token, monkeypatch):
     monkeypatch.setattr(settings, "auth_cookie_secure", False)
     monkeypatch.setattr(settings, "wallboard_token", "")
-    monkeypatch.setattr(settings, "threat_intel_token", "")
 
     client.cookies.set("briefr_at", auth_token(role="admin"))
     resp = client.get("/api/admin/security")
@@ -74,10 +70,9 @@ def test_security_readout_includes_posture(client, auth_token, monkeypatch):
     body = resp.json()
     assert body["environment"] == settings.briefr_env
     flags = [w["flag"] for w in body["posture_warnings"]]
-    # rate limiting is disabled by the fixture, so all four flags trip
+    # rate limiting is disabled by the fixture, so three flags trip
     assert flags == [
         "RATE_LIMIT_ENABLED=0",
         "AUTH_COOKIE_SECURE=0",
         "WALLBOARD_TOKEN unset",
-        "THREAT_INTEL_TOKEN unset",
     ]

@@ -90,16 +90,13 @@ async def sync_tranco_infra_classifications(db: DbConnection) -> int:
         return 0
 
     provenance = f"tranco:{list_date or utcnow_str()[:10]}"
-    reason = (
-        "Tranco top-1M ranked domain — bulk legitimate-domain exclusion for "
-        "DNS blocklist export (exact-path IOC evidence is never deleted)."
-    )
+    # Keep reason empty — provenance carries list identity (~120 MB saved at 1M rows).
     written = await bulk_insert_infra_classifications(
         db,
         domains,
         classification=LEGITIMATE_DOMAIN,
         provenance=provenance,
-        reason=reason,
+        reason="",
         batch_size=TRANCO_BATCH_SIZE,
     )
     logger.info(
