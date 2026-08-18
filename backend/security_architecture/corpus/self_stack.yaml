@@ -19,7 +19,7 @@ terms:
   term: alembic
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 1.19.0
+  version: 1.19.1
 - id: self-stack-apscheduler
   title: apscheduler
   summary: BRIEFR dependency term derived from backend/requirements.txt.
