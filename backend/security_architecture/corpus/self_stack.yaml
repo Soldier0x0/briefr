@@ -469,7 +469,7 @@ terms:
   term: uvicorn
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 0.52.1
+  version: 0.52.3
 - id: self-stack-vite
   title: vite
   summary: BRIEFR dependency term derived from frontend/package.json.
