@@ -20,7 +20,7 @@ from database import (
     get_nvd_sync_watermark,
     get_timeline_activity_summary,
 )
-from db.config import is_postgres, resolve_database_url
+from db.config import resolve_database_url
 from db.connection import get_pool_stats
 from feeds.case_study_feed import get_incident_feed_status
 from resilient_client import get_api_queue_status, get_feed_health

@@ -6,7 +6,6 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import psutil
@@ -14,7 +13,6 @@ import psutil
 from db.resource_metrics import fetch_pg_stat_snapshot, insert_resource_sample
 from db.types import DbConnection
 from metrics.request_counter import read_and_reset_request_count
-from settings import settings
 
 logger = logging.getLogger(__name__)
 

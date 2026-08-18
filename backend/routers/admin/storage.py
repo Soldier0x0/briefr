@@ -405,7 +405,7 @@ async def export_db(request: Request, background_tasks: BackgroundTasks):
             raise HTTPException(500, f"Database export failed: {result.stderr[:500]}")
         tmp_path.write_text(result.stdout)
     except subprocess.TimeoutExpired:
-        raise HTTPException(500, "Database export timed out")
+        raise HTTPException(500, "Database export timed out") from None
     except Exception as exc:
         import logging
         logging.getLogger(__name__).error("Database export failed: %s", exc)

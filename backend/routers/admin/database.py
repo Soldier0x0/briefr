@@ -87,7 +87,6 @@ async def start_database_migration(request: Request, background_tasks: Backgroun
     from migration.sqlite_to_postgres import reserve_migration_slot, run_migration
 
     database_url = str(body.get("database_url", "")).strip()
-    confirm_text = str(body.get("confirm_text", "")).strip()
     if not database_url:
         raise HTTPException(400, "database_url is required")
     # Postgres-only: migration from SQLite is no longer supported
