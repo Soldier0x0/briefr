@@ -2230,6 +2230,20 @@ Returns `{ok, cleared, started, message}`.
 
 ## Wallboard (read-only kiosk — V1.4 Theme 4)
 
+### GET /api/wallboard/config
+
+Public kiosk flags (no secrets): `auto_token_enabled`, `manual_fallback`, `rotation_interval_hours`, `issuance_token_minutes`, `poll_interval_seconds`.
+
+### POST /api/wallboard/token
+
+**Auth:** valid analyst session (`briefr_at`). **Requires** `WALLBOARD_AUTO_TOKEN=1` and a configured wallboard gate token.
+
+Returns a short-lived issuance JWT (`wbiss.…`) and sets the `briefr_wb` httpOnly session cookie. Audited as `wallboard.token_issued`.
+
+### POST /api/wallboard/revoke · POST /api/wallboard/rotate
+
+**Auth:** admin role. Bump token generation (revoke) or rotate the stored kiosk token (rotate). Audited.
+
 ### GET /api/wallboard
 
 Aggregated intel posture payload for the `/wallboard` kiosk view. Built from existing DB state and cached snapshots (`feed_cache` key `wallboard:snapshot`, ~45s TTL). No outbound HTTP on the request path; no admin data or secrets in the response.
