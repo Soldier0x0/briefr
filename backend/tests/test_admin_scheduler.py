@@ -228,15 +228,6 @@ def test_run_disabled_job_returns_400(admin_client, monkeypatch):
 
 
 def test_run_valid_job_returns_ok(admin_client, monkeypatch):
-    import routers.admin as admin_router
-
-    monkeypatch.setattr(admin_router, "_job_is_disabled", lambda job_id: job_id == "detection_context_sync")
-    resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "detection_context_sync"})
-    assert resp.status_code == 400
-    assert "disabled" in resp.json()["detail"].lower()
-
-
-def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     import scheduler as sched_module
     import scheduler_locks
 

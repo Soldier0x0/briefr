@@ -30,7 +30,6 @@ from blocklist.classify import (
     classify_host,
     export_eligibility,
     is_excluded_from_domain_export,
-    is_excluded_from_export,
 )
 from blocklist.infra_seed import (
     LEGITIMATE_DOMAIN,

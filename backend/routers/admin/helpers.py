@@ -25,7 +25,7 @@ import aiosqlite
 from config_schema import SCHEDULER_RESCHEDULE_KEYS
 from database import get_db
 from redact import mask_secret_value, mask_url_value
-from scheduler_locks import get_lock, job_run_in_flight, locked_jobs, release_job_run, reserve_job_run
+from scheduler_locks import job_run_in_flight, locked_jobs
 from settings import settings
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
