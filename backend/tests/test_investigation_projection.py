@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tests.conftest import run_db_test
+from tests.conftest import run_db_test, use_sqlite_backend
 
 from correlation.campaigns import build_campaigns_from_pulses
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
@@ -69,8 +69,7 @@ async def _seed_projection_db(db) -> str:
 def test_get_entity_returns_cve(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -87,8 +86,7 @@ def test_get_entity_returns_cve(tmp_path, monkeypatch):
 def test_expand_cve_includes_technique_and_otx_ioc(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-hops.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -117,8 +115,7 @@ def test_expand_cve_includes_technique_and_otx_ioc(tmp_path, monkeypatch):
 def test_expand_truncates_when_limit_hit(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-trunc.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:

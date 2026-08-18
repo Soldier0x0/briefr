@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tests.conftest import attach_pytest_session_cookie, run_db_test
+from tests.conftest import attach_pytest_session_cookie, run_db_test, use_sqlite_backend
 
 from correlation.campaigns import build_campaigns_from_pulses
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
@@ -64,8 +64,7 @@ async def _seed_routes_db(db) -> None:
 def test_resolve_requires_session(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-auth.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -82,8 +81,7 @@ def test_resolve_requires_session(tmp_path, monkeypatch):
 def test_resolve_cve_and_relationships(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-ok.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -119,8 +117,7 @@ def test_resolve_cve_and_relationships(tmp_path, monkeypatch):
 def test_invalid_entity_type_returns_422(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-invalid.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
@@ -133,8 +130,7 @@ def test_invalid_entity_type_returns_422(tmp_path, monkeypatch):
 def test_depth_three_returns_422(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-depth.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
@@ -150,8 +146,7 @@ def test_depth_three_returns_422(tmp_path, monkeypatch):
 def test_resolve_unknown_entity_returns_404(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-miss.db")
-        monkeypatch.setenv("DB_PATH", db_path)
-        monkeypatch.setattr(database, "DB_PATH", db_path)
+        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
