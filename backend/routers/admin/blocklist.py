@@ -11,13 +11,13 @@ re-exported from `routers.admin`.
 
 from __future__ import annotations
 
-from fastapi import HTTPException, Request, Response
+from fastapi import HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from blocklist.build import build_blocklist
 from blocklist.classify import canonical_host
 from blocklist.infra_seed import CLASSIFICATIONS
-from blocklist.serialize import to_csv, to_json, to_txt
+from blocklist.serialize import normalize_export_mode, to_csv, to_json, to_txt
 from database import get_db
 from db.blocklist import (
     delete_infra_classification,
@@ -51,24 +51,41 @@ async def threat_intel_status():
         "generated_at": payload["meta"]["generated_at"],
         "publish_urls": {
             "txt": "/api/threat-intel/blocklist.txt",
+            "txt_domains": "/api/threat-intel/blocklist.txt?mode=domains",
+            "txt_urls": "/api/threat-intel/blocklist.txt?mode=urls",
             "json": "/api/threat-intel/blocklist.json",
             "csv": "/api/threat-intel/blocklist.csv",
+            "csv_domains": "/api/threat-intel/blocklist.csv?mode=domains",
+            "csv_urls": "/api/threat-intel/blocklist.csv?mode=urls",
         },
+        "export_modes": ["domains", "urls", "all"],
     }
 
 
+def _admin_export_mode(mode: str | None, *, allow_all: bool = True) -> str:
+    try:
+        parsed = normalize_export_mode(mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not allow_all and parsed == "all":
+        raise HTTPException(status_code=400, detail="mode must be domains or urls for TXT export")
+    return parsed
+
+
 @router.get("/threat-intel/blocklist.txt")
-async def admin_blocklist_txt():
+async def admin_blocklist_txt(mode: str | None = Query(default="domains")):
     """Admin-authorized TXT export (no export token required)."""
+    export_mode = _admin_export_mode(mode, allow_all=False)
     db = await get_db()
     try:
         payload = await build_blocklist(db)
     finally:
         await db.close()
+    suffix = "urls" if export_mode == "urls" else "domains"
     return PlainTextResponse(
-        to_txt(payload),
+        to_txt(payload, mode=export_mode),
         media_type="text/plain",
-        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.txt"'},
+        headers={"Content-Disposition": f'attachment; filename="briefr-blocklist-{suffix}.txt"'},
     )
 
 
@@ -84,17 +101,18 @@ async def admin_blocklist_json():
 
 
 @router.get("/threat-intel/blocklist.csv")
-async def admin_blocklist_csv():
+async def admin_blocklist_csv(mode: str | None = Query(default="all")):
     """Admin-authorized CSV export (no export token required)."""
+    export_mode = _admin_export_mode(mode)
     db = await get_db()
     try:
         payload = await build_blocklist(db)
     finally:
         await db.close()
     return Response(
-        to_csv(payload),
+        to_csv(payload, mode=export_mode),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="briefr-blocklist-{export_mode}.csv"'},
     )
 
 

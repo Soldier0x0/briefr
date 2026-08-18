@@ -30,6 +30,13 @@ export default function ThreatIntelPage({ toast }) {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [downloading, setDownloading] = useState(null)
+  const [exportMode, setExportMode] = useState('domains')
+
+  const EXPORT_MODE_OPTIONS = [
+    { value: 'domains', label: 'Domains only (TXT/CSV)' },
+    { value: 'urls', label: 'Exact URLs only' },
+    { value: 'all', label: 'All eligible (CSV/JSON)' },
+  ]
 
   const loadStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -120,7 +127,8 @@ export default function ThreatIntelPage({ toast }) {
     if (downloading) return
     setDownloading(fmt)
     try {
-      const res = await adminApi.get(`/threat-intel/blocklist.${fmt}`)
+      const modeParam = fmt === 'json' ? '' : `?mode=${encodeURIComponent(exportMode === 'all' && fmt === 'txt' ? 'domains' : exportMode)}`
+      const res = await adminApi.get(`/threat-intel/blocklist.${fmt}${modeParam}`)
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         toast(String(data.detail || `Download failed (${res.status})`), false)
@@ -130,10 +138,11 @@ export default function ThreatIntelPage({ toast }) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `briefr-blocklist.${fmt}`
+      const modeSuffix = fmt === 'json' ? '' : `-${exportMode === 'all' && fmt === 'txt' ? 'domains' : exportMode}`
+      a.download = `briefr-blocklist${modeSuffix}.${fmt}`
       a.click()
       URL.revokeObjectURL(url)
-      toast(`Blocklist downloaded (.${fmt})`, true)
+      toast(`Blocklist downloaded (.${fmt}, ${exportMode})`, true)
     } catch (err) { toast(String(err.message || 'Download failed'), false) }
     finally { setDownloading(null) }
   }
@@ -256,6 +265,13 @@ export default function ThreatIntelPage({ toast }) {
         />
       </div>
       <div className="admin-download-row">
+        <Select
+          className="admin-select"
+          value={exportMode}
+          onValueChange={setExportMode}
+          options={EXPORT_MODE_OPTIONS}
+          aria-label="Blocklist export mode"
+        />
         <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('txt')}>
           {downloading === 'txt' ? 'Exporting…' : 'Download TXT'}
         </button>

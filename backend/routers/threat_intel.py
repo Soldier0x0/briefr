@@ -3,15 +3,20 @@
 Public, token-gated, rate-limited endpoints for DNS-blocklist operators.
 Fails closed: when THREAT_INTEL_TOKEN is unset the endpoints return HTTP 503;
 an invalid/missing token returns HTTP 401; the rate limit returns HTTP 429.
+
+Query ``mode`` on TXT/CSV exports:
+- ``domains`` (default) — canonical domain per line / domain-eligible CSV rows
+- ``urls`` — exact malicious URLs (including on classified shared hosts)
+- ``all`` — domain + URL eligible rows (CSV only; TXT treats as domains)
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from blocklist.build import build_blocklist
-from blocklist.serialize import to_csv, to_json, to_txt
+from blocklist.serialize import normalize_export_mode, to_csv, to_json, to_txt
 from database import get_db
 from dependencies import require_threat_intel_token
 from rate_limit import rate_limit_threat_intel
@@ -34,19 +39,31 @@ async def _build_payload():
         await db.close()
 
 
+def _parse_mode(mode: str | None, *, allow_all: bool = True) -> str:
+    try:
+        parsed = normalize_export_mode(mode)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if not allow_all and parsed == "all":
+        raise HTTPException(400, "mode must be domains or urls for TXT export")
+    return parsed
+
+
 @router.get(
     "/blocklist.txt",
     response_class=PlainTextResponse,
-    summary="Malicious-domain candidates (TXT, one domain per line)",
+    summary="Malicious-domain candidates (TXT)",
 )
-async def blocklist_txt():
-    """One canonical malicious-domain candidate per line, eligible only."""
+async def blocklist_txt(mode: str | None = Query(default="domains")):
+    """TXT export — one line per domain (default) or per exact URL."""
+    export_mode = _parse_mode(mode, allow_all=False)
     payload = await _build_payload()
+    suffix = "urls" if export_mode == "urls" else "domains"
     return PlainTextResponse(
-        to_txt(payload),
+        to_txt(payload, mode=export_mode),
         media_type="text/plain",
         headers={
-            "Content-Disposition": 'attachment; filename="briefr-blocklist.txt"',
+            "Content-Disposition": f'attachment; filename="briefr-blocklist-{suffix}.txt"',
             "Cache-Control": "no-store",
         },
     )
@@ -69,15 +86,15 @@ async def blocklist_json():
     response_class=Response,
     summary="Malicious-domain candidates (CSV, analyst-friendly rows)",
 )
-async def blocklist_csv():
-    """CSV rows with explicit IOC type and the exact upstream value, alongside
-    source/confidence/first_seen/malware/threat_type — for filtering and copy."""
+async def blocklist_csv(mode: str | None = Query(default="all")):
+    """CSV rows filtered by export mode (default ``all`` eligible rows)."""
+    export_mode = _parse_mode(mode)
     payload = await _build_payload()
     return Response(
-        to_csv(payload),
+        to_csv(payload, mode=export_mode),
         media_type="text/csv",
         headers={
-            "Content-Disposition": 'attachment; filename="briefr-blocklist.csv"',
+            "Content-Disposition": f'attachment; filename="briefr-blocklist-{export_mode}.csv"',
             "Cache-Control": "no-store",
         },
     )

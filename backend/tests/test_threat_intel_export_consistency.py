@@ -280,6 +280,7 @@ def test_formats_share_same_build_and_generated_at(tmp_path, monkeypatch):
 
             txt = to_txt(payload)
             assert f"# generated_at: {generated_at}" in txt
+            assert "# mode: domains" in txt
             assert "# eligible: 2" in txt
 
             json_doc = to_json(payload)
@@ -321,7 +322,7 @@ def test_txt_csv_json_same_candidates(tmp_path, monkeypatch):
             assert eligible == {"dom.example", "url.example"}
 
             txt_domains = set(
-                line for line in to_txt(payload).splitlines()
+                line for line in to_txt(payload, mode="domains").splitlines()
                 if line and not line.startswith("#")
             )
             json_domains = {
@@ -383,6 +384,7 @@ def test_ip_hash_rows_outside_blocklist_scope_today(tmp_path, monkeypatch):
             assert to_txt(payload).splitlines() == [
                 "# BRIEFR malicious-domain candidates",
                 f"# generated_at: {payload['meta']['generated_at']}",
+                "# mode: domains",
                 "# eligible: 0",
                 "# excluded: 0",
             ]

@@ -28,6 +28,8 @@ from typing import Any
 from blocklist.classify import (
     canonical_host,
     classify_host,
+    export_eligibility,
+    is_excluded_from_domain_export,
     is_excluded_from_export,
 )
 from blocklist.infra_seed import (
@@ -282,11 +284,14 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
         )
         candidate_ioc_type, exact_ioc = _candidate_ioc(evidence)
 
-        # Reason for the entry (inclusion or exclusion).
-        if is_excluded_from_export(classified):
+        # Classified shared/legitimate hosts: suppress domain export but keep
+        # exact malicious URLs exportable in URL mode.
+        if is_excluded_from_domain_export(classified) and candidate_ioc_type != "url":
             excluded.append(_candidate_record(
                 domain,
                 eligible=False,
+                eligible_domain=False,
+                eligible_url=False,
                 reason=f"Infrastructure classification: {classified['classification']}",
                 classified=classified,
                 sources=sources,
@@ -332,7 +337,7 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
             domains.append(_candidate_record(
                 domain,
                 eligible=True,
-                reason="Catalog source evidence (ThreatFox/URLhaus)",
+                reason="Catalog source evidence (ThreatFox/URLhaus/PhishTank)",
                 classified=classified,
                 sources=sources,
                 confidence_level=confidence_level,
@@ -426,26 +431,34 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
     domains.sort(key=lambda r: r["domain"])
     excluded.sort(key=lambda r: r["domain"])
 
+    eligible_domain_count = sum(1 for r in domains if r.get("eligible_domain"))
+    eligible_url_count = sum(1 for r in domains if r.get("eligible_url"))
+
     return {
         "meta": {
             "generated_at": generated_at,
             "title": "BRIEFR malicious-domain candidates",
             "description": (
-                "Domains identified as malicious-domain candidates from "
-                "ThreatFox/URLhaus catalog evidence, plus OTX pulse IOCs that "
+                "Domains and exact malicious URLs identified from ThreatFox/"
+                "URLhaus/PhishTank catalog evidence, plus OTX pulse IOCs that "
                 "are corroborated by a catalog source. Shared/legitimate "
                 "infrastructure hosts (e.g. drive.google.com, t.me) are "
-                "excluded — exact-path IOC evidence is never deleted."
+                "excluded from domain export — exact-path URL IOCs on those "
+                "hosts remain exportable in URL mode."
             ),
             "criteria": [
-                "Catalog sources (ThreatFox domain rows, URLhaus URL hosts) qualify directly.",
+                "Catalog sources (ThreatFox, URLhaus, PhishTank) qualify directly.",
                 "OTX pulse IOCs qualify only when corroborated by a catalog source.",
                 "OTX corroboration requires BRIEFR confidence >= medium.",
-                "Infrastructure-classified hosts are excluded from export.",
+                "Infrastructure-classified hosts are excluded from domain export.",
+                "Exact malicious URLs on classified shared hosts export in URL mode.",
             ],
             "candidate_count": len(all_candidate_domains),
             "eligible_count": len(domains),
+            "eligible_domain_count": eligible_domain_count,
+            "eligible_url_count": eligible_url_count,
             "excluded_count": len(excluded),
+            "export_modes": ["domains", "urls", "all"],
         },
         "domains": domains,
         "excluded": excluded,
@@ -471,12 +484,26 @@ def _candidate_record(
     exact_ioc: str = "",
     confidence_factors: list[dict[str, Any]] | None = None,
     evidence: list[dict[str, Any]] | None = None,
+    eligible_domain: bool | None = None,
+    eligible_url: bool | None = None,
 ) -> dict[str, Any]:
+    if eligible_domain is None or eligible_url is None:
+        computed_domain, computed_url = export_eligibility(
+            base_eligible=eligible,
+            classified=classified,
+            ioc_type=ioc_type,
+        )
+        if eligible_domain is None:
+            eligible_domain = computed_domain
+        if eligible_url is None:
+            eligible_url = computed_url
     return {
         "domain": domain,
         "ioc_type": ioc_type,
         "exact_ioc": exact_ioc,
         "eligible": eligible,
+        "eligible_domain": eligible_domain,
+        "eligible_url": eligible_url,
         "reason": reason,
         "classification": classified["classification"],
         "classification_enabled": bool(classified.get("enabled")),
