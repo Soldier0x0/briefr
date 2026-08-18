@@ -11,7 +11,9 @@ from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from correlation.ioc_normalize import normalize_ioc_type
+from feeds.feodo import fetch_feodo_iocs
 from feeds.malwarebazaar import fetch_malwarebazaar_iocs
+from feeds.phishtank import fetch_phishtank_iocs
 from feeds.threatfox import fetch_threatfox_iocs
 from feeds.urlhaus import fetch_urlhaus_iocs
 
@@ -31,6 +33,7 @@ class SourceDescriptor:
     enabled_env: str | None = None
     sync_interval_hours_env: str | None = None
     sync_window_days_env: str | None = None
+    requires_api_key: bool = True
     fetch: FetchFn | None = None
 
     def canonical_type(self, ioc_type: str) -> str | None:
@@ -89,6 +92,39 @@ CATALOG_SOURCES: tuple[SourceDescriptor, ...] = (
             }
         ),
         receipt_prefix="malwarebazaar",
+        retention_hours=24 * 7,
+    ),
+    SourceDescriptor(
+        source_key="feodo",
+        enabled_env="FEODO_SYNC_ENABLED",
+        key_env="",
+        pacing_key="feodo",
+        sync_interval_hours_env="FEODO_SYNC_INTERVAL_HOURS",
+        requires_api_key=False,
+        fetch=fetch_feodo_iocs,
+        mirror_type_map=MappingProxyType(
+            {
+                "IP": "ip",
+            }
+        ),
+        receipt_prefix="feodo",
+        retention_hours=24 * 7,
+    ),
+    SourceDescriptor(
+        source_key="phishtank",
+        enabled_env="PHISHTANK_SYNC_ENABLED",
+        key_env="PHISHTANK_APP_KEY",
+        pacing_key="phishtank",
+        sync_interval_hours_env="PHISHTANK_SYNC_INTERVAL_HOURS",
+        requires_api_key=False,
+        fetch=fetch_phishtank_iocs,
+        mirror_type_map=MappingProxyType(
+            {
+                "URL": "url",
+                "DOMAIN": "url",
+            }
+        ),
+        receipt_prefix="phishtank",
         retention_hours=24 * 7,
     ),
 )

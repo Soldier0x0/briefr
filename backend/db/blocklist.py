@@ -22,7 +22,7 @@ _CATALOG_EVIDENCE_SQLITE = """
 SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
        threat_type, confidence_level, first_seen, fetched_at
 FROM ti_mirror_iocs
-WHERE source IN ('threatfox', 'urlhaus')
+WHERE source IN ('threatfox', 'urlhaus', 'phishtank')
   AND ioc_type IN ('domain', 'url')
 ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
@@ -31,7 +31,7 @@ _CATALOG_EVIDENCE_PG = """
 SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
        threat_type, confidence_level, first_seen, fetched_at
 FROM app.ti_mirror_iocs
-WHERE source IN ('threatfox', 'urlhaus')
+WHERE source IN ('threatfox', 'urlhaus', 'phishtank')
   AND ioc_type IN ('domain', 'url')
 ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
@@ -65,8 +65,42 @@ FROM app.infra_classifications
 """
 
 
+async def bulk_insert_infra_classifications(
+    db: DbConnection,
+    hosts: list[str],
+    *,
+    classification: str,
+    provenance: str,
+    reason: str,
+    batch_size: int = 5000,
+) -> int:
+    """Insert many classification rows; skip hosts that already exist."""
+    if not hosts:
+        return 0
+    now = utcnow_str()
+    written = 0
+    for offset in range(0, len(hosts), batch_size):
+        batch = hosts[offset : offset + batch_size]
+        placeholders = ", ".join(["(?, ?, 1, ?, ?, '', ?, ?)"] * len(batch))
+        params: list[Any] = []
+        for host in batch:
+            params.extend([host, classification, provenance, reason, now, now])
+        cursor = await db.execute(
+            f"""
+            INSERT INTO app.infra_classifications (
+                host, classification, enabled, provenance, reason, notes,
+                created_at, updated_at
+            ) VALUES {placeholders}
+            ON CONFLICT (host) DO NOTHING
+            """,
+            tuple(params),
+        )
+        written += getattr(cursor, "rowcount", 0) or 0
+    return written
+
+
 async def fetch_catalog_evidence(db: DbConnection) -> list[dict[str, Any]]:
-    """Return ThreatFox/URLhaus mirror rows that can back a domain candidate."""
+    """Return catalog mirror rows that can back a domain/URL candidate."""
     pg = _is_postgres_connection(db)
     rows = await db.execute_fetchall(
         _CATALOG_EVIDENCE_PG if pg else _CATALOG_EVIDENCE_SQLITE
