@@ -111,6 +111,9 @@ async def lifespan(app: FastAPI):
     from operator_settings import bootstrap_operator_settings
 
     await bootstrap_operator_settings()
+    from wallboard.token_store import ensure_rotated_token_seeded
+
+    await ensure_rotated_token_seeded()
     await clear_catchup_after_restart()
     logger.info("main.py lifespan: database ready")
     if settings.is_production:

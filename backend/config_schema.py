@@ -351,6 +351,19 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Optional read-only gate for GET /api/wallboard and /wallboard. "
                 "Clients send X-BRIEFR-Wallboard-Token once to obtain a session cookie. "
                 "Leave blank to keep the wallboard open (production warns when unset)."),
+    ConfigField("WALLBOARD_AUTO_TOKEN", "security", "bool", restart_required=True,
+                display_label="Wallboard auto-token",
+                help_text="When enabled, authenticated analysts can bootstrap kiosk sessions "
+                "via POST /api/wallboard/token without typing WALLBOARD_TOKEN. "
+                "The backend rotates the active kiosk token on a schedule."),
+    ConfigField("WALLBOARD_TOKEN_ROTATION_HOURS", "security", "int", min=1, max=168,
+                restart_required=True,
+                display_label="Wallboard token rotation (hours)",
+                help_text="Interval for automatic kiosk token rotation when auto-token is enabled."),
+    ConfigField("WALLBOARD_ISSUANCE_TOKEN_MINUTES", "security", "int", min=1, max=60,
+                restart_required=True,
+                display_label="Wallboard issuance token TTL (minutes)",
+                help_text="Lifetime of short-lived tokens returned by POST /api/wallboard/token."),
     ConfigField("THREAT_INTEL_TOKEN", "security", "secret", restart_required=True,
                 display_label="Threat-intel export token",
                 help_text="Required gate for /api/threat-intel/blocklist.txt and "

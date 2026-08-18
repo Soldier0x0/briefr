@@ -127,6 +127,22 @@
   color: var(--text2);
 }
 
+.wallboard-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface-raised, var(--bg2));
+  font-size: clamp(0.68rem, 1vw, 0.82rem);
+  color: var(--text-muted, var(--text2));
+}
+
+.wallboard-status-warning {
+  color: var(--severity-high, var(--status-warning));
+}
+
 .wallboard-tile {
   background: var(--bg2);
   border: 1px solid var(--border);

@@ -220,6 +220,14 @@ export const JOB_CATALOG = {
     analystDescription: 'Prunes aged feed cache and housekeeping rows per retention policy.',
     refreshButton: 'Run cache cleanup',
   },
+  wallboard_token_rotation: {
+    label: 'Wallboard token rotation',
+    short: 'Wallboard token',
+    operatorName: 'Wallboard Kiosk Token Rotation',
+    analystDescription:
+      'Rotates the active kiosk token when WALLBOARD_AUTO_TOKEN is enabled; invalidates prior issuance JWTs and sessions.',
+    refreshButton: 'Rotate wallboard token',
+  },
   resource_metrics_sample: {
     label: 'Resource metrics sample',
     short: 'Resources',

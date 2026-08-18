@@ -24,23 +24,27 @@ logger = logging.getLogger(__name__)
 
 
 async def require_wallboard_token(request: Request) -> None:
-    """When WALLBOARD_TOKEN is set, wallboard routes require a matching token.
-    Accepts signed httpOnly session cookie (briefr_wb) or X-BRIEFR-Wallboard-Token header."""
-    if not settings.wallboard_token:
-        return
+    """When a wallboard gate token is configured, routes require a matching
+    session cookie, issuance JWT, or X-BRIEFR-Wallboard-Token header."""
     from wallboard.session import COOKIE_NAME, verify_session_token
+    from wallboard.token_store import get_effective_wallboard_token, get_token_generation
 
-    cookie = request.cookies.get(COOKIE_NAME, "")
-    if cookie and verify_session_token(cookie):
+    effective = await get_effective_wallboard_token()
+    if not effective and not settings.wallboard_token:
         return
+
+    generation = await get_token_generation() if settings.wallboard_auto_token else 0
+    cookie = request.cookies.get(COOKIE_NAME, "")
+    if cookie and verify_session_token(cookie, expected_generation=generation):
+        return
+
     provided = request.headers.get("X-BRIEFR-Wallboard-Token", "")
-    # Compare SHA-256 digests: compare_digest short-circuits on unequal
-    # lengths, which would leak the configured token's length via timing.
-    if not secrets.compare_digest(
-        hashlib.sha256(provided.encode()).digest(),
-        hashlib.sha256(settings.wallboard_token.encode()).digest(),
-    ):
-        raise HTTPException(status_code=401, detail="Wallboard token required")
+    from wallboard.session import wallboard_token_matches
+
+    if await wallboard_token_matches(provided):
+        return
+
+    raise HTTPException(status_code=401, detail="Wallboard token required")
 
 
 async def require_threat_intel_token(request: Request) -> None:

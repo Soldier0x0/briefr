@@ -270,6 +270,15 @@ jobs:
   source_refs:
   - type: job
     ref: vulnrichment_snapshot_sync
+- id: wallboard_token_rotation
+  title: Wallboard Kiosk Token Rotation
+  summary: Scheduled job registered in scheduler.py (id=wallboard_token_rotation).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: wallboard_token_rotation
 - id: watchlist_monitor_alerts
   title: Watchlist Monitor Alerts
   summary: Scheduled job registered in scheduler.py (id=watchlist_monitor_alerts).

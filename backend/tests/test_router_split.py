@@ -195,8 +195,12 @@ EXPECTED_ROUTES = [
     ("PATCH", "/api/admin/infra-classifications/{row_id}"),
     ("DELETE", "/api/admin/infra-classifications/{row_id}"),
     # V1.4 Theme 4: read-only wallboard (additive, after admin routes).
+    ("GET", "/api/wallboard/config"),
     ("POST", "/api/wallboard/session"),
     ("DELETE", "/api/wallboard/session"),
+    ("POST", "/api/wallboard/token"),
+    ("POST", "/api/wallboard/revoke"),
+    ("POST", "/api/wallboard/rotate"),
     ("GET", "/api/wallboard"),
     # Threat-intel public export (token-gated, appended after wallboard
     # routes — additive only).

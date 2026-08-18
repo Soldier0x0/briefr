@@ -645,6 +645,27 @@ export async function clearWallboardSession() {
   await fetch('/api/wallboard/session', { method: 'DELETE', credentials: 'include' })
 }
 
+export function fetchWallboardConfig() {
+  return fetch('/api/wallboard/config', { credentials: 'include' })
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null)
+}
+
+/** Authenticated issuance — sets httpOnly session cookie when successful. */
+export async function issueWallboardToken() {
+  const res = await fetch('/api/wallboard/token', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    const err = new Error(data.detail || res.statusText || 'Token issuance failed')
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
 export function fetchWallboard() {
   const token = getWallboardToken()
   const headers = {}
