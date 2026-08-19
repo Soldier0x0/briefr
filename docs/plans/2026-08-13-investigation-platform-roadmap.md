@@ -147,7 +147,7 @@ Stop after Task 4 unless **Task 4’s** provenance gate fails (then Task 5). Do 
 - Produce: `EntityRef`, `GraphNode`, `GraphEdge`, `GraphPage`, `RelationshipFilters`
 - `node_id` helper: `def make_node_id(entity_type: str, entity_id: str) -> str`
 - `RelationshipFilters`: `depth: int = 1`, `limit: int = 50`, `cursor: str | None = None`, `edge_class: EdgeClass | None = None`, `min_confidence: str | None = None`, `include_semantic: bool = False`, `include_stale: bool = False`
-- Models `model_config = ConfigDict(frozen=True)`. Extra fields forbidden.
+- Frozen Pydantic models: `model_config = ConfigDict(frozen=True)` and extra fields forbidden.
 - Resolve vs graph types: `RESOLVE_ROOT_ENTITY_TYPES = {cve, ioc, technique, campaign}`. `GRAPH_ENTITY_TYPES = RESOLVE_ROOT ∪ {publication}` (`sigma_rule` may appear as a hop target). Actor / malware / infra / advisory may appear as **targets** with source-qualified ids, never as resolve roots.
 - `GET .../entities/{entity_type}/...` and `parse_investigation_query` accept only resolve roots. Neighbor `nodes` may use any graph entity type.
 
@@ -210,7 +210,7 @@ def test_graph_page_requires_nodes_and_edges():
         depth=1,
     )
     assert page.truncated is False
-    assert EdgeClass  # imported for exhaustive use in projection later
+    assert any(node["node_id"] == root["node_id"] for node in page.nodes)
 
 
 def test_graph_page_always_includes_root_in_nodes():
