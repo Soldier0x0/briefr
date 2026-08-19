@@ -6,7 +6,9 @@ import {
   clearWallboardToken,
   createWallboardSession,
   fetchWallboard,
+  fetchWallboardConfig,
   getWallboardToken,
+  issueWallboardToken,
   setWallboardToken,
 } from '../api.js'
 import { formatIntelLabelText } from '../utils/formatIntelLabel.js'
@@ -34,7 +36,7 @@ function openCve(cveId) {
   window.open(`/?cve=${encodeURIComponent(cveId)}`, '_blank', 'noopener,noreferrer')
 }
 
-function TokenModal({ onSubmit, error }) {
+function TokenModal({ onSubmit, error, autoTokenHint }) {
   const boxRef = useRef(null)
   const [value, setValue] = useState('')
   useModalLayer(true, boxRef, { trackDepth: true })
@@ -43,7 +45,11 @@ function TokenModal({ onSubmit, error }) {
     <div className="wallboard-token-overlay" role="presentation">
       <div className="wallboard-token-dialog" ref={boxRef} role="dialog" aria-modal="true" aria-label="Wallboard token">
         <h2>Wallboard token required</h2>
-        <p>Enter the read-only kiosk token configured on the server. A secure session cookie is set after connect.</p>
+        {autoTokenHint ? (
+          <p>{autoTokenHint}</p>
+        ) : (
+          <p>Enter the read-only kiosk token configured on the server. A secure session cookie is set after connect.</p>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -57,11 +63,35 @@ function TokenModal({ onSubmit, error }) {
             onChange={(e) => setValue(e.target.value)}
             placeholder="WALLBOARD_TOKEN"
             className="wallboard-token-input"
+            aria-label="Wallboard kiosk token"
           />
           {error && <p className="wallboard-token-error">{error}</p>}
           <button type="submit" className="wallboard-token-submit">Connect</button>
         </form>
       </div>
+    </div>
+  )
+}
+
+function StatusStrip({ payload, lastRefresh, pollSeconds }) {
+  const ingest = payload?.ingest_health || {}
+  const headlineErrors = payload?.headlines?.error_count || 0
+  const openCircuits = payload?.source_health?.open_count ?? ingest.open_circuit_count ?? 0
+  const lastDbUpdate = ingest.last_updated || '—'
+  const refreshBusy = ingest.refresh_in_progress
+
+  return (
+    <div className="wallboard-status-strip mono" aria-label="Wallboard status">
+      <span>DB sync {lastDbUpdate}</span>
+      <span>· poll {pollSeconds}s</span>
+      <span>· circuits {openCircuits}</span>
+      {headlineErrors > 0 && (
+        <span className="wallboard-status-warning">· feed errors {headlineErrors}</span>
+      )}
+      {refreshBusy && <span className="wallboard-status-syncing">· ingest running</span>}
+      {lastRefresh && (
+        <span>· client {lastRefresh.toLocaleTimeString()}</span>
+      )}
     </div>
   )
 }
@@ -248,10 +278,11 @@ function PageTwo({ payload, activeTile }) {
                 <th>Source</th>
                 <th>Status</th>
                 <th>Last success</th>
+                <th>Last error</th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={3}>No source data</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={4}>No source data</td></tr>}
               {rows.map((row) => (
                 <tr key={row.source}>
                   <td className="mono">{row.source}</td>
@@ -259,6 +290,7 @@ function PageTwo({ payload, activeTile }) {
                     {row.circuit_open ? 'PAUSED' : 'OK'}
                   </td>
                   <td className="mono">{row.last_success || '—'}</td>
+                  <td className="mono wallboard-tile-sub">{row.last_error || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -314,18 +346,22 @@ function PageTwo({ payload, activeTile }) {
 }
 
 export default function WallboardPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const compact = searchParams.get('density') === 'compact'
   const [authenticated, setAuthenticated] = useState(false)
   const [payload, setPayload] = useState(null)
   const [error, setError] = useState('')
   const [authError, setAuthError] = useState('')
   const [needsToken, setNeedsToken] = useState(false)
+  const [autoTokenEnabled, setAutoTokenEnabled] = useState(false)
+  const [pollSeconds, setPollSeconds] = useState(Math.round(POLL_MS / 1000))
+  const [autoTokenHint, setAutoTokenHint] = useState('')
   const [activeTile, setActiveTile] = useState(0)
   const [page, setPage] = useState(1)
   const [manualPage, setManualPage] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
   const cancelledRef = useRef(false)
+  const autoTokenAttemptedRef = useRef(false)
 
   useEffect(() => {
     const urlToken = searchParams.get('token')
@@ -333,6 +369,36 @@ export default function WallboardPage() {
       setWallboardToken(urlToken)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchWallboardConfig().then((cfg) => {
+      if (cancelled || !cfg) return
+      setAutoTokenEnabled(Boolean(cfg.auto_token_enabled))
+      if (cfg.poll_interval_seconds) {
+        setPollSeconds(cfg.poll_interval_seconds)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const tryAutoToken = useCallback(async () => {
+    if (!autoTokenEnabled || autoTokenAttemptedRef.current) return false
+    autoTokenAttemptedRef.current = true
+    try {
+      await issueWallboardToken()
+      return true
+    } catch (e) {
+      if (e?.status === 401) {
+        setAutoTokenHint(
+          'Auto-token is enabled but this browser is not logged in. Sign in to BRIEFR in this profile, or enter the kiosk token below.',
+        )
+      }
+      return false
+    }
+  }, [autoTokenEnabled])
 
   const load = useCallback(async () => {
     try {
@@ -347,6 +413,26 @@ export default function WallboardPage() {
     } catch (e) {
       if (cancelledRef.current) return
       if (e?.status === 401) {
+        const autoOk = await tryAutoToken()
+        if (autoOk) {
+          try {
+            const data = await fetchWallboard()
+            if (cancelledRef.current) return
+            setPayload(data)
+            setError('')
+            setAuthError('')
+            setNeedsToken(false)
+            setAuthenticated(true)
+            setLastRefresh(new Date())
+            return
+          } catch (retryErr) {
+            if (cancelledRef.current) return
+            if (retryErr?.status !== 401) {
+              setError(retryErr?.message || 'Failed to load wallboard')
+              return
+            }
+          }
+        }
         clearWallboardToken()
         setAuthenticated(false)
         setNeedsToken(true)
@@ -355,7 +441,7 @@ export default function WallboardPage() {
       }
       setError(e?.message || 'Failed to load wallboard')
     }
-  }, [])
+  }, [tryAutoToken])
 
   useEffect(() => {
     cancelledRef.current = false
@@ -399,6 +485,16 @@ export default function WallboardPage() {
 
   const stackLabel = (payload?.meta?.stack_terms || []).join(', ') || 'no stack'
 
+  const toggleDensity = () => {
+    const next = new URLSearchParams(searchParams)
+    if (compact) {
+      next.delete('density')
+    } else {
+      next.set('density', 'compact')
+    }
+    setSearchParams(next, { replace: true })
+  }
+
   return (
     <div className={`wallboard-page${compact ? ' wallboard-page--compact' : ''}`}>
       <header className="wallboard-header">
@@ -425,8 +521,18 @@ export default function WallboardPage() {
         <div className="wallboard-page-controls mono">
           <button
             type="button"
+            className={compact ? 'wallboard-page-btn wallboard-page-btn--active' : 'wallboard-page-btn'}
+            onClick={toggleDensity}
+            aria-pressed={compact}
+            title="Toggle compact layout"
+          >
+            {compact ? 'Expanded' : 'Compact'}
+          </button>
+          <button
+            type="button"
             className={page === 1 ? 'wallboard-page-btn wallboard-page-btn--active' : 'wallboard-page-btn'}
             onClick={() => { setManualPage(true); setPage(1); setActiveTile(0) }}
+            aria-pressed={page === 1}
           >
             Page 1
           </button>
@@ -434,6 +540,7 @@ export default function WallboardPage() {
             type="button"
             className={page === 2 ? 'wallboard-page-btn wallboard-page-btn--active' : 'wallboard-page-btn'}
             onClick={() => { setManualPage(true); setPage(2); setActiveTile(0) }}
+            aria-pressed={page === 2}
           >
             Page 2
           </button>
@@ -448,7 +555,11 @@ export default function WallboardPage() {
         </div>
       </header>
 
-      {error && <div className="wallboard-banner wallboard-banner--error">{error}</div>}
+      {error && <div className="wallboard-banner wallboard-banner--error" role="alert">{error}</div>}
+
+      {authenticated && (
+        <StatusStrip payload={payload} lastRefresh={lastRefresh} pollSeconds={pollSeconds} />
+      )}
 
       <section className="wallboard-body" aria-label="Intel posture tiles">
         {authenticated && page === 1 && (
@@ -474,7 +585,7 @@ export default function WallboardPage() {
       </footer>
 
       {needsToken && (
-        <TokenModal onSubmit={handleTokenSubmit} error={authError} />
+        <TokenModal onSubmit={handleTokenSubmit} error={authError} autoTokenHint={autoTokenHint} />
       )}
     </div>
   )

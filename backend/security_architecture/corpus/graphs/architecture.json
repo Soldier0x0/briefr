@@ -533,6 +533,18 @@
       ]
     },
     {
+      "id": "job:wallboard_token_rotation",
+      "label": "Wallboard Kiosk Token Rotation",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "wallboard_token_rotation"
+        }
+      ]
+    },
+    {
       "id": "job:watchlist_monitor_alerts",
       "label": "Watchlist Monitor Alerts",
       "kind": "job",
@@ -1055,7 +1067,7 @@
       "label": "routers.wallboard",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 3,
+      "endpoint_count": 7,
       "source_refs": [
         {
           "type": "file",
@@ -7236,6 +7248,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-wallboard->table:app_settings",
+      "source": "routers-wallboard",
+      "target": "table:app_settings",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-wallboard->table:atlas_case_studies",
       "source": "routers-wallboard",
       "target": "table:atlas_case_studies",
@@ -7248,6 +7266,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-wallboard->table:audit_log",
+      "source": "routers-wallboard",
+      "target": "table:audit_log",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-wallboard->table:correlation_campaigns",
       "source": "routers-wallboard",
       "target": "table:correlation_campaigns",
@@ -7257,6 +7281,12 @@
       "id": "routers-wallboard->table:cve_atlas_map",
       "source": "routers-wallboard",
       "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:cve_change_history",
+      "source": "routers-wallboard",
+      "target": "table:cve_change_history",
       "kind": "references_table"
     },
     {
@@ -7275,6 +7305,12 @@
       "id": "routers-wallboard->table:cves",
       "source": "routers-wallboard",
       "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-wallboard->table:epss_history",
+      "source": "routers-wallboard",
+      "target": "table:epss_history",
       "kind": "references_table"
     },
     {

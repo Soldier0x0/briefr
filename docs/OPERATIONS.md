@@ -639,15 +639,24 @@ cloudflared requires **outbound** HTTPS only.
 Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens.
 
 1. Set `WALLBOARD_TOKEN` under Admin → API keys & config (or `.env`).
-2. On the display, open `/wallboard` once and enter the token — the app stores a
+2. **Manual mode (default):** On the display, open `/wallboard` once and enter the token — the app stores a
    signed **httpOnly** session cookie (`briefr_wb`). Prefer header
    `X-BRIEFR-Wallboard-Token` only for scripted probes.
-3. Use a **dedicated browser profile** (kiosk mode). Do not log into admin on the
-   same profile — wallboard token is read-only but admin cookies would not be.
-4. If the display is shared or public, rotate `WALLBOARD_TOKEN` after use and add
+3. **Auto-token mode (#843):** Set `WALLBOARD_AUTO_TOKEN=1` and keep `WALLBOARD_TOKEN` as the seed.
+   Log into BRIEFR in the kiosk browser profile, then open `/wallboard` — the UI calls
+   `POST /api/wallboard/token` and sets the session cookie without manual entry.
+   The scheduler rotates the active kiosk token every `WALLBOARD_TOKEN_ROTATION_HOURS` (default 24).
+   Admins can force rotation (`POST /api/wallboard/rotate`) or revoke all sessions
+   (`POST /api/wallboard/revoke`) from the API or automation.
+4. Use a **dedicated browser profile** (kiosk mode). When auto-token is enabled, the profile
+   needs a valid analyst login once; avoid using the same profile for admin work.
+5. If the display is shared or public, rotate or revoke wallboard tokens after use and add
    Cloudflare Access / VPN on the hostname.
-5. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
-6. Optional: append `?density=compact` for a denser tile layout on large displays (4K wall mounts).
+6. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
+7. Optional: append `?density=compact` or use the **Compact** header control for denser 4K layouts.
+
+**Migration:** Existing manual-token kiosks keep working when `WALLBOARD_AUTO_TOKEN=0` (default).
+Enable auto-token only after setting `WALLBOARD_TOKEN` and confirming analyst login on the display profile.
 
 Optional wallboard layout tails are tracked in the maintainer repo — see [`MAINTAINER_MIGRATION.md`](MAINTAINER_MIGRATION.md).
 

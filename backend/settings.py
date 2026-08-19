@@ -50,6 +50,10 @@ class Settings(BaseSettings):
 
     # V1.4 Theme 4 — optional read-only kiosk token (X-BRIEFR-Wallboard-Token).
     wallboard_token: str = ""
+    # Issue #843 — auto-rotate kiosk token + authenticated issuance endpoint.
+    wallboard_auto_token: bool = False
+    wallboard_token_rotation_hours: int = 24
+    wallboard_issuance_token_minutes: int = 5
 
     # Built-in app login (decision 2026-06-11) — the only auth mechanism.
     jwt_secret: str = ""

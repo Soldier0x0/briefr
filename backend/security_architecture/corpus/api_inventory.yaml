@@ -588,11 +588,23 @@ endpoints:
 - method: GET
   path: /api/wallboard
   component_id: routers-wallboard
+- method: GET
+  path: /api/wallboard/config
+  component_id: routers-wallboard
+- method: POST
+  path: /api/wallboard/revoke
+  component_id: routers-wallboard
+- method: POST
+  path: /api/wallboard/rotate
+  component_id: routers-wallboard
 - method: DELETE
   path: /api/wallboard/session
   component_id: routers-wallboard
 - method: POST
   path: /api/wallboard/session
+  component_id: routers-wallboard
+- method: POST
+  path: /api/wallboard/token
   component_id: routers-wallboard
 - method: GET
   path: /api/watchlist

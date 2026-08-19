@@ -1292,6 +1292,18 @@ async def _run_deferred_startup_jobs() -> None:
         await run_exploit_sources_sync()
 
 
+async def run_wallboard_token_rotation() -> bool:
+    """Rotate kiosk token when auto-token mode is enabled (issue #843)."""
+    from settings import settings as app_settings
+
+    if not app_settings.wallboard_auto_token:
+        return False
+    from wallboard.token_store import rotate_wallboard_token
+
+    await rotate_wallboard_token(actor="scheduler")
+    return True
+
+
 async def maybe_run_on_startup() -> None:
     count = 0
     db = await get_db()
@@ -2806,6 +2818,21 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=30),
     )
+
+    from settings import settings as app_settings
+
+    if app_settings.wallboard_auto_token:
+        rotation_hours = max(1, int(app_settings.wallboard_token_rotation_hours))
+        scheduler.add_job(
+            run_wallboard_token_rotation,
+            trigger=IntervalTrigger(hours=rotation_hours, timezone=sched_tz),
+            id="wallboard_token_rotation",
+            name="Wallboard Kiosk Token Rotation",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(sched_tz) + timedelta(minutes=5),
+        )
 
     scheduler.start()
     _scheduler = scheduler
