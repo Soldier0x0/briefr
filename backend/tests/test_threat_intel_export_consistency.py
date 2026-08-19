@@ -397,13 +397,10 @@ def test_ip_hash_rows_outside_blocklist_scope_today(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_admin_csv_endpoint(client_scoped, monkeypatch):
+def test_admin_csv_endpoint(client_scoped, monkeypatch, auth_token):
     """Admin CSV export renders for authenticated operators."""
-    from tests.conftest import attach_pytest_session_cookie, seed_pytest_auth_user_if_missing
-
     _patch_fetch_no_infra(monkeypatch)
-    seed_pytest_auth_user_if_missing()
-    attach_pytest_session_cookie(client_scoped)
+    client_scoped.cookies.set("briefr_at", auth_token())
 
     admin = client_scoped.get("/api/admin/threat-intel/blocklist.csv")
     assert admin.status_code == 200, admin.text
