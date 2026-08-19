@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getCoreRowModel,
   getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
+  useLegacyTable,
+} from '@tanstack/react-table/legacy'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import Checkbox from './Checkbox.jsx'
 import './DataGrid.css'
@@ -111,7 +111,7 @@ export default function DataGrid({
     [columns],
   )
 
-  const table = useReactTable({
+  const table = useLegacyTable({
     data: rows,
     columns: tanstackColumns,
     state: { sorting },

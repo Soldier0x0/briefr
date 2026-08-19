@@ -375,6 +375,87 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_atlas_case_studies_date
                 ON atlas_case_studies(date);
 
+            CREATE TABLE IF NOT EXISTS publications (
+                publication_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_key TEXT NOT NULL,
+                canonical_url TEXT NOT NULL,
+                url_hash TEXT NOT NULL,
+                content_sha256 TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                document_kind TEXT NOT NULL DEFAULT 'unknown',
+                published_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT '',
+                retrieved_at TEXT NOT NULL DEFAULT '',
+                canonical_external_id TEXT NOT NULL DEFAULT '',
+                language TEXT NOT NULL DEFAULT '',
+                knowledge_state TEXT NOT NULL DEFAULT 'known',
+                extraction_status TEXT NOT NULL DEFAULT 'pending',
+                UNIQUE (source_key, canonical_url)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_publications_published
+                ON publications(published_at);
+            CREATE INDEX IF NOT EXISTS idx_publications_source
+                ON publications(source_key);
+
+            CREATE TABLE IF NOT EXISTS publication_entity_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                publication_id INTEGER NOT NULL,
+                entity_type TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                extractor TEXT NOT NULL DEFAULT '',
+                evidence_field TEXT NOT NULL DEFAULT '',
+                confidence TEXT NOT NULL DEFAULT 'medium',
+                observed_at TEXT NOT NULL DEFAULT '',
+                retrieved_at TEXT NOT NULL DEFAULT '',
+                UNIQUE (publication_id, entity_type, entity_id, extractor, evidence_field)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_publication_entity_links_entity
+                ON publication_entity_links(entity_type, entity_id);
+            CREATE INDEX IF NOT EXISTS idx_publication_entity_links_pub
+                ON publication_entity_links(publication_id);
+
+            CREATE TABLE IF NOT EXISTS publication_events (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_key TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                event_kind TEXT NOT NULL DEFAULT 'other',
+                starts_at TEXT NOT NULL DEFAULT '',
+                ends_at TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS publication_event_members (
+                event_id INTEGER NOT NULL,
+                publication_id INTEGER NOT NULL,
+                PRIMARY KEY (event_id, publication_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS publication_actors (
+                actor_id TEXT PRIMARY KEY,
+                source_key TEXT NOT NULL,
+                display_name TEXT NOT NULL DEFAULT '',
+                actor_kind TEXT NOT NULL DEFAULT 'contributor',
+                profile_url TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT ''
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_publication_actors_source
+                ON publication_actors(source_key);
+
+            CREATE TABLE IF NOT EXISTS publication_actor_links (
+                publication_id INTEGER NOT NULL,
+                actor_id TEXT NOT NULL,
+                extractor TEXT NOT NULL DEFAULT 'metadata_author',
+                evidence_field TEXT NOT NULL DEFAULT 'author',
+                confidence TEXT NOT NULL DEFAULT 'medium',
+                observed_at TEXT NOT NULL DEFAULT '',
+                PRIMARY KEY (publication_id, actor_id, extractor)
+            );
+
             CREATE TABLE IF NOT EXISTS cve_atlas_map (
                 cve_id TEXT NOT NULL,
                 technique_id TEXT NOT NULL,

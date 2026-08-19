@@ -19,7 +19,7 @@ terms:
   term: alembic
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 1.18.5
+  version: 1.19.1
 - id: self-stack-apscheduler
   title: apscheduler
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -279,7 +279,7 @@ terms:
   term: pydantic-settings
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 2.14.2
+  version: 2.15.0
 - id: self-stack-pyjwt
   title: PyJWT
   summary: BRIEFR dependency term derived from backend/requirements.txt.
@@ -469,7 +469,7 @@ terms:
   term: uvicorn
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 0.52.0
+  version: 0.52.3
 - id: self-stack-vite
   title: vite
   summary: BRIEFR dependency term derived from frontend/package.json.

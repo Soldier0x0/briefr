@@ -46,6 +46,7 @@ def _analyst_sample_routes():
         ("POST", "/api/ai/summary"),
         ("POST", "/api/investigation/summary"),
         ("GET", "/api/case-studies/feed"),
+        ("GET", "/api/publications"),
     ]
 
 

@@ -60,13 +60,17 @@ def test_parse_rss_xml_extracts_cve_ids_from_title_and_body():
 
 
 def test_extract_cve_ids_dedupes_and_caps():
-    from feeds.incident_news import MAX_CVE_IDS_PER_CARD, extract_cve_ids
+    from feeds.incident_news import MAX_CVE_IDS_PER_CARD, extract_cve_ids_for_card
+    from publications.extract import extract_cve_ids
 
     many = " ".join(f"CVE-2026-{i:05d}" for i in range(1, 40))
-    ids = extract_cve_ids(many, many)
+    ids = extract_cve_ids_for_card(many, many)
     assert len(ids) == MAX_CVE_IDS_PER_CARD
     assert ids[0] == "CVE-2026-00001"
     assert len(set(ids)) == len(ids)
+
+    uncapped = extract_cve_ids(many)
+    assert len(uncapped) == 39
 
 
 def test_filter_news_items_applies_to_cached_rows():

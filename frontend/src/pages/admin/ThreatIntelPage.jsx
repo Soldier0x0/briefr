@@ -29,6 +29,7 @@ export default function ThreatIntelPage({ toast }) {
   const [rowsError, setRowsError] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [downloading, setDownloading] = useState(null)
 
   const loadStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -116,6 +117,8 @@ export default function ThreatIntelPage({ toast }) {
   }, [loadRows, loadStatus, toast])
 
   async function downloadBlocklist(fmt) {
+    if (downloading) return
+    setDownloading(fmt)
     try {
       const res = await adminApi.get(`/threat-intel/blocklist.${fmt}`)
       if (!res.ok) {
@@ -130,7 +133,9 @@ export default function ThreatIntelPage({ toast }) {
       a.download = `briefr-blocklist.${fmt}`
       a.click()
       URL.revokeObjectURL(url)
+      toast(`Blocklist downloaded (.${fmt})`, true)
     } catch (err) { toast(String(err.message || 'Download failed'), false) }
+    finally { setDownloading(null) }
   }
 
   const classificationBadge = (classification) => (
@@ -251,15 +256,25 @@ export default function ThreatIntelPage({ toast }) {
         />
       </div>
       <div className="admin-download-row">
-        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('txt')}>Download TXT</button>
-        <button type="button" className="admin-btn" onClick={() => downloadBlocklist('json')}>Download JSON</button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('txt')}>
+          {downloading === 'txt' ? 'Exporting…' : 'Download TXT'}
+        </button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('json')}>
+          {downloading === 'json' ? 'Exporting…' : 'Download JSON'}
+        </button>
+        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('csv')}>
+          {downloading === 'csv' ? 'Exporting…' : 'Download CSV'}
+        </button>
       </div>
 
       <div className="admin-card admin-card-spaced">
         <h3 className="admin-card-title">
           {editingId ? 'Edit classification' : 'Add infrastructure classification'}
-          <HelpTip text="Classified hosts are excluded from the malicious-domain export and from host-level corroboration. Exact-path IOC evidence (e.g. https://drive.google.com/uc?…) is never deleted." />
+          <HelpTip text="Classified hosts are excluded from the malicious-domain export and from host-level corroboration. Exact-path IOC evidence (e.g. https://drive.google.com/uc?…) is never deleted. Add infra-classifications for hosts that are frequently flagged as false positives so they are excluded from export and do not generate corroboration noise. The 6 curated seed entries (google.com, microsoft.com, apple.com, drive.google.com, t.me, steamcommunity.com) are provided as a starting point — you may add, edit, or remove entries as needed for your environment." />
         </h3>
+        <p className="admin-page-subtitle">
+          Infrastructure classifications control whether a host appears in the blocklist export and whether it triggers host-level corroboration. Each entry consists of a canonical host, a classification (Legitimate domain / Shared legitimate infrastructure / Trusted service / Unknown), and an optional reason. Add entries for hosts that are frequently flagged as false positives so they are excluded from export and do not generate corroboration noise. The 6 curated seed entries (google.com, microsoft.com, apple.com, drive.google.com, t.me, steamcommunity.com) are provided as a starting point — you may add, edit, or remove entries as needed for your environment.
+        </p>
         <form onSubmit={submit} className="admin-form-grid">
           <input className="admin-input" placeholder="host (e.g. drive.google.com)" value={form.host} onChange={e => setForm({ ...form, host: e.target.value })} required />
           <Select
