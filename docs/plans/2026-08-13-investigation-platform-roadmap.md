@@ -1,13 +1,13 @@
 # Investigation graph APIs (backend first) — Implementation Plan
 
-> **Revision:** 2026-08-17b — backend graph contract so a later **INVESTIGATE** graph browser can render CVE / IOC / hash hops without a graph database.  
+> **Revision:** 2026-08-19 — backend graph contract so a later **INVESTIGATE** graph browser can render CVE / IOC / hash hops without a graph database. Aligns parse order, caps, cursor, and resolve-vs-graph types with the P0 APIs.  
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement **this plan’s P0 tasks only**. Do **not** implement the Investigate tab or canvas from this file.
 
 **Goal:** Ship a read-only, session-gated investigation API that returns a **graph-shaped** page (nodes + edges + truncation) over data BRIEFR already stores, so a later full-canvas **INVESTIGATE** panel can search a CVE / IOC / hash and expand honest one-hop relationships.
 
 **Architecture:** FastAPI + PostgreSQL 16 (SQLite test fallback). New package `backend/investigations/` projects existing tables into a frozen JSON graph. No Neo4j, no Redis, no new ingest jobs, no LLM as evidence. Layout, animation, and the header tab are **P1 UI** and must not land in P0. The session pin list (`InvestigationContext.jsx` / `InvestigationPanel.jsx`) stays as-is until P1.
 
-**Tech Stack:** FastAPI, Pydantic v2, pytest, existing analyst session auth (`require_user` / session middleware), `./scripts/verify-local.sh`. Alembic **041** only if Task 4 is unblocked.
+**Tech Stack:** FastAPI, Pydantic v2, pytest, existing analyst session auth (`require_user` / session middleware), `./scripts/verify-local.sh`. Alembic **041** only if Task 5 is unblocked after the Task 4 provenance gate.
 
 ## North star (P1, not this work queue)
 
@@ -40,13 +40,14 @@ P0 exists so that UI can be built later **without inventing a second data model*
 | Auth | session cookie | Same gates as other analyst GETs |
 | Header tabs | `frontend/src/components/Header.jsx` | P1 adds INVESTIGATE; P0 does not touch |
 
-Latest Alembic in-tree: **040**. Assertions = **041** only after Task 3 gate.
+Latest Alembic in-tree: **040**. Assertions = **041** only after the **Task 4** provenance gate (Task 5).
 
 ## Frozen graph JSON (P1 UI must consume this — do not change names later)
 
 Stable **node id**: `{entity_type}:{entity_id}`  
-IOC `entity_id`: `{ioc_kind}:{canonical_value}` where `ioc_kind` is `ip` \| `hash` \| `domain` \| `url` (lowercase; values from `normalize_ioc`).  
-Examples: `cve:CVE-2024-1234`, `ioc:hash:e3b0c442…`, `ioc:ip:1.2.3.4`, `technique:T1059.003`, `campaign:42`.
+IOC `entity_id`: `{ioc_kind}:{canonical_value}` where `ioc_kind` is `ip` \| `hash` \| `domain` \| `url` (lowercase).  
+`normalize_ioc` returns uppercase kinds (`IP` / `HASH` / `DOMAIN` / `URL`); map them before composing `entity_id` (`IP`→`ip`, `HASH`→`hash`, `DOMAIN`→`domain`, `URL`→`url`). Never store `IP:` / `HASH:` in the node id.  
+Examples: `cve:CVE-2024-1234`, `ioc:hash:e3b0c442…`, `ioc:ip:1.2.3.4`, `technique:T1059.003`, `campaign:camp_ab12cd34ef56`.
 
 Path params: percent-encode `entity_id` (domains, URLs). Do not put raw `/` in the id.
 
@@ -77,7 +78,8 @@ Path params: percent-encode `entity_id` (domains, URLs). Do not put raw `/` in t
       "source_key": "cve_technique_map",
       "confidence": null,
       "observed_at": null,
-      "fetched_at": null
+      "fetched_at": null,
+      "note": "one directed hop; canvas treats the node pair as undirected"
     }
   ],
   "source_status": "ok",
@@ -91,6 +93,7 @@ Path params: percent-encode `entity_id` (domains, URLs). Do not put raw `/` in t
 
 `edge_class` ∈ `direct_fact` \| `reported` \| `derived` \| `analyst_assertion` \| `semantic`.  
 `knowledge_state` ∈ `known` \| `partial` \| `unknown` \| `stale`.  
+Edges are **undirected for display**: the canvas treats a hop as the unordered pair of node ids plus `edge_class` + `source_key`. The API still emits a single directed record (expand root → neighbor). `edge_id` is `source_node_id|target_node_id|edge_class|source_key` as stored; do not emit both A→B and B→A for the same hop.  
 API **must not** return `x` / `y` / color / animation fields. Layout is client-only.
 
 **Do not implement from this file:** `RelationshipExplorer.jsx`, `InvestigateGraph.jsx`, Header tab `investigate`, case tables, alias tables.
@@ -113,14 +116,16 @@ API **must not** return `x` / `y` / color / animation fields. Layout is client-o
 | `docs/API_REFERENCE.md` | Document the three GETs |
 | `docs/PRODUCT_STATUS.md` | One row when APIs exist |
 
-## Global Constraints
+## Caps, cursor, and page identity
 
 - Default `depth=1`, reject `depth > 2` with 422.
-- Default `limit=50`, max `100` (nodes **or** edges — if either cap hits, `truncated=true`).
-- Keyset `cursor` opaque string; empty page is valid (`nodes` may be `[root]` only).
-- `include_semantic` default **false**.
-- `include_stale` default **false**.
-- No N+1 per neighbor. Reuse correlation / OTX / TI-mirror helpers; do not duplicate hub-cap logic.
+- Default `limit=50`, max `100`. **`limit` is an edge cap.** Root is always present in `nodes`, so that list may hold `limit + 1` nodes. Set `truncated=true` when the edge cap or that node cap is hit.
+- Keyset `cursor`: opaque base64 JSON with `after_edge_id` equal to the last `edge_id` served. An empty expansion is valid (`nodes == [root]`).
+- Optional flags: `include_semantic` and `include_stale` both default off.
+
+## Global Constraints
+
+- Expand with batched SQL (no per-neighbor round trips). Reuse existing correlation / OTX / TI-mirror helpers and their hub caps.
 - Merge gate: `./scripts/verify-local.sh` on the last P0 PR.
 - Router snapshot: additive append only in `EXPECTED_ROUTES` (same pattern as Forge).
 
@@ -128,7 +133,7 @@ API **must not** return `x` / `y` / color / animation fields. Layout is client-o
 
 ## P0 — work queue (implement in this order)
 
-Stop after Task 4 unless Task 3’s provenance gate fails (then Task 5).
+Stop after Task 4 unless **Task 4’s** provenance gate fails (then Task 5). Do not start Task 5 because Task 3 tests failed.
 
 ### Task 1: Shared graph contracts
 
@@ -140,10 +145,11 @@ Stop after Task 4 unless Task 3’s provenance gate fails (then Task 5).
 **Interfaces:**
 - Produce: `EntityType`, `IocKind`, `EdgeClass`, `KnowledgeState` (`Literal` or `StrEnum`)
 - Produce: `EntityRef`, `GraphNode`, `GraphEdge`, `GraphPage`, `RelationshipFilters`
-- `EntityType` P0 roots: `cve`, `ioc`, `technique`, `campaign` only. Actor / malware / infra / advisory may appear as **targets** with source-qualified ids, not as resolve roots.
 - `node_id` helper: `def make_node_id(entity_type: str, entity_id: str) -> str`
 - `RelationshipFilters`: `depth: int = 1`, `limit: int = 50`, `cursor: str | None = None`, `edge_class: EdgeClass | None = None`, `min_confidence: str | None = None`, `include_semantic: bool = False`, `include_stale: bool = False`
-- Models `model_config = ConfigDict(frozen=True)`. Extra fields forbidden.
+- Frozen Pydantic models: `model_config = ConfigDict(frozen=True)` and extra fields forbidden.
+- Resolve vs graph types: `RESOLVE_ROOT_ENTITY_TYPES = {cve, ioc, technique, campaign}`. `GRAPH_ENTITY_TYPES = RESOLVE_ROOT ∪ {publication}` (`sigma_rule` may appear as a hop target). Actor / malware / infra / advisory may appear as **targets** with source-qualified ids, never as resolve roots.
+- `GET .../entities/{entity_type}/...` and `parse_investigation_query` accept only resolve roots. Neighbor `nodes` may use any graph entity type.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -185,9 +191,16 @@ def test_unknown_edge_class_rejected():
 
 
 def test_graph_page_requires_nodes_and_edges():
+    root = {
+        "node_id": "cve:CVE-1",
+        "entity_type": "cve",
+        "entity_id": "CVE-1",
+        "label": "CVE-1",
+        "knowledge_state": "known",
+    }
     page = GraphPage(
-        root={"node_id": "cve:CVE-1", "entity_type": "cve", "entity_id": "CVE-1", "label": "CVE-1", "knowledge_state": "known"},
-        nodes=[],
+        root=root,
+        nodes=[root],
         edges=[],
         source_status="ok",
         knowledge_state="unknown",
@@ -197,7 +210,29 @@ def test_graph_page_requires_nodes_and_edges():
         depth=1,
     )
     assert page.truncated is False
-    assert EdgeClass  # imported for exhaustive use in projection later
+    assert any(node["node_id"] == root["node_id"] for node in page.nodes)
+
+
+def test_graph_page_always_includes_root_in_nodes():
+    root = {
+        "node_id": "cve:CVE-1",
+        "entity_type": "cve",
+        "entity_id": "CVE-1",
+        "label": "CVE-1",
+        "knowledge_state": "known",
+    }
+    page = GraphPage(
+        root=root,
+        nodes=[root],
+        edges=[],
+        source_status="ok",
+        knowledge_state="unknown",
+        truncated=False,
+        next_cursor=None,
+        generated_at="2026-08-17T00:00:00Z",
+        depth=1,
+    )
+    assert {n.node_id for n in page.nodes} == {page.root.node_id}
 ```
 
 - [ ] **Step 2: Run** `cd backend && pytest tests/test_investigation_contracts.py -q` — expect fail (module missing).
@@ -217,14 +252,15 @@ def test_graph_page_requires_nodes_and_edges():
 **Interfaces:**
 - Consumes: `EntityRef`, `normalize_ioc` from `correlation.ioc_normalize`
 - Produce: `def parse_investigation_query(q: str) -> EntityRef`
-- Produce: `async def resolve_entity(db, q: str) -> EntityRef | None` — parse, then existence check (`cves` row, IOC in `otx_pulse_iocs` / `ti_mirror_iocs`, technique in `mitre_techniques` / `cve_technique_map`, campaign id in correlation campaign tables). Missing row → `None` (route maps to 404 with `knowledge_state: unknown`, not an empty graph that looks like “no intel”).
+- Produce: `async def resolve_entity(db, q: str) -> EntityRef | None` — parse, then existence check (`cves` row, IOC in `otx_pulse_iocs` / `ti_mirror_iocs`, technique in `mitre_techniques` / `cve_technique_map`, campaign id in correlation campaign tables — `camp_` + 12 hex). Missing row → `None` (route maps to 404 with `knowledge_state: unknown`, not an empty graph that looks like “no intel”).
 
 Parse order:
 1. Strip; reject empty / `len > 512` → `ValueError` (route 422).
 2. If `CVE-\d{4}-\d{4,}` (case-insensitive) → type `cve`, id uppercased.
-3. Else `normalize_ioc` with guessed kind: hash if hex 32/40/64; else IP; else URL if `://` or path; else domain.
-4. Else if `T\d{4}` ATT&CK id → `technique`.
-5. Else fail `ValueError`.
+3. Else if `T\d{4}(?:\.\d{3})?` ATT&CK id → `technique` (**before** IOC fallback so `T1059.003` is not guessed as a domain).
+4. Else if `camp_[0-9a-f]{12}` or `campaign:camp_[0-9a-f]{12}` → `campaign` (preserve `camp_…` case; do not invent numeric campaign ids).
+5. Else `normalize_ioc` with guessed kind: hash if hex 32/40/64; else IP; else URL if `://` or path; else domain. Map uppercase kinds to lowercase `ioc_kind`.
+6. Else fail `ValueError`.
 
 - [ ] **Step 1: Failing tests**
 
@@ -246,12 +282,24 @@ def test_parse_sha256():
     assert ref.entity_id.startswith("hash:")
 
 
+def test_parse_technique_before_ioc_fallback():
+    ref = parse_investigation_query("T1059.003")
+    assert ref.entity_type == "technique"
+    assert ref.entity_id == "T1059.003"
+
+
+def test_parse_campaign_id():
+    ref = parse_investigation_query("campaign:camp_ab12cd34ef56")
+    assert ref.entity_type == "campaign"
+    assert ref.entity_id == "camp_ab12cd34ef56"
+
+
 def test_parse_rejects_empty():
     with pytest.raises(ValueError):
         parse_investigation_query("  ")
 ```
 
-- [ ] **Step 2: Run** `pytest tests/test_investigation_resolve.py -q` — expect fail.
+- [ ] **Step 2: Run** `cd backend && pytest tests/test_investigation_resolve.py -q` — expect fail.
 
 - [ ] **Step 3: Implement** using `normalize_ioc`; do not call external APIs.
 
@@ -269,7 +317,7 @@ def test_parse_rejects_empty():
 - Consumes: `EntityRef`, `RelationshipFilters`, `GraphPage`
 - Produce: `async def get_entity(db, entity_type: str, entity_id: str) -> EntityRef | None`
 - Produce: `async def expand_relationships(db, root: EntityRef, filters: RelationshipFilters) -> GraphPage`
-- Root is always included in `nodes`. Edges are undirected for display but stored as source=root (or discovered node) → target; do not emit duplicate A→B and B→A for the same `edge_id`.
+- Root is always included in `nodes` (assert this in projection tests even when `edges` is empty). Edges are undirected for display but stored as source=root (or discovered node) → target; do not emit duplicate A→B and B→A for the same hop (`edge_id` as above).
 
 **Required hops (fixture tests; seed like `tests/test_*correlation*` / OTX tests):**
 1. CVE → ATT&CK (`cve_technique_map`) → `direct_fact`, `source_key=cve_technique_map`
@@ -281,11 +329,11 @@ def test_parse_rejects_empty():
 
 `depth=2`: expand neighbors of neighbors with the same caps on the **total** page, not per node. Prefer breadth-first and stop when cap hits.
 
-- [ ] **Step 1: Failing tests** with seeded CVE + one technique + one pulse IOC. Assert `edge_class`, `truncated` when `limit=1` and two edges exist, root `node_id` present.
+- [ ] **Step 1: Failing tests** with seeded CVE + one technique + one pulse IOC. Assert `edge_class`, `truncated` when `limit=1` and two edges exist, root `node_id` present **in `nodes`**.
 
 - [ ] **Step 2: Implement** bounded SQL / batch helpers. Set `knowledge_state=partial` if any hop source is missing/stale; `unknown` only when root does not exist (caller should 404 first).
 
-- [ ] **Step 3: Run** `pytest tests/test_investigation_projection.py tests/test_investigation_contracts.py tests/test_investigation_resolve.py -q` plus any correlation tests you touched.
+- [ ] **Step 3: Run** `cd backend && pytest tests/test_investigation_projection.py tests/test_investigation_contracts.py tests/test_investigation_resolve.py -q` plus any correlation tests you touched.
 
 - [ ] **Step 4: Commit** `feat: add bounded investigation graph projection`
 
@@ -315,7 +363,7 @@ Response metadata on `GraphPage`: `source_status`, `truncated`, `next_cursor`, `
 
 - [ ] **Step 2: Implement** router; `GraphPage.model_dump(mode="json")`.
 
-- [ ] **Step 3: Run** `pytest tests/test_investigation_routes.py tests/test_investigation_projection.py tests/test_investigation_contracts.py tests/test_investigation_resolve.py tests/test_router_split.py -q` then `./scripts/verify-local.sh`.
+- [ ] **Step 3: Run** `cd backend && pytest tests/test_investigation_routes.py tests/test_investigation_projection.py tests/test_investigation_contracts.py tests/test_investigation_resolve.py tests/test_router_split.py -q` then `./scripts/verify-local.sh`.
 
 - [ ] **Step 4: Commit** `feat: expose investigation resolve and graph relationship APIs`
 
