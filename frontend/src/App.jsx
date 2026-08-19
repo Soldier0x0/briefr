@@ -47,6 +47,7 @@ const CVEFeed = lazyWithReload(() => import('./components/CVEFeed.jsx'))
 const InvestigationPanel = lazyWithReload(() => import('./components/InvestigationPanel.jsx'))
 const IOCLookup = lazyWithReload(() => import('./components/IOCLookup.jsx'))
 const CaseStudies = lazyWithReload(() => import('./components/CaseStudies.jsx'))
+const InvestigateGraph = lazyWithReload(() => import('./components/investigate/InvestigateGraph.jsx'))
 const Forge = lazyWithReload(() => import('./components/Forge.jsx'))
 const DetailDrawer = lazyWithReload(() => import('./components/DetailDrawer'))
 const AdminPage = lazyWithReload(() => import('./pages/admin/AdminPage.jsx'))
@@ -707,6 +708,7 @@ export default function App() {
       { id: 'tab-brief', label: 'Go to BRIEF', hint: 'tab', keywords: ['brief'], run: () => selectAppTab('brief') },
       { id: 'tab-feed', label: 'Go to FEED', hint: 'tab', keywords: ['feed'], run: () => selectAppTab('feed') },
       { id: 'tab-ioc', label: 'Go to IOC LOOKUP', hint: 'tab', keywords: ['ioc', 'lookup'], run: () => selectAppTab('ioc') },
+      { id: 'tab-investigate', label: 'Go to INVESTIGATE', hint: 'tab', keywords: ['investigate', 'graph', 'obsidian'], run: () => selectAppTab('investigate') },
       { id: 'tab-atlas', label: 'Go to ADVISORIES & INTEL', hint: 'tab', keywords: ['advisories', 'intel', 'incidents', 'news', 'atlas'], run: () => selectAppTab('atlas') },
       { id: 'tab-forge', label: 'Go to FORGE', hint: 'tab', keywords: ['forge'], run: () => selectAppTab('forge') },
       {
@@ -1093,6 +1095,15 @@ function AppLayout({
               </Suspense>
             )}
           </div>
+          <div className="app-tab-panel" hidden={activeTab !== 'investigate'} aria-hidden={activeTab !== 'investigate'}>
+            {mountedTabs.investigate && (
+              <Suspense fallback={<TabLoading label="Investigate" />}>
+                <ToolErrorBoundary label="Investigate">
+                  <InvestigateGraph isActive={activeTab === 'investigate'} onOpenCve={openCveById} />
+                </ToolErrorBoundary>
+              </Suspense>
+            )}
+          </div>
           <div className="app-tab-panel" hidden={activeTab !== 'atlas'} aria-hidden={activeTab !== 'atlas'}>
             {mountedTabs.atlas && (
               <Suspense fallback={<TabLoading label="ATLAS" />}>
@@ -1117,7 +1128,7 @@ function AppLayout({
           </div>
         </div>
 
-            {activeTab !== 'feed' && (
+            {activeTab !== 'feed' && activeTab !== 'investigate' && (
               <footer className="app-footer" role="contentinfo">
                 <div className="footer-left">
                   <span>BRIEFR</span> // CVE intelligence platform

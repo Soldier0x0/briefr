@@ -1139,7 +1139,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 
 ### GET /api/investigations/resolve
 
-**Auth:** Analyst session (`briefr_at` cookie).
+**Auth:** Analyst session (`briefr_at` cookie). The analyst **INVESTIGATE** tab (`?tab=investigate`) calls this endpoint, then `.../relationships`. Layout is client-only.
 
 | Param | Type | Default | Description |
 |---|---|---|---|

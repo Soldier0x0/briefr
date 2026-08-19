@@ -27,7 +27,8 @@ Click any image to expand inline on the docs portal. Regenerate captures: [`scri
 | `brief` | **BRIEF** | Morning queue, OP/Threat-ranked cards, charts, heatmap, what changed |
 | `feed` | **FEED** | Full CVE list, filters, KEV deadlines, export, hybrid search |
 | `ioc` | **IOC LOOKUP** | IP / hash / domain enrichment and investigation pivots |
-| `atlas` | **INCIDENTS & NEWS** | RSS × 5 security news + MITRE ATLAS narratives |
+| `investigate` | **INVESTIGATE** | Obsidian-like graph of stored CVE / IOC / technique hops (search + expand) |
+| `atlas` | **ADVISORIES & INTEL** | Headlines, structured advisories, MITRE ATLAS |
 | `forge` | **FORGE** | ATT&CK navigator, hunt packs, scenarios, campaigns, backlog, library |
 
 Tab changes push browser history; hygiene cleanup replaces it. Back restores the last tab or Forge context. Opening a CVE writes `?cve=CVE-...`, so Back closes the drawer before leaving the page.

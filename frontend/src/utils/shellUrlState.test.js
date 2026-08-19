@@ -18,7 +18,7 @@ describe('resolveAppTab', () => {
     assert.equal(resolveAppTab(params({ tab: 'ioc' })), 'ioc')
     assert.equal(resolveAppTab(params({ tab: 'atlas' })), 'atlas')
     assert.equal(resolveAppTab(params({ tab: 'forge' })), 'forge')
-    assert.equal(resolveAppTab(params({ tab: 'brief' })), 'brief')
+    assert.equal(resolveAppTab(params({ tab: 'investigate' })), 'investigate')
   })
 
   it('falls back to atlas when view=headlines without tab=', () => {
@@ -43,7 +43,7 @@ describe('buildAppTabSearchParams', () => {
   it('always sets tab= so BRIEF/FEED/IOC are visible in the URL', () => {
     const next = buildAppTabSearchParams(params(), 'feed')
     assert.equal(next.get('tab'), 'feed')
-    assert.deepEqual([...APP_TABS].sort(), ['atlas', 'brief', 'feed', 'forge', 'ioc'])
+    assert.deepEqual([...APP_TABS].sort(), ['atlas', 'brief', 'feed', 'forge', 'investigate', 'ioc'])
   })
 
   it('clears view when leaving forge and atlas', () => {
