@@ -121,11 +121,11 @@ API **must not** return `x` / `y` / color / animation fields. Layout is client-o
 - Default `depth=1`, reject `depth > 2` with 422.
 - Default `limit=50`, max `100`. **`limit` is an edge cap.** Root is always present in `nodes`, so that list may hold `limit + 1` nodes. Set `truncated=true` when the edge cap or that node cap is hit.
 - Keyset `cursor`: opaque base64 JSON with `after_edge_id` equal to the last `edge_id` served. An empty expansion is valid (`nodes == [root]`).
-- `include_semantic` default **false**. `include_stale` default **false**.
+- Optional flags: `include_semantic` and `include_stale` both default off.
 
 ## Global Constraints
 
-- No N+1 per neighbor. Reuse correlation / OTX / TI-mirror helpers; do not duplicate hub-cap logic.
+- Expand with batched SQL (no per-neighbor round trips). Reuse existing correlation / OTX / TI-mirror helpers and their hub caps.
 - Merge gate: `./scripts/verify-local.sh` on the last P0 PR.
 - Router snapshot: additive append only in `EXPECTED_ROUTES` (same pattern as Forge).
 
