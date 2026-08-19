@@ -6,7 +6,7 @@ import ipaddress
 import re
 
 from correlation.ioc_normalize import normalize_ioc
-from investigations.contracts import EntityRef, RESOLVE_ROOT_ENTITY_TYPES
+from investigations.contracts import EntityRef, GRAPH_ENTITY_TYPES, RESOLVE_ROOT_ENTITY_TYPES
 
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 _TECHNIQUE_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
@@ -209,3 +209,7 @@ async def _enrich_label(db, ref: EntityRef) -> EntityRef:
 
 def is_resolve_root_entity_type(entity_type: str) -> bool:
     return entity_type.strip().lower() in RESOLVE_ROOT_ENTITY_TYPES
+
+
+def is_graph_entity_type(entity_type: str) -> bool:
+    return entity_type.strip().lower() in GRAPH_ENTITY_TYPES

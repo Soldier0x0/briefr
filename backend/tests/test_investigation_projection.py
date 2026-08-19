@@ -182,3 +182,66 @@ def test_stale_cursor_advances_by_edge_id_order(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
+
+
+def test_expand_cve_includes_publication_hop(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "projection-pub.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            cve_id = await _seed_projection_db(db)
+            from db.publications import replace_publication_entity_links, upsert_publication
+
+            pub_id, _ = await upsert_publication(
+                db,
+                source_key="cisa-news",
+                canonical_url="https://example.com/investigation-advisory",
+                content_sha256="pubsha",
+                title="Advisory for CVE-2024-9001",
+                document_kind="advisory",
+                published_at="2024-01-15T00:00:00+00:00",
+                updated_at="2024-01-15T00:00:00+00:00",
+                retrieved_at="2024-01-15T00:00:00+00:00",
+            )
+            await replace_publication_entity_links(
+                db,
+                pub_id,
+                title="Advisory for CVE-2024-9001",
+                body="",
+                retrieved_at="2024-01-15T00:00:00+00:00",
+            )
+            await db.commit()
+
+            root = parse_investigation_query(cve_id)
+            page = await expand_relationships(
+                db,
+                root,
+                RelationshipFilters(depth=1, limit=50),
+            )
+            pub_edges = [
+                edge
+                for edge in page.edges
+                if edge.target_node_id == f"publication:{pub_id}"
+            ]
+            assert len(pub_edges) == 1
+            assert pub_edges[0].edge_class == EdgeClass.REPORTED
+            assert pub_edges[0].source_key == "publication:cisa-news"
+
+            pub_ref = await get_entity(db, "publication", str(pub_id))
+            assert pub_ref is not None
+            assert pub_ref.label == "Advisory for CVE-2024-9001"
+
+            pub_page = await expand_relationships(
+                db,
+                pub_ref,
+                RelationshipFilters(depth=1, limit=50),
+            )
+            assert any(
+                edge.target_node_id == f"cve:{cve_id}" for edge in pub_page.edges
+            )
+        finally:
+            await db.close()
+
+    run_db_test(run())

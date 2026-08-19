@@ -1173,7 +1173,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 
 **Auth:** Analyst session.
 
-Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Percent-encode reserved characters when building the URL.
+Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`, or `publication`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Percent-encode reserved characters when building the URL. Publication hops also appear on CVE relationship pages (`edge_class=reported`, `source_key=publication:{source_key}`). Resolve search (`GET /api/investigations/resolve`) still accepts only CVE, IOC, technique, and campaign queries.
 
 Returns a single `GraphNode` (same shape as `root` above) or **404** when unknown.
 
@@ -1195,7 +1195,7 @@ Bounded read-only graph expansion over existing Postgres/SQLite tables (no outbo
 
 **Response (200):** `GraphPage` — `root`, `nodes[]`, `edges[]` (`edge_class`, `source_key`, optional provenance timestamps), `truncated`, `next_cursor`, `generated_at`, `depth`, `knowledge_state`, `source_status`. Layout coordinates are intentionally omitted (client-only).
 
-Hops include CVE→technique (`cve_technique_map`), CVE→OTX IOC, CVE→campaign (`correlation`), CVE→TI-mirror corroboration (`threatfox` / `urlhaus` / `malwarebazaar` as stored), CVE→SigmaHQ index rules, and related CVE heuristics (semantic only when `include_semantic=1`).
+Hops include CVE→technique (`cve_technique_map`), CVE→OTX IOC, CVE→campaign (`correlation`), CVE→TI-mirror corroboration (`threatfox` / `urlhaus` / `malwarebazaar` as stored), CVE→SigmaHQ index rules, CVE→publication (`publication_entity_links`, `source_key=publication:{source_key}`), publication→CVE reverse links, and related CVE heuristics (semantic only when `include_semantic=1`).
 
 ---
 

@@ -120,6 +120,28 @@ async def get_entity(db, entity_type: str, entity_id: str) -> EntityRef | None:
         label = _row_get(rows[0], "label") or entity_id
         return EntityRef(entity_type="campaign", entity_id=entity_id, label=label)
 
+    if ref.entity_type == "publication":
+        try:
+            pub_id = int(entity_id)
+        except ValueError:
+            return None
+        rows = await db.execute_fetchall(
+            """
+            SELECT publication_id, title, source_key
+            FROM publications
+            WHERE publication_id = ?
+            """,
+            (pub_id,),
+        )
+        if not rows:
+            return None
+        title = _row_get(rows[0], "title") or f"publication:{pub_id}"
+        return EntityRef(
+            entity_type="publication",
+            entity_id=str(pub_id),
+            label=title,
+        )
+
     return None
 
 
@@ -298,6 +320,8 @@ async def _edges_for_entity(
             return await _technique_edges(db, entity)
         case "campaign":
             return await _campaign_edges(db, entity)
+        case "publication":
+            return await _publication_edges(db, entity)
         case other:
             raise ValueError(f"unsupported entity_type: {other}")
 
@@ -457,6 +481,29 @@ async def _cve_edges(
             )
         )
 
+    publication_rows, publication_degraded = await _publication_rows_for_cve(
+        db, cve_id
+    )
+    if publication_degraded:
+        flags.degraded = True
+    for row in publication_rows:
+        pub_id = str(row["publication_id"])
+        target_ref = EntityRef(
+            entity_type="publication",
+            entity_id=pub_id,
+            label=row["title"] or f"publication:{pub_id}",
+        )
+        source_key = f"publication:{row['source_key']}"
+        edges.append(
+            _candidate_edge(
+                source_node_id=source_node_id,
+                target_ref=target_ref,
+                edge_class=EdgeClass.REPORTED,
+                source_key=source_key,
+                fetched_at=_row_get(row, "retrieved_at"),
+            )
+        )
+
     if filters.include_semantic:
         try:
             from ml.embeddings import embeddings_enabled, find_similar_cves
@@ -609,6 +656,38 @@ async def _campaign_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
     return _dedupe_candidates(edges)
 
 
+async def _publication_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
+    source_node_id = make_node_id(entity.entity_type, entity.entity_id)
+    try:
+        pub_id = int(entity.entity_id)
+    except ValueError:
+        return []
+    rows = await db.execute_fetchall(
+        """
+        SELECT entity_id, retrieved_at
+        FROM publication_entity_links
+        WHERE publication_id = ? AND entity_type = 'cve'
+        ORDER BY entity_id ASC
+        LIMIT ?
+        """,
+        (pub_id, _MAX_HOP_ROWS),
+    )
+    edges: list[_CandidateEdge] = []
+    for row in rows:
+        cve_id = row["entity_id"]
+        target_ref = EntityRef(entity_type="cve", entity_id=cve_id, label=cve_id)
+        edges.append(
+            _candidate_edge(
+                source_node_id=source_node_id,
+                target_ref=target_ref,
+                edge_class=EdgeClass.REPORTED,
+                source_key="publication_entity_link",
+                fetched_at=_row_get(row, "retrieved_at"),
+            )
+        )
+    return _dedupe_candidates(edges)
+
+
 def _candidate_edge(
     *,
     source_node_id: str,
@@ -687,6 +766,27 @@ async def _mirror_ioc_exists(db, canon_type: str, canon_value: str) -> bool:
         (_mirror_ioc_type(canon_type), canon_value.lower()),
     )
     return bool(rows)
+
+
+async def _publication_rows_for_cve(
+    db, cve_id: str
+) -> tuple[list[dict[str, Any]], bool]:
+    try:
+        rows = await db.execute_fetchall(
+            """
+            SELECT p.publication_id, p.title, p.source_key, p.retrieved_at
+            FROM publications p
+            INNER JOIN publication_entity_links l ON l.publication_id = p.publication_id
+            WHERE l.entity_type = 'cve' AND l.entity_id = ?
+            ORDER BY p.published_at DESC, p.publication_id ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        logger.debug("publication hop skipped: %s", exc)
+        return [], True
+    return [dict(row) for row in rows], False
 
 
 async def _sigma_rows_for_cve(
