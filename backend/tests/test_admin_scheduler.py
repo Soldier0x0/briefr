@@ -248,6 +248,43 @@ def test_run_valid_job_returns_ok(admin_client, monkeypatch):
     assert data.get("status") == "started"
 
 
+def test_manual_tranco_run_executes_job_body(admin_client, monkeypatch):
+    """Manual Run Now must invoke the job body, not skip on a double-held lock."""
+    import routers.admin.jobs as admin_jobs
+    import scheduler as sched_module
+    import scheduler_locks
+
+    body_ran = []
+
+    async def fake_tranco():
+        lock = scheduler_locks.get_lock("tranco_infra_sync")
+        if lock is not None and lock.locked():
+            body_ran.append("skipped-locked")
+            return False
+        body_ran.append("ran")
+        return True
+
+    spawned = []
+
+    def fake_spawn(coro):
+        spawned.append(coro)
+
+    monkeypatch.setattr(sched_module, "run_tranco_infra_sync", fake_tranco)
+    monkeypatch.setattr(admin_jobs, "spawn_background_task", fake_spawn)
+    scheduler_locks.get_lock("tranco_infra_sync").locked = lambda: False
+
+    resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "tranco_infra_sync"})
+    assert resp.status_code == 200
+    assert resp.json().get("status") == "started"
+    assert spawned, "manual run should spawn the guarded coroutine"
+
+    async def _await_guarded():
+        await spawned[0]
+
+    admin_client.portal.call(_await_guarded)
+    assert body_ran == ["ran"]
+
+
 def test_run_llm_product_extraction_defers_manual_durable_job(admin_client, monkeypatch):
     import routers.admin as admin_router
     import routers.admin.jobs as admin_jobs

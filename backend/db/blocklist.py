@@ -99,6 +99,38 @@ async def bulk_insert_infra_classifications(
     return written
 
 
+async def expire_superseded_tranco_hosts(
+    db: DbConnection,
+    keep_hosts: list[str],
+) -> int:
+    """Disable Tranco-provenance rows whose hosts are not in this snapshot.
+
+    Operator/curated rows (provenance not ``tranco:…``) are never touched.
+    Call only after a successful non-empty fetch so a failed or empty sync
+    cannot wipe the previous Tranco set.
+    """
+    if not keep_hosts:
+        return 0
+    now = utcnow_str()
+    keep = set(keep_hosts)
+    rows = await db.execute_fetchall(
+        "SELECT id, host FROM app.infra_classifications "
+        "WHERE enabled = 1 AND provenance LIKE 'tranco:%'"
+    )
+    ids = [int(row["id"]) for row in rows if row["host"] not in keep]
+    expired = 0
+    for offset in range(0, len(ids), 5000):
+        batch = ids[offset : offset + 5000]
+        placeholders = ", ".join(["?"] * len(batch))
+        cursor = await db.execute(
+            "UPDATE app.infra_classifications SET enabled = 0, updated_at = ? "
+            f"WHERE id IN ({placeholders})",
+            (now, *batch),
+        )
+        expired += getattr(cursor, "rowcount", 0) or 0
+    return expired
+
+
 async def fetch_catalog_evidence(db: DbConnection) -> list[dict[str, Any]]:
     """Return catalog mirror rows that can back a domain/URL candidate."""
     pg = _is_postgres_connection(db)

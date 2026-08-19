@@ -22,7 +22,7 @@ from destructive_actions import require_confirm
 from jobs.app import is_procrastinate_enabled, open_app
 from jobs.tasks import health_ping, llm_product_extraction_tick
 from task_registry import spawn_background_task
-from scheduler_locks import get_lock, release_job_run, reserve_job_run
+from scheduler_locks import release_job_run, reserve_job_run
 
 import routers.admin as _admin_pkg
 
@@ -434,13 +434,12 @@ async def run_scheduler_job(request: Request, body: dict):
         raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
 
     async def _guarded_run() -> None:
-        lock = get_lock(job_id)
+        # Do not acquire get_lock() here. Job bodies already skip when
+        # lock.locked() and then `async with get_lock()` — wrapping again
+        # makes a manual run look started while the body returns False.
+        # reserve_job_run() already covers the TOCTOU window until finally.
         try:
-            if lock is None:
-                await fn()
-            else:
-                async with lock:
-                    await fn()
+            await fn()
         finally:
             release_job_run(job_id)
 

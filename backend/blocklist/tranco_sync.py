@@ -2,7 +2,8 @@
 
 Downloads the daily Tranco list and inserts missing hosts as LEGITIMATE_DOMAIN
 rows with provenance ``tranco:<list-date>``. Operator edits are never
-overwritten (ON CONFLICT DO NOTHING).
+overwritten (ON CONFLICT DO NOTHING). After a successful non-empty snapshot,
+Tranco-provenance rows whose hosts dropped off the list are disabled.
 """
 
 from __future__ import annotations
@@ -15,9 +16,13 @@ from datetime import datetime, timezone
 
 from blocklist.infra_seed import LEGITIMATE_DOMAIN
 from blocklist.classify import canonical_host
-from db.blocklist import bulk_insert_infra_classifications
+from db.blocklist import (
+    bulk_insert_infra_classifications,
+    expire_superseded_tranco_hosts,
+)
 from db.timeutil import utcnow_str
 from db.types import DbConnection
+from feeds.errors import FeedFetchError
 from resilient_client import CircuitOpenError, resilient_request
 from tracking import record_api_call
 
@@ -55,13 +60,15 @@ async def fetch_tranco_domains() -> tuple[str, list[str]]:
     except CircuitOpenError:
         logger.warning("Tranco circuit open — skipping infra sync")
         return "", []
+    except FeedFetchError:
+        raise
     except Exception as exc:
         logger.error("Tranco download failed: %s", exc)
-        raise
+        raise FeedFetchError("Tranco request failed") from exc
 
     if response.status_code != 200:
         logger.warning("Tranco HTTP %s", response.status_code)
-        return "", []
+        raise FeedFetchError(f"Tranco HTTP {response.status_code}")
 
     with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
         list_date = _list_date_from_zip(zf)
@@ -99,9 +106,12 @@ async def sync_tranco_infra_classifications(db: DbConnection) -> int:
         reason="",
         batch_size=TRANCO_BATCH_SIZE,
     )
+    expired = await expire_superseded_tranco_hosts(db, domains)
     logger.info(
-        "Tranco infra sync: %d new classification row(s) (list %s, %d domains scanned)",
+        "Tranco infra sync: %d new classification row(s), %d superseded "
+        "Tranco row(s) expired (list %s, %d domains scanned)",
         written,
+        expired,
         list_date or "unknown",
         len(domains),
     )

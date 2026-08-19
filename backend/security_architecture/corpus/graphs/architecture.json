@@ -3928,6 +3928,12 @@
       "kind": "references_table"
     },
     {
+      "id": "job:tranco_infra_sync->table:infra_classifications",
+      "source": "job:tranco_infra_sync",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
       "id": "job:tranco_infra_sync->table:mitre_groups",
       "source": "job:tranco_infra_sync",
       "target": "table:mitre_groups",
@@ -6430,6 +6436,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-health->table:infra_classifications",
+      "source": "routers-health",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-health->table:ioc_cache",
       "source": "routers-health",
       "target": "table:ioc_cache",
@@ -6745,6 +6757,12 @@
       "id": "routers-refresh->table:group_technique_map",
       "source": "routers-refresh",
       "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:infra_classifications",
+      "source": "routers-refresh",
+      "target": "table:infra_classifications",
       "kind": "references_table"
     },
     {

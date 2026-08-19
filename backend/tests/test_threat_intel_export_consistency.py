@@ -401,9 +401,14 @@ def test_admin_csv_endpoint(client_scoped, monkeypatch):
     """Admin CSV export renders for authenticated operators."""
     _patch_fetch_no_infra(monkeypatch)
 
-    from tests.conftest import seed_pytest_auth_user_if_missing
+    from tests.conftest import attach_pytest_session_cookie, seed_pytest_auth_user_if_missing
     seed_pytest_auth_user_if_missing()
+    attach_pytest_session_cookie(client_scoped)
 
     admin = client_scoped.get("/api/admin/threat-intel/blocklist.csv")
     assert admin.status_code == 200
     assert admin.headers["content-type"].startswith("text/csv")
+
+    client_scoped.cookies.clear()
+    public = client_scoped.get("/api/threat-intel/blocklist.csv")
+    assert public.status_code in (401, 403, 404)

@@ -1029,6 +1029,7 @@ async def run_tranco_infra_sync() -> bool:
             _job_progress[job_id] = "Downloading Tranco top-1M and importing legitimate domains…"
             db = await get_db()
             try:
+                # INSERT INTO app.infra_classifications (Tranco LEGITIMATE_DOMAIN).
                 written = await sync_tranco_infra_classifications(db)
                 await db.commit()
             finally:
