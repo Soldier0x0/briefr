@@ -831,6 +831,44 @@ Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_
 
 ---
 
+### GET /api/publications
+
+**Description:** List durable security publications (structured advisories / research ingest). Separate from ephemeral `GET /api/case-studies/feed` headline cards.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `cve_id` | string | — | Filter by linked CVE |
+| `source_key` | string | — | Filter by configured source (e.g. `cisa-news`) |
+| `document_kind` | string | — | Filter by document kind (`advisory`, `writeup`, …) |
+| `limit` | int | 50 | 1–100 |
+| `cursor` | int | — | Keyset cursor (`publication_id`); next page |
+
+**Response:** `{"data": [ publication rows with `cve_ids` ], "meta": {"next_cursor": int|null}}`
+
+**Scheduler:** `publication_source_sync` when `PUBLICATION_SYNC_ENABLED=1` (default off). Does not modify `incident_feed_refresh` or `corroboration_k`.
+
+---
+
+### GET /api/publications/{publication_id}
+
+**Description:** One publication with `entity_links` (deterministic CVE/technique extractors).
+
+**Response:** `{"data": { publication fields + entity_links }}`
+
+---
+
+### GET /api/cves/{cve_id}/publications
+
+**Description:** Publications linked to one CVE via `publication_entity_links`.
+
+| Param | Type | Default |
+|---|---|---|
+| `limit` | int | 20 (max 100) |
+
+**Response:** `{"data": [ publications ], "cve_id": "CVE-…"}`
+
+---
+
 ## Risk & Correlation
 
 ### POST /api/cves/{cve_id}/risk
@@ -1098,6 +1136,66 @@ depending on scope. Writes `correlation.feedback.delete` to `audit_log`.
 representative CVE in the drawer.
 
 Clusters rank by stack overlap, then watchlisted members, then size and lifecycle.
+
+### GET /api/investigations/resolve
+
+**Auth:** Analyst session (`briefr_at` cookie).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `q` | str | required | CVE ID, IOC (IP/hash/domain/URL), or ATT&CK technique id (max 512 chars) |
+
+**Response (200):**
+
+```json
+{
+  "root": {
+    "node_id": "cve:CVE-2024-1234",
+    "entity_type": "cve",
+    "entity_id": "CVE-2024-1234",
+    "label": "CVE-2024-1234",
+    "knowledge_state": "known"
+  },
+  "query": "CVE-2024-1234"
+}
+```
+
+**404** when the parsed entity is not present in local stores:
+
+```json
+{
+  "detail": "unknown entity",
+  "knowledge_state": "unknown"
+}
+```
+
+### GET /api/investigations/entities/{entity_type}/{entity_id}
+
+**Auth:** Analyst session.
+
+Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`, or `publication`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Percent-encode reserved characters when building the URL. Publication hops also appear on CVE relationship pages (`edge_class=reported`, `source_key=publication:{source_key}`). Resolve search (`GET /api/investigations/resolve`) still accepts only CVE, IOC, technique, and campaign queries.
+
+Returns a single `GraphNode` (same shape as `root` above) or **404** when unknown.
+
+### GET /api/investigations/entities/{entity_type}/{entity_id}/relationships
+
+**Auth:** Analyst session.
+
+Bounded read-only graph expansion over existing Postgres/SQLite tables (no outbound enrichment).
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `depth` | int | `1` | Hop depth (`1`–`2`; `3` → 422) |
+| `limit` | int | `50` | Max edges per page (`1`–`100`); distinct nodes are capped at `limit + 1` (the root is always included) |
+| `cursor` | str | `null` | Opaque keyset cursor from a prior `next_cursor` |
+| `edge_class` | str | `null` | Filter: `direct_fact`, `reported`, `derived`, `analyst_assertion`, `semantic` |
+| `min_confidence` | str | `null` | Lexicographic floor on edge `confidence` when present |
+| `include_semantic` | bool | `false` | Include embedding similarity CVE edges |
+| `include_stale` | bool | `false` | Reserved for stale-source inclusion (default off) |
+
+**Response (200):** `GraphPage` — `root`, `nodes[]`, `edges[]` (`edge_class`, `source_key`, optional provenance timestamps), `truncated`, `next_cursor`, `generated_at`, `depth`, `knowledge_state`, `source_status`. Layout coordinates are intentionally omitted (client-only).
+
+Hops include CVE→technique (`cve_technique_map`), CVE→OTX IOC, CVE→campaign (`correlation`), CVE→TI-mirror corroboration (`threatfox` / `urlhaus` / `malwarebazaar` as stored), CVE→SigmaHQ index rules, CVE→publication (`publication_entity_links`, `source_key=publication:{source_key}`), publication→CVE reverse links, and related CVE heuristics (semantic only when `include_semantic=1`).
 
 ---
 
