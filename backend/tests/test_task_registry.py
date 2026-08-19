@@ -80,6 +80,20 @@ def test_register_discards_on_completion():
     asyncio.run(_run())
 
 
+def test_failed_background_task_exception_is_retrieved():
+    async def _run():
+        async def _boom():
+            raise RuntimeError("boom")
+
+        task = spawn_background_task(_boom())
+        await asyncio.wait({task})
+        assert isinstance(task.exception(), RuntimeError)
+        await asyncio.sleep(0)
+        assert task not in task_registry._tasks
+
+    asyncio.run(_run())
+
+
 def test_wait_for_running_jobs_returns_empty_when_idle():
     from scheduler import wait_for_running_jobs
 

@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 _tasks: set[asyncio.Task] = set()
 
 
+def _on_task_done(task: asyncio.Task) -> None:
+    """Drop the strong ref and retrieve exceptions so asyncio does not warn."""
+    _tasks.discard(task)
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error(
+            "Background task %s failed: %s",
+            task.get_name(),
+            exc,
+            exc_info=exc,
+        )
+
+
 def shutdown_drain_timeout_seconds() -> float:
     try:
         return max(0.0, float(os.environ.get("SHUTDOWN_DRAIN_TIMEOUT_SECONDS", "10")))
@@ -29,7 +44,7 @@ def shutdown_drain_timeout_seconds() -> float:
 def register_background_task(task: asyncio.Task) -> asyncio.Task:
     """Track a fire-and-forget task (strong ref + shutdown drain)."""
     _tasks.add(task)
-    task.add_done_callback(_tasks.discard)
+    task.add_done_callback(_on_task_done)
     return task
 
 

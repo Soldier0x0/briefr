@@ -285,6 +285,34 @@ def test_manual_tranco_run_executes_job_body(admin_client, monkeypatch):
     assert body_ran == ["ran"]
 
 
+def test_manual_run_logs_job_failure_without_raising(admin_client, monkeypatch):
+    """Failed catalog jobs must not leak as unretrieved asyncio task exceptions."""
+    import routers.admin.jobs as admin_jobs
+    import scheduler as sched_module
+    import scheduler_locks
+
+    async def fake_phishtank():
+        raise RuntimeError("PhishTank request failed")
+
+    spawned = []
+
+    def fake_spawn(coro):
+        spawned.append(coro)
+
+    monkeypatch.setattr(sched_module, "run_phishtank_sync", fake_phishtank)
+    monkeypatch.setattr(admin_jobs, "spawn_background_task", fake_spawn)
+    scheduler_locks.get_lock("phishtank_sync").locked = lambda: False
+
+    resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "phishtank_sync"})
+    assert resp.status_code == 200
+    assert resp.json().get("status") == "started"
+
+    async def _await_guarded():
+        await spawned[0]
+
+    admin_client.portal.call(_await_guarded)
+
+
 def test_run_llm_product_extraction_defers_manual_durable_job(admin_client, monkeypatch):
     import routers.admin as admin_router
     import routers.admin.jobs as admin_jobs

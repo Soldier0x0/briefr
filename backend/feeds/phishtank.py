@@ -86,7 +86,6 @@ async def fetch_phishtank_iocs(auth_key: str = "", *, days: int = 7) -> list[dic
             "GET",
             url,
             timeout=180.0,
-            follow_redirects=True,
             queue_operation="threat_intel_sync",
             queue_context_type="task",
             queue_context_id="phishtank_sync",
