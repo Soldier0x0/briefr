@@ -432,6 +432,15 @@ endpoints:
 - method: POST
   path: /api/investigation/summary
   component_id: routers-meta
+- method: GET
+  path: /api/investigations/entities/{entity_type}/{entity_id:path}
+  component_id: routers-investigations
+- method: GET
+  path: /api/investigations/entities/{entity_type}/{entity_id:path}/relationships
+  component_id: routers-investigations
+- method: GET
+  path: /api/investigations/resolve
+  component_id: routers-investigations
 - method: POST
   path: /api/ioc/lookup
   component_id: routers-ioc

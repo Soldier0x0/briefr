@@ -238,6 +238,13 @@ EXPECTED_ROUTES = [
     ("POST", "/api/stack/backfill/{run_id}/resume"),
     # Embeddings E3: hybrid / semantic search API
     ("GET", "/api/search/semantic"),
+    # Investigation graph APIs (P0): additive after semantic search.
+    ("GET", "/api/investigations/resolve"),
+    (
+        "GET",
+        "/api/investigations/entities/{entity_type}/{entity_id}/relationships",
+    ),
+    ("GET", "/api/investigations/entities/{entity_type}/{entity_id}"),
 ]
 
 
@@ -317,6 +324,17 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/watchlist"] == "routers.watchlist"
     assert by_path["/api/admin/system"] == "routers.admin.system"
     assert by_path["/api/search/semantic"] == "routers.search"
+    assert by_path["/api/investigations/resolve"] == "routers.investigations"
+    assert (
+        by_path[
+            "/api/investigations/entities/{entity_type}/{entity_id:path}/relationships"
+        ]
+        == "routers.investigations"
+    )
+    assert (
+        by_path["/api/investigations/entities/{entity_type}/{entity_id:path}"]
+        == "routers.investigations"
+    )
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 
