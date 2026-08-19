@@ -91,28 +91,30 @@ async def fetch_tranco_domains() -> tuple[str, list[str]]:
 
 
 async def sync_tranco_infra_classifications(db: DbConnection) -> int:
-    """Download Tranco and insert missing legitimate-domain rows."""
+    """Download Tranco, insert missing legitimate-domain rows, expire drop-offs.
+
+    Empty / circuit-open fetches return 0 and do not expire. Operator-owned
+    rows (provenance not ``tranco:…``) are never disabled.
+    """
     list_date, domains = await fetch_tranco_domains()
     if not domains:
         return 0
 
     provenance = f"tranco:{list_date or utcnow_str()[:10]}"
-    # Keep reason empty — provenance carries list identity (~120 MB saved at 1M rows).
     written = await bulk_insert_infra_classifications(
         db,
         domains,
         classification=LEGITIMATE_DOMAIN,
         provenance=provenance,
-        reason="",
+        reason="",  # provenance carries list identity (~120 MB saved at 1M rows)
         batch_size=TRANCO_BATCH_SIZE,
     )
     expired = await expire_superseded_tranco_hosts(db, domains)
     logger.info(
-        "Tranco infra sync: %d new classification row(s), %d superseded "
-        "Tranco row(s) expired (list %s, %d domains scanned)",
+        "Tranco infra sync complete list=%s inserted=%d expired=%d scanned=%d",
+        list_date or "unknown",
         written,
         expired,
-        list_date or "unknown",
         len(domains),
     )
     return written

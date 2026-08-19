@@ -404,6 +404,19 @@ async def _defer_manual_llm_product_extraction() -> bool:
         return False
 
 
+async def _run_manual_job(fn, job_id: str) -> None:
+    """Execute a reserved manual job without wrapping ``get_lock()``.
+
+    Job bodies already skip when ``lock.locked()``; holding that lock here
+    made Run Now report ``started`` while the body returned False.
+    ``reserve_job_run`` covers the TOCTOU window until this finally.
+    """
+    try:
+        await fn()
+    finally:
+        release_job_run(job_id)
+
+
 @router.post("/scheduler/run")
 async def run_scheduler_job(request: Request, body: dict):
     """Trigger a scheduler job immediately."""
@@ -433,16 +446,6 @@ async def run_scheduler_job(request: Request, body: dict):
         release_job_run(job_id)
         raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
 
-    async def _guarded_run() -> None:
-        # Do not acquire get_lock() here. Job bodies already skip when
-        # lock.locked() and then `async with get_lock()` — wrapping again
-        # makes a manual run look started while the body returns False.
-        # reserve_job_run() already covers the TOCTOU window until finally.
-        try:
-            await fn()
-        finally:
-            release_job_run(job_id)
-
     if job_id == "llm_product_extraction" and await _defer_manual_llm_product_extraction():
         release_job_run(job_id)
         await audit(request, f"scheduler.run.{job_id}", job_id)
@@ -453,7 +456,7 @@ async def run_scheduler_job(request: Request, body: dict):
             "message": f"Job '{job_id}' deferred to durable queue",
         }
 
-    spawn_background_task(_guarded_run())
+    spawn_background_task(_run_manual_job(fn, job_id))
     await audit(request, f"scheduler.run.{job_id}", job_id)
     return {
         "ok": True,

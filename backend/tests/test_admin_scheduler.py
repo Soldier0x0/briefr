@@ -276,7 +276,7 @@ def test_manual_tranco_run_executes_job_body(admin_client, monkeypatch):
     resp = admin_client.post("/api/admin/scheduler/run", json={"job_id": "tranco_infra_sync"})
     assert resp.status_code == 200
     assert resp.json().get("status") == "started"
-    assert spawned, "manual run should spawn the guarded coroutine"
+    assert spawned, "manual run should spawn the reserved job coroutine"
 
     async def _await_guarded():
         await spawned[0]
