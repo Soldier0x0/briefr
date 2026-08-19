@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-08-06 (CodeQL triage complete — 0 open code-scanning alerts)
+**Last updated:** 2026-08-19 (Advisories & Intel publications layer)
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---
