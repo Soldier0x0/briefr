@@ -1,4 +1,11 @@
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Manual Run Now reservations — closes the TOCTOU gap between the admin lock
+# check and the background task acquiring the asyncio.Lock.
+_run_reservations: set[str] = set()
 
 # Keys must match the `id=` strings passed to scheduler.add_job() exactly.
 # incident_feed_refresh, backup_deadman_check, session_cleanup,
@@ -33,6 +40,9 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "scheduled_backup": asyncio.Lock(),
     "resource_metrics_sample": asyncio.Lock(),
     "cpe_catalog_sync": asyncio.Lock(),
+    "feodo_sync": asyncio.Lock(),
+    "phishtank_sync": asyncio.Lock(),
+    "tranco_infra_sync": asyncio.Lock(),
     "publication_source_sync": asyncio.Lock(),
     # _epss_backfill_lock has no corresponding job ID — stays a private var
     # in scheduler.py.
@@ -49,3 +59,21 @@ def any_locked() -> bool:
 
 def locked_jobs() -> list[str]:
     return [job_id for job_id, l in _LOCKS.items() if l.locked()]
+
+
+def job_run_in_flight(job_id: str) -> bool:
+    """True when a manual reservation or the job lock indicates active work."""
+    lock = get_lock(job_id)
+    return job_id in _run_reservations or (lock.locked() if lock else False)
+
+
+def reserve_job_run(job_id: str) -> bool:
+    """Reserve a manual run slot. Returns False when the job is already active."""
+    if job_run_in_flight(job_id):
+        return False
+    _run_reservations.add(job_id)
+    return True
+
+
+def release_job_run(job_id: str) -> None:
+    _run_reservations.discard(job_id)

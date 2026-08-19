@@ -269,6 +269,18 @@
       ]
     },
     {
+      "id": "job:feodo_sync",
+      "label": "Feodo Tracker IP Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "feodo_sync"
+        }
+      ]
+    },
+    {
       "id": "job:incident_feed_refresh",
       "label": "Incident Feed Snapshot Refresh",
       "kind": "job",
@@ -389,6 +401,18 @@
       ]
     },
     {
+      "id": "job:phishtank_sync",
+      "label": "PhishTank URL Mirror Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "phishtank_sync"
+        }
+      ]
+    },
+    {
       "id": "job:publication_source_sync",
       "label": "Publication Source Sync",
       "kind": "job",
@@ -457,6 +481,18 @@
         {
           "type": "job",
           "ref": "threatfox_sync"
+        }
+      ]
+    },
+    {
+      "id": "job:tranco_infra_sync",
+      "label": "Tranco Top-1M Legitimate Domain Import",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "tranco_infra_sync"
         }
       ]
     },
@@ -998,19 +1034,6 @@
         {
           "type": "file",
           "ref": "backend/routers/stack_catalog.py"
-        }
-      ]
-    },
-    {
-      "id": "routers-threat_intel",
-      "label": "routers.threat_intel",
-      "kind": "component",
-      "cluster": "api",
-      "endpoint_count": 3,
-      "source_refs": [
-        {
-          "type": "file",
-          "ref": "backend/routers/threat_intel.py"
         }
       ]
     },
@@ -2863,6 +2886,30 @@
       "kind": "references_table"
     },
     {
+      "id": "job:feodo_sync->table:cve_exploits",
+      "source": "job:feodo_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:feodo_sync->table:cves",
+      "source": "job:feodo_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:feodo_sync->table:otx_pulse_iocs",
+      "source": "job:feodo_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:feodo_sync->table:ti_mirror_iocs",
+      "source": "job:feodo_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:incident_feed_refresh->table:atlas_case_studies",
       "source": "job:incident_feed_refresh",
       "target": "table:atlas_case_studies",
@@ -3703,6 +3750,30 @@
       "kind": "references_table"
     },
     {
+      "id": "job:phishtank_sync->table:cve_exploits",
+      "source": "job:phishtank_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:phishtank_sync->table:cves",
+      "source": "job:phishtank_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:phishtank_sync->table:otx_pulse_iocs",
+      "source": "job:phishtank_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:phishtank_sync->table:ti_mirror_iocs",
+      "source": "job:phishtank_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:publication_source_sync->table:atlas_case_studies",
       "source": "job:publication_source_sync",
       "target": "table:atlas_case_studies",
@@ -3999,6 +4070,84 @@
     {
       "id": "job:threatfox_sync->table:ti_mirror_iocs",
       "source": "job:threatfox_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:atlas_case_studies",
+      "source": "job:tranco_infra_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:atlas_techniques",
+      "source": "job:tranco_infra_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:cve_atlas_map",
+      "source": "job:tranco_infra_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:cve_exploits",
+      "source": "job:tranco_infra_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:cve_technique_map",
+      "source": "job:tranco_infra_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:cves",
+      "source": "job:tranco_infra_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:group_technique_map",
+      "source": "job:tranco_infra_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:infra_classifications",
+      "source": "job:tranco_infra_sync",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:mitre_groups",
+      "source": "job:tranco_infra_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:mitre_techniques",
+      "source": "job:tranco_infra_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:otx_pulse_iocs",
+      "source": "job:tranco_infra_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:sync_state",
+      "source": "job:tranco_infra_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:tranco_infra_sync->table:ti_mirror_iocs",
+      "source": "job:tranco_infra_sync",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
@@ -6433,6 +6582,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-health->table:infra_classifications",
+      "source": "routers-health",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-health->table:ioc_cache",
       "source": "routers-health",
       "target": "table:ioc_cache",
@@ -6895,6 +7050,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-refresh->table:infra_classifications",
+      "source": "routers-refresh",
+      "target": "table:infra_classifications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-refresh->table:kev_deadlines",
       "source": "routers-refresh",
       "target": "table:kev_deadlines",
@@ -7030,36 +7191,6 @@
       "id": "routers-stack_catalog->table:user_preferences",
       "source": "routers-stack_catalog",
       "target": "table:user_preferences",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:cve_exploits",
-      "source": "routers-threat_intel",
-      "target": "table:cve_exploits",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:cves",
-      "source": "routers-threat_intel",
-      "target": "table:cves",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:infra_classifications",
-      "source": "routers-threat_intel",
-      "target": "table:infra_classifications",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:otx_pulse_iocs",
-      "source": "routers-threat_intel",
-      "target": "table:otx_pulse_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-threat_intel->table:ti_mirror_iocs",
-      "source": "routers-threat_intel",
-      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {

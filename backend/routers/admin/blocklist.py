@@ -1,9 +1,8 @@
 """Admin dashboard API — threat-intel blocklist management.
 
 Infrastructure-classification CRUD operates against app.infra_classifications,
-every mutation is audited, and the admin may fetch the same export payload the
-public token-gated endpoints serve (no export token needed here — admin auth
-already gates the shared /api/admin router).
+every mutation is audited, and exports are admin-session only (download from
+the Threat-intel admin page and share manually).
 
 Part of the `routers.admin` package (F1.2 / W7 split). Aggregate router is
 re-exported from `routers.admin`.
@@ -11,13 +10,13 @@ re-exported from `routers.admin`.
 
 from __future__ import annotations
 
-from fastapi import HTTPException, Request, Response
+from fastapi import HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from blocklist.build import build_blocklist
 from blocklist.classify import canonical_host
-from blocklist.infra_seed import CLASSIFICATIONS
-from blocklist.serialize import to_csv, to_json, to_txt
+from blocklist.infra_seed import CLASSIFICATIONS, EXCLUSION_CLASSIFICATIONS
+from blocklist.serialize import normalize_export_mode, to_csv, to_json, to_txt
 from database import get_db
 from db.blocklist import (
     delete_infra_classification,
@@ -26,55 +25,109 @@ from db.blocklist import (
     update_infra_classification,
 )
 from dependencies import audit
-from settings import settings
 
 from .router import router
 
 
 @router.get("/threat-intel/status")
 async def threat_intel_status():
-    """Export status: token configured, rate limit, publish URLs."""
+    """Export status for the admin Threat-intel page."""
     db = await get_db()
     try:
-        from blocklist.build import build_blocklist
-
         payload = await build_blocklist(db)
-        candidate_count = payload["meta"]["candidate_count"]
+        infra_rows = await fetch_infra_classifications(db)
     finally:
         await db.close()
+
+    genuine_host_count = sum(
+        1
+        for row in infra_rows
+        if int(row.get("enabled") or 0)
+        and (row.get("classification") or "") in EXCLUSION_CLASSIFICATIONS
+    )
+    meta = payload["meta"]
     return {
-        "token_configured": bool(settings.threat_intel_token),
-        "rate_limit_per_minute": settings.rate_limit_threat_intel_per_minute,
-        "candidate_count": candidate_count,
-        "eligible_count": payload["meta"]["eligible_count"],
-        "excluded_count": payload["meta"]["excluded_count"],
-        "generated_at": payload["meta"]["generated_at"],
-        "publish_urls": {
-            "txt": "/api/threat-intel/blocklist.txt",
-            "json": "/api/threat-intel/blocklist.json",
-            "csv": "/api/threat-intel/blocklist.csv",
-        },
+        "candidate_count": meta["candidate_count"],
+        "eligible_count": meta["eligible_count"],
+        "eligible_domain_count": meta.get("eligible_domain_count", 0),
+        "eligible_url_count": meta.get("eligible_url_count", 0),
+        "excluded_count": meta["excluded_count"],
+        "genuine_host_count": genuine_host_count,
+        "infra_classification_count": len(infra_rows),
+        "generated_at": meta["generated_at"],
+        "export_formats": [
+            {
+                "id": "txt",
+                "label": "TXT",
+                "description": "One value per line — DNS blocklists and simple deny lists.",
+            },
+            {
+                "id": "csv",
+                "label": "CSV",
+                "description": "Spreadsheet rows with type, value, source, confidence, and timestamps.",
+            },
+            {
+                "id": "json",
+                "label": "JSON",
+                "description": "Full audit payload including excluded candidates and evidence.",
+            },
+        ],
+        "export_content_modes": [
+            {
+                "id": "domains",
+                "label": "Domains only",
+                "description": (
+                    "Canonical malicious domains minus Tranco/curated genuine hosts. "
+                    "Best for DNS deny lists."
+                ),
+            },
+            {
+                "id": "urls",
+                "label": "Exact URLs only",
+                "description": (
+                    "Full malicious URIs, including paths on shared infrastructure "
+                    "(e.g. drive.google.com/…). Genuine list does not apply."
+                ),
+            },
+            {
+                "id": "all",
+                "label": "All eligible rows",
+                "description": "Domain + URL rows in one CSV export (not available for TXT).",
+            },
+        ],
     }
 
 
+def _admin_export_mode(mode: str | None, *, allow_all: bool = True) -> str:
+    try:
+        parsed = normalize_export_mode(mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not allow_all and parsed == "all":
+        raise HTTPException(status_code=400, detail="mode must be domains or urls for TXT export")
+    return parsed
+
+
 @router.get("/threat-intel/blocklist.txt")
-async def admin_blocklist_txt():
-    """Admin-authorized TXT export (no export token required)."""
+async def admin_blocklist_txt(mode: str | None = Query(default="domains")):
+    """Admin-authorized TXT export."""
+    export_mode = _admin_export_mode(mode, allow_all=False)
     db = await get_db()
     try:
         payload = await build_blocklist(db)
     finally:
         await db.close()
+    suffix = "urls" if export_mode == "urls" else "domains"
     return PlainTextResponse(
-        to_txt(payload),
+        to_txt(payload, mode=export_mode),
         media_type="text/plain",
-        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.txt"'},
+        headers={"Content-Disposition": f'attachment; filename="briefr-blocklist-{suffix}.txt"'},
     )
 
 
 @router.get("/threat-intel/blocklist.json")
 async def admin_blocklist_json():
-    """Admin-authorized JSON export (no export token required)."""
+    """Admin-authorized JSON export (full audit trail)."""
     db = await get_db()
     try:
         payload = await build_blocklist(db)
@@ -84,17 +137,18 @@ async def admin_blocklist_json():
 
 
 @router.get("/threat-intel/blocklist.csv")
-async def admin_blocklist_csv():
-    """Admin-authorized CSV export (no export token required)."""
+async def admin_blocklist_csv(mode: str | None = Query(default="all")):
+    """Admin-authorized CSV export."""
+    export_mode = _admin_export_mode(mode)
     db = await get_db()
     try:
         payload = await build_blocklist(db)
     finally:
         await db.close()
     return Response(
-        to_csv(payload),
+        to_csv(payload, mode=export_mode),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="briefr-blocklist.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="briefr-blocklist-{export_mode}.csv"'},
     )
 
 

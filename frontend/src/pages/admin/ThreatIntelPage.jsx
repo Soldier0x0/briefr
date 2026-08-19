@@ -7,6 +7,7 @@ import Select from '../../components/ui/Select.jsx'
 import Checkbox from '../../components/ui/Checkbox.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
+import { AdminStatRowSkeleton } from './shared/AdminSkeletons.jsx'
 
 const CLASSIFICATION_LABELS = [
   { value: 'LEGITIMATE_DOMAIN', label: 'Legitimate domain' },
@@ -29,7 +30,21 @@ export default function ThreatIntelPage({ toast }) {
   const [rowsError, setRowsError] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
-  const [downloading, setDownloading] = useState(null)
+  const [downloading, setDownloading] = useState(false)
+  const [exportFormat, setExportFormat] = useState('csv')
+  const [exportContent, setExportContent] = useState('domains')
+
+  const FORMAT_OPTIONS = [
+    { value: 'txt', label: 'TXT — one value per line' },
+    { value: 'csv', label: 'CSV — spreadsheet columns' },
+    { value: 'json', label: 'JSON — full audit trail' },
+  ]
+
+  const CONTENT_OPTIONS = [
+    { value: 'domains', label: 'Domains only (minus genuine list)' },
+    { value: 'urls', label: 'Exact URLs only' },
+    { value: 'all', label: 'All eligible rows (CSV)' },
+  ]
 
   const loadStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -116,11 +131,22 @@ export default function ThreatIntelPage({ toast }) {
     } catch (err) { toast(String(err.message || 'Failed to remove'), false) }
   }, [loadRows, loadStatus, toast])
 
-  async function downloadBlocklist(fmt) {
+  function effectiveContentMode(format, content) {
+    if (format === 'json') return null
+    if (format === 'txt' && content === 'all') return 'domains'
+    return content
+  }
+
+  async function downloadBlocklist() {
     if (downloading) return
-    setDownloading(fmt)
+    const mode = effectiveContentMode(exportFormat, exportContent)
+    if (exportFormat === 'txt' && exportContent === 'all') {
+      toast('TXT export uses domains only — combined rows are CSV-only', true)
+    }
+    setDownloading(true)
     try {
-      const res = await adminApi.get(`/threat-intel/blocklist.${fmt}`)
+      const modeParam = mode ? `?mode=${encodeURIComponent(mode)}` : ''
+      const res = await adminApi.get(`/threat-intel/blocklist.${exportFormat}${modeParam}`)
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         toast(String(data.detail || `Download failed (${res.status})`), false)
@@ -130,12 +156,13 @@ export default function ThreatIntelPage({ toast }) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `briefr-blocklist.${fmt}`
+      const modeSuffix = mode ? `-${mode}` : ''
+      a.download = `briefr-blocklist${modeSuffix}.${exportFormat}`
       a.click()
       URL.revokeObjectURL(url)
-      toast(`Blocklist downloaded (.${fmt})`, true)
+      toast(`Downloaded ${exportFormat.toUpperCase()} (${mode || 'full audit'})`, true)
     } catch (err) { toast(String(err.message || 'Download failed'), false) }
-    finally { setDownloading(null) }
+    finally { setDownloading(false) }
   }
 
   const classificationBadge = (classification) => (
@@ -207,16 +234,22 @@ export default function ThreatIntelPage({ toast }) {
     },
   ], [startEdit, toggleEnabled, remove])
 
-  const tokenState = status?.token_configured ? 'Configured' : 'Not set (503)'
-  const eligibleCount = status?.eligible_count ?? '—'
+  const domainExportCount = status?.eligible_domain_count ?? '—'
+  const urlExportCount = status?.eligible_url_count ?? '—'
   const excludedCount = status?.excluded_count ?? '—'
+  const genuineHostCount = status?.genuine_host_count ?? '—'
+
+  const selectedFormat = FORMAT_OPTIONS.find((o) => o.value === exportFormat)
+  const selectedContent = CONTENT_OPTIONS.find((o) => o.value === exportContent)
 
   return (
     <div>
       <h1 className="admin-page-title">Threat-intel blocklist</h1>
       <p className="admin-page-subtitle">
-        Malicious-domain candidates exported to DNS-blocklist operators. Exact IOC evidence is never deleted;
-        infrastructure classification only controls host-level corroboration and export eligibility.
+        Build malicious-domain and URL exports from ThreatFox, URLhaus, PhishTank, and
+        corroborated OTX pulses. Genuine hosts (Tranco top-1M + curated seeds) are removed
+        from <em>domain</em> export only — exact malicious URLs on shared infrastructure
+        still export when you choose URL mode.
       </p>
 
       {statusError && (
@@ -226,45 +259,88 @@ export default function ThreatIntelPage({ toast }) {
         </div>
       )}
 
-      <div className="stat-card-row">
+      {statusLoading && status == null && !statusError && (
+        <AdminStatRowSkeleton count={5} />
+      )}
+
+      {status != null && (
+      <div className="stat-card-row" aria-busy={statusLoading || undefined}>
         <StatCard
-          label="Publish"
-          value={statusLoading && !status ? '—' : <span className={`badge ${status?.token_configured ? 'badge-info' : 'badge-warn'}`}>{tokenState}</span>}
-          subLabel={<code>/api/admin/threat-intel/blocklist.txt</code>}
+          label="Domain export"
+          value={domainExportCount}
+          colorClass={Number(domainExportCount) > 0 ? 'color-green' : undefined}
+          subLabel="eligible after genuine filter"
         />
         <StatCard
-          label="Candidates"
-          value={eligibleCount}
-          colorClass={Number(eligibleCount) > 0 ? 'color-green' : undefined}
-          subLabel="eligible domains"
+          label="URL export"
+          value={urlExportCount}
+          colorClass={Number(urlExportCount) > 0 ? 'color-green' : undefined}
+          subLabel="exact malicious URIs"
+        />
+        <StatCard
+          label="Genuine hosts"
+          value={genuineHostCount}
+          subLabel="Tranco + curated exclusions"
         />
         <StatCard
           label="Excluded"
           value={excludedCount}
           colorClass={Number(excludedCount) > 0 ? 'color-amber' : undefined}
-          subLabel="infrastructure / un-corroborated"
-        />
-        <StatCard
-          label="Rate limit"
-          value={status?.rate_limit_per_minute ?? '—'}
-          subLabel="requests/min per client IP"
+          subLabel="un-corroborated / filtered"
         />
         <StatCard
           label="Last build"
-          value={status?.generated_at ? fmtIso(status.generated_at) : '—'}
+          value={status.generated_at ? fmtIso(status.generated_at) : '—'}
           subLabel="blocklist regeneration"
         />
       </div>
-      <div className="admin-download-row">
-        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('txt')}>
-          {downloading === 'txt' ? 'Exporting…' : 'Download TXT'}
-        </button>
-        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('json')}>
-          {downloading === 'json' ? 'Exporting…' : 'Download JSON'}
-        </button>
-        <button type="button" className="admin-btn" disabled={Boolean(downloading)} onClick={() => downloadBlocklist('csv')}>
-          {downloading === 'csv' ? 'Exporting…' : 'Download CSV'}
-        </button>
+      )}
+
+      <div className="admin-card admin-card-spaced">
+        <h3 className="admin-card-title">
+          Export blocklist
+          <HelpTip text="Admin-only download — no public feed URL. Choose format (TXT/CSV/JSON) and content (domains vs exact URLs). Domain export subtracts the genuine-host list (Tranco + curated). URL export keeps full malicious paths even on shared hosts like drive.google.com." />
+        </h3>
+        <div className="admin-form-grid admin-form-grid-export">
+          <label className="admin-field-label">
+            Format
+            <Select
+              className="admin-select"
+              value={exportFormat}
+              onValueChange={setExportFormat}
+              options={FORMAT_OPTIONS}
+              aria-label="Export file format"
+            />
+          </label>
+          <label className="admin-field-label">
+            Content
+            <Select
+              className="admin-select"
+              value={exportContent}
+              onValueChange={setExportContent}
+              options={CONTENT_OPTIONS}
+              aria-label="Export content mode"
+              disabled={exportFormat === 'json'}
+            />
+          </label>
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            disabled={downloading}
+            onClick={downloadBlocklist}
+          >
+            {downloading ? 'Exporting…' : 'Download export'}
+          </button>
+        </div>
+        <p className="admin-page-subtitle">
+          {selectedFormat?.label}: {selectedFormat?.value === 'json'
+            ? 'includes eligible and excluded candidates with evidence.'
+            : selectedContent?.label + ' — ' + (exportContent === 'domains'
+              ? 'malicious domains minus genuine/Tranco hosts.'
+              : exportContent === 'urls'
+                ? 'full URLs; genuine list does not apply.'
+                : 'domain and URL rows together (CSV only).')}
+        </p>
       </div>
 
       <div className="admin-card admin-card-spaced">

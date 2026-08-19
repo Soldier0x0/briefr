@@ -166,6 +166,21 @@ PACING_PROFILES: dict[str, SourcePacing] = {
         docs_url="https://threatfox.abuse.ch/api/",
         notes="abuse.ch fair-use spacing (~1 req/2s).",
     ),
+    "feodo": SourcePacing(
+        min_interval_seconds=2.0,
+        docs_url="https://feodotracker.abuse.ch/blocklist/",
+        notes="Public CC0 CSV; abuse.ch fair-use spacing.",
+    ),
+    "phishtank": SourcePacing(
+        min_interval_seconds=5.0,
+        docs_url="https://phishtank.org/developer_info.php",
+        notes="Community CSV; optional PHISHTANK_APP_KEY for higher limits.",
+    ),
+    "tranco": SourcePacing(
+        min_interval_seconds=30.0,
+        docs_url="https://tranco-list.eu/",
+        notes="Daily top-1M ZIP download; weekly import default.",
+    ),
     "vulncheck": SourcePacing(
         min_interval_seconds=60.0 / 1000.0,
         docs_url="https://docs.vulncheck.com/",
