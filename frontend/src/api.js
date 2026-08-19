@@ -372,8 +372,13 @@ export function fetchPublications(params = {}) {
   if (params.document_kind) qs.set('document_kind', params.document_kind)
   if (params.limit) qs.set('limit', String(params.limit))
   if (params.cursor) qs.set('cursor', String(params.cursor))
+  if (params.mark_headlines === false) qs.set('mark_headlines', 'false')
   const query = qs.toString()
   return request(`/publications${query ? `?${query}` : ''}`)
+}
+
+export function fetchPublication(publicationId) {
+  return request(`/publications/${publicationId}`)
 }
 
 export function fetchCVEPublications(cveId, limit = 20) {

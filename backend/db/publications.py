@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any
 
 from db.timeutil import utcnow_str
@@ -35,6 +36,41 @@ def publication_row_to_dict(row: Any, cve_ids: list[str] | None = None) -> dict[
     if cve_ids is not None:
         data["cve_ids"] = cve_ids
     return data
+
+
+async def get_headline_url_set(db: DbConnection) -> set[str]:
+    """URLs from the incident feed snapshot (Headlines lane), for dedup badges."""
+    from feeds.case_study_feed import SNAPSHOT_CACHE_KEY
+
+    raw = await db.execute_fetchall(
+        "SELECT result FROM feed_cache WHERE cache_key = ?",
+        (SNAPSHOT_CACHE_KEY,),
+    )
+    if not raw:
+        return set()
+    try:
+        payload = json.loads(raw[0]["result"])
+    except (json.JSONDecodeError, TypeError, KeyError):
+        return set()
+    cards = payload.get("cards") if isinstance(payload, dict) else None
+    if not isinstance(cards, list):
+        return set()
+    urls: set[str] = set()
+    for card in cards:
+        if not isinstance(card, dict) or card.get("kind") == "atlas":
+            continue
+        url = (card.get("url") or card.get("id") or "").strip()
+        if url:
+            urls.add(url)
+    return urls
+
+
+def _mark_headline_overlap(rows: list[dict[str, Any]], headline_urls: set[str]) -> list[dict[str, Any]]:
+    if not headline_urls:
+        return rows
+    for row in rows:
+        row["also_in_headlines"] = row.get("canonical_url") in headline_urls
+    return rows
 
 
 async def upsert_publication(
@@ -185,6 +221,7 @@ async def list_publications(
     document_kind: str | None = None,
     limit: int = 50,
     cursor: int | None = None,
+    mark_headlines: bool = False,
 ) -> tuple[list[dict[str, Any]], int | None]:
     """List publications with optional filters. Returns rows and next cursor."""
     clauses: list[str] = []
@@ -255,6 +292,9 @@ async def list_publications(
         publication_row_to_dict(row, cve_ids=cve_map.get(int(row["publication_id"]), []))
         for row in rows
     ]
+    if mark_headlines:
+        headline_urls = await get_headline_url_set(db)
+        data = _mark_headline_overlap(data, headline_urls)
     return data, next_cursor
 
 
@@ -296,6 +336,32 @@ async def get_publication(db: DbConnection, publication_id: int) -> dict[str, An
         }
         for r in links
     ]
+    actor_rows = await db.execute_fetchall(
+        """
+        SELECT a.actor_id, a.display_name, a.actor_kind, a.profile_url,
+               l.extractor, l.evidence_field, l.confidence, l.observed_at
+        FROM publication_actor_links l
+        JOIN publication_actors a ON a.actor_id = l.actor_id
+        WHERE l.publication_id = ?
+        ORDER BY a.display_name
+        """,
+        (publication_id,),
+    )
+    payload["actors"] = [
+        {
+            "actor_id": r["actor_id"],
+            "display_name": r["display_name"],
+            "actor_kind": r["actor_kind"],
+            "profile_url": r["profile_url"],
+            "extractor": r["extractor"],
+            "evidence_field": r["evidence_field"],
+            "confidence": r["confidence"],
+            "observed_at": r["observed_at"],
+        }
+        for r in actor_rows
+    ]
+    headline_urls = await get_headline_url_set(db)
+    payload["also_in_headlines"] = rows[0]["canonical_url"] in headline_urls
     return payload
 
 

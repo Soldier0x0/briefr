@@ -18,6 +18,7 @@ async def publications_list(
     document_kind: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     cursor: int | None = Query(default=None, ge=1),
+    mark_headlines: bool = Query(default=True, description="Set also_in_headlines when URL is in RSS snapshot"),
 ):
     db = await get_db()
     try:
@@ -28,6 +29,7 @@ async def publications_list(
             document_kind=document_kind,
             limit=limit,
             cursor=cursor,
+            mark_headlines=mark_headlines,
         )
     finally:
         await db.close()
