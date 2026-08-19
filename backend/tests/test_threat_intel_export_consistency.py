@@ -409,3 +409,21 @@ def test_admin_csv_endpoint(client_scoped, monkeypatch, auth_token):
     client_scoped.cookies.clear()
     anonymous = client_scoped.get("/api/threat-intel/blocklist.csv")
     assert anonymous.status_code in (401, 403, 404)
+
+    from main import app
+
+    public_ti = [
+        getattr(route, "path", "")
+        for route in app.routes
+        if getattr(route, "path", "").startswith("/api/threat-intel")
+    ]
+    assert public_ti == [], public_ti
+
+    for path in (
+        "/api/admin/threat-intel/status",
+        "/api/admin/threat-intel/blocklist.txt",
+        "/api/admin/threat-intel/blocklist.json",
+        "/api/admin/threat-intel/blocklist.csv",
+    ):
+        denied = client_scoped.get(path)
+        assert denied.status_code in (401, 403), f"{path} -> {denied.status_code}"

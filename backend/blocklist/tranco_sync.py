@@ -91,6 +91,7 @@ async def fetch_tranco_domains() -> tuple[str, list[str]]:
 
 
 async def _apply_tranco_snapshot(db: DbConnection, list_date: str, domains: list[str]) -> int:
+    """Insert this snapshot, then expire older ``tranco:`` rows not in ``domains``."""
     provenance = f"tranco:{list_date or utcnow_str()[:10]}"
     inserted = await bulk_insert_infra_classifications(
         db,
@@ -100,6 +101,7 @@ async def _apply_tranco_snapshot(db: DbConnection, list_date: str, domains: list
         reason="",  # provenance carries list identity (~120 MB saved at 1M rows)
         batch_size=TRANCO_BATCH_SIZE,
     )
+    # Drop-offs stay enabled until this successful non-empty apply.
     expired = await expire_superseded_tranco_hosts(db, domains)
     logger.info(
         "Tranco infra sync complete list=%s inserted=%d expired=%d scanned=%d",

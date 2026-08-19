@@ -7,6 +7,7 @@ import Select from '../../components/ui/Select.jsx'
 import Checkbox from '../../components/ui/Checkbox.jsx'
 import AsyncSection from './shared/AsyncSection.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
+import { AdminStatRowSkeleton } from './shared/AdminSkeletons.jsx'
 
 const CLASSIFICATION_LABELS = [
   { value: 'LEGITIMATE_DOMAIN', label: 'Legitimate domain' },
@@ -258,7 +259,12 @@ export default function ThreatIntelPage({ toast }) {
         </div>
       )}
 
-      <div className="stat-card-row">
+      {statusLoading && status == null && !statusError && (
+        <AdminStatRowSkeleton count={5} />
+      )}
+
+      {status != null && (
+      <div className="stat-card-row" aria-busy={statusLoading || undefined}>
         <StatCard
           label="Domain export"
           value={domainExportCount}
@@ -284,10 +290,11 @@ export default function ThreatIntelPage({ toast }) {
         />
         <StatCard
           label="Last build"
-          value={status?.generated_at ? fmtIso(status.generated_at) : '—'}
+          value={status.generated_at ? fmtIso(status.generated_at) : '—'}
           subLabel="blocklist regeneration"
         />
       </div>
+      )}
 
       <div className="admin-card admin-card-spaced">
         <h3 className="admin-card-title">

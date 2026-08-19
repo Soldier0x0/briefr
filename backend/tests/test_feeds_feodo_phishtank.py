@@ -42,6 +42,12 @@ def test_parse_phishtank_row_requires_verified_online():
         "verified": "no",
         "online": "yes",
     }) is None
+    assert parse_phishtank_row({
+        "phish_id": "2",
+        "url": "https://evil.example/offline",
+        "verified": "yes",
+        "online": "no",
+    }) is None
 
     row = parse_phishtank_row({
         "phish_id": "9506592",
