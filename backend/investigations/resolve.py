@@ -10,6 +10,7 @@ from investigations.contracts import EntityRef, RESOLVE_ROOT_ENTITY_TYPES
 
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 _TECHNIQUE_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
+_CAMPAIGN_ID_RE = re.compile(r"^camp_[0-9a-fA-F]{12}$")
 _HEX_HASH_RE = re.compile(r"^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
 _MAX_QUERY_LEN = 512
 
@@ -69,6 +70,16 @@ def parse_investigation_query(q: str) -> EntityRef:
             entity_type="technique",
             entity_id=technique_id,
             label=technique_id,
+        )
+
+    campaign_id = stripped
+    if stripped.lower().startswith("campaign:"):
+        campaign_id = stripped.split(":", 1)[1].strip()
+    if _CAMPAIGN_ID_RE.match(campaign_id):
+        return EntityRef(
+            entity_type="campaign",
+            entity_id=campaign_id,
+            label=campaign_id,
         )
 
     raise ValueError("unsupported query")

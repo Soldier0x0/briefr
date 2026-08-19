@@ -188,3 +188,40 @@ def test_url_ioc_entity_path_is_routable(tmp_path, monkeypatch):
     assert relationships.status_code == 200
     graph = relationships.json()
     assert graph["root"]["entity_id"] == entity_id
+
+
+def test_resolve_campaign_query(tmp_path, monkeypatch):
+    campaign_id = "camp_ab12cd34ef56"
+
+    async def seed():
+        db_path = str(tmp_path / "routes-campaign.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO correlation_campaigns (
+                    campaign_id, primary_pulse_id, label, lifecycle, retracted_at
+                ) VALUES (?, 'pulse-routes-1', 'Routes campaign', 'active', NULL)
+                """,
+                (campaign_id,),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    client = TestClient(app)
+    attach_pytest_session_cookie(client)
+
+    resolve = client.get(
+        "/api/investigations/resolve", params={"q": f"campaign:{campaign_id}"}
+    )
+    assert resolve.status_code == 200
+    assert resolve.json()["root"]["entity_type"] == "campaign"
+    assert resolve.json()["root"]["entity_id"] == campaign_id
+
+    bare = client.get("/api/investigations/resolve", params={"q": campaign_id})
+    assert bare.status_code == 200
+    assert bare.json()["root"]["entity_id"] == campaign_id

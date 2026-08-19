@@ -6601,18 +6601,6 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-investigations->table:publication_entity_links",
-      "source": "routers-investigations",
-      "target": "table:publication_entity_links",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-investigations->table:publications",
-      "source": "routers-investigations",
-      "target": "table:publications",
-      "kind": "references_table"
-    },
-    {
       "id": "routers-investigations->table:ti_mirror_iocs",
       "source": "routers-investigations",
       "target": "table:ti_mirror_iocs",

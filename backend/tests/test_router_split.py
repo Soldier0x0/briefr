@@ -242,9 +242,9 @@ EXPECTED_ROUTES = [
     ("GET", "/api/investigations/resolve"),
     (
         "GET",
-        "/api/investigations/entities/{entity_type}/{entity_id:path}/relationships",
+        "/api/investigations/entities/{entity_type}/{entity_id}/relationships",
     ),
-    ("GET", "/api/investigations/entities/{entity_type}/{entity_id:path}"),
+    ("GET", "/api/investigations/entities/{entity_type}/{entity_id}"),
 ]
 
 
