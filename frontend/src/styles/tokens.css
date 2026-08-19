@@ -252,6 +252,14 @@
   --control-height-md: 30px;
   --control-height-lg: 36px;
   --hit-target-min:    24px;
+
+  /* About modal landscape dialog (sources + scope without a tall scroll) */
+  --modal-about-max-width: 1080px;
+  --modal-about-width: min(94vw, var(--modal-about-max-width));
+  --modal-about-max-height: 84vh;
+  --modal-about-max-height-narrow: 88vh;
+  --modal-about-lockup-min: 180px;
+  --modal-about-lockup-max: 260px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

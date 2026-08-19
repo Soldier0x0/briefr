@@ -1,6 +1,5 @@
 """Tests for /api/admin/storage endpoints — disk usage, purge, export."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -8,15 +7,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from fastapi.testclient import TestClient
-
-# GET /api/admin/storage/export streams a `VACUUM INTO`'d SQLite file —
-# a SQLite-only feature (Postgres backups go through pg_dump, a separate
-# script). Not a fixture-pattern gap; the Postgres equivalent is a real
-# product feature, Post-B scope, not this CI-gate PR's.
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="storage export streams a VACUUM INTO SQLite file, no Postgres equivalent yet",
-)
 
 
 
@@ -145,8 +135,37 @@ def test_purge_epss_backfill_reset_no_confirm(admin_client):
     assert data["ok"] is True
 
 
-@_requires_sqlite
-def test_storage_export_returns_file(admin_client):
+def test_storage_export_returns_sql_file(admin_client, monkeypatch):
+    async def fake_dump(tmp_path):
+        tmp_path.write_text("-- BRIEFR dump\n")
+
+    monkeypatch.setattr("routers.admin.storage._run_export_dump", fake_dump)
+
     resp = admin_client.get("/api/admin/storage/export")
     assert resp.status_code == 200
     assert "attachment" in resp.headers.get("content-disposition", "")
+    assert resp.headers.get("content-type", "").startswith("application/sql")
+    assert b"-- BRIEFR dump" in resp.content
+
+
+def test_resources_reuses_held_connection(admin_client, monkeypatch):
+    calls = {"n": 0}
+
+    async def counting_get_db():
+        calls["n"] += 1
+        if calls["n"] > 1:
+            raise AssertionError("nested get_db")
+        from database import get_db as _get_db
+        return await _get_db()
+
+    async def fake_fetch(db, window):
+        return {"ok": True, "window": window}
+
+    monkeypatch.setattr("routers.admin.storage.get_db", counting_get_db)
+    monkeypatch.setattr(
+        "db.resource_metrics.fetch_resources_response", fake_fetch
+    )
+
+    resp = admin_client.get("/api/admin/resources")
+    assert resp.status_code == 200
+    assert calls["n"] == 1

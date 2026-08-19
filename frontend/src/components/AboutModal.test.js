@@ -24,9 +24,17 @@ describe('About / Privacy / Terms stay aligned with product truth', () => {
       path.join(ROOT, 'components/AboutModal.css'),
       'utf8',
     )
-    assert.match(css, /max-width:\s*1080px/)
-    assert.match(css, /max-height:\s*84vh/)
+    assert.match(css, /max-width:\s*var\(--modal-about-max-width\)/)
+    assert.match(css, /max-height:\s*var\(--modal-about-max-height\)/)
     assert.match(css, /grid-template-columns:\s*1fr 1fr/)
+    const mobileBlock = css.split('@media (max-width: 720px)')[1] || ''
+    assert.match(mobileBlock, /max-height:\s*var\(--modal-about-max-height-narrow\)/)
+    const tokens = fs.readFileSync(
+      path.join(ROOT, 'styles/tokens.css'),
+      'utf8',
+    )
+    assert.match(tokens, /--modal-about-max-height-narrow:\s*88vh/)
+    assert.match(tokens, /--modal-about-max-width:\s*1080px/)
   })
 
   it('Privacy documents SigmaHQ sync and current feed cadences', () => {

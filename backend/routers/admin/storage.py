@@ -375,36 +375,29 @@ async def purge_storage(request: Request, body: dict):
 # ── Storage export ─────────────────────────────────────────────────────────
 
 
+async def _run_export_dump(tmp_path: pathlib.Path) -> None:
+    from backup.postgres_util import run_pg_dump_sql
+    from db.config import resolve_database_url
+
+    db_url = resolve_database_url()
+    if not db_url.startswith(("postgresql", "postgres")):
+        raise HTTPException(500, "DATABASE_URL not configured")
+    await run_pg_dump_sql(db_url, tmp_path)
+
+
 @router.get("/storage/export")
 async def export_db(request: Request, background_tasks: BackgroundTasks):
     """Stream a consistent database dump using pg_dump (PostgreSQL)."""
     import tempfile as _tempfile
-    import subprocess
 
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
     filename = f"briefr-{date_str}.sql"
-
-    tmp_dir = _tempfile.gettempdir()
-    tmp_path = os.path.join(tmp_dir, f"briefr-export-{int(time.time())}.sql")
-
-    db_url = os.environ.get("DATABASE_URL", "")
-    if not db_url:
-        raise HTTPException(500, "DATABASE_URL not configured")
-
+    tmp_path = pathlib.Path(_tempfile.gettempdir()) / f"briefr-export-{int(time.time())}.sql"
     try:
-        result = subprocess.run(
-            ["pg_dump", "--no-owner", "--no-privileges", "--format=plain", db_url],
-            capture_output=True,
-            text=True,
-            timeout=300,
-            check=False,
-        )
-        if result.returncode != 0:
-            import logging
-            logging.getLogger(__name__).error("pg_dump failed: %s", result.stderr)
-            raise HTTPException(500, f"Database export failed: {result.stderr[:500]}")
-        tmp_path.write_text(result.stdout)
-    except subprocess.TimeoutExpired:
+        await _run_export_dump(tmp_path)
+    except HTTPException:
+        raise
+    except TimeoutError:
         raise HTTPException(500, "Database export timed out") from None
     except Exception as exc:
         import logging
@@ -434,13 +427,14 @@ async def get_resources(window: str = "1d"):
     db = await get_db()
     try:
         result = await fetch_resources_response(db, window)
-        # Get DB size from pg_database_size
-        db2 = await get_db()
+        db_file_bytes = 0
         try:
-            rows = await db2.execute_fetchall("SELECT pg_database_size(current_database()) as size")
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
             db_file_bytes = int(rows[0]["size"]) if rows else 0
-        finally:
-            await db2.close()
+        except Exception:
+            db_file_bytes = 0
         result["host_profile"] = collect_host_profile(db_path="postgresql")
         result["pool_stats"] = get_pool_stats()
         result["db_file_bytes"] = db_file_bytes

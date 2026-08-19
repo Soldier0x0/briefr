@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from db.connection import get_pool_stats
-from db.init import get_db
 from db.types import DbConnection
 from host_profile import collect_host_profile
 from storage_metrics import fetch_table_sizes
@@ -119,12 +118,10 @@ async def build_efficiency_report(
     # Get DB size from pg_database_size
     if db_size_bytes <= 0:
         try:
-            db2 = await get_db()
-            try:
-                rows = await db2.execute_fetchall("SELECT pg_database_size(current_database()) as size")
-                db_size_bytes = int(rows[0]["size"]) if rows else 0
-            finally:
-                await db2.close()
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
+            db_size_bytes = int(rows[0]["size"]) if rows else 0
         except Exception:
             db_size_bytes = 0
 
