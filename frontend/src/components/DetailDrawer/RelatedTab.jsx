@@ -6,7 +6,7 @@ function RelatedNewsSection({ relatedNews }) {
   return (
     <section className="drawer-section" aria-labelledby="related-news-heading">
       <h3 id="related-news-heading" className="drawer-human-label drawer-tab-anchor mono">
-        IN INCIDENTS &amp; NEWS
+        ADVISORIES &amp; INTEL
       </h3>
       <ul className="drawer-related-news-list" aria-label="Related news articles">
         {relatedNews.map((item, index) => {

@@ -4,6 +4,9 @@ export const APP_TABS = new Set(['brief', 'feed', 'ioc', 'atlas', 'forge'])
 
 export const FORGE_URL_PARAMS = ['view', 'technique', 'pack']
 
+/** Sub-nav views when `tab=atlas` (ADVISORIES & INTEL). */
+export const ATLAS_VIEWS = new Set(['headlines', 'advisories', 'atlas'])
+
 /** Page-scoped Admin deep-link keys cleared when `p` changes. */
 export const ADMIN_PAGE_SCOPED_PARAMS = [
   'section', 'node', 'type', 'status', 'severity', 'origin',
@@ -19,8 +22,10 @@ export const ADMIN_PAGE_SCOPED_PARAMS = [
  */
 export function resolveAppTab(searchParams) {
   const tab = searchParams.get('tab')
+  const view = searchParams.get('view')
   if (tab && APP_TABS.has(tab)) return tab
-  if (searchParams.get('view')) return 'forge'
+  if (view && ATLAS_VIEWS.has(view)) return 'atlas'
+  if (view) return 'forge'
   return 'brief'
 }
 
@@ -34,10 +39,18 @@ export function buildAppTabSearchParams(prev, tab) {
   const next = new URLSearchParams(prev)
   next.set('tab', nextTab)
   next.delete('cve')
-  if (nextTab !== 'forge') {
-    for (const key of FORGE_URL_PARAMS) next.delete(key)
-  } else if (!next.get('view')) {
-    next.set('view', 'coverage')
+  if (nextTab === 'atlas') {
+    const view = next.get('view')
+    if (!view || !ATLAS_VIEWS.has(view)) next.set('view', 'headlines')
+    next.delete('technique')
+    next.delete('pack')
+  } else if (nextTab === 'forge') {
+    const view = next.get('view')
+    if (!view || ATLAS_VIEWS.has(view)) next.set('view', 'coverage')
+  } else {
+    next.delete('view')
+    next.delete('technique')
+    next.delete('pack')
   }
   return next
 }

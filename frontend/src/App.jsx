@@ -707,7 +707,7 @@ export default function App() {
       { id: 'tab-brief', label: 'Go to BRIEF', hint: 'tab', keywords: ['brief'], run: () => selectAppTab('brief') },
       { id: 'tab-feed', label: 'Go to FEED', hint: 'tab', keywords: ['feed'], run: () => selectAppTab('feed') },
       { id: 'tab-ioc', label: 'Go to IOC LOOKUP', hint: 'tab', keywords: ['ioc', 'lookup'], run: () => selectAppTab('ioc') },
-      { id: 'tab-atlas', label: 'Go to INCIDENTS & NEWS', hint: 'tab', keywords: ['incidents', 'news', 'atlas'], run: () => selectAppTab('atlas') },
+      { id: 'tab-atlas', label: 'Go to ADVISORIES & INTEL', hint: 'tab', keywords: ['advisories', 'intel', 'incidents', 'news', 'atlas'], run: () => selectAppTab('atlas') },
       { id: 'tab-forge', label: 'Go to FORGE', hint: 'tab', keywords: ['forge'], run: () => selectAppTab('forge') },
       {
         id: 'refresh-stats',

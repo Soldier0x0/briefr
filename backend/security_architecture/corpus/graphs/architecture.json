@@ -389,6 +389,18 @@
       ]
     },
     {
+      "id": "job:publication_source_sync",
+      "label": "Publication Source Sync",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "publication_source_sync"
+        }
+      ]
+    },
+    {
       "id": "job:resource_metrics_sample",
       "label": "Resource Metrics Sample",
       "kind": "job",
@@ -860,6 +872,19 @@
       ]
     },
     {
+      "id": "routers-investigations",
+      "label": "routers.investigations",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/investigations.py"
+        }
+      ]
+    },
+    {
       "id": "routers-ioc",
       "label": "routers.ioc",
       "kind": "component",
@@ -921,6 +946,19 @@
         {
           "type": "file",
           "ref": "backend/routers/proof.py"
+        }
+      ]
+    },
+    {
+      "id": "routers-publications",
+      "label": "routers.publications",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 3,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/publications.py"
         }
       ]
     },
@@ -1481,6 +1519,78 @@
         {
           "type": "table",
           "ref": "otx_pulses"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_actor_links",
+      "label": "publication_actor_links",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_actor_links"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_actors",
+      "label": "publication_actors",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_actors"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_entity_links",
+      "label": "publication_entity_links",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_entity_links"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_event_members",
+      "label": "publication_event_members",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_event_members"
+        }
+      ]
+    },
+    {
+      "id": "table:publication_events",
+      "label": "publication_events",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publication_events"
+        }
+      ]
+    },
+    {
+      "id": "table:publications",
+      "label": "publications",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "publications"
         }
       ]
     },
@@ -3593,6 +3703,84 @@
       "kind": "references_table"
     },
     {
+      "id": "job:publication_source_sync->table:atlas_case_studies",
+      "source": "job:publication_source_sync",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:atlas_techniques",
+      "source": "job:publication_source_sync",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:cve_atlas_map",
+      "source": "job:publication_source_sync",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:cve_exploits",
+      "source": "job:publication_source_sync",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:cve_technique_map",
+      "source": "job:publication_source_sync",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:cves",
+      "source": "job:publication_source_sync",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:group_technique_map",
+      "source": "job:publication_source_sync",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:mitre_groups",
+      "source": "job:publication_source_sync",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:mitre_techniques",
+      "source": "job:publication_source_sync",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:otx_pulse_iocs",
+      "source": "job:publication_source_sync",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:publications",
+      "source": "job:publication_source_sync",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:sync_state",
+      "source": "job:publication_source_sync",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:publication_source_sync->table:ti_mirror_iocs",
+      "source": "job:publication_source_sync",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "job:resource_metrics_sample->table:cve_exploits",
       "source": "job:resource_metrics_sample",
       "target": "table:cve_exploits",
@@ -5273,6 +5461,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-atlas->table:publications",
+      "source": "routers-atlas",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-atlas->table:ti_mirror_iocs",
       "source": "routers-atlas",
       "target": "table:ti_mirror_iocs",
@@ -6269,6 +6463,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-health->table:publications",
+      "source": "routers-health",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-health->table:software_catalog",
       "source": "routers-health",
       "target": "table:software_catalog",
@@ -6283,6 +6483,90 @@
     {
       "id": "routers-health->table:ti_mirror_iocs",
       "source": "routers-health",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:correlation_campaign_members",
+      "source": "routers-investigations",
+      "target": "table:correlation_campaign_members",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:correlation_campaigns",
+      "source": "routers-investigations",
+      "target": "table:correlation_campaigns",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:cve_change_history",
+      "source": "routers-investigations",
+      "target": "table:cve_change_history",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:cve_embeddings",
+      "source": "routers-investigations",
+      "target": "table:cve_embeddings",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:cve_exploits",
+      "source": "routers-investigations",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:cve_technique_map",
+      "source": "routers-investigations",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:cves",
+      "source": "routers-investigations",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:feed_cache",
+      "source": "routers-investigations",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:mitre_techniques",
+      "source": "routers-investigations",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:otx_cve_pulses",
+      "source": "routers-investigations",
+      "target": "table:otx_cve_pulses",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:otx_pulse_iocs",
+      "source": "routers-investigations",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:publication_entity_links",
+      "source": "routers-investigations",
+      "target": "table:publication_entity_links",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:publications",
+      "source": "routers-investigations",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigations->table:ti_mirror_iocs",
+      "source": "routers-investigations",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
@@ -6485,6 +6769,60 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-publications->table:cve_exploits",
+      "source": "routers-publications",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:cves",
+      "source": "routers-publications",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:feed_cache",
+      "source": "routers-publications",
+      "target": "table:feed_cache",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:otx_pulse_iocs",
+      "source": "routers-publications",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publication_actor_links",
+      "source": "routers-publications",
+      "target": "table:publication_actor_links",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publication_actors",
+      "source": "routers-publications",
+      "target": "table:publication_actors",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publication_entity_links",
+      "source": "routers-publications",
+      "target": "table:publication_entity_links",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:publications",
+      "source": "routers-publications",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-publications->table:ti_mirror_iocs",
+      "source": "routers-publications",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-refresh->table:atlas_case_studies",
       "source": "routers-refresh",
       "target": "table:atlas_case_studies",
@@ -6578,6 +6916,12 @@
       "id": "routers-refresh->table:otx_pulse_iocs",
       "source": "routers-refresh",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-refresh->table:publications",
+      "source": "routers-refresh",
+      "target": "table:publications",
       "kind": "references_table"
     },
     {
