@@ -30,6 +30,7 @@ const SHARED_INDICATOR_LINKS_HEADING = formatSectionHeading('// SHARED INDICATOR
 const ACTOR_ATTRIBUTION_HEADING = formatSectionHeading('// ACTOR ATTRIBUTION')
 const TEMPORAL_ANOMALY_HEADING = formatSectionHeading('// TEMPORAL ANOMALY')
 const PUBLIC_EXPLOITS_HEADING = formatSectionHeading('// PUBLIC EXPLOITS')
+const ADVISORIES_RESEARCH_HEADING = formatSectionHeading('// ADVISORIES & RESEARCH')
 const ACTIVE_SCANNING_HEADING = formatSectionHeading('// ACTIVE SCANNING')
 const ACTIVE_CAMPAIGNS_HEADING = formatSectionHeading('// ACTIVE CAMPAIGNS')
 
@@ -796,6 +797,9 @@ function GreynoiseQuotaLine({ quota }) {
 
 export default function TabIntel({
   techniques,
+  publications,
+  publicationsLoading,
+  publicationsLoaded,
   publicExploits,
   exploitProvenance,
   greynoiseConfigured,
@@ -824,6 +828,7 @@ export default function TabIntel({
 }) {
   const navigate = useNavigate()
   const exploits = Array.isArray(publicExploits) ? publicExploits : []
+  const pubRows = Array.isArray(publications) ? publications : []
   const scans = Array.isArray(greynoiseScans) ? greynoiseScans : []
   const pulses = Array.isArray(otxPulses) ? otxPulses : []
   const techList = Array.isArray(techniques) ? techniques : []
@@ -891,6 +896,53 @@ export default function TabIntel({
           <p className="drawer-intel-hint mono">
             // Packet Storm links open in your browser and require a one-time Terms acceptance (once per session).
           </p>
+        )}
+      </section>
+
+      <section className="drawer-section" aria-labelledby="publications-heading">
+        <div className="drawer-intel-section-head">
+          <h3 id="publications-heading" className="drawer-human-label mono">
+            {ADVISORIES_RESEARCH_HEADING}
+          </h3>
+          <span className="drawer-count-badge mono" aria-label={`${pubRows.length} publications`}>
+            {pubRows.length}
+          </span>
+        </div>
+        {publicationsLoading && !publicationsLoaded ? (
+          <p className="drawer-intel-empty mono">// Loading structured advisories…</p>
+        ) : pubRows.length === 0 ? (
+          <p className="drawer-intel-empty mono">
+            // No durable publications linked to this CVE yet
+          </p>
+        ) : (
+          <ul className="drawer-related-news-list" aria-label="Structured advisories and research">
+            {pubRows.map(row => {
+              const href = row.canonical_url
+              const key = row.publication_id || row.canonical_url
+              return (
+                <li key={key} className="drawer-related-news-item">
+                  <span className="drawer-related-news-source mono">{row.source_key}</span>
+                  {href ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="drawer-related-news-title"
+                    >
+                      {row.title}
+                    </a>
+                  ) : (
+                    <span className="drawer-related-news-title">{row.title}</span>
+                  )}
+                  {row.retrieved_at && (
+                    <span className="drawer-intel-hint mono">
+                      Retrieved {row.retrieved_at.slice(0, 10)}
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         )}
       </section>
 

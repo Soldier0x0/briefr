@@ -372,6 +372,7 @@ _JOB_RUN_MAP: dict[str, str] = {
     "cache_retention_cleanup": "run_cache_retention_cleanup",
     "resource_metrics_sample": "run_resource_metrics_sample",
     "cpe_catalog_sync": "run_cpe_catalog_sync",
+    "publication_source_sync": "run_publication_source_sync",
 }
 
 _LLM_MANUAL_DURABLE_PRIORITY = 10

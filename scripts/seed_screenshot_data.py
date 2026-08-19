@@ -19,12 +19,11 @@ BACKEND_DIR = Path(__file__).resolve().parents[1] / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 os.chdir(BACKEND_DIR)
 
-from database import get_cve_count, get_db, init_db  # noqa: E402
+from database import get_cve_count, get_db, init_db, set_feed_cache  # noqa: E402
 from feeds.incident_news import (  # noqa: E402
     fetch_all_incident_news_parallel,
     rss_cache_key,
 )
-from database import set_feed_cache  # noqa: E402
 
 
 def _days_ago(days: int) -> str:

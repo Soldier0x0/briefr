@@ -48,10 +48,12 @@ from routers import config as config_router
 from routers import cves as cves_router
 from routers import forge as forge_router
 from routers import health as health_router
+from routers import investigations as investigations_router
 from routers import ioc as ioc_router
 from routers import meta as meta_router
 from routers import detection_backlog as detection_backlog_router
 from routers import proof as proof_router
+from routers import publications as publications_router
 from routers import refresh as refresh_router
 from routers import threat_model as threat_model_router
 from security_architecture.routers import security_architecture as security_architecture_router
@@ -356,6 +358,7 @@ app.include_router(cves_router.changes_router)
 app.include_router(meta_router.info_router)
 app.include_router(cves_router.list_router)
 app.include_router(atlas_router.router)
+app.include_router(publications_router.router)
 app.include_router(cves_router.detail_router)
 app.include_router(ioc_router.router)
 app.include_router(cves_router.intel_router)
@@ -379,6 +382,7 @@ app.include_router(me_router.router)
 app.include_router(notifications_me_router.router)
 app.include_router(stack_catalog_router.router)
 app.include_router(search_router.router)
+app.include_router(investigations_router.router)
 
 
 if __name__ == "__main__":

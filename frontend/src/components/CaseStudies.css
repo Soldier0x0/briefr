@@ -2,6 +2,85 @@
   padding-bottom: 48px;
 }
 
+.cs-subnav-wrap {
+  margin-bottom: 20px;
+}
+
+.cs-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cs-subnav-tab {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.cs-subnav-tab[data-state='active'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.cs-panel {
+  padding-top: 8px;
+}
+
+.cs-card-publication .cs-card-meta {
+  font-size: 11px;
+  color: var(--text2);
+  margin: 0 0 8px;
+}
+
+.cs-publication-wrap {
+  position: relative;
+}
+
+.cs-headline-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.cs-detail-toggle {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cs-detail-toggle:hover {
+  color: var(--accent);
+}
+
+.cs-publication-detail {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.cs-detail-links {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+
+
 .cs-hero {
   padding: 40px 0 24px;
   border-bottom: 1px solid var(--border);

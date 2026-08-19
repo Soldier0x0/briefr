@@ -43,6 +43,7 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "feodo_sync": asyncio.Lock(),
     "phishtank_sync": asyncio.Lock(),
     "tranco_infra_sync": asyncio.Lock(),
+    "publication_source_sync": asyncio.Lock(),
     # _epss_backfill_lock has no corresponding job ID — stays a private var
     # in scheduler.py.
 }

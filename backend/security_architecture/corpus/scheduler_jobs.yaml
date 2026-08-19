@@ -216,6 +216,15 @@ jobs:
   source_refs:
   - type: job
     ref: phishtank_sync
+- id: publication_source_sync
+  title: Publication Source Sync
+  summary: Scheduled job registered in scheduler.py (id=publication_source_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: publication_source_sync
 - id: resource_metrics_sample
   title: Resource Metrics Sample
   summary: Scheduled job registered in scheduler.py (id=resource_metrics_sample).

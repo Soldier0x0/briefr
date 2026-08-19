@@ -65,6 +65,13 @@ export const JOB_CATALOG = {
     analystDescription: 'Security incident headlines from RSS sources.',
     refreshButton: 'Refresh incidents',
   },
+  publication_source_sync: {
+    label: 'Publication sources',
+    short: 'Pubs',
+    operatorName: 'Publication Source Sync',
+    analystDescription: 'Sync configured advisories, research, and headline feeds into durable publication rows.',
+    refreshButton: 'Sync publications',
+  },
   nightly_correlation: {
     label: 'Nightly correlation engine',
     short: 'Correlation',

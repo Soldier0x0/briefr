@@ -1506,6 +1506,63 @@ async def run_incident_feed_refresh() -> bool:
     return True
 
 
+async def run_publication_source_sync() -> bool:
+    """Sync configured publication sources into durable intel.publications rows."""
+    enabled = os.environ.get("PUBLICATION_SYNC_ENABLED", "0").strip().lower()
+    if enabled not in ("1", "true", "yes"):
+        logger.info("Publication sync disabled (PUBLICATION_SYNC_ENABLED) — skipping")
+        return True
+
+    lock = get_lock("publication_source_sync")
+    if lock is not None and lock.locked():
+        logger.warning("Publication source sync already in progress — skipping")
+        return False
+
+    from feeds.publication_rss import sync_publication_rss_source
+    from publications.registry import PUBLICATION_SOURCES
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        if lock is not None:
+            async with lock:
+                db = await get_db()
+                try:
+                    for desc in PUBLICATION_SOURCES:
+                        if desc.connector != "rss":
+                            logger.warning(
+                                "Skipping publication source %s: connector %s not implemented",
+                                desc.source_key,
+                                desc.connector,
+                            )
+                            continue
+                        await sync_publication_rss_source(db, desc)
+                    await db.commit()
+                finally:
+                    await db.close()
+        else:
+            db = await get_db()
+            try:
+                for desc in PUBLICATION_SOURCES:
+                    if desc.connector == "rss":
+                        await sync_publication_rss_source(db, desc)
+                await db.commit()
+            finally:
+                await db.close()
+    except Exception as exc:
+        logger.error("Publication source sync failed: %s", exc, exc_info=True)
+        _had_error = True
+        _error_msg = (f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__)[:500]
+    await _write_job_last_run(
+        "publication_source_sync",
+        _start,
+        had_error=_had_error,
+        error_message=_error_msg,
+    )
+    return True
+
+
 async def run_nightly_correlation() -> bool:
     """Nightly correlation engine: infrastructure, actor, and temporal analysis."""
     if get_lock("nightly_correlation").locked():
@@ -2514,6 +2571,18 @@ def start_scheduler() -> AsyncIOScheduler:
             next_run_time=datetime.now(sched_tz) + timedelta(seconds=20),
         )
 
+    publication_hours = int(os.environ.get("PUBLICATION_SYNC_INTERVAL_HOURS", "6"))
+    scheduler.add_job(
+        run_publication_source_sync,
+        trigger=IntervalTrigger(hours=max(1, publication_hours), timezone=sched_tz),
+        id="publication_source_sync",
+        name="Publication Source Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(minutes=45),
+    )
+
     exploit_hours = get_exploit_sources_interval_hours()
     if exploit_sources_enabled():
         scheduler.add_job(
@@ -2790,6 +2859,7 @@ _CONFIG_KEY_TO_JOBS: dict[str, tuple[str, ...]] = {
     "KEV_SYNC_INTERVAL_MINUTES": ("kev_metadata_sync",),
     "EPSS_SYNC_INTERVAL_HOURS": ("epss_score_sync",),
     "INCIDENT_FEED_REFRESH_MINUTES": ("incident_feed_refresh",),
+    "PUBLICATION_SYNC_INTERVAL_HOURS": ("publication_source_sync",),
     "VULNRICHMENT_SYNC_INTERVAL_HOURS": ("vulnrichment_snapshot_sync",),
     "CVELISTV5_SYNC_INTERVAL_MINUTES": ("cvelistv5_incremental_sync",),
     "MITRE_REFRESH_HOUR": ("weekly_mitre_refresh",),

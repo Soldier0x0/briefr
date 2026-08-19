@@ -36,8 +36,8 @@ const STEPS = [
   {
     tab: 'atlas',
     target: '[aria-label="Switch to incidents and news"]',
-    title: 'INCIDENTS & NEWS + FORGE',
-    body: 'Incidents & News holds real-world case studies. Forge is for detection engineering. Re-open this tour anytime from the ⋯ menu — "Show tutorial again".',
+    title: 'ADVISORIES & INTEL + FORGE',
+    body: 'Advisories & Intel holds headline news, structured advisories, and ATLAS case studies. Forge is for detection engineering. Re-open this tour anytime from the ⋯ menu — "Show tutorial again".',
   },
 ]
 
