@@ -8,10 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 """
 
 import asyncio
-import hashlib
 import logging
 import os
-import secrets
 import signal
 import time
 
