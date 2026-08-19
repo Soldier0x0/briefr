@@ -78,7 +78,8 @@ Path params: percent-encode `entity_id` (domains, URLs). Do not put raw `/` in t
       "source_key": "cve_technique_map",
       "confidence": null,
       "observed_at": null,
-      "fetched_at": null
+      "fetched_at": null,
+      "note": "one directed hop; canvas treats the node pair as undirected"
     }
   ],
   "source_status": "ok",
@@ -115,13 +116,15 @@ API **must not** return `x` / `y` / color / animation fields. Layout is client-o
 | `docs/API_REFERENCE.md` | Document the three GETs |
 | `docs/PRODUCT_STATUS.md` | One row when APIs exist |
 
-## Global Constraints
+## Caps, cursor, and page identity
 
 - Default `depth=1`, reject `depth > 2` with 422.
-- Default `limit=50`, max `100`. **`limit` caps edges** on the page. The root is always in `nodes`, so the node list may contain up to `limit + 1` entries. If either the edge cap or that node cap hits, `truncated=true`.
-- Keyset `cursor` is an opaque string (base64 JSON). The payload key is `after_edge_id` (last `edge_id` from the previous page). Empty page is valid (`nodes` may be `[root]` only).
-- `include_semantic` default **false**.
-- `include_stale` default **false**.
+- Default `limit=50`, max `100`. **`limit` is an edge cap.** Root is always present in `nodes`, so that list may hold `limit + 1` nodes. Set `truncated=true` when the edge cap or that node cap is hit.
+- Keyset `cursor`: opaque base64 JSON with `after_edge_id` equal to the last `edge_id` served. An empty expansion is valid (`nodes == [root]`).
+- `include_semantic` default **false**. `include_stale` default **false**.
+
+## Global Constraints
+
 - No N+1 per neighbor. Reuse correlation / OTX / TI-mirror helpers; do not duplicate hub-cap logic.
 - Merge gate: `./scripts/verify-local.sh` on the last P0 PR.
 - Router snapshot: additive append only in `EXPECTED_ROUTES` (same pattern as Forge).
@@ -142,11 +145,11 @@ Stop after Task 4 unless **Task 4’s** provenance gate fails (then Task 5). Do 
 **Interfaces:**
 - Produce: `EntityType`, `IocKind`, `EdgeClass`, `KnowledgeState` (`Literal` or `StrEnum`)
 - Produce: `EntityRef`, `GraphNode`, `GraphEdge`, `GraphPage`, `RelationshipFilters`
-- Produce: `RESOLVE_ROOT_ENTITY_TYPES = {cve, ioc, technique, campaign}` and `GRAPH_ENTITY_TYPES = RESOLVE_ROOT ∪ {publication}` (and `sigma_rule` as a hop target if the projection emits it). Actor / malware / infra / advisory may appear as **targets** with source-qualified ids, not as resolve roots.
-- `GET .../entities/{entity_type}/...` and `parse_investigation_query` accept only `RESOLVE_ROOT_ENTITY_TYPES`. Neighbor nodes may use any `GRAPH_ENTITY_TYPES` value.
 - `node_id` helper: `def make_node_id(entity_type: str, entity_id: str) -> str`
 - `RelationshipFilters`: `depth: int = 1`, `limit: int = 50`, `cursor: str | None = None`, `edge_class: EdgeClass | None = None`, `min_confidence: str | None = None`, `include_semantic: bool = False`, `include_stale: bool = False`
 - Models `model_config = ConfigDict(frozen=True)`. Extra fields forbidden.
+- Resolve vs graph types: `RESOLVE_ROOT_ENTITY_TYPES = {cve, ioc, technique, campaign}`. `GRAPH_ENTITY_TYPES = RESOLVE_ROOT ∪ {publication}` (`sigma_rule` may appear as a hop target). Actor / malware / infra / advisory may appear as **targets** with source-qualified ids, never as resolve roots.
+- `GET .../entities/{entity_type}/...` and `parse_investigation_query` accept only resolve roots. Neighbor `nodes` may use any graph entity type.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -207,8 +210,29 @@ def test_graph_page_requires_nodes_and_edges():
         depth=1,
     )
     assert page.truncated is False
-    assert page.root.node_id in {n.node_id for n in page.nodes}
     assert EdgeClass  # imported for exhaustive use in projection later
+
+
+def test_graph_page_always_includes_root_in_nodes():
+    root = {
+        "node_id": "cve:CVE-1",
+        "entity_type": "cve",
+        "entity_id": "CVE-1",
+        "label": "CVE-1",
+        "knowledge_state": "known",
+    }
+    page = GraphPage(
+        root=root,
+        nodes=[root],
+        edges=[],
+        source_status="ok",
+        knowledge_state="unknown",
+        truncated=False,
+        next_cursor=None,
+        generated_at="2026-08-17T00:00:00Z",
+        depth=1,
+    )
+    assert {n.node_id for n in page.nodes} == {page.root.node_id}
 ```
 
 - [ ] **Step 2: Run** `cd backend && pytest tests/test_investigation_contracts.py -q` — expect fail (module missing).
