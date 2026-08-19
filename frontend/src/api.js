@@ -364,6 +364,22 @@ export function fetchCaseStudyFeed(atlasLimit = 80) {
   return request(`/case-studies/feed?atlas_limit=${atlasLimit}`)
 }
 
+/** Durable security publications (ADVISORIES sub-nav). */
+export function fetchPublications(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.cve_id) qs.set('cve_id', params.cve_id)
+  if (params.source_key) qs.set('source_key', params.source_key)
+  if (params.document_kind) qs.set('document_kind', params.document_kind)
+  if (params.limit) qs.set('limit', String(params.limit))
+  if (params.cursor) qs.set('cursor', String(params.cursor))
+  const query = qs.toString()
+  return request(`/publications${query ? `?${query}` : ''}`)
+}
+
+export function fetchCVEPublications(cveId, limit = 20) {
+  return request(`/cves/${encodeURIComponent(cveId)}/publications?limit=${limit}`)
+}
+
 /** Forge: MITRE coverage map (stack × techniques × rule status). */
 export function fetchForgeCoverage(stack = '') {
   const qs = stack ? `?stack=${encodeURIComponent(stack)}` : ''

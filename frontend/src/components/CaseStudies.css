@@ -2,6 +2,46 @@
   padding-bottom: 48px;
 }
 
+.cs-subnav-wrap {
+  margin-bottom: 20px;
+}
+
+.cs-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cs-subnav-tab {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.cs-subnav-tab[data-state='active'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.cs-panel {
+  padding-top: 8px;
+}
+
+.cs-card-publication .cs-card-meta {
+  font-size: 11px;
+  color: var(--text2);
+  margin: 0 0 8px;
+}
+
+
 .cs-hero {
   padding: 40px 0 24px;
   border-bottom: 1px solid var(--border);

@@ -36,6 +36,9 @@ EXPECTED_ROUTES = [
     ("GET", "/api/case-studies/news"),
     ("GET", "/api/case-studies/feed"),
     ("GET", "/api/atlas/casestudies"),
+    ("GET", "/api/publications"),
+    ("GET", "/api/publications/{publication_id}"),
+    ("GET", "/api/cves/{cve_id}/publications"),
     ("GET", "/api/cves/{cve_id}/sentences"),
     ("GET", "/api/cves/{cve_id}/epss-history"),
     ("GET", "/api/cves/{cve_id}/related"),
@@ -288,6 +291,9 @@ def test_moved_endpoints_live_in_routers():
     assert by_path["/api/case-studies/feed"] == "routers.atlas"
     assert by_path["/api/atlas/casestudies"] == "routers.atlas"
     assert by_path["/api/case-studies/news"] == "routers.atlas"
+    assert by_path["/api/publications"] == "routers.publications"
+    assert by_path["/api/publications/{publication_id}"] == "routers.publications"
+    assert by_path["/api/cves/{cve_id}/publications"] == "routers.publications"
     assert by_path["/api/ioc/lookup"] == "routers.ioc"
     assert by_path["/api/otx/pulses/{pulse_id}/iocs"] == "routers.ioc"
     # Phase 3: cves + meta groups

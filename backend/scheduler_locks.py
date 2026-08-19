@@ -33,6 +33,7 @@ _LOCKS: dict[str, asyncio.Lock] = {
     "scheduled_backup": asyncio.Lock(),
     "resource_metrics_sample": asyncio.Lock(),
     "cpe_catalog_sync": asyncio.Lock(),
+    "publication_source_sync": asyncio.Lock(),
     # _epss_backfill_lock has no corresponding job ID — stays a private var
     # in scheduler.py.
 }

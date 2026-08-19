@@ -391,6 +391,9 @@ endpoints:
   path: /api/cves/{cve_id}/momentum
   component_id: routers-cves-intel
 - method: GET
+  path: /api/cves/{cve_id}/publications
+  component_id: routers-publications
+- method: GET
   path: /api/cves/{cve_id}/related
   component_id: routers-cves-detail
 - method: POST
@@ -477,6 +480,12 @@ endpoints:
 - method: POST
   path: /api/proof/run
   component_id: routers-proof
+- method: GET
+  path: /api/publications
+  component_id: routers-publications
+- method: GET
+  path: /api/publications/{publication_id}
+  component_id: routers-publications
 - method: POST
   path: /api/refresh
   component_id: routers-refresh

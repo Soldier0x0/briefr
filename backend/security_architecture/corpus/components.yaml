@@ -320,6 +320,16 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/proof.py
+- id: routers-publications
+  title: routers.publications
+  summary: FastAPI router module with 3 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 3
+  source_refs:
+  - type: file
+    ref: backend/routers/publications.py
 - id: routers-refresh
   title: routers.refresh
   summary: FastAPI router module with 5 endpoint(s).

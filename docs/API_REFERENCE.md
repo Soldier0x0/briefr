@@ -831,6 +831,44 @@ Retro-match joins `ioc_watchlist` against local `otx_pulse_iocs` and `threatfox_
 
 ---
 
+### GET /api/publications
+
+**Description:** List durable security publications (structured advisories / research ingest). Separate from ephemeral `GET /api/case-studies/feed` headline cards.
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `cve_id` | string | — | Filter by linked CVE |
+| `source_key` | string | — | Filter by configured source (e.g. `cisa-news`) |
+| `document_kind` | string | — | Filter by document kind (`advisory`, `writeup`, …) |
+| `limit` | int | 50 | 1–100 |
+| `cursor` | int | — | Keyset cursor (`publication_id`); next page |
+
+**Response:** `{"data": [ publication rows with `cve_ids` ], "meta": {"next_cursor": int|null}}`
+
+**Scheduler:** `publication_source_sync` when `PUBLICATION_SYNC_ENABLED=1` (default off). Does not modify `incident_feed_refresh` or `corroboration_k`.
+
+---
+
+### GET /api/publications/{publication_id}
+
+**Description:** One publication with `entity_links` (deterministic CVE/technique extractors).
+
+**Response:** `{"data": { publication fields + entity_links }}`
+
+---
+
+### GET /api/cves/{cve_id}/publications
+
+**Description:** Publications linked to one CVE via `publication_entity_links`.
+
+| Param | Type | Default |
+|---|---|---|
+| `limit` | int | 20 (max 100) |
+
+**Response:** `{"data": [ publications ], "cve_id": "CVE-…"}`
+
+---
+
 ## Risk & Correlation
 
 ### POST /api/cves/{cve_id}/risk

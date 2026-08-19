@@ -21,6 +21,10 @@ describe('resolveAppTab', () => {
     assert.equal(resolveAppTab(params({ tab: 'brief' })), 'brief')
   })
 
+  it('falls back to atlas when view=headlines without tab=', () => {
+    assert.equal(resolveAppTab(params({ view: 'headlines' })), 'atlas')
+  })
+
   it('falls back to forge when legacy view= is present without tab=', () => {
     assert.equal(resolveAppTab(params({ view: 'coverage', technique: 'T1592' })), 'forge')
   })
@@ -42,7 +46,7 @@ describe('buildAppTabSearchParams', () => {
     assert.deepEqual([...APP_TABS].sort(), ['atlas', 'brief', 'feed', 'forge', 'ioc'])
   })
 
-  it('clears Forge params when leaving forge', () => {
+  it('clears view when leaving forge and atlas', () => {
     const prev = params({
       tab: 'forge',
       view: 'coverage',
@@ -54,6 +58,18 @@ describe('buildAppTabSearchParams', () => {
     assert.equal(next.get('view'), null)
     assert.equal(next.get('technique'), null)
     assert.equal(next.get('pack'), null)
+  })
+
+  it('sets headlines view when selecting atlas', () => {
+    const next = buildAppTabSearchParams(params({ tab: 'brief' }), 'atlas')
+    assert.equal(next.get('tab'), 'atlas')
+    assert.equal(next.get('view'), 'headlines')
+  })
+
+  it('preserves atlas sub-nav view when already on atlas', () => {
+    const prev = params({ tab: 'atlas', view: 'advisories' })
+    const next = buildAppTabSearchParams(prev, 'atlas')
+    assert.equal(next.get('view'), 'advisories')
   })
 
   it('keeps Forge params when selecting forge and ensures view=', () => {
