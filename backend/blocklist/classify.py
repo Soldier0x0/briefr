@@ -90,6 +90,28 @@ def is_excluded_from_export(classified: dict[str, Any]) -> bool:
     return classified.get("classification") in EXCLUSION_CLASSIFICATIONS
 
 
+def is_excluded_from_domain_export(classified: dict[str, Any]) -> bool:
+    """Alias for host-level domain suppression (shared/legitimate infra)."""
+    return is_excluded_from_export(classified)
+
+
+def export_eligibility(
+    *,
+    base_eligible: bool,
+    classified: dict[str, Any],
+    ioc_type: str,
+) -> tuple[bool, bool]:
+    """Return (eligible_domain, eligible_url) for one candidate record."""
+    if not base_eligible:
+        return False, False
+    domain_blocked = is_excluded_from_domain_export(classified)
+    if domain_blocked and ioc_type == "url":
+        return False, True
+    if domain_blocked:
+        return False, False
+    return True, ioc_type == "url"
+
+
 def is_excluded_classification(classification: str) -> bool:
     return classification in EXCLUSION_CLASSIFICATIONS
 

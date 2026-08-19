@@ -20,7 +20,7 @@ from database import (
     get_nvd_sync_watermark,
     get_timeline_activity_summary,
 )
-from db.config import is_postgres, resolve_database_url
+from db.config import resolve_database_url
 from db.connection import get_pool_stats
 from feeds.case_study_feed import get_incident_feed_status
 from resilient_client import get_api_queue_status, get_feed_health
@@ -39,9 +39,9 @@ router = APIRouter()
 
 def _database_meta() -> dict:
     db_url = resolve_database_url()
-    db_host = db_url.split("@")[-1] if "@" in db_url else ("sqlite" if not is_postgres() else db_url)
+    db_host = db_url.split("@")[-1] if "@" in db_url else db_url
     meta: dict = {
-        "backend": "postgresql" if is_postgres() else "sqlite",
+        "backend": "postgresql",
         "host": db_host,
     }
     pool = get_pool_stats()

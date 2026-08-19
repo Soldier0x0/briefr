@@ -170,6 +170,27 @@ export const JOB_CATALOG = {
     analystDescription: 'Mirrors Abuse.ch MalwareBazaar hash catalog for multi-source correlation evidence.',
     refreshButton: 'Refresh MalwareBazaar',
   },
+  feodo_sync: {
+    label: 'Feodo Tracker IP mirror',
+    short: 'Feodo',
+    operatorName: 'Feodo Tracker IP Mirror Sync',
+    analystDescription: 'Mirrors abuse.ch Feodo Tracker botnet C2 IPs (CC0 CSV) for correlation.',
+    refreshButton: 'Refresh Feodo',
+  },
+  phishtank_sync: {
+    label: 'PhishTank URL mirror',
+    short: 'PhishTank',
+    operatorName: 'PhishTank URL Mirror Sync',
+    analystDescription: 'Mirrors PhishTank verified-online phishing URLs for high-trust blocklist evidence.',
+    refreshButton: 'Refresh PhishTank',
+  },
+  tranco_infra_sync: {
+    label: 'Tranco top-1M infra import',
+    short: 'Tranco',
+    operatorName: 'Tranco Top-1M Legitimate Domain Import',
+    analystDescription: 'Bulk-imports Tranco top-1M domains into infrastructure classifications (legitimate-domain exclusions).',
+    refreshButton: 'Import Tranco list',
+  },
   vulncheck_kev_sync: {
     label: 'VulnCheck KEV tier',
     short: 'VulnCheck KEV',

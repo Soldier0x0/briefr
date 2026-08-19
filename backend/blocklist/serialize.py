@@ -3,7 +3,8 @@
 All serializers read from the same canonical payload produced by
 `blocklist.build.build_blocklist` (one build, three representations) so the
 formats cannot diverge:
-- TXT   — simple machine consumption, one canonical domain per line.
+- TXT   — simple machine consumption; ``mode=domains`` (default) emits one
+          canonical domain per line; ``mode=urls`` emits one exact URL per line.
 - CSV   — analyst-friendly rows with explicit IOC type + exact value.
 - JSON  — lossless/complete representation (full evidence provenance).
 """
@@ -12,22 +13,53 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Any
+from typing import Any, Literal
+
+ExportMode = Literal["domains", "urls", "all"]
+
+_VALID_MODES: frozenset[str] = frozenset({"domains", "urls", "all"})
 
 
-def to_txt(payload: dict[str, Any]) -> str:
-    """One canonical domain per line, sorted, eligible candidates only.
+def normalize_export_mode(mode: str | None) -> ExportMode:
+    normalized = (mode or "domains").strip().lower()
+    if normalized not in _VALID_MODES:
+        raise ValueError(f"mode must be one of: {', '.join(sorted(_VALID_MODES))}")
+    return normalized  # type: ignore[return-value]
 
-    Uses the canonical domain only (no wildcards, no parent-domain folding) so
-    DNS-blocklist operators can append it verbatim to an adblock-style allow/
-    deny file or load it into a resolver list.
-    """
-    lines = [record["domain"] for record in payload.get("domains", []) if record.get("eligible")]
+
+def _record_matches_mode(record: dict[str, Any], mode: ExportMode) -> bool:
+    if not record.get("eligible"):
+        return False
+    if mode == "domains":
+        return bool(record.get("eligible_domain"))
+    if mode == "urls":
+        return bool(record.get("eligible_url"))
+    return bool(record.get("eligible_domain") or record.get("eligible_url"))
+
+
+def _eligible_count(payload: dict[str, Any], mode: ExportMode) -> int:
+    return sum(1 for record in payload.get("domains", []) if _record_matches_mode(record, mode))
+
+
+def to_txt(payload: dict[str, Any], *, mode: ExportMode = "domains") -> str:
+    """Eligible candidates as plain lines (domains or exact URLs per mode)."""
+    lines: list[str] = []
+    for record in payload.get("domains", []):
+        if not _record_matches_mode(record, mode):
+            continue
+        if mode == "urls":
+            value = (record.get("exact_ioc") or "").strip()
+            if value:
+                lines.append(value)
+        else:
+            lines.append(record["domain"])
     lines.sort()
+    eligible = _eligible_count(payload, mode)
     header = (
         "# BRIEFR malicious-domain candidates\n"
         f"# generated_at: {payload['meta']['generated_at']}\n"
-        f"# eligible: {payload['meta']['eligible_count']}\n"
+        f"# mode: {mode}\n"
+        f"# eligible: {eligible}\n"
         f"# excluded: {payload['meta']['excluded_count']}\n"
     )
     body = "\n".join(lines)
@@ -46,27 +78,15 @@ def _escape_spreadsheet_value(value: str) -> str:
     return value
 
 
-def to_csv(payload: dict[str, Any]) -> str:
-    """Analyst-friendly CSV with explicit IOC type + exact value per row.
-
-    Columns: type, value, source, confidence, first_seen, malware, threat_type.
-    ``value`` is the exact upstream IOC (``raw_ioc``/``ioc_value``) — a URL is
-    preserved verbatim and never replaced by its derived domain. Multi-valued
-    cells (source/malware/threat_type) are joined with ``;`` so the CSV stays
-    parseable. Eligible candidates only, matching the TXT body semantics.
-
-    All textual cells are escaped for spreadsheet safety: values beginning
-    with ``=``, ``+``, ``-``, or ``@`` are prefixed with ``'`` (single quote)
-    so that Excel and Google Sheets treat them as literal text rather than
-    formulas.
-    """
+def to_csv(payload: dict[str, Any], *, mode: ExportMode = "all") -> str:
+    """Analyst-friendly CSV with explicit IOC type + exact value per row."""
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerow(
         ["type", "value", "source", "confidence", "first_seen", "malware", "threat_type"]
     )
     for record in payload.get("domains", []):
-        if not record.get("eligible"):
+        if not _record_matches_mode(record, mode):
             continue
         writer.writerow([
             _escape_spreadsheet_value(record.get("ioc_type") or "domain"),

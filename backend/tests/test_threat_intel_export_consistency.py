@@ -280,6 +280,7 @@ def test_formats_share_same_build_and_generated_at(tmp_path, monkeypatch):
 
             txt = to_txt(payload)
             assert f"# generated_at: {generated_at}" in txt
+            assert "# mode: domains" in txt
             assert "# eligible: 2" in txt
 
             json_doc = to_json(payload)
@@ -321,7 +322,7 @@ def test_txt_csv_json_same_candidates(tmp_path, monkeypatch):
             assert eligible == {"dom.example", "url.example"}
 
             txt_domains = set(
-                line for line in to_txt(payload).splitlines()
+                line for line in to_txt(payload, mode="domains").splitlines()
                 if line and not line.startswith("#")
             )
             json_domains = {
@@ -383,6 +384,7 @@ def test_ip_hash_rows_outside_blocklist_scope_today(tmp_path, monkeypatch):
             assert to_txt(payload).splitlines() == [
                 "# BRIEFR malicious-domain candidates",
                 f"# generated_at: {payload['meta']['generated_at']}",
+                "# mode: domains",
                 "# eligible: 0",
                 "# excluded: 0",
             ]
@@ -395,22 +397,33 @@ def test_ip_hash_rows_outside_blocklist_scope_today(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_public_and_admin_csv_endpoints(client_scoped, tmp_path, monkeypatch):
-    """The CSV endpoint renders on both the public token-gated route and the
-    admin route (smoke coverage; full auth semantics live in the existing
-    public-endpoint and admin-router test files)."""
-    monkeypatch.setattr(settings, "threat_intel_token", "test-export-token")
+def test_admin_csv_endpoint(client_scoped, monkeypatch, auth_token):
+    """Admin CSV export renders for authenticated operators."""
     _patch_fetch_no_infra(monkeypatch)
-
-    from tests.conftest import seed_pytest_auth_user_if_missing
-    seed_pytest_auth_user_if_missing()
-
-    headers = {"X-BRIEFR-Intel-Token": "test-export-token"}
-
-    public = client_scoped.get("/api/threat-intel/blocklist.csv", headers=headers)
-    assert public.status_code == 200
-    assert public.headers["content-type"].startswith("text/csv")
+    client_scoped.cookies.set("briefr_at", auth_token())
 
     admin = client_scoped.get("/api/admin/threat-intel/blocklist.csv")
-    assert admin.status_code == 200
+    assert admin.status_code == 200, admin.text
     assert admin.headers["content-type"].startswith("text/csv")
+
+    client_scoped.cookies.clear()
+    anonymous = client_scoped.get("/api/threat-intel/blocklist.csv")
+    assert anonymous.status_code in (401, 403, 404)
+
+    from main import app
+
+    public_ti = [
+        getattr(route, "path", "")
+        for route in app.routes
+        if getattr(route, "path", "").startswith("/api/threat-intel")
+    ]
+    assert public_ti == [], public_ti
+
+    for path in (
+        "/api/admin/threat-intel/status",
+        "/api/admin/threat-intel/blocklist.txt",
+        "/api/admin/threat-intel/blocklist.json",
+        "/api/admin/threat-intel/blocklist.csv",
+    ):
+        denied = client_scoped.get(path)
+        assert denied.status_code in (401, 403), f"{path} -> {denied.status_code}"

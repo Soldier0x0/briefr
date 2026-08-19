@@ -168,6 +168,38 @@ def run_pg_dump(database_url: str, destination: Path) -> None:
         raise RuntimeError(f"pg_dump failed (exit {proc.returncode}): {detail}")
 
 
+async def run_pg_dump_sql(database_url: str, destination: Path, *, timeout: float = 300) -> None:
+    """Write a plain-SQL pg_dump to destination without blocking the event loop."""
+    params = parse_postgres_url(database_url)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    cmd = _build_pg_cmd(
+        "pg_dump",
+        params,
+        extra_args=[
+            "--format=plain",
+            "--no-owner",
+            "--no-privileges",
+            "-f",
+            str(destination),
+        ],
+    )
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        env=_subprocess_env(params),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except TimeoutError:
+        proc.kill()
+        await proc.wait()
+        raise TimeoutError("pg_dump timed out") from None
+    if proc.returncode != 0:
+        detail = (stderr or _stdout or b"").decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"pg_dump failed (exit {proc.returncode}): {detail}")
+
+
 def run_pg_restore(database_url: str, dump_path: Path) -> None:
     """Restore a custom-format dump into the target database (--clean --if-exists)."""
     params = parse_postgres_url(database_url)

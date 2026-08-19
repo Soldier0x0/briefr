@@ -22,6 +22,7 @@ from destructive_actions import require_confirm
 from jobs.app import is_procrastinate_enabled, open_app
 from jobs.tasks import health_ping, llm_product_extraction_tick
 from task_registry import spawn_background_task
+from scheduler_locks import release_job_run, reserve_job_run
 
 import routers.admin as _admin_pkg
 
@@ -343,6 +344,9 @@ _JOB_RUN_MAP: dict[str, str] = {
     "threatfox_sync": "run_threatfox_sync",
     "urlhaus_sync": "run_urlhaus_sync",
     "malwarebazaar_sync": "run_malwarebazaar_sync",
+    "feodo_sync": "run_feodo_sync",
+    "phishtank_sync": "run_phishtank_sync",
+    "tranco_infra_sync": "run_tranco_infra_sync",
     "vulncheck_kev_sync": "run_vulncheck_kev_sync",
     "ioc_retro_match": "run_ioc_retro_match",
     "epss_score_sync": "run_epss_sync",
@@ -401,6 +405,19 @@ async def _defer_manual_llm_product_extraction() -> bool:
         return False
 
 
+async def _run_manual_job(fn, job_id: str) -> None:
+    """Execute a reserved manual job without wrapping ``get_lock()``.
+
+    Job bodies already skip when ``lock.locked()``; holding that lock here
+    made Run Now report ``started`` while the body returned False.
+    ``reserve_job_run`` covers the TOCTOU window until this finally.
+    """
+    try:
+        await fn()
+    finally:
+        release_job_run(job_id)
+
+
 @router.post("/scheduler/run")
 async def run_scheduler_job(request: Request, body: dict):
     """Trigger a scheduler job immediately."""
@@ -413,7 +430,11 @@ async def run_scheduler_job(request: Request, body: dict):
     if _job_lock_held(job_id):
         raise HTTPException(409, f"Job '{job_id}' is already running (lock held)")
 
+    if not reserve_job_run(job_id):
+        raise HTTPException(409, f"Job '{job_id}' is already running (lock held)")
+
     if _admin_pkg._job_is_disabled(job_id):
+        release_job_run(job_id)
         raise HTTPException(
             400,
             f"Job '{job_id}' is disabled in configuration. Enable the required setting under API keys & config.",
@@ -423,16 +444,24 @@ async def run_scheduler_job(request: Request, body: dict):
     fn_name = _JOB_RUN_MAP[job_id]
     fn = getattr(sched, fn_name, None)
     if fn is None:
+        release_job_run(job_id)
         raise HTTPException(500, f"Coroutine '{fn_name}' not found in scheduler module")
 
     if job_id == "llm_product_extraction" and await _defer_manual_llm_product_extraction():
+        release_job_run(job_id)
         await audit(request, f"scheduler.run.{job_id}", job_id)
         return {
             "ok": True,
             "job_id": job_id,
+            "status": "deferred",
             "message": f"Job '{job_id}' deferred to durable queue",
         }
 
-    spawn_background_task(fn())
+    spawn_background_task(_run_manual_job(fn, job_id))
     await audit(request, f"scheduler.run.{job_id}", job_id)
-    return {"ok": True, "job_id": job_id, "message": f"Job '{job_id}' started in background"}
+    return {
+        "ok": True,
+        "job_id": job_id,
+        "status": "started",
+        "message": f"Job '{job_id}' started in background",
+    }

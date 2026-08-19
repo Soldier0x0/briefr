@@ -944,8 +944,8 @@ async def run_catalog_sync(source_key: str) -> bool:
         async with get_lock(job_id):
             from db.ti_mirror import upsert_ti_mirror_iocs
 
-            api_key = os.environ.get(desc.key_env, "")
-            if not api_key.strip():
+            api_key = os.environ.get(desc.key_env, "") if desc.key_env else ""
+            if desc.requires_api_key and not api_key.strip():
                 logger.debug("%s sync skipped: %s not set", source_key, desc.key_env)
                 return True
 
@@ -996,6 +996,53 @@ async def run_urlhaus_sync() -> bool:
 
 async def run_malwarebazaar_sync() -> bool:
     return await run_catalog_sync("malwarebazaar")
+
+
+async def run_feodo_sync() -> bool:
+    return await run_catalog_sync("feodo")
+
+
+async def run_phishtank_sync() -> bool:
+    return await run_catalog_sync("phishtank")
+
+
+async def run_tranco_infra_sync() -> bool:
+    job_id = "tranco_infra_sync"
+    if get_lock(job_id).locked():
+        logger.warning("Tranco infra sync already in progress — skipping")
+        return False
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    if os.environ.get("TRANCO_INFRA_SYNC_ENABLED", "1").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        logger.info("Tranco infra sync disabled (TRANCO_INFRA_SYNC_ENABLED) — skipping")
+        return True
+    try:
+        async with get_lock(job_id):
+            from blocklist.tranco_sync import sync_tranco_infra_classifications
+
+            _job_progress[job_id] = "Downloading Tranco top-1M and importing legitimate domains…"
+            db = await get_db()
+            try:
+                # INSERT INTO app.infra_classifications (Tranco LEGITIMATE_DOMAIN).
+                written = await sync_tranco_infra_classifications(db)
+                await db.commit()
+            finally:
+                await db.close()
+            logger.info("Tranco infra sync complete: %d new row(s)", written)
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        raise
+    finally:
+        _job_progress.pop(job_id, None)
+        await _write_job_last_run(job_id, _start, had_error=_had_error, error_message=_error_msg)
+    return True
 
 
 async def run_vulncheck_kev_sync() -> bool:
@@ -2414,6 +2461,42 @@ def start_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now(sched_tz) + timedelta(seconds=150),
+    )
+
+    feodo_hours = int(os.environ.get("FEODO_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_feodo_sync,
+        trigger=IntervalTrigger(hours=max(1, feodo_hours), timezone=sched_tz),
+        id="feodo_sync",
+        name="Feodo Tracker IP Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=180),
+    )
+
+    phishtank_hours = int(os.environ.get("PHISHTANK_SYNC_INTERVAL_HOURS", "24"))
+    scheduler.add_job(
+        run_phishtank_sync,
+        trigger=IntervalTrigger(hours=max(1, phishtank_hours), timezone=sched_tz),
+        id="phishtank_sync",
+        name="PhishTank URL Mirror Sync",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=210),
+    )
+
+    tranco_days = int(os.environ.get("TRANCO_INFRA_SYNC_INTERVAL_DAYS", "7"))
+    scheduler.add_job(
+        run_tranco_infra_sync,
+        trigger=IntervalTrigger(days=max(1, tranco_days), timezone=sched_tz),
+        id="tranco_infra_sync",
+        name="Tranco Top-1M Legitimate Domain Import",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(sched_tz) + timedelta(seconds=240),
     )
 
     vulncheck_hours = int(os.environ.get("VULNCHECK_KEV_SYNC_INTERVAL_HOURS", "24"))

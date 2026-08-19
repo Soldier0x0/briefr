@@ -295,8 +295,6 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 help_text="Max wallboard snapshot requests per minute per client IP (kiosk polling)."),
     ConfigField("RATE_LIMIT_SEARCH_TOKEN_PER_MINUTE", "app", "int", min=1, restart_required=True,
                 help_text="Max Bearer search-token API requests per minute per client IP (Embeddings E5)."),
-    ConfigField("RATE_LIMIT_THREAT_INTEL_PER_MINUTE", "app", "int", min=1, restart_required=True,
-                help_text="Max /api/threat-intel blocklist export requests per minute per client IP."),
     ConfigField("ALLOWED_ORIGINS", "app", "str",
                 help_text="Comma-separated CORS origins allowed to call the API.",
                 restart_required=True,
@@ -364,11 +362,6 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 restart_required=True,
                 display_label="Wallboard issuance token TTL (minutes)",
                 help_text="Lifetime of short-lived tokens returned by POST /api/wallboard/token."),
-    ConfigField("THREAT_INTEL_TOKEN", "security", "secret", restart_required=True,
-                display_label="Threat-intel export token",
-                help_text="Required gate for /api/threat-intel/blocklist.txt and "
-                "blocklist.json. Clients send X-BRIEFR-Intel-Token. Fails closed: "
-                "when unset the endpoints return 503."),
 
     # ── API Keys ─────────────────────────────────────────────────────────────
     ConfigField("NVD_API_KEY", "api_keys", "secret",

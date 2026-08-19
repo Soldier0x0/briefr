@@ -205,11 +205,6 @@ EXPECTED_ROUTES = [
     ("POST", "/api/wallboard/revoke"),
     ("POST", "/api/wallboard/rotate"),
     ("GET", "/api/wallboard"),
-    # Threat-intel public export (token-gated, appended after wallboard
-    # routes — additive only).
-    ("GET", "/api/threat-intel/blocklist.txt"),
-    ("GET", "/api/threat-intel/blocklist.json"),
-    ("GET", "/api/threat-intel/blocklist.csv"),
     # Built-in app login (decision 2026-06-11): appended after wallboard
     # routes — additive only.
     ("POST", "/api/auth/login"),

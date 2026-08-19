@@ -17,22 +17,10 @@ WHERE n.nspname = 'public'
 ORDER BY size_bytes DESC
 """
 
-_TABLE_SIZES_SQLITE = """
-SELECT name, SUM(pgsize) AS size_bytes
-FROM dbstat
-GROUP BY name
-ORDER BY size_bytes DESC
-"""
-
-
-def _is_postgres_connection(db: Any) -> bool:
-    return type(db).__name__ == "PostgresConnection"
-
 
 async def fetch_table_sizes(db: Any) -> list[dict[str, Any]]:
-    sql = _TABLE_SIZES_PG if _is_postgres_connection(db) else _TABLE_SIZES_SQLITE
     try:
-        rows = await db.execute_fetchall(sql)
+        rows = await db.execute_fetchall(_TABLE_SIZES_PG)
         return [
             {"table": r["name"], "size_bytes": int(r["size_bytes"] or 0)}
             for r in rows

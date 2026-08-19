@@ -190,6 +190,7 @@ async def get_storage(request: Request):
 
     db = await get_db()
     table_sizes: list[dict[str, Any]] = []
+    db_size_bytes = 0
     try:
         counts: dict[str, int] = {}
         for table in _STORAGE_TABLES:
@@ -199,20 +200,18 @@ async def get_storage(request: Request):
             except Exception:
                 counts[table] = -1
         table_sizes = await fetch_table_sizes(db)
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
+            db_size_bytes = int(rows[0]["size"]) if rows else 0
+        except Exception:
+            db_size_bytes = 0
     finally:
         await db.close()
 
-    import database as _database
-    db_path = os.path.abspath(_database.DB_PATH)
-    db_size_bytes = 0
-    try:
-        db_size_bytes = os.path.getsize(db_path)
-    except Exception:
-        pass
-
-    # DB partition disk usage
-    db_dir = os.path.dirname(db_path) or "."
-    db_partition = _partition_stats(db_dir)
+    # DB partition disk usage - use current working directory for Postgres
+    db_partition = _partition_stats(".")
 
     # Backup partition disk usage — always resolve path independently (never copy db_partition metadata)
     backup_dir = os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
@@ -231,7 +230,7 @@ async def get_storage(request: Request):
         pass
 
     growth_estimate = estimate_growth_bytes_per_day(db_size_bytes, backup_dir)
-    disk_io = read_host_disk_io(db_path)
+    disk_io = read_host_disk_io(".")
 
     return {
         "tables": counts,
@@ -239,7 +238,7 @@ async def get_storage(request: Request):
         "growth_estimate": growth_estimate,
         "disk_io": disk_io,
         "db_size_bytes": db_size_bytes,
-        "db_path": db_path,
+        "db_path": "postgresql",
         # legacy flat fields for backward compat
         "disk_free_bytes": db_partition["free"],
         "disk_total_bytes": db_partition["total"],
@@ -376,45 +375,40 @@ async def purge_storage(request: Request, body: dict):
 # ── Storage export ─────────────────────────────────────────────────────────
 
 
+async def _run_export_dump(tmp_path: pathlib.Path) -> None:
+    from backup.postgres_util import run_pg_dump_sql
+    from db.config import resolve_database_url
+
+    db_url = resolve_database_url()
+    if not db_url.startswith(("postgresql", "postgres")):
+        raise HTTPException(500, "DATABASE_URL not configured")
+    await run_pg_dump_sql(db_url, tmp_path)
+
+
 @router.get("/storage/export")
 async def export_db(request: Request, background_tasks: BackgroundTasks):
-    """Stream a consistent briefr.db snapshot using VACUUM INTO.
-
-    Direct file streaming in WAL mode can yield a torn read — WAL frames
-    may not be fully checkpointed to the main .db file.  VACUUM INTO writes a
-    fully-checkpointed, defragmented copy to a temp file which is then served.
-    The temp file is cleaned up after the response is sent.
-    """
+    """Stream a consistent database dump using pg_dump (PostgreSQL)."""
     import tempfile as _tempfile
-    import database as _database
-
-    # Read DB_PATH at call time so test monkeypatches on database.DB_PATH apply.
-    db_path = os.path.abspath(_database.DB_PATH)
-    if not os.path.exists(db_path):
-        raise HTTPException(404, "Database file not found")
 
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-    filename = f"briefr-{date_str}.db"
-
-    tmp_dir = _tempfile.gettempdir()
-    tmp_path = os.path.join(tmp_dir, f"briefr-export-{int(time.time())}.db")
-
-    db = await get_db()
+    filename = f"briefr-{date_str}.sql"
+    tmp_path = pathlib.Path(_tempfile.gettempdir()) / f"briefr-export-{int(time.time())}.sql"
     try:
-        await db.execute(f"VACUUM INTO '{tmp_path}'")
+        await _run_export_dump(tmp_path)
+    except HTTPException:
+        raise
+    except TimeoutError:
+        raise HTTPException(500, "Database export timed out") from None
     except Exception as exc:
         import logging
-
         logging.getLogger(__name__).error("Database export failed: %s", exc)
         raise HTTPException(500, "Failed to create database export") from None
-    finally:
-        await db.close()
 
     await audit(request, "storage.db_export", filename)
     background_tasks.add_task(os.remove, tmp_path)
     return FileResponse(
         tmp_path,
-        media_type="application/octet-stream",
+        media_type="application/sql",
         filename=filename,
     )
 
@@ -429,18 +423,19 @@ async def get_resources(window: str = "1d"):
     from db.resource_metrics import fetch_resources_response
     from host_profile import collect_host_profile
     from db.connection import get_pool_stats
-    import database as _database
 
     db = await get_db()
     try:
         result = await fetch_resources_response(db, window)
-        db_path = os.path.abspath(_database.DB_PATH)
         db_file_bytes = 0
         try:
-            db_file_bytes = os.path.getsize(db_path)
-        except OSError:
-            pass
-        result["host_profile"] = collect_host_profile(db_path=db_path)
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
+            db_file_bytes = int(rows[0]["size"]) if rows else 0
+        except Exception:
+            db_file_bytes = 0
+        result["host_profile"] = collect_host_profile(db_path="postgresql")
         result["pool_stats"] = get_pool_stats()
         result["db_file_bytes"] = db_file_bytes
         return result
@@ -452,21 +447,17 @@ async def get_resources(window: str = "1d"):
 async def get_resources_host_profile():
     """Lightweight live host snapshot for admin capacity bars (poll every ~15s)."""
     from host_profile import collect_host_profile
-    import database as _database
 
-    db_path = os.path.abspath(_database.DB_PATH)
-    return collect_host_profile(db_path=db_path)
+    return collect_host_profile(db_path="postgresql")
 
 
 @router.get("/resources/efficiency")
 async def get_resources_efficiency():
     from efficiency_audit import build_efficiency_report
-    import database as _database
 
     db = await get_db()
     try:
-        db_path = os.path.abspath(_database.DB_PATH)
-        return await build_efficiency_report(db, db_path=db_path)
+        return await build_efficiency_report(db, db_path="postgresql")
     finally:
         await db.close()
 

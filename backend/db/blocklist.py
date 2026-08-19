@@ -22,7 +22,7 @@ _CATALOG_EVIDENCE_SQLITE = """
 SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
        threat_type, confidence_level, first_seen, fetched_at
 FROM ti_mirror_iocs
-WHERE source IN ('threatfox', 'urlhaus')
+WHERE source IN ('threatfox', 'urlhaus', 'phishtank')
   AND ioc_type IN ('domain', 'url')
 ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
@@ -31,7 +31,7 @@ _CATALOG_EVIDENCE_PG = """
 SELECT source, ref_id, ioc_type, ioc_value, raw_ioc, host_ioc, malware,
        threat_type, confidence_level, first_seen, fetched_at
 FROM app.ti_mirror_iocs
-WHERE source IN ('threatfox', 'urlhaus')
+WHERE source IN ('threatfox', 'urlhaus', 'phishtank')
   AND ioc_type IN ('domain', 'url')
 ORDER BY source, ref_id, ioc_type, ioc_value, first_seen, fetched_at
 """
@@ -65,8 +65,74 @@ FROM app.infra_classifications
 """
 
 
+async def bulk_insert_infra_classifications(
+    db: DbConnection,
+    hosts: list[str],
+    *,
+    classification: str,
+    provenance: str,
+    reason: str,
+    batch_size: int = 5000,
+) -> int:
+    """Insert many classification rows; skip hosts that already exist."""
+    if not hosts:
+        return 0
+    now = utcnow_str()
+    written = 0
+    for offset in range(0, len(hosts), batch_size):
+        batch = hosts[offset : offset + batch_size]
+        placeholders = ", ".join(["(?, ?, 1, ?, ?, '', ?, ?)"] * len(batch))
+        params: list[Any] = []
+        for host in batch:
+            params.extend([host, classification, provenance, reason, now, now])
+        cursor = await db.execute(
+            f"""
+            INSERT INTO app.infra_classifications (
+                host, classification, enabled, provenance, reason, notes,
+                created_at, updated_at
+            ) VALUES {placeholders}
+            ON CONFLICT (host) DO NOTHING
+            """,
+            tuple(params),
+        )
+        written += getattr(cursor, "rowcount", 0) or 0
+    return written
+
+
+async def expire_superseded_tranco_hosts(
+    db: DbConnection,
+    keep_hosts: list[str],
+) -> int:
+    """Disable Tranco-provenance rows whose hosts are not in this snapshot.
+
+    Operator/curated rows (provenance not ``tranco:…``) are never touched.
+    Call only after a successful non-empty fetch so a failed or empty sync
+    cannot wipe the previous Tranco set.
+    """
+    if not keep_hosts:
+        return 0
+    now = utcnow_str()
+    keep = set(keep_hosts)
+    rows = await db.execute_fetchall(
+        "SELECT id, host FROM app.infra_classifications "
+        "WHERE enabled = 1 AND provenance LIKE 'tranco:%'"
+    )
+    ids = [int(row["id"]) for row in rows if row["host"] not in keep]
+    expired = 0
+    for offset in range(0, len(ids), 5000):
+        batch = ids[offset : offset + 5000]
+        placeholders = ", ".join(["?"] * len(batch))
+        cursor = await db.execute(
+            "UPDATE app.infra_classifications SET enabled = 0, updated_at = ? "
+            f"WHERE id IN ({placeholders})",
+            (now, *batch),
+        )
+        expired += getattr(cursor, "rowcount", 0) or 0
+    return expired
+
+
 async def fetch_catalog_evidence(db: DbConnection) -> list[dict[str, Any]]:
-    """Return ThreatFox/URLhaus mirror rows that can back a domain candidate."""
+    """Return catalog mirror rows that can back a domain/URL candidate."""
     pg = _is_postgres_connection(db)
     rows = await db.execute_fetchall(
         _CATALOG_EVIDENCE_PG if pg else _CATALOG_EVIDENCE_SQLITE

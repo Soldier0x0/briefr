@@ -317,21 +317,29 @@ def test_threat_intel_status_has_expected_keys(admin_client, monkeypatch):
             "meta": {
                 "candidate_count": 42,
                 "eligible_count": 30,
+                "eligible_domain_count": 22,
+                "eligible_url_count": 8,
                 "excluded_count": 12,
                 "generated_at": "2026-01-01T00:00:00Z",
             },
         }
 
-    monkeypatch.setattr("blocklist.build.build_blocklist", _fake_build)
+    async def _fake_infra(_db):
+        return [{"host": "google.com", "classification": "LEGITIMATE_DOMAIN", "enabled": 1}]
+
+    monkeypatch.setattr("routers.admin.blocklist.build_blocklist", _fake_build)
+    monkeypatch.setattr("routers.admin.blocklist.fetch_infra_classifications", _fake_infra)
     resp = admin_client.get("/api/admin/threat-intel/status")
     assert resp.status_code == 200
     data = resp.json()
-    assert "token_configured" in data
-    assert "rate_limit_per_minute" in data
+    assert data["eligible_domain_count"] == 22
+    assert data["eligible_url_count"] == 8
+    assert data["genuine_host_count"] == 1
     assert data["candidate_count"] == 42
     assert data["eligible_count"] == 30
     assert data["excluded_count"] == 12
-    assert "publish_urls" in data
+    assert "export_formats" in data
+    assert "export_content_modes" in data
 
 
 def test_seed_hosts_are_valid_classifications():

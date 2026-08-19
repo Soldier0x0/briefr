@@ -16,7 +16,7 @@ from typing import Any
 
 from database import get_cve_count, get_db, get_last_updated, get_nvd_sync_watermark
 from db.integrity import run_integrity_check
-from db.config import is_postgres, resolve_database_url
+from db.config import resolve_database_url
 from db.connection import get_pool_stats
 from correlation.status import get_correlation_admin_status
 from resilient_client import get_api_queue_status, get_feed_health
@@ -45,10 +45,10 @@ def _redact_database_url(url: str) -> str:
 
 def _database_meta() -> dict[str, Any]:
     db_url = resolve_database_url()
-    db_host = db_url.split("@")[-1] if "@" in db_url else ("sqlite" if not is_postgres() else db_url)
+    db_host = db_url.split("@")[-1] if "@" in db_url else db_url
     meta: dict[str, Any] = {
-        "backend": "postgresql" if is_postgres() else "sqlite",
-        "host": _redact_database_url(db_host) if is_postgres() else db_host,
+        "backend": "postgresql",
+        "host": _redact_database_url(db_host),
         "url": _redact_database_url(db_url),
     }
     pool = get_pool_stats()

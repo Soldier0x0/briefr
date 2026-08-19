@@ -108,6 +108,15 @@ jobs:
   source_refs:
   - type: job
     ref: exploit_sources_sync
+- id: feodo_sync
+  title: Feodo Tracker IP Mirror Sync
+  summary: Scheduled job registered in scheduler.py (id=feodo_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: feodo_sync
 - id: incident_feed_refresh
   title: Incident Feed Snapshot Refresh
   summary: Scheduled job registered in scheduler.py (id=incident_feed_refresh).
@@ -198,6 +207,15 @@ jobs:
   source_refs:
   - type: job
     ref: otx_nightly_correlation
+- id: phishtank_sync
+  title: PhishTank URL Mirror Sync
+  summary: Scheduled job registered in scheduler.py (id=phishtank_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: phishtank_sync
 - id: publication_source_sync
   title: Publication Source Sync
   summary: Scheduled job registered in scheduler.py (id=publication_source_sync).
@@ -252,6 +270,15 @@ jobs:
   source_refs:
   - type: job
     ref: threatfox_sync
+- id: tranco_infra_sync
+  title: Tranco Top-1M Legitimate Domain Import
+  summary: Scheduled job registered in scheduler.py (id=tranco_infra_sync).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: tranco_infra_sync
 - id: urlhaus_sync
   title: URLhaus IOC Mirror Sync
   summary: Scheduled job registered in scheduler.py (id=urlhaus_sync).

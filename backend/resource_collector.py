@@ -6,16 +6,13 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import psutil
 
-from db.config import is_postgres
 from db.resource_metrics import fetch_pg_stat_snapshot, insert_resource_sample
 from db.types import DbConnection
 from metrics.request_counter import read_and_reset_request_count
-from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -177,10 +174,7 @@ def _pg_derived_rates(
 
 
 def _data_volume_path() -> str:
-    if is_postgres():
-        return str(Path(settings.db_path).resolve().parent) if settings.db_path else "/"
-    db_path = settings.db_path or os.environ.get("DB_PATH", "briefr.db")
-    return str(Path(db_path).resolve().parent)
+    return "."
 
 
 def _disk_free_bytes() -> int | None:
@@ -199,7 +193,7 @@ async def collect_and_store_sample(db: DbConnection) -> dict[str, Any]:
     sampled_at = time.time()
 
     briefr_pids = _briefr_pids()
-    pg_pids = _postgres_pids() if is_postgres() else set()
+    pg_pids = _postgres_pids()
 
     elapsed = None
     if _prev_sample is not None:

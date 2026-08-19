@@ -55,10 +55,6 @@ class Settings(BaseSettings):
     wallboard_token_rotation_hours: int = 24
     wallboard_issuance_token_minutes: int = 5
 
-    # Threat-intel export — required, fail-closed public blocklist token.
-    threat_intel_token: str = ""
-    rate_limit_threat_intel_per_minute: int = 10
-
     # Built-in app login (decision 2026-06-11) — the only auth mechanism.
     jwt_secret: str = ""
     jwt_access_token_minutes: int = 15
@@ -77,11 +73,6 @@ class Settings(BaseSettings):
     @field_validator("wallboard_token")
     @classmethod
     def _strip_wallboard_token(cls, value: str) -> str:
-        return value.strip()
-
-    @field_validator("threat_intel_token")
-    @classmethod
-    def _strip_threat_intel_token(cls, value: str) -> str:
         return value.strip()
 
     @field_validator("jwt_secret")
@@ -171,14 +162,6 @@ def production_posture_warnings(config: Settings = settings) -> list[dict[str, s
             "message": (
                 "/api/wallboard is readable without a token. Set "
                 "WALLBOARD_TOKEN to require X-BRIEFR-Wallboard-Token."
-            ),
-        })
-    if not config.threat_intel_token:
-        warnings.append({
-            "flag": "THREAT_INTEL_TOKEN unset",
-            "message": (
-                "/api/threat-intel/* returns 503 until THREAT_INTEL_TOKEN is "
-                "set (fails closed by design)."
             ),
         })
     return warnings
