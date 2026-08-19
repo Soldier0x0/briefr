@@ -102,12 +102,6 @@ def _get_config_response() -> dict[str, Any]:
             "KEV_CROSS_FETCH_NVD": _env("KEV_CROSS_FETCH_NVD", "1"),
             "ATLAS_YAML_URL": _mask_url(_env("ATLAS_YAML_URL", "")),
             "MITRE_CVE_MAPPINGS_JSON_URL": _mask_url(_env("MITRE_CVE_MAPPINGS_JSON_URL", "")),
-            "DB_PATH": _env("DB_PATH", "briefr.db"),
-            "CPE_CATALOG_SYNC_ENABLED": _env("CPE_CATALOG_SYNC_ENABLED", "0"),
-            "CPE_CATALOG_SYNC_INTERVAL_HOURS": _env_int("CPE_CATALOG_SYNC_INTERVAL_HOURS", 6),
-            "CPE_CATALOG_MAX_PAGES": _env_int("CPE_CATALOG_MAX_PAGES", 10),
-            "STACK_BACKFILL_ENABLED": _env("STACK_BACKFILL_ENABLED", "0"),
-            "STACK_BACKFILL_MAX_PRODUCTS": _env_int("STACK_BACKFILL_MAX_PRODUCTS", 10),
             "STACK_BACKFILL_MAX_CVES": _env_int("STACK_BACKFILL_MAX_CVES", 5000),
         },
         "ml": {

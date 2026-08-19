@@ -45,22 +45,13 @@ async def _row_count(db: DbConnection, table: str) -> int:
 
 async def _api_events_per_day(db: DbConnection) -> int:
     try:
-        if type(db).__name__ == "PostgresConnection":
-            rows = await db.execute_fetchall(
-                """
-                SELECT COUNT(*)::int AS cnt
-                FROM api_call_events
-                WHERE ts >= NOW() - INTERVAL '24 hours'
-                """
-            )
-        else:
-            rows = await db.execute_fetchall(
-                """
-                SELECT COUNT(*) AS cnt
-                FROM api_call_events
-                WHERE ts >= datetime('now', '-24 hours')
-                """
-            )
+        rows = await db.execute_fetchall(
+            """
+            SELECT COUNT(*)::int AS cnt
+            FROM api_call_events
+            WHERE ts >= NOW() - INTERVAL '24 hours'
+            """
+        )
         return int(rows[0]["cnt"]) if rows else 0
     except Exception:
         return 0
@@ -115,11 +106,8 @@ async def build_efficiency_report(
     backup_dir: str | None = None,
 ) -> dict[str, Any]:
     """Return subsystem breakdown and actionable recommendations."""
-    import database as _database
-
-    resolved_db_path = db_path or os.path.abspath(_database.DB_PATH)
     resolved_backup_dir = backup_dir or os.environ.get("BACKUP_DIR", "/var/lib/briefr/backups")
-    host_profile = collect_host_profile(db_path=resolved_db_path)
+    host_profile = collect_host_profile(db_path="postgresql")
     table_sizes = await fetch_table_sizes(db)
     size_by_table = {row["table"]: int(row["size_bytes"] or 0) for row in table_sizes}
 
@@ -127,10 +115,14 @@ async def build_efficiency_report(
     feed_cache_bytes = _table_bytes(table_sizes, "feed_cache")
     ioc_cache_bytes = _table_bytes(table_sizes, "ioc_cache")
     db_size_bytes = sum(size_by_table.values()) if size_by_table else 0
+    # Get DB size from pg_database_size
     if db_size_bytes <= 0:
         try:
-            db_size_bytes = os.path.getsize(resolved_db_path)
-        except OSError:
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
+            db_size_bytes = int(rows[0]["size"]) if rows else 0
+        except Exception:
             db_size_bytes = 0
 
     archive_count, backup_bytes = _backup_archive_stats(resolved_backup_dir)

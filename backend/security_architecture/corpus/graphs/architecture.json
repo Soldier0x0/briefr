@@ -4747,54 +4747,6 @@
       "kind": "references_table"
     },
     {
-      "id": "routers-admin-database->table:audit_log",
-      "source": "routers-admin-database",
-      "target": "table:audit_log",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:cve_change_history",
-      "source": "routers-admin-database",
-      "target": "table:cve_change_history",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:cve_exploits",
-      "source": "routers-admin-database",
-      "target": "table:cve_exploits",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:cves",
-      "source": "routers-admin-database",
-      "target": "table:cves",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:epss_history",
-      "source": "routers-admin-database",
-      "target": "table:epss_history",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:kev_deadlines",
-      "source": "routers-admin-database",
-      "target": "table:kev_deadlines",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:otx_pulse_iocs",
-      "source": "routers-admin-database",
-      "target": "table:otx_pulse_iocs",
-      "kind": "references_table"
-    },
-    {
-      "id": "routers-admin-database->table:ti_mirror_iocs",
-      "source": "routers-admin-database",
-      "target": "table:ti_mirror_iocs",
-      "kind": "references_table"
-    },
-    {
       "id": "routers-admin-diagnostics->table:audit_log",
       "source": "routers-admin-diagnostics",
       "target": "table:audit_log",

@@ -20,8 +20,6 @@ from typing import Any
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-import aiosqlite
-
 from config_schema import SCHEDULER_RESCHEDULE_KEYS
 from database import get_db
 from redact import mask_secret_value, mask_url_value
@@ -195,7 +193,7 @@ def _job_is_disabled(job_id: str) -> bool:
     return current.lower() in ("0", "false", "no", "off")
 
 
-async def _get_job_last_run(db: aiosqlite.Connection, job_id: str) -> list[dict[str, Any]]:
+async def _get_job_last_run(db: Any, job_id: str) -> list[dict[str, Any]]:
     """Return history array (newest first), or empty list if none."""
     try:
         rows = await db.execute_fetchall(

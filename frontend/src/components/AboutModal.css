@@ -13,12 +13,12 @@
   background: var(--surface-raised, var(--bg2));
   border: 1px solid var(--border-subtle, var(--border2));
   border-radius: 0;
-  /* Wider + shorter: landscape dialog so sources + scope fit without a tall scroll. */
-  max-width: 920px;
-  width: min(94vw, 920px);
-  padding: var(--space-5, 20px) var(--space-6, 28px);
+  /* Wider + taller: landscape dialog so sources + scope fit without a tall scroll. */
+  max-width: var(--modal-about-max-width);
+  width: var(--modal-about-width);
+  padding: var(--space-6, 28px) var(--space-7, 36px);
   position: relative;
-  max-height: 72vh;
+  max-height: var(--modal-about-max-height);
   overflow-y: auto;
 }
 
@@ -47,7 +47,7 @@
 
 .about-header {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) 1fr;
+  grid-template-columns: minmax(var(--modal-about-lockup-min), var(--modal-about-lockup-max)) 1fr;
   gap: var(--space-4, 16px) var(--space-6, 24px);
   align-items: start;
   margin-bottom: var(--space-3, 12px);
@@ -147,7 +147,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2, 8px) var(--space-5, 20px);
+  gap: var(--space-3, 12px) var(--space-6, 24px);
 }
 
 .about-scope-item {
@@ -258,7 +258,7 @@
   }
 
   .about-box {
-    max-height: 85vh;
+    max-height: var(--modal-about-max-height-narrow);
     padding: var(--space-4, 16px);
   }
 }
