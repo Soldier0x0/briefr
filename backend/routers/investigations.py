@@ -62,24 +62,7 @@ async def investigations_resolve(
         await db.close()
 
 
-@router.get("/api/investigations/entities/{entity_type}/{entity_id}")
-async def investigations_entity(
-    entity_type: str,
-    entity_id: str,
-    _payload: dict = Depends(require_user),
-):
-    normalized_type = _validate_entity_type(entity_type)
-    db = await get_db()
-    try:
-        ref = await get_entity(db, normalized_type, entity_id)
-        if ref is None:
-            raise HTTPException(status_code=404, detail="unknown entity")
-        return _entity_to_graph_node(ref).model_dump(mode="json")
-    finally:
-        await db.close()
-
-
-@router.get("/api/investigations/entities/{entity_type}/{entity_id}/relationships")
+@router.get("/api/investigations/entities/{entity_type}/{entity_id:path}/relationships")
 async def investigations_relationships(
     entity_type: str,
     entity_id: str,
@@ -109,5 +92,22 @@ async def investigations_relationships(
         )
         page: GraphPage = await expand_relationships(db, ref, filters)
         return page.model_dump(mode="json")
+    finally:
+        await db.close()
+
+
+@router.get("/api/investigations/entities/{entity_type}/{entity_id:path}")
+async def investigations_entity(
+    entity_type: str,
+    entity_id: str,
+    _payload: dict = Depends(require_user),
+):
+    normalized_type = _validate_entity_type(entity_type)
+    db = await get_db()
+    try:
+        ref = await get_entity(db, normalized_type, entity_id)
+        if ref is None:
+            raise HTTPException(status_code=404, detail="unknown entity")
+        return _entity_to_graph_node(ref).model_dump(mode="json")
     finally:
         await db.close()

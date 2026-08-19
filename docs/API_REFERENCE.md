@@ -1173,7 +1173,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 
 **Auth:** Analyst session.
 
-Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`. Percent-encode `entity_id` when it contains reserved characters (domains, URLs).
+Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Percent-encode reserved characters when building the URL.
 
 Returns a single `GraphNode` (same shape as `root` above) or **404** when unknown.
 
@@ -1186,7 +1186,7 @@ Bounded read-only graph expansion over existing Postgres/SQLite tables (no outbo
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `depth` | int | `1` | Hop depth (`1`–`2`; `3` → 422) |
-| `limit` | int | `50` | Max nodes **or** edges on the page (`1`–`100`) |
+| `limit` | int | `50` | Max edges per page (`1`–`100`); distinct nodes are capped at `limit + 1` (the root is always included) |
 | `cursor` | str | `null` | Opaque keyset cursor from a prior `next_cursor` |
 | `edge_class` | str | `null` | Filter: `direct_fact`, `reported`, `derived`, `analyst_assertion`, `semantic` |
 | `min_confidence` | str | `null` | Lexicographic floor on edge `confidence` when present |

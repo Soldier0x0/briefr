@@ -28,6 +28,14 @@ from investigations.resolve import _mirror_ioc_type
 logger = logging.getLogger(__name__)
 
 _SIGMA_SOURCE = "sigmahq"
+_MAX_FRONTIER = 25
+_MAX_CANDIDATES = 2000
+_MAX_HOP_ROWS = 200
+
+
+@dataclass
+class _HopFlags:
+    degraded: bool = False
 
 
 def _row_get(row: Any, key: str, default: Any = None) -> Any:
@@ -80,13 +88,16 @@ async def get_entity(db, entity_type: str, entity_id: str) -> EntityRef | None:
         technique_id = entity_id.upper()
         rows = await db.execute_fetchall(
             """
-            SELECT t.name
-            FROM mitre_techniques t
-            WHERE t.technique_id = ?
-            UNION
-            SELECT NULL AS name
-            FROM cve_technique_map m
-            WHERE m.technique_id = ?
+            SELECT name FROM (
+                SELECT t.name AS name
+                FROM mitre_techniques t
+                WHERE t.technique_id = ?
+                UNION
+                SELECT NULL AS name
+                FROM cve_technique_map m
+                WHERE m.technique_id = ?
+            ) matches
+            ORDER BY (name IS NULL)
             LIMIT 1
             """,
             (technique_id, technique_id),
@@ -123,12 +134,13 @@ async def expand_relationships(
     seen_edges: set[str] = set()
     candidates: list[_CandidateEdge] = []
     partial = False
+    flags = _HopFlags()
 
     frontier = [root]
     for current_depth in range(1, filters.depth + 1):
         next_frontier: list[EntityRef] = []
         for entity in frontier:
-            hop_edges = await _edges_for_entity(db, entity, filters)
+            hop_edges = await _edges_for_entity(db, entity, filters, flags)
             for candidate in hop_edges:
                 if candidate.edge.edge_id in seen_edges:
                     continue
@@ -136,7 +148,10 @@ async def expand_relationships(
                 candidates.append(candidate)
                 if candidate.target.node_id not in nodes_by_id:
                     nodes_by_id[candidate.target.node_id] = candidate.target
-                    if current_depth < filters.depth:
+                    if (
+                        current_depth < filters.depth
+                        and len(next_frontier) < _MAX_FRONTIER
+                    ):
                         next_frontier.append(
                             EntityRef(
                                 entity_type=candidate.target.entity_type,
@@ -144,7 +159,13 @@ async def expand_relationships(
                                 label=candidate.target.label,
                             )
                         )
-        frontier = next_frontier
+            if len(candidates) >= _MAX_CANDIDATES:
+                flags.degraded = True
+                partial = True
+                next_frontier = []
+                break
+        next_frontier.sort(key=lambda item: (item.entity_type, item.entity_id))
+        frontier = next_frontier[:_MAX_FRONTIER]
 
     candidates.sort(key=lambda item: item.edge.edge_id)
     candidates = _apply_edge_filters(candidates, filters)
@@ -164,12 +185,15 @@ async def expand_relationships(
             candidate.edge.target_node_id
         ]
 
+    if flags.degraded:
+        partial = True
     knowledge_state = KnowledgeState.PARTIAL if partial else KnowledgeState.KNOWN
+    source_status = "degraded" if flags.degraded else "ok"
     return GraphPage(
         root=root_node,
         nodes=list(page_nodes.values()),
         edges=page_edges,
-        source_status="ok",
+        source_status=source_status,
         knowledge_state=knowledge_state,
         truncated=truncated,
         next_cursor=next_cursor,
@@ -205,9 +229,10 @@ def _paginate_candidates(
         decoded = _decode_cursor(filters.cursor)
         after_edge_id = decoded.get("after_edge_id")
         if after_edge_id:
+            start_index = len(candidates)
             for index, candidate in enumerate(candidates):
-                if candidate.edge.edge_id == after_edge_id:
-                    start_index = index + 1
+                if candidate.edge.edge_id > after_edge_id:
+                    start_index = index
                     break
 
     selected: list[_CandidateEdge] = []
@@ -262,12 +287,13 @@ async def _edges_for_entity(
     db,
     entity: EntityRef,
     filters: RelationshipFilters,
+    flags: _HopFlags,
 ) -> list[_CandidateEdge]:
     match entity.entity_type:
         case "cve":
-            return await _cve_edges(db, entity, filters)
+            return await _cve_edges(db, entity, filters, flags)
         case "ioc":
-            return await _ioc_edges(db, entity)
+            return await _ioc_edges(db, entity, flags)
         case "technique":
             return await _technique_edges(db, entity)
         case "campaign":
@@ -280,6 +306,7 @@ async def _cve_edges(
     db,
     entity: EntityRef,
     filters: RelationshipFilters,
+    flags: _HopFlags,
 ) -> list[_CandidateEdge]:
     cve_id = entity.entity_id.upper()
     source_node_id = make_node_id(entity.entity_type, entity.entity_id)
@@ -292,8 +319,9 @@ async def _cve_edges(
         LEFT JOIN mitre_techniques t ON t.technique_id = m.technique_id
         WHERE m.cve_id = ?
         ORDER BY m.technique_id ASC
+        LIMIT ?
         """,
-        (cve_id,),
+        (cve_id, _MAX_HOP_ROWS),
     )
     for row in technique_rows:
         technique_id = row["technique_id"]
@@ -318,8 +346,9 @@ async def _cve_edges(
         INNER JOIN otx_pulse_iocs pi ON pi.pulse_id = cp.pulse_id
         WHERE cp.cve_id = ?
         ORDER BY pi.ioc_value ASC
+        LIMIT ?
         """,
-        (cve_id,),
+        (cve_id, _MAX_HOP_ROWS),
     )
     otx_pairs: list[tuple[str, str]] = []
     for row in otx_rows:
@@ -366,8 +395,9 @@ async def _cve_edges(
         INNER JOIN correlation_campaigns c ON c.campaign_id = m.campaign_id
         WHERE m.cve_id = ? AND c.retracted_at IS NULL
         ORDER BY c.campaign_id ASC
+        LIMIT ?
         """,
-        (cve_id,),
+        (cve_id, _MAX_HOP_ROWS),
     )
     for row in campaign_rows:
         campaign_id = row["campaign_id"]
@@ -385,7 +415,9 @@ async def _cve_edges(
             )
         )
 
-    sigma_rows = await _sigma_rows_for_cve(db, cve_id)
+    sigma_rows, sigma_degraded = await _sigma_rows_for_cve(db, cve_id)
+    if sigma_degraded:
+        flags.degraded = True
     for row in sigma_rows:
         repo_path = row["repo_path"]
         target_ref = EntityRef(
@@ -428,33 +460,38 @@ async def _cve_edges(
     if filters.include_semantic:
         try:
             from ml.embeddings import embeddings_enabled, find_similar_cves
-
-            if embeddings_enabled():
-                similar = await find_similar_cves(db, cve_id, limit=filters.limit)
-                if similar:
-                    for item in similar:
-                        related_id = item["cve_id"]
-                        target_ref = EntityRef(
-                            entity_type="cve",
-                            entity_id=related_id,
-                            label=related_id,
-                        )
-                        edges.append(
-                            _candidate_edge(
-                                source_node_id=source_node_id,
-                                target_ref=target_ref,
-                                edge_class=EdgeClass.SEMANTIC,
-                                source_key="embeddings",
-                                confidence=f"{_row_get(item, 'similarity', 0):.4f}",
+        except ImportError as exc:
+            flags.degraded = True
+            logger.debug("semantic related CVE hop unavailable: %s", exc)
+        else:
+            try:
+                if embeddings_enabled():
+                    similar = await find_similar_cves(db, cve_id, limit=filters.limit)
+                    if similar:
+                        for item in similar:
+                            related_id = item["cve_id"]
+                            target_ref = EntityRef(
+                                entity_type="cve",
+                                entity_id=related_id,
+                                label=related_id,
                             )
-                        )
-        except Exception as exc:
-            logger.debug("semantic related CVE hop skipped: %s", exc)
+                            edges.append(
+                                _candidate_edge(
+                                    source_node_id=source_node_id,
+                                    target_ref=target_ref,
+                                    edge_class=EdgeClass.SEMANTIC,
+                                    source_key="embeddings",
+                                    confidence=f"{_row_get(item, 'similarity', 0):.4f}",
+                                )
+                            )
+            except Exception as exc:
+                flags.degraded = True
+                logger.debug("semantic related CVE hop skipped: %s", exc)
 
     return _dedupe_candidates(edges)
 
 
-async def _ioc_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
+async def _ioc_edges(db, entity: EntityRef, flags: _HopFlags) -> list[_CandidateEdge]:
     source_node_id = make_node_id(entity.entity_type, entity.entity_id)
     kind, _, value = entity.entity_id.partition(":")
     canon_type = kind.upper()
@@ -470,8 +507,9 @@ async def _ioc_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
         INNER JOIN otx_cve_pulses cp ON cp.pulse_id = pi.pulse_id
         WHERE LOWER(pi.ioc_type) = LOWER(?) AND LOWER(pi.ioc_value) = LOWER(?)
         ORDER BY cp.cve_id ASC
+        LIMIT ?
         """,
-        (canon_type, canon_value),
+        (canon_type, canon_value, _MAX_HOP_ROWS),
     )
     edges: list[_CandidateEdge] = []
     for row in rows:
@@ -486,6 +524,35 @@ async def _ioc_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
                 fetched_at=_row_get(row, "fetched_at"),
             )
         )
+
+    mirror_hits = await batch_source_evidence(db, [(canon_type, canon_value)])
+    mirror_rows = [
+        row
+        for rows_for_ioc in mirror_hits.values()
+        for row in rows_for_ioc
+    ]
+    if edges:
+        for row in rows:
+            cve_id = row["cve_id"]
+            target_ref = EntityRef(entity_type="cve", entity_id=cve_id, label=cve_id)
+            for mirror in mirror_rows:
+                source_key = mirror.get("source") or "ti_mirror"
+                edges.append(
+                    _candidate_edge(
+                        source_node_id=source_node_id,
+                        target_ref=target_ref,
+                        edge_class=EdgeClass.REPORTED,
+                        source_key=source_key,
+                        observed_at=_row_get(mirror, "first_seen"),
+                        fetched_at=_row_get(mirror, "fetched_at"),
+                        confidence=str(_row_get(mirror, "confidence_level"))
+                        if _row_get(mirror, "confidence_level") is not None
+                        else None,
+                    )
+                )
+    elif await _mirror_ioc_exists(db, canon_type, canon_value):
+        flags.degraded = True
+
     return _dedupe_candidates(edges)
 
 
@@ -497,8 +564,9 @@ async def _technique_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
         SELECT cve_id FROM cve_technique_map
         WHERE technique_id = ?
         ORDER BY cve_id ASC
+        LIMIT ?
         """,
-        (technique_id,),
+        (technique_id, _MAX_HOP_ROWS),
     )
     edges: list[_CandidateEdge] = []
     for row in rows:
@@ -522,8 +590,9 @@ async def _campaign_edges(db, entity: EntityRef) -> list[_CandidateEdge]:
         SELECT cve_id FROM correlation_campaign_members
         WHERE campaign_id = ?
         ORDER BY cve_id ASC
+        LIMIT ?
         """,
-        (entity.entity_id,),
+        (entity.entity_id, _MAX_HOP_ROWS),
     )
     edges: list[_CandidateEdge] = []
     for row in rows:
@@ -605,6 +674,10 @@ async def _ioc_row_exists(db, entity_id: str) -> bool:
     )
     if rows:
         return True
+    return await _mirror_ioc_exists(db, canon_type, canon_value)
+
+
+async def _mirror_ioc_exists(db, canon_type: str, canon_value: str) -> bool:
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM ti_mirror_iocs
@@ -616,7 +689,9 @@ async def _ioc_row_exists(db, entity_id: str) -> bool:
     return bool(rows)
 
 
-async def _sigma_rows_for_cve(db, cve_id: str) -> list[dict[str, Any]]:
+async def _sigma_rows_for_cve(
+    db, cve_id: str
+) -> tuple[list[dict[str, Any]], bool]:
     try:
         rows = await db.execute_fetchall(
             """
@@ -625,10 +700,11 @@ async def _sigma_rows_for_cve(db, cve_id: str) -> list[dict[str, Any]]:
             INNER JOIN detection_rule_cves c ON c.rule_id = r.id
             WHERE c.cve_id = ? AND r.source = ? AND r.retired_at IS NULL
             ORDER BY r.title ASC
+            LIMIT ?
             """,
-            (cve_id, _SIGMA_SOURCE),
+            (cve_id, _SIGMA_SOURCE, _MAX_HOP_ROWS),
         )
     except Exception as exc:
         logger.debug("Sigma index hop skipped: %s", exc)
-        return []
-    return [dict(row) for row in rows]
+        return [], True
+    return [dict(row) for row in rows], False

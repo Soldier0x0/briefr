@@ -155,3 +155,36 @@ def test_resolve_unknown_entity_returns_404(tmp_path, monkeypatch):
     resp = client.get("/api/investigations/resolve", params={"q": "CVE-2099-0001"})
     assert resp.status_code == 404
     assert resp.json()["knowledge_state"] == "unknown"
+
+
+def test_url_ioc_entity_path_is_routable(tmp_path, monkeypatch):
+    async def seed():
+        db_path = str(tmp_path / "routes-url-ioc.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO otx_pulse_iocs (pulse_id, ioc_type, ioc_value, description)
+                VALUES ('pulse-url-1', 'URL', 'https://evil.example/a/b', '')
+                """
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    client = TestClient(app)
+    attach_pytest_session_cookie(client)
+    entity_id = "url:https://evil.example/a/b"
+    entity = client.get(f"/api/investigations/entities/ioc/{entity_id}")
+    assert entity.status_code == 200
+    assert entity.json()["entity_id"] == entity_id
+
+    relationships = client.get(
+        f"/api/investigations/entities/ioc/{entity_id}/relationships"
+    )
+    assert relationships.status_code == 200
+    graph = relationships.json()
+    assert graph["root"]["entity_id"] == entity_id

@@ -1,6 +1,6 @@
 # BRIEFR product status
 
-**Last updated:** 2026-08-19 (Advisories & Intel publications layer)
+**Last updated:** 2026-08-19 (Advisories & Intel publications + investigation graph P0 APIs)
 **Purpose:** Single page for “what’s true in production today.” When README or beta docs disagree, this wins.
 
 ---

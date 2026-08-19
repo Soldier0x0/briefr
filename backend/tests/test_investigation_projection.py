@@ -134,3 +134,51 @@ def test_expand_truncates_when_limit_hit(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
+
+
+def test_get_entity_technique_prefers_mitre_name(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "projection-technique.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await _seed_projection_db(db)
+            ref = await get_entity(db, "technique", "T1059.003")
+            assert ref is not None
+            assert "Command and Scripting" in ref.label
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_stale_cursor_advances_by_edge_id_order(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "projection-cursor.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            cve_id = await _seed_projection_db(db)
+            root = parse_investigation_query(cve_id)
+            first = await expand_relationships(
+                db,
+                root,
+                RelationshipFilters(depth=1, limit=1),
+            )
+            assert first.next_cursor
+            from investigations.projection import _encode_cursor
+
+            stale = _encode_cursor({"after_edge_id": "aaa"})
+            page = await expand_relationships(
+                db,
+                root,
+                RelationshipFilters(depth=1, limit=1, cursor=stale),
+            )
+            assert page.edges
+            assert page.edges[0].edge_id == first.edges[0].edge_id
+        finally:
+            await db.close()
+
+    run_db_test(run())
