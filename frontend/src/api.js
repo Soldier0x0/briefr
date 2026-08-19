@@ -370,6 +370,7 @@ export function fetchPublications(params = {}) {
   if (params.cve_id) qs.set('cve_id', params.cve_id)
   if (params.source_key) qs.set('source_key', params.source_key)
   if (params.document_kind) qs.set('document_kind', params.document_kind)
+  if (params.q) qs.set('q', params.q)
   if (params.limit) qs.set('limit', String(params.limit))
   if (params.cursor) qs.set('cursor', String(params.cursor))
   if (params.mark_headlines === false) qs.set('mark_headlines', 'false')
