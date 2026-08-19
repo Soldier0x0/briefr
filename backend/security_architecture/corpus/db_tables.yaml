@@ -342,6 +342,60 @@ tables:
   source_refs:
   - type: table
     ref: otx_pulses
+- id: publication_actor_links
+  title: publication_actor_links
+  summary: Database table defined in db/init.py (name=publication_actor_links).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_actor_links
+- id: publication_actors
+  title: publication_actors
+  summary: Database table defined in db/init.py (name=publication_actors).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_actors
+- id: publication_entity_links
+  title: publication_entity_links
+  summary: Database table defined in db/init.py (name=publication_entity_links).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_entity_links
+- id: publication_event_members
+  title: publication_event_members
+  summary: Database table defined in db/init.py (name=publication_event_members).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_event_members
+- id: publication_events
+  title: publication_events
+  summary: Database table defined in db/init.py (name=publication_events).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publication_events
+- id: publications
+  title: publications
+  summary: Database table defined in db/init.py (name=publications).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: publications
 - id: pulse_families
   title: pulse_families
   summary: Database table defined in db/init.py (name=pulse_families).

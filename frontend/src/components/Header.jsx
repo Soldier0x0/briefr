@@ -36,7 +36,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
     { id: 'brief', label: 'BRIEF', aria: 'Switch to morning brief' },
     { id: 'feed', label: 'FEED', aria: 'Switch to full CVE feed' },
     { id: 'ioc', label: 'IOC LOOKUP', aria: 'Switch to IOC lookup' },
-    { id: 'atlas', label: 'INCIDENTS & NEWS', aria: 'Switch to incidents and news' },
+    { id: 'atlas', label: 'ADVISORIES & INTEL', aria: 'Switch to advisories and intel' },
     { id: 'forge', label: 'FORGE', aria: 'Switch to Forge detection engineering' },
   ]
 
@@ -100,7 +100,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
               aria-label="Switch to incidents and news"
               aria-current={activeTab === 'atlas' ? 'page' : undefined}
             >
-              INCIDENTS &amp; NEWS
+              ADVISORIES &amp; INTEL
             </button>
             <button
               className={`header-tab${activeTab === 'forge' ? ' active' : ''}`}

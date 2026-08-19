@@ -7,11 +7,11 @@ an invalid/missing token returns HTTP 401; the rate limit returns HTTP 429.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from blocklist.build import build_blocklist
-from blocklist.serialize import to_json, to_txt
+from blocklist.serialize import to_csv, to_json, to_txt
 from database import get_db
 from dependencies import require_threat_intel_token
 from rate_limit import rate_limit_threat_intel
@@ -62,3 +62,22 @@ async def blocklist_json():
     their reasons, and the exact eligibility criteria."""
     payload = await _build_payload()
     return JSONResponse(to_json(payload), headers={"Cache-Control": "no-store"})
+
+
+@router.get(
+    "/blocklist.csv",
+    response_class=Response,
+    summary="Malicious-domain candidates (CSV, analyst-friendly rows)",
+)
+async def blocklist_csv():
+    """CSV rows with explicit IOC type and the exact upstream value, alongside
+    source/confidence/first_seen/malware/threat_type — for filtering and copy."""
+    payload = await _build_payload()
+    return Response(
+        to_csv(payload),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="briefr-blocklist.csv"',
+            "Cache-Control": "no-store",
+        },
+    )

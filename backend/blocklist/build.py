@@ -95,6 +95,58 @@ def _earliest_observed_at(evidence: list[dict[str, Any]]) -> str:
     return str(min(timestamps))
 
 
+def _ioc_type_for(ioc_type: str, raw_ioc: str) -> str:
+    """Classify a single evidence row into an IOC type.
+
+    ``url`` when the upstream type is a URL *or* when the raw value is a URL —
+    ThreatFox downcasts URL IOCs to ``ioc_type='domain'`` at ingest but keeps
+    the exact URL in ``raw_ioc``, so the content (not just the stored type)
+    must decide. Everything else collapses to ``domain``.
+    """
+    t = (ioc_type or "").strip().lower()
+    if t == "url" or "://" in (raw_ioc or ""):
+        return "url"
+    return "domain"
+
+
+def _candidate_ioc(evidence: list[dict[str, Any]]) -> tuple[str, str]:
+    """Return ``(ioc_type, exact_ioc)`` for a candidate's evidence list.
+
+    Prefers the most exact upstream IOC: a URL (stored as ``ioc_type='url'``
+    or a ThreatFox URL downcast preserved in ``raw_ioc``) over a plain domain.
+    ``exact_ioc`` is always an upstream-preserved value (``raw_ioc`` or
+    ``ioc_value``) — never a value derived from the canonical domain.
+    """
+    if not evidence:
+        return "domain", ""
+    sorted_evidence = sorted(
+        evidence,
+        key=lambda e: (
+            (e.get("ioc_type") or ""),
+            (e.get("source") or ""),
+            (e.get("ref_id") or ""),
+            (e.get("raw_ioc") or ""),
+        ),
+    )
+    url_row = next(
+        (
+            e
+            for e in sorted_evidence
+            if _ioc_type_for(e.get("ioc_type") or "", e.get("raw_ioc") or "") == "url"
+        ),
+        None,
+    )
+    if url_row is not None:
+        exact = (url_row.get("raw_ioc") or "").strip() or (url_row.get("ioc_value") or "").strip()
+        return "url", exact
+    primary = sorted_evidence[0]
+    exact = (
+        (primary.get("raw_ioc") or "").strip()
+        or (primary.get("ioc_value") or "").strip()
+    )
+    return "domain", exact
+
+
 def _evidence_row(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "source": row.get("source") or ("otx" if row.get("pulse_id") else ""),
@@ -228,6 +280,7 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
         fetched_at = max(
             [e["fetched_at"] for e in evidence if e["fetched_at"]] or [generated_at]
         )
+        candidate_ioc_type, exact_ioc = _candidate_ioc(evidence)
 
         # Reason for the entry (inclusion or exclusion).
         if is_excluded_from_export(classified):
@@ -245,6 +298,8 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
                 fetched_at=fetched_at,
                 corroborating_sources=[],
                 otx_corroborated=False,
+                ioc_type=candidate_ioc_type,
+                exact_ioc=exact_ioc,
                 evidence=evidence,
             ))
             continue
@@ -289,6 +344,8 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
                 corroborating_sources=corroborating_sources if otx_ev else [],
                 otx_corroborated=otx_corroborated,
                 confidence_factors=factors,
+                ioc_type=candidate_ioc_type,
+                exact_ioc=exact_ioc,
                 evidence=evidence,
             ))
             continue
@@ -309,6 +366,8 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
                 fetched_at=fetched_at,
                 corroborating_sources=[],
                 otx_corroborated=False,
+                ioc_type=candidate_ioc_type,
+                exact_ioc=exact_ioc,
                 evidence=evidence,
             ))
             continue
@@ -338,6 +397,8 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
                 corroborating_sources=corroborating_sources,
                 otx_corroborated=True,
                 confidence_factors=factors,
+                ioc_type=candidate_ioc_type,
+                exact_ioc=exact_ioc,
                 evidence=evidence,
             ))
             continue
@@ -357,6 +418,8 @@ async def build_blocklist(db: DbConnection) -> dict[str, Any]:
             corroborating_sources=corroborating_sources,
             otx_corroborated=True,
             confidence_factors=factors,
+            ioc_type=candidate_ioc_type,
+            exact_ioc=exact_ioc,
             evidence=evidence,
         ))
 
@@ -404,11 +467,15 @@ def _candidate_record(
     fetched_at: str,
     corroborating_sources: list[str],
     otx_corroborated: bool,
+    ioc_type: str = "domain",
+    exact_ioc: str = "",
     confidence_factors: list[dict[str, Any]] | None = None,
     evidence: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return {
         "domain": domain,
+        "ioc_type": ioc_type,
+        "exact_ioc": exact_ioc,
         "eligible": eligible,
         "reason": reason,
         "classification": classified["classification"],

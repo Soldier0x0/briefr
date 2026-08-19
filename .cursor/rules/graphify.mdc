@@ -1,0 +1,14 @@
+---
+description: graphify knowledge graph context (product codebase)
+alwaysApply: true
+---
+
+This project has a graphify knowledge graph at `graphify-out/` (local; gitignored).
+
+Before broad codebase exploration, run:
+- `graphify query "<question>"`
+- `graphify path "<symbolA>" "<symbolB>"`
+
+`graphify-out/` is not committed. After code edits: `graphify update .` from repo root.
+
+Maintainer-only docs (HANDOVER, study guide) live in `briefr-maintainer`, not this repo.

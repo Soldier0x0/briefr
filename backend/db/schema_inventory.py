@@ -36,6 +36,12 @@ INTEL_TABLES: tuple[str, ...] = (
     "software_catalog",
     "feed_cache",
     "sync_state",
+    "publications",
+    "publication_entity_links",
+    "publication_events",
+    "publication_event_members",
+    "publication_actors",
+    "publication_actor_links",
 )
 
 APP_TABLES: tuple[str, ...] = (
@@ -149,6 +155,12 @@ INTEL_TABLE_MOVE_ORDER: tuple[str, ...] = (
     "embeddings",
     "group_technique_map",
     "sync_state",
+    "publications",
+    "publication_entity_links",
+    "publication_events",
+    "publication_event_members",
+    "publication_actors",
+    "publication_actor_links",
 )
 
 APP_TABLE_MOVE_ORDER: tuple[str, ...] = (
