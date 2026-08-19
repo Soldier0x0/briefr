@@ -190,6 +190,7 @@ async def get_storage(request: Request):
 
     db = await get_db()
     table_sizes: list[dict[str, Any]] = []
+    db_size_bytes = 0
     try:
         counts: dict[str, int] = {}
         for table in _STORAGE_TABLES:
@@ -199,14 +200,13 @@ async def get_storage(request: Request):
             except Exception:
                 counts[table] = -1
         table_sizes = await fetch_table_sizes(db)
-    finally:
-        await db.close()
-
-    # Get DB size from pg_database_size
-    db = await get_db()
-    try:
-        rows = await db.execute_fetchall("SELECT pg_database_size(current_database()) as size")
-        db_size_bytes = int(rows[0]["size"]) if rows else 0
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT pg_database_size(current_database()) as size"
+            )
+            db_size_bytes = int(rows[0]["size"]) if rows else 0
+        except Exception:
+            db_size_bytes = 0
     finally:
         await db.close()
 
