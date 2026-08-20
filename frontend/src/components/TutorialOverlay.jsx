@@ -34,16 +34,16 @@ const STEPS = [
     body: 'Look up IPs, hashes, and domains against threat intel sources.',
   },
   {
-    tab: 'atlas',
-    target: '[aria-label="Switch to advisories and intel"]',
-    title: 'ADVISORIES & INTEL + FORGE',
-    body: 'Advisories & Intel holds headline news, structured advisories, and ATLAS case studies. Forge is for detection engineering. Re-open this tour anytime from the ⋯ menu — "Show tutorial again".',
-  },
-  {
     tab: 'investigate',
     target: '[aria-label="Switch to investigate graph"]',
     title: 'INVESTIGATE',
     body: 'Search a CVE, hash, IP, or domain to browse stored relationships as a graph. Click a node to expand one hop. This is not live enrichment.',
+  },
+  {
+    tab: 'atlas',
+    target: '[aria-label="Switch to advisories and intel"]',
+    title: 'ADVISORIES & INTEL + FORGE',
+    body: 'Advisories & Intel holds headline news, structured advisories, and ATLAS case studies. Forge is for detection engineering. Re-open this tour anytime from the ⋯ menu — "Show tutorial again".',
   },
 ]
 

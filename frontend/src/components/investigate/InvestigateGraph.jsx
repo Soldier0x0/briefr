@@ -4,17 +4,26 @@ import { notifyApiError } from '../Toast.jsx'
 import AsyncState from '../ui/AsyncState.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { useInvestigationOptional, INV_TYPES, INV_SOURCES } from '../../context/InvestigationContext.jsx'
-import { emptyGraphState, mergeGraphPage } from '../../utils/investigateGraphMerge.js'
+import {
+  emptyGraphState,
+  INVESTIGATE_GRAPH_MAX_EDGES,
+  INVESTIGATE_GRAPH_MAX_NODES,
+  mergeGraphPage,
+} from '../../utils/investigateGraphMerge.js'
 import { seedPositions, stepForce } from '../../utils/investigateForceLayout.js'
 import './InvestigateGraph.css'
 
 const EDGE_STROKE = {
-  direct_fact: 'var(--text)',
+  direct_fact: 'var(--text-primary, var(--text))',
   reported: 'var(--accent-primary, var(--c-accent))',
-  derived: 'var(--text2)',
-  analyst_assertion: 'var(--warning, #d4a017)',
-  semantic: 'var(--text3)',
+  derived: 'var(--text-secondary, var(--text2))',
+  analyst_assertion: 'var(--status-warning, var(--severity-high))',
+  semantic: 'var(--text-muted, var(--text3))',
 }
+
+const NODE_R = 8
+const NODE_R_ACTIVE = 11
+const HIT_R = 12
 
 function looksResolvable(q) {
   const t = q.trim()
@@ -46,8 +55,14 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   const sizeRef = useRef({ width: 800, height: 560 })
   const positionsRef = useRef([])
   const graphRef = useRef(graph)
+  const searchGenRef = useRef(0)
   graphRef.current = graph
   positionsRef.current = positions
+
+  const positionById = useMemo(
+    () => new Map(positions.map((node) => [node.node_id, node])),
+    [positions],
+  )
 
   const selected = useMemo(
     () => graph.nodes.find((node) => node.node_id === selectedId) || null,
@@ -57,11 +72,14 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   const runSearch = useCallback(async (raw) => {
     const q = (raw || '').trim()
     if (!q) return
+    const generation = searchGenRef.current + 1
+    searchGenRef.current = generation
     setLoading(true)
     setError(null)
     setEmptyTitle('')
     try {
       const resolved = await resolveInvestigation(q)
+      if (generation !== searchGenRef.current) return
       const root = resolved?.root
       if (!root?.entity_type || !root?.entity_id) {
         setGraph(emptyGraphState())
@@ -69,10 +87,12 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
         return
       }
       const page = await fetchInvestigationRelationships(root.entity_type, root.entity_id)
+      if (generation !== searchGenRef.current) return
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
       setSelectedId(root.node_id)
     } catch (err) {
+      if (generation !== searchGenRef.current) return
       if (err?.status === 404) {
         setGraph(emptyGraphState())
         setEmptyTitle('Unknown entity — BRIEFR has no local graph for that query.')
@@ -82,7 +102,7 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       setError(err)
       notifyApiError(err)
     } finally {
-      setLoading(false)
+      if (generation === searchGenRef.current) setLoading(false)
     }
   }, [])
 
@@ -103,9 +123,6 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       const page = await fetchInvestigationRelationships(node.entity_type, node.entity_id)
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
-      if (page?.truncated) {
-        setEmptyTitle('')
-      }
     } catch (err) {
       if (err?.status === 404) {
         setError(new Error('No relationships stored for this node.'))
@@ -181,9 +198,19 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   }, [investigation])
 
   const idle = !loading && graph.nodes.length === 0 && !error && !emptyTitle
+  const showHonesty = graph.nodes.length > 0
+    && (graph.truncated || graph.capped || graph.source_status === 'degraded'
+      || graph.knowledge_state === 'stale' || graph.knowledge_state === 'partial')
 
   return (
     <div className="investigate-page">
+      <header className="investigate-hero">
+        <h1 className="investigate-hero-title mono">INVESTIGATE</h1>
+        <p className="investigate-hero-copy">
+          Graph browser over stored CVE, IOC, technique, and publication hops. Search once, expand nodes to pivot like an Obsidian map — no live enrichment on each click.
+        </p>
+      </header>
+
       <form
         className="investigate-toolbar control-toolbar--fields"
         onSubmit={(event) => {
@@ -208,12 +235,15 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       </form>
 
       <p className="investigate-hint mono">
-        One-hop graph over stored intel. Click a node to expand. Edges are evidence class, not layout truth.
+        One-hop graph over stored intel. Click a node to expand. Edges encode evidence class, not certainty.
       </p>
 
-      {(graph.truncated || graph.source_status === 'degraded' || graph.knowledge_state === 'stale' || graph.knowledge_state === 'partial') && graph.nodes.length > 0 && (
+      {showHonesty && (
         <div className="investigate-honesty mono" role="status">
-          {graph.truncated ? 'Truncated — more hops exist than this page returned. Expand another node or raise the limit later. ' : ''}
+          {graph.capped
+            ? `Canvas capped at ${INVESTIGATE_GRAPH_MAX_NODES} nodes / ${INVESTIGATE_GRAPH_MAX_EDGES} edges — expand a focused node instead of widening everything. `
+            : ''}
+          {graph.truncated ? 'Truncated — more hops exist than this page returned. ' : ''}
           {graph.source_status === 'degraded' ? 'Source status degraded. ' : ''}
           {graph.knowledge_state === 'stale' ? 'Knowledge is stale. ' : ''}
           {graph.knowledge_state === 'partial' ? 'Partial neighborhood.' : ''}
@@ -243,8 +273,8 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                 aria-label="Investigation relationship graph"
               >
                 {graph.edges.map((edge) => {
-                  const source = positions.find((node) => node.node_id === edge.source_node_id)
-                  const target = positions.find((node) => node.node_id === edge.target_node_id)
+                  const source = positionById.get(edge.source_node_id)
+                  const target = positionById.get(edge.target_node_id)
                   if (!source || !target) return null
                   const dashed = edge.edge_class === 'semantic'
                   return (
@@ -254,7 +284,7 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                       y1={source.y}
                       x2={target.x}
                       y2={target.y}
-                      stroke={EDGE_STROKE[edge.edge_class] || 'var(--text3)'}
+                      stroke={EDGE_STROKE[edge.edge_class] || 'var(--text-muted, var(--text3))'}
                       strokeWidth={edge.edge_class === 'direct_fact' ? 2 : 1.25}
                       strokeDasharray={dashed ? '4 3' : undefined}
                       opacity={0.85}
@@ -280,9 +310,16 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                       aria-label={`${node.entity_type} ${node.label}`}
                     >
                       <circle
+                        className="investigate-node-hit"
                         cx={node.x}
                         cy={node.y}
-                        r={active ? 11 : 8}
+                        r={HIT_R}
+                      />
+                      <circle
+                        className="investigate-node-dot"
+                        cx={node.x}
+                        cy={node.y}
+                        r={active ? NODE_R_ACTIVE : NODE_R}
                         fill={active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'}
                         stroke={active ? 'var(--accent-selected)' : 'var(--border-active, var(--border2))'}
                         strokeWidth={expanding ? 3 : 1.5}

@@ -14,6 +14,7 @@ function params(obj = {}) {
 
 describe('resolveAppTab', () => {
   it('reads tab= when valid', () => {
+    assert.equal(resolveAppTab(params({ tab: 'brief' })), 'brief')
     assert.equal(resolveAppTab(params({ tab: 'feed' })), 'feed')
     assert.equal(resolveAppTab(params({ tab: 'ioc' })), 'ioc')
     assert.equal(resolveAppTab(params({ tab: 'atlas' })), 'atlas')
@@ -44,6 +45,11 @@ describe('buildAppTabSearchParams', () => {
     const next = buildAppTabSearchParams(params(), 'feed')
     assert.equal(next.get('tab'), 'feed')
     assert.deepEqual([...APP_TABS].sort(), ['atlas', 'brief', 'feed', 'forge', 'investigate', 'ioc'])
+  })
+
+  it('sets tab=brief explicitly when selecting BRIEF', () => {
+    const next = buildAppTabSearchParams(params({ tab: 'feed' }), 'brief')
+    assert.equal(next.get('tab'), 'brief')
   })
 
   it('clears view when leaving forge and atlas', () => {

@@ -1,5 +1,5 @@
 import { outboundJobsPath, outboundJobsPingPath } from './apiOutboundJobs.js'
-import { investigationEntityPath } from './utils/investigateGraphMerge.js'
+import { investigationEntityPath, buildInvestigationRelationshipQuery } from './utils/investigateGraphMerge.js'
 
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
@@ -228,11 +228,7 @@ export function resolveInvestigation(q) {
 }
 
 export function fetchInvestigationRelationships(entityType, entityId, params = {}) {
-  const qs = new URLSearchParams()
-  if (params.limit) qs.set('limit', String(params.limit))
-  if (params.depth) qs.set('depth', String(params.depth))
-  if (params.cursor) qs.set('cursor', params.cursor)
-  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  const suffix = buildInvestigationRelationshipQuery(params)
   return request(`${investigationEntityPath(entityType, entityId)}/relationships${suffix}`)
 }
 

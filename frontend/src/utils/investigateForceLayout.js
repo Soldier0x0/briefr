@@ -5,6 +5,7 @@ const SPRING = 0.04
 const SPRING_LENGTH = 140
 const CENTER = 0.012
 const DAMPING = 0.82
+const REPULSE_PAIR_CAP = 80
 
 export function seedPositions(nodes, width, height, prior = new Map()) {
   const cx = width / 2
@@ -27,33 +28,7 @@ export function seedPositions(nodes, width, height, prior = new Map()) {
   })
 }
 
-export function stepForce(positions, edges, width, height) {
-  const next = positions.map((node) => ({ ...node }))
-  const byId = new Map(next.map((node) => [node.node_id, node]))
-
-  for (let i = 0; i < next.length; i += 1) {
-    for (let j = i + 1; j < next.length; j += 1) {
-      const a = next[i]
-      const b = next[j]
-      let dx = a.x - b.x
-      let dy = a.y - b.y
-      let distSq = dx * dx + dy * dy
-      if (distSq < 16) {
-        dx = (Math.random() - 0.5) * 4
-        dy = (Math.random() - 0.5) * 4
-        distSq = dx * dx + dy * dy
-      }
-      const dist = Math.sqrt(distSq)
-      const force = REPULSE / distSq
-      const fx = (dx / dist) * force
-      const fy = (dy / dist) * force
-      a.vx += fx
-      a.vy += fy
-      b.vx -= fx
-      b.vy -= fy
-    }
-  }
-
+function applySprings(next, edges, byId) {
   for (const edge of edges) {
     const a = byId.get(edge.source_node_id)
     const b = byId.get(edge.target_node_id)
@@ -69,7 +44,9 @@ export function stepForce(positions, edges, width, height) {
     b.vx -= fx
     b.vy -= fy
   }
+}
 
+function applyCenterAndBounds(next, width, height) {
   const cx = width / 2
   const cy = height / 2
   const pad = 36
@@ -83,5 +60,39 @@ export function stepForce(positions, edges, width, height) {
     node.x = Math.min(width - pad, Math.max(pad, node.x))
     node.y = Math.min(height - pad, Math.max(pad, node.y))
   }
+}
+
+export function stepForce(positions, edges, width, height) {
+  const next = positions.map((node) => ({ ...node }))
+  const byId = new Map(next.map((node) => [node.node_id, node]))
+
+  if (next.length <= REPULSE_PAIR_CAP) {
+    for (let i = 0; i < next.length; i += 1) {
+      for (let j = i + 1; j < next.length; j += 1) {
+        const a = next[i]
+        const b = next[j]
+        let dx = a.x - b.x
+        let dy = a.y - b.y
+        let distSq = dx * dx + dy * dy
+        if (distSq < 16) {
+          const jitter = ((i + j) % 5) - 2
+          dx = jitter * 0.5
+          dy = ((i * 3 + j) % 5) - 2
+          distSq = dx * dx + dy * dy
+        }
+        const dist = Math.sqrt(distSq)
+        const force = REPULSE / distSq
+        const fx = (dx / dist) * force
+        const fy = (dy / dist) * force
+        a.vx += fx
+        a.vy += fy
+        b.vx -= fx
+        b.vy -= fy
+      }
+    }
+  }
+
+  applySprings(next, edges, byId)
+  applyCenterAndBounds(next, width, height)
   return next
 }
