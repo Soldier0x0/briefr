@@ -1,194 +1,200 @@
 # INVESTIGATE canvas UX — design spec
 
 **Date:** 2026-08-20  
-**Status:** Ready for implementation (P1.5 — canvas UX, not a new data plane)  
-**Related:** `docs/plans/2026-08-13-investigation-platform-roadmap.md` (P0 APIs, P1 browser), `docs/PRODUCT_STATUS.md` Investigation graph
+**Status:** Ready for implementation (P1.5 — canvas UX; reuse existing BRIEFR surfaces)  
+**Related:** `docs/plans/2026-08-13-investigation-platform-roadmap.md`, `docs/PRODUCT_STATUS.md`, Admin **System Architecture** graph (`ArchitectureGraphSection.jsx`)
 
 ## Why this tab exists
 
-INVESTIGATE is the analyst’s **spatial working memory** over intel BRIEFR already stores.
+An analyst asking “is this CVE in my world, and what else do I already know about it?” should not have to bounce FEED → drawer → IOC LOOKUP → FORGE and hold the graph in their head.
 
-FEED is a ranked list. IOC LOOKUP is a live single-indicator check. The CVE drawer is a deep vertical on **one** CVE. FORGE is detection engineering. None of those answer: *“from this CVE, what else do I already know, and how is it connected?”*
+INVESTIGATE is the **spatial working memory** over intel BRIEFR **already stores**:
 
-The intended loop (roadmap P1, copy on the page today):
-
-1. Search a CVE / hash / IP / domain / technique **once**.
-2. See a graph of **stored** hops (technique, IOC, campaign, publication, Sigma, related CVE).
-3. Click to **inspect**, then expand a chosen node to pivot — Obsidian-style, not a live enrichment spider.
-4. Trust the picture: edges encode **evidence class**, not certainty; truncation is visible; no outbound fetch on each click.
-
-If the canvas is an illegible clump, the tab fails its reason for existing. A list of neighbors would be more honest.
-
-## Problem (production, 2026-08-20)
-
-On `CVE-2026-68820` the API works (resolve + relationships 200, truncation honesty fires). The **browser** does not:
-
-| Symptom | Why |
+| Surface | Job |
 |---------|-----|
-| Tiny star in a huge empty canvas | World coordinates are painted 1:1 on the SVG. There is **no camera** (no pan, no zoom, no fit). |
-| Labels stacked and unreadable | Every node always draws a 28-char label at `--font-size-micro`. |
-| No smooth zoom / pan | Wheel, pinch, drag-canvas, `+`/`−`, Fit are all absent. |
-| Clicking a spoke “does something violent” | Node `onClick` calls `expandNode` (merge another GraphPage) **and** selects. Inspect vs expand are the same gesture. |
-| “Truncated — more hops…” with no next action | `next_cursor` is returned by the API and **dropped** in `mergeGraphPage`. |
-| Related-CVE flood | Default one-hop includes `related_cve_heuristic` (up to `limit`, default 50). Those CVEs are equal-weight orange/red dots around the root — the screenshot star. |
-| Layout physics fights density | `CENTER` gravity + clamp to a 36px pad + `SPRING_LENGTH = 140`. If `nodes.length > 80`, **all pairwise repulsion is skipped** (`REPULSE_PAIR_CAP`). |
+| FEED | Ranked list / triage |
+| CVE drawer | Deep vertical on **one** CVE (Intel / Detect / Related) |
+| IOC LOOKUP | **Live** enrichment of one indicator (VT / AbuseIPDB / GreyNoise / OTX) |
+| FORGE | Detection coverage + ATT&CK navigator + campaigns |
+| ADVISORIES | Publications / headlines |
+| Pin overlay (`InvestigationPanel`) | Session thread + PDF export |
+| Watchlist | Durable “track this CVE” |
+| **INVESTIGATE** | Map of **stored** hops (technique, IOC, campaign, publication, Sigma, related CVE) with honest `edge_class` |
 
-P0/P1 data-plane constraints still hold and are **not** the bug: no graph DB, no x/y from API, no live enrichment on expand, session-gated GETs.
+If the map is an illegible clump, the tab has no product reason to exist.
+
+## Architect / analyst decision (locked)
+
+**Graph clicks never live-enrich.** Expand = another stored `GET .../relationships`. Live vendor lookups stay on IOC LOOKUP. From a graph IOC node, **LOOKUP LIVE** is an explicit pivot (`InvestigationContext.pivotToIoc`) — same contract as the drawer.
+
+**Do not clone product surfaces.** Inspector actions call existing navigation:
+
+| Node | Action | Existing hook |
+|------|--------|----------------|
+| CVE | OPEN CVE | `onOpenCve` → `openCveById` (already wired) |
+| CVE | PIN WATCHLIST | `useWatchlist.togglePin` (pass from `App.jsx` like the drawer) |
+| CVE / IOC / technique | PIN THREAD | `ensureCveInThread` / `recordIocPivot` / `recordItem` (already wired) |
+| IOC | LOOKUP LIVE | `pivotToIoc(value)` → tab `ioc` + prefill |
+| Technique | OPEN IN FORGE | `pivotToTechnique` → `openForgeTechnique` |
+| Campaign | OPEN CAMPAIGNS | `openForgeCampaigns` (`view=campaigns`) |
+| Publication | OPEN ADVISORIES | `setActiveTab('atlas')` + existing publication cards (CVE chips already open drawer) |
+
+**Camera is not a new invention.** Admin System Architecture already ships cursor-anchored wheel zoom, drag pan, FIT GRAPH, RESET VIEW, `touch-action: none`, and `{ passive: false }` wheel listeners (`architectureGraphView.js` + `ArchitectureGraphSection.jsx`). INVESTIGATE must **reuse that view model** `{ x, y, scale }` and `zoomAtCursor` — not a second `{ k, tx, ty }` camera module.
+
+## Scroll / wheel — current evidence (does **not** work today)
+
+`InvestigateGraph.jsx` has **no** `wheel` listener, **no** pan, **no** Fit. Wheel over the canvas scrolls the **page**.
+
+The working pattern (copy, do not rewrite):
+
+```123:136:frontend/src/pages/security-architecture/sections/ArchitectureGraphSection.jsx
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return undefined
+    const handler = (e) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      const cursorX = e.clientX - rect.left
+      const cursorY = e.clientY - rect.top
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+      setView(v => zoomAtCursor(v, cursorX, cursorY, factor))
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [graph])
+```
+
+`zoomAtCursor` keeps the **graph point under the cursor** fixed (`architectureGraphView.js`). Trackpad pinch typically arrives as `wheel` + `ctrlKey`; still use `deltaY` (same as architecture). **React `onWheel` is passive in browsers — it cannot `preventDefault`. Native listener is required.**
+
+Also required (already on `.sa-graph-canvas`): `overflow: hidden; touch-action: none;` so the page does not steal the gesture.
+
+Buttons are not optional: `+` / `−` / FIT / RESET (architecture has FIT + RESET; INVESTIGATE adds `+`/`−` because analysts on a laptop often lack a wheel). Keyboard when canvas focused: `+`/`=` zoom in, `-` zoom out, `0` Fit, arrows pan.
+
+## Problem (production canvas)
+
+| Symptom | RCA |
+|---------|-----|
+| Tiny star in empty canvas | No camera; 1:1 paint |
+| Wheel does nothing useful | No non-passive wheel handler |
+| Labels unreadable | Always-on 28-char labels |
+| Click feels violent | `onClick` → `expandNode` (merge GraphPage) |
+| Truncated with no next step | `next_cursor` dropped in `mergeGraphPage` |
+| Related-CVE hairball | `related_cve_heuristic` up to `limit` (50) as equal-weight nodes |
+| Physics clumps | Viewport pad clamp + `SPRING_LENGTH=140` + **repulsion off if n>80** |
+| Inspector is thin | Type/id/knowledge only — **ignores** `source_key`, `edge_class`, `observed_at`, `fetched_at`, `confidence` already on `GraphEdge` |
+| No find / type filter | Architecture graph already has cluster tabs + node search |
 
 ## Goals
 
-1. **Read the graph.** After resolve, the neighborhood is legible without fighting the canvas.
-2. **Navigate like a map.** Pan, zoom around cursor, Fit, Reset; keyboard `+`/`−`/`0`; reduced-motion still works (instant camera, short layout).
-3. **Inspect without widening.** Primary click selects; expand is explicit (inspector, double-click, or keyboard).
-4. **LOD labels.** Root + selected + hovered always labeled; others appear above a zoom threshold.
-5. **Honest density.** Related-CVE heuristic is visible but not allowed to drown intel hops; truncation has **Load more**.
-6. **Stay BRIEFR.** Tokens only, no new graph library, no GraphPage schema change, no outbound APIs.
+1. **Readable map** — Fit after layout; neighborhood uses the canvas.
+2. **Map navigation** — wheel zoom at cursor, drag pan, `+`/`−`/FIT/RESET, keyboard.
+3. **Inspect ≠ expand** — click select; double-click / EXPAND pivot stored hops.
+4. **LOD labels** + inverse-scaled hit targets.
+5. **Evidence in the inspector** — incident edges with class, source, timestamps.
+6. **Density honesty** — related-CVE toggle; type chips; find-in-graph highlight.
+7. **Pivot into existing BRIEFR** — drawer, live IOC, Forge, watchlist, thread PDF.
+8. **Reuse architecture camera** — no second math library, no graph npm package.
 
-## Non-goals (this spec)
+## Non-goals
 
-- Graph database, Cytoscape, d3-force, sigma.js, vis-network.
-- Saved cases, shareable graph URLs, multi-user presence.
-- Changing hop SQL / `IocKind` / email-mutex modeling (separate RCA, already on `main`).
-- LLM-generated edges, semantic hops on by default.
-- Minimap (defer unless Fit + pan still fail on 200-node caps).
-- Replacing FORGE or the pin overlay (`InvestigationPanel`).
+- Graph database; Cytoscape / d3 / sigma / vis-network.
+- Live enrichment on expand or hover.
+- Saved cases / sharing (thread PDF already exists).
+- Changing hop SQL / `IocKind` / email-mutex nodes.
+- Minimap (defer).
+- Replacing `InvestigationPanel` or FORGE.
+- Hiding related CVEs by default (honesty: default **on**, toggle to thin the star).
 
-## Approaches considered
+## Approaches
 
-### A — Camera only
-
-Add pan/zoom/Fit on the current force layout. Fastest. **Reject as sole fix:** physics still clumps; click still expands; related CVEs still dominate; cursor still unused.
-
-### B — Camera + layout + interaction + density honesty (chosen)
-
-Keep custom SVG. Separate **world layout** from **view camera**. Fix force (repulsion always, type-ring seed, no viewport clamp). Change gestures. Filter/weight related CVEs. Wire `next_cursor`.
-
-**Pros:** Matches product intent; no new deps; unit-testable math; stays inside frozen GraphPage.  
-**Cons:** More frontend work than A; force layout will still be “good enough,” not Gephi.
-
-### C — Replace renderer with a graph library
-
-**Reject:** new dependency, fights tokens/a11y/`prefers-reduced-motion`, harder to keep visual honesty (edge_class strokes, degraded copy). P1 already chose client-only force for that reason.
+**A — Camera only.** Reject as sole fix.  
+**B — Reuse architecture view + layout + inspect + density + inspector evidence + pivots.** Chosen.  
+**C — New graph library.** Rejected.
 
 ## Design
 
-### 1. Camera (view) vs layout (world)
+### 1. Camera (reuse)
 
-Layout writes unbounded world `x,y` on nodes. The SVG wraps nodes/edges in a `<g transform="translate(tx,ty) scale(k)">`.
+View state: `{ x, y, scale }` from `architectureGraphView.js` (`DEFAULT_VIEW`, `MIN_SCALE=0.15`, `MAX_SCALE=4`, `FIT_MIN_SCALE=0.08`).
 
-- **Wheel** over canvas: zoom around cursor (`k' = clamp(k * 1.15^delta, 0.25, 4)`), keeping the world point under the cursor fixed.
-- **Drag empty canvas:** pan (`tx, ty`).
-- **Drag a node:** move that node in world space; pin `vx,vy = 0` while dragging (Obsidian-like).
-- **Buttons** (canvas overlay, bottom-left): `−` `+` `FIT` `RESET`.
-- **Keyboard** when canvas focused: `+`/`=` zoom in, `-` zoom out, `0` fit, arrows pan.
-- **Fit:** bounding box of current positions → `k, tx, ty` with 48px padding. Run once after the force loop **settles** (or after 12 ticks when reduced-motion).
-- **Reset:** camera identity + re-seed layout from current graph (does not clear the graph).
-- **Reduced motion:** no RAF force loop beyond 12 ticks; camera jumps (no CSS transition on `transform`).
+- Wheel: copy architecture handler (`preventDefault`, cursor in **canvas CSS pixels**, `zoomAtCursor`).
+- Drag empty canvas: copy architecture pointer pan (`origin.x + dx`).
+- Drag node: move world `x,y`, `vx=vy=0` (architecture does not drag nodes; this is INVESTIGATE-only).
+- FIT: `computeFitView(computePointCloudBounds(positions), width, height)` — add `computePointCloudBounds` next to existing `computeGraphBounds` (rects vs circles).
+- After force **settles**, auto-Fit unless the user has already pan/zoomed.
+- RESET: Fit again (architecture `resetView` = Fit), not identity scale-1 (identity is what makes the star tiny).
 
-Do **not** clamp nodes to the SVG client box. Clamping is why the star sits in the middle of empty chrome.
+### 2. Force layout (world, unbounded)
 
-### 2. Force layout
+Keep `investigateForceLayout.js`. Remove viewport pad clamp. Grid repulsion always. Spring length scales with `sqrt(n)`. Center force on **root only**. Type-ring seed (root at center; techniques inner; IOC/campaign/publication mid; other CVEs outer). `stepForce(..., rootId)`.
 
-Keep `seedPositions` / `stepForce` in `investigateForceLayout.js` (API still has no x/y).
-
-Changes:
-
-- **Type-ring seed** around the root: techniques / Sigma inner ring; IOC / campaign / publication middle; `related_cve_heuristic` targets outer ring. Preserve prior positions on expand.
-- **Spring rest length** scales with `sqrt(n)` (floor 160, ceiling 420) so 50-node stars are not 140px hairballs.
-- **Repulsion always on.** If `n > 80`, use a grid neighborhood (cells ~ rest length) instead of skipping all pairs.
-- **Center force** applies to the **root only** (weak), not every node.
-- **No pad clamp** to `width/height`. Optional soft world bounds only to keep numerics finite (e.g. ±8000).
-
-Root node is visually larger (`r` 12 vs 8) and uses `--accent-selected` fill while it is the resolve root, even if another node is selected (selected gets a second ring / thicker stroke).
-
-### 3. Gestures and inspector
+### 3. Gestures
 
 | Input | Action |
 |-------|--------|
-| Click node | Select only. Inspector shows type / id / knowledge / incident edges to neighbors. |
-| Double-click node | Expand (existing GET + merge). |
-| Inspector **EXPAND** | Expand selected. |
-| Enter / Space on focused node | Select; **Shift+Enter** expands (avoid accidental widen). |
-| Click canvas background | Clear selection (keep graph). |
-| **PIN THREAD** / **OPEN CVE** | Unchanged. |
+| Wheel / pinch-as-wheel | Zoom at cursor |
+| Drag canvas | Pan |
+| Drag node | Reposition |
+| Click node | Select (inspector) |
+| Click selected node | Deselect (architecture pattern) |
+| Double-click / inspector EXPAND / Shift+Enter | Stored expand |
+| Click background | Clear selection |
+| `+` `-` `0` arrows | Zoom / Fit / pan |
 
-Click-to-expand is the P1 shortcut that made the canvas feel “broken” on a 50-CVE star. Explicit expand is the Obsidian analogue (open note vs follow link).
+### 4. Labels (LOD) + glyphs
 
-### 4. Labels (LOD)
+Always: root, selected, hovered, find-match. `scale >= 1.25`: non-CVE types. `scale >= 2`: all. Use existing `truncateNodeLabel`. Hit radius `clamp(8, 12/scale, 24)` in **world** space. Shapes: CVE circle, IOC diamond, technique/sigma/publication square, campaign hex; root larger; heuristic-only CVEs r=6.
 
-- Always: root label; selected label; hovered label.
-- If `k >= 1.25`: labels for nodes with degree ≥ 2 or non-`cve` types.
-- If `k >= 2`: all labels, still truncated to 28 chars.
-- Labels are `pointer-events: none`. Hover uses the hit circle only (`HIT_R` ≥ 12, scale **inversely** so hit targets stay ~24px on screen: `hitR = 12 / k` clamped).
+### 5. Inspector (analyst evidence)
 
-Color/shape still encode type (below); labels are not the only signal (design-system §4).
+Show selected node + **incident edges** (`source_node_id` or `target_node_id` === selected):
 
-### 5. Node glyphs by `entity_type`
+- `edge_class`, `source_key`, `confidence`, `observed_at`, `fetched_at`
+- Neighbor id (click selects neighbor)
 
-Shape + stroke, not color alone:
+Actions (only those that apply):
 
-| Type | Shape | Default fill |
-|------|--------|----------------|
-| `cve` (root) | Circle, larger | `--accent-selected` |
-| `cve` (other) | Circle | `--surface-raised` |
-| `ioc` | Diamond (rotated rect) | `--surface-raised` |
-| `technique` | Square | `--surface-raised` |
-| `campaign` | Hexagon (or square+dot) | `--surface-raised` |
-| `publication` / `sigma_rule` | Small square | `--surface-raised` |
+- EXPAND (stored)
+- OPEN CVE / LOOKUP LIVE / OPEN IN FORGE / OPEN CAMPAIGNS
+- PIN THREAD / PIN WATCHLIST
+- COPY ID
+- PIN VISIBLE CVEs (loop `ensureCveInThread` on currently visible CVE nodes — feeds existing PDF)
 
-Edge strokes stay the existing `edge_class` map (direct_fact solid strong, reported accent, derived muted, assertion warning, semantic dashed).
+### 6. Density filters (client-first)
 
-### 6. Related-CVE density (honesty, not hiding)
+API already has `edge_class`, `include_semantic`, `cursor`. Do **not** add backend ranking in this spec.
 
-`related_cve_heuristic` is **derived**, not a stored fact. It is allowed on the graph but must not be the default visual majority.
+- **Related CVEs** Radix checkbox, default on — hide nodes **only** reached via `related_cve_heuristic`.
+- **Type chips** (architecture cluster tabs pattern): ALL / CVE / IOC / TECHNIQUE / CAMPAIGN / PUB — hide others; Fit on change.
+- **Find** input: highlight matches (`sa-graph-node-match` analogue); **do not hide** topology (unlike architecture search). Enter pans camera to first match.
+- **Semantic** checkbox: refetch relationships with `include_semantic=1` (API default false).
+- Hover/select: dim non-neighbors; emphasize incident edges (architecture `connectedEdgeIds`).
 
-- Inspector: checkbox **Related CVEs** (default **on** so we do not hide data). Unchecked: hide nodes that are *only* reached via `related_cve_heuristic` (keep if also linked by OTX/technique/campaign/publication).
-- Outer-ring seed + smaller radius (6) for those nodes when shown.
-- Honesty line can say `N related CVEs (heuristic)` when any such edge is present.
+### 7. Load more
 
-Do **not** change backend ranking in this spec. If production still floods after client layout + filter, a follow-up can cap related CVE hops server-side (separate plan).
+`mergeGraphPage` keeps `cursorsByNodeId`. Honesty **LOAD MORE** when selected/root has a cursor and canvas not capped.
 
-### 7. Truncation → Load more
+### 8. Deep link
 
-`mergeGraphPage` must keep:
+`?tab=investigate&q=CVE-2026-68820` hydrates the search box and runs resolve (pushContext). Leaving the tab may drop `q` in `buildAppTabSearchParams` when `nextTab !== 'investigate'`.
 
-- `next_cursor` from the latest page for the **expanded** entity
-- `cursorsByNodeId: { [nodeId]: cursor | null }`
+### 9. Chrome
 
-Honesty row: if `truncated` and a cursor exists for the selected (or root) node, show **LOAD MORE** which GETs `.../relationships?cursor=&limit=`. Merge as today. If the client cap hits 200/300, keep existing capped copy (no load more).
-
-### 8. Stage chrome
-
-- Canvas `flex: 1` and fill remaining viewport below toolbar (P1: “full canvas”). Shrink hero copy; keep one-line hint.
-- Overlay controls must not steal layout width from the graph (position absolute inside `.investigate-canvas`).
-- Inspector stays 260px; on ≤960px stack below canvas (existing breakpoint).
-- Tokens only. Hit targets ≥ 24px for overlay buttons.
-
-### 9. Accessibility
-
-- Canvas `tabIndex={0}`, `aria-label` includes selected node id when set.
-- Overlay buttons have `aria-label` (“Zoom in”, “Fit graph”, …).
-- `prefers-reduced-motion` and `data-motion` honored (design-system §12 / §23).
-- Do not rely on wheel-only zoom — buttons required.
+Canvas `flex: 1`, `overflow: hidden`, `touch-action: none` (copy `.sa-graph-canvas`). Overlay tools bottom-left. Inspector 260px. Shrink hero to one title line.
 
 ## Success criteria
 
-An analyst on a 50-neighbor CVE (the screenshot class):
+1. Wheel over canvas zooms at cursor; **page does not scroll** (non-passive listener).
+2. `+`/`−`/FIT/RESET work without a wheel.
+3. After resolve of a 50-neighbor CVE, auto-Fit fills the canvas.
+4. Click inspects; node count unchanged; double-click expands.
+5. Inspector lists incident `source_key` / `edge_class`.
+6. LOOKUP LIVE / OPEN CVE / OPEN IN FORGE / PIN WATCHLIST call existing hooks (no new APIs).
+7. Related-CVE toggle and type chips change the visible graph; Find highlights without hiding.
+8. Truncated + cursor → LOAD MORE.
+9. Unit tests: `zoomAtCursor` (existing) + point-cloud Fit; force n>80; merge cursors; related-CVE filter.
+10. No new graph npm package; GraphPage JSON unchanged.
 
-1. After resolve, **Fit** (automatic) shows the whole neighborhood using most of the canvas, not 10% in the center.
-2. Wheel zoom is smooth (60fps on 200 nodes / 300 edges cap) and keeps the cursor’s world point stable.
-3. Clicking a related CVE **does not** merge a new page; inspector updates; double-click or EXPAND merges.
-4. At default zoom, labels do not form an unreadable pile; zooming in reveals more labels.
-5. Unchecking Related CVEs leaves technique/IOC/campaign/publication hops visible.
-6. Truncated graphs offer Load more when `next_cursor` is present.
-7. `npm run test:unit` covers camera math, force finite coords + repulsion-on-for-n>80, merge cursor map, related-CVE filter.
-8. No new npm graph library; GraphPage JSON unchanged.
+## Explicitly deferred
 
-## Risks
-
-| Risk | Mitigation |
-|------|------------|
-| Force still ugly at 200 nodes | Camera + Fit + related-CVE filter; grid repulsion; accept “good enough” |
-| Analysts liked click-to-expand | Keep EXPAND + double-click; hint copy updates once |
-| Fit fights a still-running force loop | Fit after settle / after last tick; optional “layout lock” when user pans |
-| Hit targets shrink when zoomed out | Inverse-scale hit radius in world space |
+Server-side related-CVE cap; minimap; email/mutex entity types; persisted camera; PNG export (thread PDF is the IR artifact).

@@ -2,167 +2,104 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the INVESTIGATE tab a readable, pannable, zoomable map of stored hops — inspect without accidental expand, Fit the neighborhood to the canvas, and stop related-CVE stars from becoming an illegible clump.
+**Goal:** Make INVESTIGATE a readable stored-intel map: architecture-graph wheel zoom (page must not scroll), Fit/pan, inspect vs expand, evidence inspector, and pivots into drawer / IOC LOOKUP / Forge / watchlist / thread PDF.
 
-**Architecture:** Keep the frozen GraphPage API and custom SVG. Split **world layout** (`investigateForceLayout.js`) from **view camera** (`investigateCamera.js`). `InvestigateGraph.jsx` applies `translate(tx,ty) scale(k)` to a `<g>`, changes click vs expand, LOD labels, type glyphs, related-CVE filter, and Load more via `next_cursor` stored in `mergeGraphPage`.
+**Architecture:** Reuse `{ x, y, scale }` + `zoomAtCursor` / `computeFitView` from `architectureGraphView.js` (do **not** add `investigateCamera.js`). World layout stays in `investigateForceLayout.js` (unbounded). Filters and cursor merge stay pure functions. `InvestigateGraph.jsx` copies the architecture wheel/pan listeners and wires existing `InvestigationContext` + `useWatchlist` + `onOpenCve`.
 
-**Tech Stack:** React/Vite, existing SVG canvas, Node test runner (`node:test`) for frontend unit tests, CSS tokens. No new graph libraries.
+**Tech Stack:** React/Vite, existing SVG + architecture camera, Radix `Checkbox`, Node `node:test`. No new graph libraries.
 
 ## Global Constraints
 
-- Semantic tokens only (`--surface-*`, `--text-*`, `--accent-*`, `--space-*`, `--font-size-*`) — no raw hex in components.
-- GraphPage JSON unchanged (no x/y from API, no graph DB, no live enrichment on expand).
-- Client caps stay 200 nodes / 300 edges; root preserved.
-- `prefers-reduced-motion` / `data-motion`: camera jumps, force ≤ 12 ticks.
-- Overlay controls `aria-label` + hit target ≥ 24px.
-- Merge gate: `cd frontend && npm run test:unit` and `npm run build`; `./scripts/verify-local.sh` before merge.
+- Semantic tokens only — no raw hex.
+- GraphPage JSON unchanged; no graph DB; **no live enrichment on expand**.
+- Client caps 200 nodes / 300 edges; root preserved.
+- Wheel zoom **must** use `addEventListener('wheel', handler, { passive: false })` and `preventDefault` (React `onWheel` cannot stop page scroll).
+- View model is `{ x, y, scale }` — same as System Architecture.
+- `prefers-reduced-motion`: force ≤ 12 ticks; camera jumps.
+- Overlay controls `aria-label`; hit target ≥ 24px.
+- Merge gate: `cd frontend && npm run test:unit` && `npm run build`; `./scripts/verify-local.sh`.
 
 ## File map
 
 | File | Responsibility |
 |------|----------------|
-| Create: `frontend/src/utils/investigateCamera.js` | Zoom/pan/fit/world↔screen math |
-| Create: `frontend/src/utils/investigateCamera.test.js` | Camera unit tests |
-| Create: `frontend/src/utils/investigateGraphFilters.js` | Related-CVE visibility filter |
-| Create: `frontend/src/utils/investigateGraphFilters.test.js` | Filter unit tests |
-| Modify: `frontend/src/utils/investigateForceLayout.js` | Type-ring seed, scalable springs, grid repulsion, no viewport clamp |
-| Modify: `frontend/src/utils/investigateForceLayout.test.js` | n>80 repulsion + finite coords |
-| Modify: `frontend/src/utils/investigateGraphMerge.js` | `next_cursor` + `cursorsByNodeId` |
-| Modify: `frontend/src/utils/investigateGraphMerge.test.js` | Cursor sticky merge |
-| Modify: `frontend/src/components/investigate/InvestigateGraph.jsx` | Camera, gestures, LOD, glyphs, Load more |
-| Modify: `frontend/src/components/investigate/InvestigateGraph.css` | Overlay chrome, glyphs |
-| Modify: `docs/PRODUCT_STATUS.md` | Canvas UX shipped notes |
-| Modify: `docs/USE.md` | Investigate gestures (one line) |
+| Modify: `frontend/src/utils/architectureGraphView.js` | `computePointCloudBounds` for circular nodes |
+| Modify: `frontend/src/utils/architectureGraphView.test.js` | Fit tests for point clouds |
+| Modify: `frontend/src/utils/investigateForceLayout.js` | Rings, grid repulsion, no pad clamp, `rootId` |
+| Modify: `frontend/src/utils/investigateForceLayout.test.js` | n>80 spread |
+| Modify: `frontend/src/utils/investigateGraphMerge.js` | `cursorsByNodeId` |
+| Modify: `frontend/src/utils/investigateGraphMerge.test.js` | Cursor tests |
+| Create: `frontend/src/utils/investigateGraphFilters.js` | Related-CVE + type filter + incident edges |
+| Create: `frontend/src/utils/investigateGraphFilters.test.js` | Filter tests |
+| Modify: `frontend/src/components/investigate/InvestigateGraph.jsx` | Camera, wheel, inspector, pivots |
+| Modify: `frontend/src/components/investigate/InvestigateGraph.css` | `.sa-graph-canvas` analogue |
+| Modify: `frontend/src/App.jsx` | Pass watchlist; optional `q` deep-link |
+| Modify: `frontend/src/utils/shellUrlState.js` | Preserve/drop `q` with investigate tab |
+| Modify: `docs/PRODUCT_STATUS.md`, `docs/USE.md` | Shipped UX |
+
+**Do not create** `investigateCamera.js` — that would fork the architecture camera.
 
 ---
 
-### Task 1: Camera math
+### Task 1: Point-cloud bounds on the shared camera
 
 **Files:**
-- Create: `frontend/src/utils/investigateCamera.js`
-- Test: `frontend/src/utils/investigateCamera.test.js`
+- Modify: `frontend/src/utils/architectureGraphView.js`
+- Test: `frontend/src/utils/architectureGraphView.test.js`
 
 **Interfaces:**
-- Produces: `ZOOM_MIN`, `ZOOM_MAX`, `createCamera()`, `clampZoom(k)`, `zoomAt(camera, worldX, worldY, factor)`, `panBy(camera, dx, dy)`, `screenToWorld(camera, sx, sy)`, `worldToScreen(camera, x, y)`, `boundsOf(positions)`, `fitBounds(bounds, width, height, padding)`
+- Consumes: existing `computeFitView(bounds, w, h)`, `zoomAtCursor(view, cursorX, cursorY, factor)`
+- Produces: `computePointCloudBounds(positions, radius = 12, padding = 48)` → `{ minX, minY, maxX, maxY }`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the failing test** (append)
 
 ```javascript
-import { describe, it } from 'node:test'
-import assert from 'node:assert/strict'
-import {
-  ZOOM_MIN,
-  ZOOM_MAX,
-  createCamera,
-  clampZoom,
-  zoomAt,
-  panBy,
-  screenToWorld,
-  worldToScreen,
-  boundsOf,
-  fitBounds,
-} from './investigateCamera.js'
+import { computePointCloudBounds, computeFitView } from './architectureGraphView.js'
 
-describe('investigateCamera', () => {
-  it('clamps zoom', () => {
-    assert.equal(clampZoom(0.01), ZOOM_MIN)
-    assert.equal(clampZoom(99), ZOOM_MAX)
-  })
-
-  it('keeps the world point under the cursor stable when zooming', () => {
-    const camera = { k: 1, tx: 10, ty: 20 }
-    const world = { x: 100, y: 50 }
-    const before = worldToScreen(camera, world.x, world.y)
-    const next = zoomAt(camera, world.x, world.y, 2)
-    const after = worldToScreen(next, world.x, world.y)
-    assert.equal(Math.round(after.x), Math.round(before.x))
-    assert.equal(Math.round(after.y), Math.round(before.y))
-    assert.ok(next.k > camera.k)
-  })
-
-  it('panBy shifts screen translation', () => {
-    const next = panBy(createCamera(), 15, -8)
-    assert.equal(next.tx, 15)
-    assert.equal(next.ty, -8)
-    assert.equal(next.k, 1)
-  })
-
-  it('screenToWorld inverts worldToScreen', () => {
-    const camera = { k: 1.5, tx: 40, ty: -12 }
-    const world = screenToWorld(camera, 100, 80)
-    const screen = worldToScreen(camera, world.x, world.y)
-    assert.equal(Math.round(screen.x), 100)
-    assert.equal(Math.round(screen.y), 80)
-  })
-
-  it('fitBounds places the bbox center at the viewport center', () => {
+describe('computePointCloudBounds', () => {
+  it('pads circular nodes so Fit can frame force-layout dots', () => {
     const positions = [
-      { x: 0, y: 0 },
-      { x: 200, y: 100 },
+      { x: 100, y: 100 },
+      { x: 300, y: 180 },
     ]
-    const bounds = boundsOf(positions)
-    const camera = fitBounds(bounds, 800, 600, 40)
-    const mid = worldToScreen(camera, 100, 50)
-    assert.ok(Math.abs(mid.x - 400) < 2)
-    assert.ok(Math.abs(mid.y - 300) < 2)
-    assert.ok(camera.k >= ZOOM_MIN && camera.k <= ZOOM_MAX)
+    const bounds = computePointCloudBounds(positions, 12, 10)
+    assert.equal(bounds.minX, 78)
+    assert.equal(bounds.minY, 78)
+    assert.equal(bounds.maxX, 322)
+    assert.equal(bounds.maxY, 202)
+  })
+
+  it('fits a compact clump into a large viewport (scale > 1)', () => {
+    const bounds = computePointCloudBounds(
+      [{ x: 400, y: 300 }, { x: 420, y: 310 }],
+      8,
+      20,
+    )
+    const fit = computeFitView(bounds, 800, 600)
+    assert.ok(fit.scale > 1)
+    const cx = (bounds.minX + bounds.maxX) / 2
+    const cy = (bounds.minY + bounds.maxY) / 2
+    assert.ok(Math.abs(fit.x + cx * fit.scale - 400) < 2)
+    assert.ok(Math.abs(fit.y + cy * fit.scale - 300) < 2)
   })
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run — expect FAIL**
 
-Run: `cd frontend && node --test src/utils/investigateCamera.test.js`
+Run: `cd frontend && node --test src/utils/architectureGraphView.test.js`
 
-Expected: FAIL (module not found)
+Expected: FAIL (`computePointCloudBounds` not exported)
 
-- [ ] **Step 3: Write implementation**
+- [ ] **Step 3: Implement**
+
+Add to `architectureGraphView.js`:
 
 ```javascript
-/** View camera: screen = world * k + (tx, ty). Layout stays in world space. */
-
-export const ZOOM_MIN = 0.25
-export const ZOOM_MAX = 4
-
-export function createCamera() {
-  return { k: 1, tx: 0, ty: 0 }
-}
-
-export function clampZoom(k) {
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, k))
-}
-
-export function worldToScreen(camera, x, y) {
-  return {
-    x: x * camera.k + camera.tx,
-    y: y * camera.k + camera.ty,
-  }
-}
-
-export function screenToWorld(camera, sx, sy) {
-  return {
-    x: (sx - camera.tx) / camera.k,
-    y: (sy - camera.ty) / camera.k,
-  }
-}
-
-export function panBy(camera, dx, dy) {
-  return { k: camera.k, tx: camera.tx + dx, ty: camera.ty + dy }
-}
-
-export function zoomAt(camera, worldX, worldY, factor) {
-  const k2 = clampZoom(camera.k * factor)
-  const screen = worldToScreen(camera, worldX, worldY)
-  return {
-    k: k2,
-    tx: screen.x - worldX * k2,
-    ty: screen.y - worldY * k2,
-  }
-}
-
-export function boundsOf(positions) {
-  if (!positions.length) {
-    return { minX: 0, minY: 0, maxX: 1, maxY: 1 }
+/** Bounding box for force-layout dots (cx, cy) rather than architecture rects. */
+export function computePointCloudBounds(positions, radius = 12, padding = 48) {
+  if (!positions?.length) {
+    return { minX: 0, minY: 0, maxX: 400, maxY: 300 }
   }
   let minX = Infinity
   let minY = Infinity
@@ -170,106 +107,98 @@ export function boundsOf(positions) {
   let maxY = -Infinity
   for (const node of positions) {
     if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) continue
-    minX = Math.min(minX, node.x)
-    minY = Math.min(minY, node.y)
-    maxX = Math.max(maxX, node.x)
-    maxY = Math.max(maxY, node.y)
+    minX = Math.min(minX, node.x - radius)
+    minY = Math.min(minY, node.y - radius)
+    maxX = Math.max(maxX, node.x + radius)
+    maxY = Math.max(maxY, node.y + radius)
   }
   if (!Number.isFinite(minX)) {
-    return { minX: 0, minY: 0, maxX: 1, maxY: 1 }
+    return { minX: 0, minY: 0, maxX: 400, maxY: 300 }
   }
-  return { minX, minY, maxX, maxY }
-}
-
-export function fitBounds(bounds, width, height, padding = 48) {
-  const bw = Math.max(bounds.maxX - bounds.minX, 1)
-  const bh = Math.max(bounds.maxY - bounds.minY, 1)
-  const innerW = Math.max(width - padding * 2, 1)
-  const innerH = Math.max(height - padding * 2, 1)
-  const k = clampZoom(Math.min(innerW / bw, innerH / bh))
-  const cx = (bounds.minX + bounds.maxX) / 2
-  const cy = (bounds.minY + bounds.maxY) / 2
   return {
-    k,
-    tx: width / 2 - cx * k,
-    ty: height / 2 - cy * k,
+    minX: minX - padding,
+    minY: minY - padding,
+    maxX: maxX + padding,
+    maxY: maxY + padding,
   }
 }
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+Do **not** change `zoomAtCursor` — INVESTIGATE will call it with canvas-relative CSS pixels, same as architecture.
 
-Run: `cd frontend && node --test src/utils/investigateCamera.test.js`
+- [ ] **Step 4: Run — expect PASS** (existing zoom/fit tests still green)
+
+Run: `cd frontend && node --test src/utils/architectureGraphView.test.js`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/utils/investigateCamera.js frontend/src/utils/investigateCamera.test.js
-git commit -m "feat(investigate): add pan/zoom/fit camera math"
+git add frontend/src/utils/architectureGraphView.js frontend/src/utils/architectureGraphView.test.js
+git commit -m "feat(graph): point-cloud bounds for INVESTIGATE Fit"
 ```
 
 ---
 
-### Task 2: Force layout — no clamp, repulsion at n>80, type-ring seed
+### Task 2: Force layout without viewport clamp
 
 **Files:**
 - Modify: `frontend/src/utils/investigateForceLayout.js`
 - Test: `frontend/src/utils/investigateForceLayout.test.js`
 
 **Interfaces:**
-- Consumes: `nodes[].entity_type`, optional `nodes[].node_id`, `edges[].source_key`
-- Produces: same `seedPositions(nodes, width, height, prior)` / `stepForce(positions, edges, width, height)` signatures. World coords may leave the viewport; camera (Task 4) frames them.
+- Produces: `seedPositions(nodes, width, height, prior, rootId)` and `stepForce(positions, edges, width, height, rootId)` — world coords may leave the SVG; camera frames them.
 
-- [ ] **Step 1: Extend tests**
-
-Add to `investigateForceLayout.test.js`:
+- [ ] **Step 1: Add tests**
 
 ```javascript
-  it('keeps repulsion active above 80 nodes (positions spread)', () => {
+  it('spreads a 90-node star (repulsion not skipped)', () => {
     const nodes = Array.from({ length: 90 }, (_, i) => ({
       node_id: `n${i}`,
-      entity_type: i === 0 ? 'cve' : 'cve',
+      entity_type: 'cve',
       label: `n${i}`,
     }))
     const edges = nodes.slice(1).map((node) => ({
       source_node_id: 'n0',
       target_node_id: node.node_id,
     }))
-    let positions = seedPositions(nodes, 800, 600)
+    let positions = seedPositions(nodes, 800, 600, new Map(), 'n0')
     for (let i = 0; i < 40; i += 1) {
-      positions = stepForce(positions, edges, 800, 600)
+      positions = stepForce(positions, edges, 800, 600, 'n0')
     }
     const xs = positions.map((p) => p.x)
     const span = Math.max(...xs) - Math.min(...xs)
     assert.ok(span > 200, `expected spread, got ${span}`)
   })
 
-  it('does not clamp nodes into a 36px viewport pad', () => {
+  it('does not clamp a node to a 36px viewport pad', () => {
     const nodes = [
       { node_id: 'a', entity_type: 'cve' },
       { node_id: 'b', entity_type: 'ioc' },
     ]
-    let positions = seedPositions(nodes, 400, 400)
-    positions[0].x = -50
-    positions[0].y = -50
-    positions[0].vx = 0
-    positions[0].vy = 0
-    const next = stepForce(positions, [], 400, 400)
-    assert.ok(next[0].x < 36 || next[0].x > 364 || next[0].x === -50 || next[0].x < 0)
+    const positions = seedPositions(nodes, 400, 400, new Map(), 'a')
+    positions[1].x = -80
+    positions[1].y = -80
+    positions[1].vx = 0
+    positions[1].vy = 0
+    const next = stepForce(positions, [], 400, 400, 'a')
+    const b = next.find((n) => n.node_id === 'b')
+    assert.ok(b.x < 36, `expected no pad clamp, got x=${b.x}`)
   })
 ```
 
-The second assertion should be: after one tick **without** pad clamp, a node at (-50,-50) is **not** forced to x=36. Implement so `applyCenterAndBounds` no longer `Math.min(width-pad, Math.max(pad, node.x))`. Soft finite clamp at ±8000 only.
+Keep the existing finite-coords test; pass `rootId` optionally (default first node).
 
-- [ ] **Step 2: Run tests — expect FAIL** on spread / clamp.
+- [ ] **Step 2: Run — expect FAIL** on spread/clamp
 
 Run: `cd frontend && node --test src/utils/investigateForceLayout.test.js`
 
-- [ ] **Step 3: Implement layout**
+- [ ] **Step 3: Implement**
 
-Replace constants and helpers in `investigateForceLayout.js`:
+Replace `investigateForceLayout.js` with:
 
 ```javascript
+/** Client-only force layout for INVESTIGATE. API GraphPage has no x/y. */
+
 const REPULSE = 2800
 const SPRING = 0.035
 const SPRING_LENGTH_MIN = 160
@@ -280,8 +209,10 @@ const WORLD_LIMIT = 8000
 const GRID_REPULSE_MAX = 24
 
 function springLength(count) {
-  const scaled = SPRING_LENGTH_MIN + Math.sqrt(Math.max(count, 1)) * 18
-  return Math.min(SPRING_LENGTH_MAX, scaled)
+  return Math.min(
+    SPRING_LENGTH_MAX,
+    SPRING_LENGTH_MIN + Math.sqrt(Math.max(count, 1)) * 18,
+  )
 }
 
 function ringRadiusForType(entityType, isRoot) {
@@ -300,11 +231,11 @@ export function seedPositions(nodes, width, height, prior = new Map(), rootId = 
   const base = Math.min(width, height) * 0.42
   const root = rootId || nodes[0]?.node_id
   const buckets = new Map()
-  nodes.forEach((node, index) => {
+  for (const node of nodes) {
     const key = node.entity_type || 'other'
     if (!buckets.has(key)) buckets.set(key, [])
-    buckets.get(key).push({ node, index })
-  })
+    buckets.get(key).push(node)
+  }
   return nodes.map((node) => {
     const kept = prior.get(node.node_id)
     if (kept && Number.isFinite(kept.x) && Number.isFinite(kept.y)) {
@@ -314,7 +245,7 @@ export function seedPositions(nodes, width, height, prior = new Map(), rootId = 
       return { ...node, x: cx, y: cy, vx: 0, vy: 0 }
     }
     const group = buckets.get(node.entity_type || 'other') || []
-    const gi = group.findIndex((item) => item.node.node_id === node.node_id)
+    const gi = Math.max(0, group.findIndex((item) => item.node_id === node.node_id))
     const angle = (gi / Math.max(group.length, 1)) * Math.PI * 2
     const radius = base * ringRadiusForType(node.entity_type, false)
     return {
@@ -353,9 +284,9 @@ function applyRepulsion(next) {
           let dy = a.y - b.y
           let distSq = dx * dx + dy * dy
           if (distSq < 16) {
-            dx = ((i + j) % 5) - 2
-            dy = ((i * 3 + j) % 5) - 2
-            distSq = Math.max(dx * dx + dy * dy, 1)
+            dx = ((i + j) % 5) - 2 || 0.5
+            dy = ((i * 3 + j) % 5) - 2 || 0.5
+            distSq = dx * dx + dy * dy
           }
           const dist = Math.sqrt(distSq)
           const force = REPULSE / distSq
@@ -383,21 +314,23 @@ function applySprings(next, edges, byId) {
     const dy = b.y - a.y
     const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1)
     const stretch = dist - rest
-    const fx = (dx / dist) * stretch * SPRING
-    const fy = (dy / dist) * stretch * SPRING
-    a.vx += fx
-    a.vy += fy
-    b.vx -= fx
-    b.vy -= fy
+    a.vx += (dx / dist) * stretch * SPRING
+    a.vy += (dy / dist) * stretch * SPRING
+    b.vx -= (dx / dist) * stretch * SPRING
+    b.vy -= (dy / dist) * stretch * SPRING
   }
 }
 
-function applyRootCenterAndDamping(next, width, height) {
+export function stepForce(positions, edges, width, height, rootId = null) {
+  const next = positions.map((node) => ({ ...node }))
+  const byId = new Map(next.map((node) => [node.node_id, node]))
+  const root = rootId || next[0]?.node_id
+  applyRepulsion(next)
+  applySprings(next, edges, byId)
   const cx = width / 2
   const cy = height / 2
   for (const node of next) {
-    const isRoot = node.node_id && node.node_id === next[0]?.node_id
-    if (isRoot) {
+    if (node.node_id === root) {
       node.vx += (cx - node.x) * ROOT_CENTER
       node.vy += (cy - node.y) * ROOT_CENTER
     }
@@ -408,35 +341,11 @@ function applyRootCenterAndDamping(next, width, height) {
     node.x = Math.min(WORLD_LIMIT, Math.max(-WORLD_LIMIT, node.x))
     node.y = Math.min(WORLD_LIMIT, Math.max(-WORLD_LIMIT, node.y))
   }
-}
-
-export function stepForce(positions, edges, width, height) {
-  const next = positions.map((node) => ({ ...node }))
-  const byId = new Map(next.map((node) => [node.node_id, node]))
-  applyRepulsion(next)
-  applySprings(next, edges, byId)
-  applyRootCenterAndDamping(next, width, height)
   return next
 }
 ```
 
-**Root identity:** do not use `next[0]` as root. Pass `rootId` into `stepForce` as a 5th argument defaulting to `positions[0]?.node_id`, and have `InvestigateGraph` pass `graph.root_id`. Update the existing finite-coords test to still pass (it can omit `rootId`).
-
-```javascript
-export function stepForce(positions, edges, width, height, rootId = null) {
-  const next = positions.map((node) => ({ ...node }))
-  const byId = new Map(next.map((node) => [node.node_id, node]))
-  const root = rootId || next[0]?.node_id
-  applyRepulsion(next)
-  applySprings(next, edges, byId)
-  applyRootCenterAndDamping(next, width, height, root)
-  return next
-}
-```
-
-And `applyRootCenterAndDamping(..., rootId)` uses `node.node_id === rootId`.
-
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 4: Run — expect PASS**
 
 Run: `cd frontend && node --test src/utils/investigateForceLayout.test.js`
 
@@ -449,16 +358,13 @@ git commit -m "fix(investigate): spread force layout without viewport clamp"
 
 ---
 
-### Task 3: Persist `next_cursor` on merge
+### Task 3: Persist `next_cursor`
 
 **Files:**
 - Modify: `frontend/src/utils/investigateGraphMerge.js`
 - Test: `frontend/src/utils/investigateGraphMerge.test.js`
 
-**Interfaces:**
-- Produces: graph state fields `next_cursor`, `cursorsByNodeId` (map node_id → cursor string | null)
-
-- [ ] **Step 1: Write failing test** (append to merge describe)
+- [ ] **Step 1: Failing test**
 
 ```javascript
   it('stores next_cursor per expanded root id', () => {
@@ -472,9 +378,7 @@ git commit -m "fix(investigate): spread force layout without viewport clamp"
       knowledge_state: 'partial',
     }
     const first = mergeGraphPage(emptyGraphState(), page)
-    assert.equal(first.next_cursor, 'abc')
     assert.equal(first.cursorsByNodeId['cve:CVE-1'], 'abc')
-
     const second = mergeGraphPage(first, {
       ...page,
       root: { node_id: 'cve:CVE-2', entity_type: 'cve', entity_id: 'CVE-2', label: 'CVE-2' },
@@ -484,7 +388,6 @@ git commit -m "fix(investigate): spread force layout without viewport clamp"
     })
     assert.equal(second.cursorsByNodeId['cve:CVE-1'], 'abc')
     assert.equal(second.cursorsByNodeId['cve:CVE-2'], null)
-    assert.equal(second.next_cursor, null)
   })
 ```
 
@@ -494,9 +397,9 @@ Run: `cd frontend && node --test src/utils/investigateGraphMerge.test.js`
 
 - [ ] **Step 3: Implement**
 
-In `emptyGraphState()` add `next_cursor: null, cursorsByNodeId: {}`.
+`emptyGraphState()` adds `next_cursor: null`, `cursorsByNodeId: {}`.
 
-In `mergeGraphPage` return:
+`mergeGraphPage` return:
 
 ```javascript
   const expandedId = page.root?.node_id
@@ -517,8 +420,6 @@ In `mergeGraphPage` return:
   }
 ```
 
-When `trimmed.capped` is true, still store the cursor (Load more is hidden in UI when capped — Task 4).
-
 - [ ] **Step 4: Run — expect PASS**
 
 - [ ] **Step 5: Commit**
@@ -530,58 +431,78 @@ git commit -m "feat(investigate): keep relationship next_cursor per node"
 
 ---
 
-### Task 4: Related-CVE filter helper
+### Task 4: Visible-graph filters + incident edges
 
 **Files:**
 - Create: `frontend/src/utils/investigateGraphFilters.js`
 - Test: `frontend/src/utils/investigateGraphFilters.test.js`
 
 **Interfaces:**
-- Produces: `visibleGraph(graph, { showRelatedCves: boolean })` → `{ nodes, edges }`
+- Produces: `visibleGraph(graph, { showRelatedCves, entityType })`, `incidentEdges(graph, nodeId)`, `relatedCveCount(graph)`, `neighborIds(graph, nodeId)`
 
 - [ ] **Step 1: Failing tests**
 
 ```javascript
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { visibleGraph } from './investigateGraphFilters.js'
+import {
+  visibleGraph,
+  incidentEdges,
+  relatedCveCount,
+  neighborIds,
+} from './investigateGraphFilters.js'
 
 const root = { node_id: 'cve:ROOT', entity_type: 'cve', entity_id: 'ROOT', label: 'ROOT' }
 const ioc = { node_id: 'ioc:ip:1.1.1.1', entity_type: 'ioc', entity_id: 'ip:1.1.1.1', label: '1.1.1.1' }
 const rel = { node_id: 'cve:REL', entity_type: 'cve', entity_id: 'REL', label: 'REL' }
-
 const graph = {
   root_id: 'cve:ROOT',
   nodes: [root, ioc, rel],
   edges: [
-    { edge_id: 'e-ioc', source_node_id: 'cve:ROOT', target_node_id: 'ioc:ip:1.1.1.1', source_key: 'otx', edge_class: 'reported' },
-    { edge_id: 'e-rel', source_node_id: 'cve:ROOT', target_node_id: 'cve:REL', source_key: 'related_cve_heuristic', edge_class: 'derived' },
+    {
+      edge_id: 'e-ioc',
+      source_node_id: 'cve:ROOT',
+      target_node_id: 'ioc:ip:1.1.1.1',
+      source_key: 'otx',
+      edge_class: 'reported',
+      observed_at: '2024-01-01T00:00:00Z',
+    },
+    {
+      edge_id: 'e-rel',
+      source_node_id: 'cve:ROOT',
+      target_node_id: 'cve:REL',
+      source_key: 'related_cve_heuristic',
+      edge_class: 'derived',
+    },
   ],
 }
 
 describe('visibleGraph', () => {
-  it('keeps related CVEs when enabled', () => {
-    const out = visibleGraph(graph, { showRelatedCves: true })
-    assert.equal(out.nodes.length, 3)
-    assert.equal(out.edges.length, 2)
-  })
-
-  it('hides nodes only reached by related_cve_heuristic', () => {
+  it('hides heuristic-only CVEs when showRelatedCves is false', () => {
     const out = visibleGraph(graph, { showRelatedCves: false })
     assert.deepEqual(out.nodes.map((n) => n.node_id).sort(), ['cve:ROOT', 'ioc:ip:1.1.1.1'])
-    assert.equal(out.edges.length, 1)
   })
 
-  it('keeps a CVE that also has a non-heuristic edge', () => {
-    const extra = {
-      ...graph,
-      edges: [
-        ...graph.edges,
-        { edge_id: 'e-otx', source_node_id: 'cve:ROOT', target_node_id: 'cve:REL', source_key: 'otx', edge_class: 'reported' },
-      ],
-    }
-    const out = visibleGraph(extra, { showRelatedCves: false })
-    assert.ok(out.nodes.some((n) => n.node_id === 'cve:REL'))
+  it('filters to IOC type chips without dropping the root', () => {
+    const out = visibleGraph(graph, { showRelatedCves: true, entityType: 'ioc' })
+    assert.ok(out.nodes.some((n) => n.node_id === 'cve:ROOT'))
+    assert.ok(out.nodes.every((n) => n.entity_type === 'ioc' || n.node_id === 'cve:ROOT'))
+  })
+})
+
+describe('incidentEdges', () => {
+  it('returns edges touching the selected node with source_key', () => {
+    const rows = incidentEdges(graph, 'cve:ROOT')
+    assert.equal(rows.length, 2)
+    assert.equal(rows[0].source_key, 'otx')
+  })
+})
+
+describe('neighborIds', () => {
+  it('lists adjacent node ids', () => {
+    const ids = neighborIds(graph, 'cve:ROOT')
+    assert.ok(ids.has('ioc:ip:1.1.1.1'))
+    assert.ok(ids.has('cve:REL'))
   })
 })
 ```
@@ -591,29 +512,55 @@ describe('visibleGraph', () => {
 - [ ] **Step 3: Implement**
 
 ```javascript
-export function visibleGraph(graph, { showRelatedCves = true } = {}) {
+export function relatedCveCount(graph) {
+  return (graph.edges || []).filter((e) => e.source_key === 'related_cve_heuristic').length
+}
+
+export function incidentEdges(graph, nodeId) {
+  if (!nodeId) return []
+  return (graph.edges || []).filter(
+    (e) => e.source_node_id === nodeId || e.target_node_id === nodeId,
+  )
+}
+
+export function neighborIds(graph, nodeId) {
+  const ids = new Set()
+  for (const e of incidentEdges(graph, nodeId)) {
+    ids.add(e.source_node_id === nodeId ? e.target_node_id : e.source_node_id)
+  }
+  return ids
+}
+
+export function visibleGraph(graph, { showRelatedCves = true, entityType = 'all' } = {}) {
   const nodes = graph.nodes || []
   const edges = graph.edges || []
-  if (showRelatedCves) return { nodes, edges }
-
-  const justified = new Set()
-  if (graph.root_id) justified.add(graph.root_id)
-  for (const edge of edges) {
-    if (edge.source_key === 'related_cve_heuristic') continue
-    justified.add(edge.source_node_id)
-    justified.add(edge.target_node_id)
+  const rootId = graph.root_id
+  let justified = new Set(nodes.map((n) => n.node_id))
+  if (!showRelatedCves) {
+    justified = new Set()
+    if (rootId) justified.add(rootId)
+    for (const edge of edges) {
+      if (edge.source_key === 'related_cve_heuristic') continue
+      justified.add(edge.source_node_id)
+      justified.add(edge.target_node_id)
+    }
   }
-  const visibleNodes = nodes.filter((node) => justified.has(node.node_id))
-  const ids = new Set(visibleNodes.map((node) => node.node_id))
+  let visibleNodes = nodes.filter((n) => justified.has(n.node_id))
+  if (entityType && entityType !== 'all') {
+    visibleNodes = visibleNodes.filter(
+      (n) => n.node_id === rootId || n.entity_type === entityType,
+    )
+  }
+  const ids = new Set(visibleNodes.map((n) => n.node_id))
   const visibleEdges = edges.filter(
-    (edge) => ids.has(edge.source_node_id) && ids.has(edge.target_node_id)
-      && edge.source_key !== 'related_cve_heuristic',
+    (e) => ids.has(e.source_node_id) && ids.has(e.target_node_id)
+      && (showRelatedCves || e.source_key !== 'related_cve_heuristic'),
   )
   return { nodes: visibleNodes, edges: visibleEdges }
 }
 
-export function relatedCveCount(graph) {
-  return (graph.edges || []).filter((edge) => edge.source_key === 'related_cve_heuristic').length
+export function otherNodeId(edge, nodeId) {
+  return edge.source_node_id === nodeId ? edge.target_node_id : edge.source_node_id
 }
 ```
 
@@ -623,241 +570,149 @@ export function relatedCveCount(graph) {
 
 ```bash
 git add frontend/src/utils/investigateGraphFilters.js frontend/src/utils/investigateGraphFilters.test.js
-git commit -m "feat(investigate): filter heuristic related-CVE hops"
+git commit -m "feat(investigate): client filters and incident-edge helpers"
 ```
 
 ---
 
-### Task 5: Wire camera, gestures, LOD, glyphs, Load more in the canvas
+### Task 5: Canvas — wheel zoom, Fit, inspect, inspector, pivots
 
 **Files:**
 - Modify: `frontend/src/components/investigate/InvestigateGraph.jsx`
 - Modify: `frontend/src/components/investigate/InvestigateGraph.css`
+- Modify: `frontend/src/App.jsx` (watchlist props)
 
 **Interfaces:**
-- Consumes: Task 1 camera, Task 2 `stepForce(..., rootId)`, Task 3 cursors, Task 4 `visibleGraph` / `relatedCveCount`
-- Produces: analyst-visible canvas behavior per spec §1–8
+- Consumes: Task 1 camera, Task 2 layout, Task 3 cursors, Task 4 filters, `InvestigationContext`, `onOpenCve`, `watchlist`
+- Produces: analyst canvas per spec
 
-This is the largest task; keep it to one PR commit after unit tests from 1–4 are green.
+- [ ] **Step 1: Props from App**
 
-- [ ] **Step 1: Camera state + SVG group**
+`App.jsx` around the INVESTIGATE panel:
 
-In `InvestigateGraph.jsx`:
+```jsx
+<InvestigateGraph
+  isActive={activeTab === 'investigate'}
+  onOpenCve={openCveById}
+  watchlist={watchlist}
+  onWatchlistChange={handleWatchlistChange}
+/>
+```
+
+Use the same `handleWatchlistChange` / `watchlist.getState` already passed to `DetailDrawer`.
+
+- [ ] **Step 2: View state + non-passive wheel (required for scroll zoom)**
+
+Copy architecture — do **not** use React `onWheel`:
 
 ```javascript
 import {
-  createCamera,
-  fitBounds,
-  boundsOf,
-  panBy,
-  zoomAt,
-  screenToWorld,
-  ZOOM_MIN,
-  ZOOM_MAX,
-} from '../../utils/investigateCamera.js'
-import { visibleGraph, relatedCveCount } from '../../utils/investigateGraphFilters.js'
+  DEFAULT_VIEW,
+  computeFitView,
+  computePointCloudBounds,
+  truncateNodeLabel,
+  zoomAtCursor,
+} from '../../utils/architectureGraphView.js'
 
-const [camera, setCamera] = useState(createCamera)
-const [showRelatedCves, setShowRelatedCves] = useState(true)
-const cameraRef = useRef(camera)
-cameraRef.current = camera
+const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
+const viewRef = useRef(view)
+viewRef.current = view
+const userMovedRef = useRef(false)
 
-const view = useMemo(
-  () => visibleGraph(graph, { showRelatedCves }),
-  [graph, showRelatedCves],
-)
-```
-
-Force loop and seeds must use `view.nodes` / `view.edges`. Pass `graph.root_id` into `stepForce`.
-
-After the force effect, when `ticks` hits `maxTicks`, call Fit **once** if the user has not panned/zoomed (`userMovedCameraRef`):
-
-```javascript
-if (ticks === maxTicks && !userMovedCameraRef.current) {
-  const { width, height } = sizeRef.current
-  setCamera(fitBounds(boundsOf(positionsRef.current), width, height, 48))
-}
-```
-
-SVG:
-
-```jsx
-<svg
-  className="investigate-svg"
-  width="100%"
-  height="100%"
-  role="img"
-  tabIndex={0}
-  aria-label={selected
-    ? `Investigation graph, selected ${selected.entity_type} ${selected.entity_id}`
-    : 'Investigation relationship graph'}
-  onWheel={onWheel}
-  onPointerDown={onPointerDown}
-  onPointerMove={onPointerMove}
-  onPointerUp={onPointerUp}
-  onKeyDown={onCanvasKey}
->
-  <g transform={`translate(${camera.tx} ${camera.ty}) scale(${camera.k})`}>
-    {/* lines + nodes */}
-  </g>
-</svg>
-```
-
-- [ ] **Step 2: Pointer handlers**
-
-```javascript
-const dragRef = useRef(null) // { mode: 'pan'|'node', id, lastX, lastY }
-
-function clientToSvg(event) {
+useEffect(() => {
   const el = canvasRef.current
-  const rect = el.getBoundingClientRect()
-  return { sx: event.clientX - rect.left, sy: event.clientY - rect.top }
-}
-
-function onWheel(event) {
-  event.preventDefault()
-  userMovedCameraRef.current = true
-  const { sx, sy } = clientToSvg(event)
-  const world = screenToWorld(cameraRef.current, sx, sy)
-  const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15
-  setCamera(zoomAt(cameraRef.current, world.x, world.y, factor))
-}
-
-function onPointerDown(event) {
-  if (event.button !== 0) return
-  const target = event.target
-  const nodeId = target.closest?.('[data-node-id]')?.getAttribute('data-node-id')
-  const { sx, sy } = clientToSvg(event)
-  if (nodeId) {
-    dragRef.current = { mode: 'node', id: nodeId, lastX: sx, lastY: sy, moved: false }
-  } else {
-    dragRef.current = { mode: 'pan', lastX: sx, lastY: sy }
-    userMovedCameraRef.current = true
+  if (!el) return undefined
+  const handler = (e) => {
+    e.preventDefault()
+    userMovedRef.current = true
+    const rect = el.getBoundingClientRect()
+    const cursorX = e.clientX - rect.left
+    const cursorY = e.clientY - rect.top
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+    setView((v) => zoomAtCursor(v, cursorX, cursorY, factor))
   }
-  event.currentTarget.setPointerCapture?.(event.pointerId)
-}
-
-function onPointerMove(event) {
-  const drag = dragRef.current
-  if (!drag) return
-  const { sx, sy } = clientToSvg(event)
-  const dx = sx - drag.lastX
-  const dy = sy - drag.lastY
-  if (drag.mode === 'pan') {
-    setCamera((c) => panBy(c, dx, dy))
-  } else if (Math.hypot(dx, dy) > 3) {
-    drag.moved = true
-    const worldDelta = { x: dx / cameraRef.current.k, y: dy / cameraRef.current.k }
-    setPositions((prev) => prev.map((n) => (
-      n.node_id === drag.id
-        ? { ...n, x: n.x + worldDelta.x, y: n.y + worldDelta.y, vx: 0, vy: 0 }
-        : n
-    )))
-  }
-  drag.lastX = sx
-  drag.lastY = sy
-}
+  el.addEventListener('wheel', handler, { passive: false })
+  return () => el.removeEventListener('wheel', handler)
+}, [graph.root_id])
 ```
 
-On pointer up: if `mode==='node'` and `!moved`, **select** (`setSelectedId`); do **not** expand. Double-click on `[data-node-id]` calls `expandNode`.
+Pan: copy `ArchitectureGraphSection` `onPointerDown` / `Move` / `Up` (ignore `[data-node-id]` for pan; node pointer = drag node or click-select).
+
+Fit:
 
 ```javascript
-function onNodeClick(node, event) {
-  event.stopPropagation()
-  setSelectedId(node.node_id)
-}
-
-function onNodeDoubleClick(node, event) {
-  event.stopPropagation()
-  expandNode(node)
-}
+const fitGraphToView = useCallback(() => {
+  const el = canvasRef.current
+  if (!el || !positions.length) return
+  const bounds = computePointCloudBounds(positions, 12, 48)
+  setView(computeFitView(bounds, el.clientWidth, el.clientHeight))
+}, [positions])
 ```
 
-Remove `onClick={() => expandNode(node)}`. Space/Enter select; Shift+Enter expand.
+After force `ticks === maxTicks` and `!userMovedRef.current`, call `fitGraphToView()`. RESET = Fit (not scale 1). Overlay `+`/`−` zoom at canvas center via `zoomAtCursor(view, width/2, height/2, 1.1)`.
 
-- [ ] **Step 3: Overlay controls + related toggle + Load more**
+SVG: `<g transform={\`translate(${view.x} ${view.y}) scale(${view.scale})\`}>`.
 
-Inside `.investigate-canvas` (not stealing grid columns):
+- [ ] **Step 3: Click = select; double-click = expand**
 
-```jsx
-<div className="investigate-camera-tools" role="toolbar" aria-label="Graph camera">
-  <button type="button" aria-label="Zoom out" onClick={() => {
-    userMovedCameraRef.current = true
-    const { width, height } = sizeRef.current
-    const world = screenToWorld(camera, width / 2, height / 2)
-    setCamera(zoomAt(camera, world.x, world.y, 1 / 1.15))
-  }}>−</button>
-  <button type="button" aria-label="Zoom in" onClick={() => { /* factor 1.15 */ }}>+</button>
-  <button type="button" aria-label="Fit graph" onClick={() => {
-    setCamera(fitBounds(boundsOf(positions), sizeRef.current.width, sizeRef.current.height, 48))
-  }}>FIT</button>
-  <button type="button" aria-label="Reset camera" onClick={() => {
-    userMovedCameraRef.current = false
-    setCamera(createCamera())
-  }}>RESET</button>
-</div>
-```
+Remove `onClick={() => expandNode(node)}`. Click sets `selectedId`; click selected deselects. `onDoubleClick` → `expandNode`. Inspector EXPAND stays.
 
-Inspector:
+- [ ] **Step 4: Inspector evidence + pivots**
 
-```jsx
-<label className="investigate-toggle">
-  <input
-    type="checkbox"
-    checked={showRelatedCves}
-    onChange={(e) => setShowRelatedCves(e.target.checked)}
-  />
-  Related CVEs ({relatedCveCount(graph)})
-</label>
-```
-
-Use Radix `Checkbox` from `frontend/src/components/ui` (CONTRIBUTOR_RULES: no native checkbox). Label text remains `Related CVEs (N)`.
-
-Honesty + Load more:
+Incident list from `incidentEdges(graph, selectedId)`. Actions:
 
 ```javascript
-const loadCursor = selectedId
-  ? graph.cursorsByNodeId?.[selectedId]
-  : graph.cursorsByNodeId?.[graph.root_id]
-const canLoadMore = Boolean(graph.truncated && loadCursor && !graph.capped)
+const investigation = useInvestigationOptional()
 
-async function loadMore() {
-  const node = graph.nodes.find((n) => n.node_id === (selectedId || graph.root_id))
-  if (!node || !loadCursor) return
-  const page = await fetchInvestigationRelationships(node.entity_type, node.entity_id, {
-    cursor: loadCursor,
-  })
-  setGraph((prev) => mergeGraphPage(prev, page))
+// LOOKUP LIVE — stored graph must not enrich; this pivots to IOC LOOKUP
+if (selected.entity_type === 'ioc') {
+  <button type="button" onClick={() => investigation.pivotToIoc(selected.label || selected.entity_id.split(':').slice(1).join(':'))}>
+    LOOKUP LIVE
+  </button>
+}
+if (selected.entity_type === 'technique') {
+  <button type="button" onClick={() => investigation.pivotToTechnique(selected.entity_id, selected.label)}>
+    OPEN IN FORGE
+  </button>
+}
+if (selected.entity_type === 'cve' && watchlist) {
+  <button type="button" onClick={() => onWatchlistChange(selected.entity_id, 'pin')}>
+    {watchlist.getState(selected.entity_id) === 'pin' ? 'UNPIN WATCHLIST' : 'PIN WATCHLIST'}
+  </button>
 }
 ```
 
-Hint copy change:
+COPY ID: `navigator.clipboard.writeText(selected.entity_id)`.
 
-`Click a node to inspect. Double-click or EXPAND to pivot. Scroll to zoom, drag empty canvas to pan.`
+PIN VISIBLE CVEs: `view.nodes.filter(n => n.entity_type === 'cve').forEach(n => investigation.ensureCveInThread(n.entity_id))`.
 
-- [ ] **Step 4: LOD labels + hit radius + glyphs**
+Related CVEs: Radix `Checkbox` `checked={showRelatedCves}` `onCheckedChange={setShowRelatedCves}` `label={`Related CVEs (${relatedCveCount(graph)})`}`.
 
-```javascript
-function showLabel(node, cameraK, selectedId, hoverId, rootId) {
-  if (node.node_id === selectedId || node.node_id === hoverId || node.node_id === rootId) {
-    return true
-  }
-  if (cameraK >= 2) return true
-  if (cameraK >= 1.25 && node.entity_type !== 'cve') return true
-  return false
-}
+Type chips: ALL / cve / ioc / technique / campaign / publication — `setEntityType`.
 
-const hitR = Math.min(24, Math.max(8, 12 / camera.k))
-```
+Find: input; highlight `node.label` substring; Enter → pan so match is centered (`setView` so `view.x + match.x * view.scale ≈ width/2`).
 
-Render type glyphs: `cve` circle; `ioc` diamond (`<rect transform=rotate(45)>`); `technique` / `sigma_rule` / `publication` square; `campaign` hexagon polyline. Root circle `r={12}`; related-cve-only nodes `r={6}` (detect via edge `source_key` map).
+Semantic: Checkbox refetch `fetchInvestigationRelationships(..., { include_semantic: true })` replacing graph via `mergeGraphPage(emptyGraphState(), page)` **only for the current root** (do not wipe expansions unless simplest: merge with include_semantic on root only). Spec: refetch **root** relationships with the flag and `mergeGraphPage` (sticky nodes OK).
 
-- [ ] **Step 5: CSS overlay**
+LOAD MORE: `fetchInvestigationRelationships(type, id, { cursor: graph.cursorsByNodeId[id] })`.
+
+Neighborhood dim: if `selectedId || hoveredId`, dim nodes not in `neighborIds` ∪ focus ∪ root.
+
+- [ ] **Step 5: CSS**
 
 ```css
 .investigate-canvas {
   overflow: hidden;
   touch-action: none;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 360px;
+}
+
+.investigate-canvas:active {
+  cursor: grabbing;
 }
 
 .investigate-camera-tools {
@@ -879,120 +734,120 @@ Render type glyphs: `cve` circle; `ioc` diamond (`<rect transform=rotate(45)>`);
   cursor: pointer;
 }
 
-.investigate-svg:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .investigate-svg g {
-    transition: none;
-  }
+.investigate-node-dim {
+  opacity: 0.28;
 }
 ```
 
-Hero: reduce `.investigate-hero-copy` so the stage `flex: 1` gets height (`min-height: calc(100vh - 72px)` already on page).
+Hint: `Scroll to zoom · drag to pan · click to inspect · double-click to expand`.
 
-- [ ] **Step 6: Wheel non-passive**
+- [ ] **Step 6: Manual smoke**
 
-React’s `onWheel` is passive in some browsers. Attach a native listener in `useEffect` on the SVG/canvas with `{ passive: false }` so `preventDefault` actually stops page scroll.
+1. Resolve a busy CVE. Auto-Fit fills canvas.
+2. Wheel: zoom at cursor; **page behind does not scroll**.
+3. `+`/`−`/FIT/RESET without wheel.
+4. Click spoke: inspector shows `source_key`; node count unchanged.
+5. LOOKUP LIVE on an IOC opens IOC LOOKUP with prefill.
+6. OPEN CVE opens drawer.
+7. Uncheck Related CVEs: star thins.
+8. LOAD MORE if truncated.
 
-```javascript
-useEffect(() => {
-  const el = canvasRef.current
-  if (!el) return undefined
-  const handler = (event) => {
-    event.preventDefault()
-    userMovedCameraRef.current = true
-    const rect = el.getBoundingClientRect()
-    const sx = event.clientX - rect.left
-    const sy = event.clientY - rect.top
-    const world = screenToWorld(cameraRef.current, sx, sy)
-    const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15
-    setCamera(zoomAt(cameraRef.current, world.x, world.y, factor))
-  }
-  el.addEventListener('wheel', handler, { passive: false })
-  return () => el.removeEventListener('wheel', handler)
-}, [])
-```
-
-- [ ] **Step 7: Manual smoke (required before commit)**
-
-1. Resolve a high-degree CVE. Graph should Fit to fill the canvas.
-2. Wheel zoom toward a spoke — that spoke stays under the cursor.
-3. Click spoke — inspector only; node count unchanged.
-4. Double-click — node count may increase.
-5. Uncheck Related CVEs — star thins; intel hops remain.
-6. If honesty says truncated and cursor exists, LOAD MORE appends nodes.
-7. `prefers-reduced-motion: reduce` — no long float, Fit still runs.
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add frontend/src/components/investigate/InvestigateGraph.jsx frontend/src/components/investigate/InvestigateGraph.css
-git commit -m "feat(investigate): pan/zoom/fit canvas with inspect vs expand"
+git add frontend/src/components/investigate/InvestigateGraph.jsx frontend/src/components/investigate/InvestigateGraph.css frontend/src/App.jsx
+git commit -m "feat(investigate): architecture-style pan/zoom and inspect vs expand"
 ```
 
 ---
 
-### Task 6: Docs
+### Task 6: Deep-link `?tab=investigate&q=`
 
 **Files:**
-- Modify: `docs/PRODUCT_STATUS.md` (Investigation graph row)
-- Modify: `docs/USE.md` (investigate row)
-- Modify: `docs/plans/2026-08-13-investigation-platform-roadmap.md` (P1 note: P1.5 canvas UX)
+- Modify: `frontend/src/utils/shellUrlState.js`
+- Modify: `frontend/src/utils/shellUrlState.test.js`
+- Modify: `frontend/src/App.jsx` or `InvestigateGraph.jsx`
 
-- [ ] **Step 1: PRODUCT_STATUS** — replace “click-to-expand” with inspect / double-click expand, pan/zoom/Fit, related-CVE toggle, Load more via `next_cursor`.
+- [ ] **Step 1: Test `buildAppTabSearchParams`**
 
-- [ ] **Step 2: USE.md** — one sentence: pan/zoom, click inspect, double-click expand.
+When leaving investigate, delete `q`. When entering investigate, do not invent `q`. When already on investigate, `InvestigateGraph` reads `searchParams.get('q')` once on mount / when `q` changes and `runSearch`.
+
+Add test:
+
+```javascript
+  it('drops investigate q when leaving the investigate tab', () => {
+    const prev = new URLSearchParams('tab=investigate&q=CVE-2024-9100')
+    const next = buildAppTabSearchParams(prev, 'feed')
+    assert.equal(next.get('tab'), 'feed')
+    assert.equal(next.get('q'), null)
+  })
+```
+
+In `buildAppTabSearchParams`, if `nextTab !== 'investigate'` then `next.delete('q')`.
+
+On successful resolve, `pushContext` set `q` to the resolved query string (CVE id).
+
+- [ ] **Step 2: Run** `cd frontend && node --test src/utils/shellUrlState.test.js`
+
+- [ ] **Step 3: Implement + wire `useSearchParams` in InvestigateGraph** (or pass `initialQuery` from App). Prefer App passing `investigateQuery` from `searchParams.get('q')` when `activeTab === 'investigate'` to avoid extra router imports in the canvas.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/utils/shellUrlState.js frontend/src/utils/shellUrlState.test.js frontend/src/App.jsx frontend/src/components/investigate/InvestigateGraph.jsx
+git commit -m "feat(investigate): deep-link search via tab=investigate&q="
+```
+
+---
+
+### Task 7: Docs
+
+**Files:**
+- Modify: `docs/PRODUCT_STATUS.md`
+- Modify: `docs/USE.md`
+
+- [ ] **Step 1:** PRODUCT_STATUS — pan/zoom (architecture camera), inspect vs expand, evidence inspector, pivots, related-CVE toggle, Load more, `q=` deep-link. Remove “click-to-expand” as the primary gesture.
+
+- [ ] **Step 2:** USE.md — scroll to zoom, click inspect, double-click expand.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add docs/PRODUCT_STATUS.md docs/USE.md docs/plans/2026-08-13-investigation-platform-roadmap.md
-git commit -m "docs: INVESTIGATE canvas pan/zoom and inspect vs expand"
+git add docs/PRODUCT_STATUS.md docs/USE.md
+git commit -m "docs: INVESTIGATE map navigation and stored-intel pivots"
 ```
 
 ---
 
-### Task 7: Verify
+### Task 8: Verify
 
-- [ ] **Step 1:** `cd frontend && npm run test:unit`
-
-Expected: PASS including new camera/filter/layout/merge tests.
-
-- [ ] **Step 2:** `cd frontend && npm run build`
-
-Expected: PASS.
-
-- [ ] **Step 3:** `./scripts/verify-local.sh`
-
-Expected: green (or documented SQLite fallback). No backend test changes required.
+- [ ] `cd frontend && npm run test:unit` — PASS
+- [ ] `cd frontend && npm run build` — PASS
+- [ ] `./scripts/verify-local.sh` — green
 
 ---
 
 ## Spec coverage
 
-| Spec section | Task |
-|--------------|------|
-| Camera pan/zoom/fit/reset/keyboard | 1, 5 |
-| Layout unclamped + repulsion n>80 + rings | 2 |
+| Spec | Task |
+|------|------|
+| Wheel zoom, page must not scroll | 5 (reuse Task 1 `zoomAtCursor`) |
+| Fit / pan / +− / Reset | 1, 5 |
+| Layout unclamped | 2 |
 | Inspect vs expand | 5 |
-| LOD labels + inverse hit radius | 5 |
-| Type glyphs | 5 |
-| Related-CVE toggle | 4, 5 |
-| Load more / next_cursor | 3, 5 |
-| Overlay chrome / a11y / reduced motion | 5 |
-| Docs | 6 |
-| No new graph lib / GraphPage unchanged | Global + all tasks |
+| LOD + glyphs | 5 |
+| Inspector evidence | 4, 5 |
+| Related CVE + type chips + find | 4, 5 |
+| Pivots (drawer, IOC, Forge, watchlist, thread) | 5 |
+| Load more | 3, 5 |
+| Deep-link q= | 6 |
+| Docs | 7 |
+| No forked camera / no graph lib | Task 1 + global |
 
 ## Placeholder scan
 
-No TBD/TODO remaining. `stepForce` 5th argument `rootId` is defined in Task 2 and consumed in Task 5.
+No TBD. `handleWatchlistChange` already exists in `App.jsx` (~line 838). `pivotToIoc` / `pivotToTechnique` already exist on `InvestigationContext`.
 
-## Out of this plan (follow-ups, not blockers)
+## Deliberately not in this plan
 
-- Server-side cap or down-rank of `related_cve_heuristic` if 50 derived CVEs still dominate after the toggle.
-- Minimap.
-- Persisted camera per query in `sessionStorage`.
-- Email/mutex as graph entity types (P1+ contracts).
+Server-side related-CVE ranking; minimap; PNG export; graph DB; email/mutex nodes.
