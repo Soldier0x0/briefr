@@ -5,6 +5,11 @@ import AsyncState from '../ui/AsyncState.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { useInvestigationOptional, INV_TYPES, INV_SOURCES } from '../../context/InvestigationContext.jsx'
 import {
+  canExpandEntityType,
+  heuristicCveIds,
+  neighborIds,
+} from '../../utils/investigateGraphFilters.js'
+import {
   emptyGraphState,
   INVESTIGATE_GRAPH_MAX_EDGES,
   INVESTIGATE_GRAPH_MAX_NODES,
@@ -30,7 +35,34 @@ const EDGE_STROKE = {
 
 const NODE_R = 8
 const NODE_R_ACTIVE = 11
-const HIT_R = 12
+
+function hitRadius(scale) {
+  return Math.min(24, Math.max(8, 12 / scale))
+}
+
+function shouldShowLabel(node, { selectedId, hoveredId, findLower, scale, rootId }) {
+  if (node.node_id === rootId || node.node_id === selectedId || node.node_id === hoveredId) return true
+  if (findLower && (node.label || '').toLowerCase().includes(findLower)) return true
+  if (node.entity_type !== 'cve' && scale >= 1.25) return true
+  return scale >= 2
+}
+
+function hexPoints(cx, cy, r) {
+  return Array.from({ length: 6 }, (_, i) => {
+    const angle = (Math.PI / 3) * i - Math.PI / 6
+    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`
+  }).join(' ')
+}
+
+function baseNodeRadius(node, heuristicIds, rootId) {
+  if (heuristicIds.has(node.node_id)) return 6
+  if (node.node_id === rootId) return NODE_R + 3
+  return NODE_R
+}
+
+function nodeDotRadius(node, active, heuristicIds, rootId) {
+  return active ? NODE_R_ACTIVE : baseNodeRadius(node, heuristicIds, rootId)
+}
 
 function looksResolvable(q) {
   const t = q.trim()
@@ -48,7 +80,82 @@ function prefersReducedMotion() {
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
-export default function InvestigateGraph({ onOpenCve, isActive = true }) {
+function renderNodeShape(node, cx, cy, active, expanding, heuristicIds, rootId) {
+  const r = nodeDotRadius(node, active, heuristicIds, rootId)
+  const fill = active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'
+  const stroke = active ? 'var(--accent-selected)' : 'var(--border-active, var(--border2))'
+  const strokeWidth = expanding ? 3 : 1.5
+
+  if (node.entity_type === 'cve') {
+    return (
+      <circle
+        className="investigate-node-dot"
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    )
+  }
+  if (node.entity_type === 'ioc') {
+    const side = r * 1.4
+    const half = side / 2
+    return (
+      <rect
+        className="investigate-node-dot"
+        x={cx - half}
+        y={cy - half}
+        width={side}
+        height={side}
+        transform={`rotate(45 ${cx} ${cy})`}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    )
+  }
+  if (node.entity_type === 'campaign') {
+    return (
+      <polygon
+        className="investigate-node-dot"
+        points={hexPoints(cx, cy, r)}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    )
+  }
+  if (node.entity_type === 'technique' || node.entity_type === 'sigma' || node.entity_type === 'publication') {
+    return (
+      <rect
+        className="investigate-node-dot"
+        x={cx - r}
+        y={cy - r * 0.75}
+        width={r * 2}
+        height={r * 1.5}
+        rx={2}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+    )
+  }
+  return (
+    <circle
+      className="investigate-node-dot"
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+    />
+  )
+}
+
+export default function InvestigateGraph({ onOpenCve, isActive = true, watchlist }) {
   const investigation = useInvestigationOptional()
   const [query, setQuery] = useState('')
   const [graph, setGraph] = useState(emptyGraphState)
@@ -56,6 +163,7 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   const [error, setError] = useState(null)
   const [emptyTitle, setEmptyTitle] = useState('')
   const [selectedId, setSelectedId] = useState(null)
+  const [hoveredId, setHoveredId] = useState(null)
   const [positions, setPositions] = useState([])
   const [expandingId, setExpandingId] = useState(null)
   const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
@@ -108,26 +216,47 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
 
   const onPointerDown = useCallback((e) => {
     if (e.target.closest('[data-node-id]')) return
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origin: view }
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origin: view,
+      panning: false,
+    }
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [view])
 
   const onPointerMove = useCallback((e) => {
     if (!dragRef.current) return
     const { startX, startY, origin } = dragRef.current
+    const dx = e.clientX - startX
+    const dy = e.clientY - startY
+    if (Math.hypot(dx, dy) >= 4) {
+      dragRef.current.panning = true
+    }
+    if (!dragRef.current.panning) return
     userMovedRef.current = true
     setView({
       ...origin,
-      x: origin.x + (e.clientX - startX),
-      y: origin.y + (e.clientY - startY),
+      x: origin.x + dx,
+      y: origin.y + dy,
     })
   }, [])
 
   const onPointerUp = useCallback((e) => {
+    if (dragRef.current) {
+      const { panning } = dragRef.current
+      if (!panning && !e.target.closest('[data-node-id]')) {
+        setSelectedId(null)
+      }
+    }
     dragRef.current = null
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
+  }, [])
+
+  const onNodeClick = useCallback((node) => {
+    setSelectedId((id) => (id === node.node_id ? null : node.node_id))
   }, [])
 
   const onCanvasKeyDown = useCallback((e) => {
@@ -238,6 +367,22 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       setExpandingId(null)
     }
   }, [])
+
+  const onNodeDoubleClick = useCallback((node) => {
+    if (!canExpandEntityType(node.entity_type)) return
+    expandNode(node)
+  }, [expandNode])
+
+  const focusId = hoveredId || selectedId
+  const findLower = query.trim().toLowerCase()
+  const heuristicIds = useMemo(() => heuristicCveIds(graph), [graph])
+  const highlightedNodeIds = useMemo(() => {
+    if (!focusId) return null
+    const ids = new Set(neighborIds(graph, focusId))
+    ids.add(focusId)
+    if (graph.root_id) ids.add(graph.root_id)
+    return ids
+  }, [focusId, graph])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -412,6 +557,9 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                     const target = positionById.get(edge.target_node_id)
                     if (!source || !target) return null
                     const dashed = edge.edge_class === 'semantic'
+                    const edgeDimmed = Boolean(focusId)
+                      && edge.source_node_id !== focusId
+                      && edge.target_node_id !== focusId
                     return (
                       <line
                         key={edge.edge_id}
@@ -422,52 +570,88 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                         stroke={EDGE_STROKE[edge.edge_class] || 'var(--text-muted, var(--text3))'}
                         strokeWidth={edge.edge_class === 'direct_fact' ? 2 : 1.25}
                         strokeDasharray={dashed ? '4 3' : undefined}
-                        opacity={0.85}
+                        opacity={edgeDimmed ? 0.2 : 0.85}
                       />
                     )
                   })}
                   {positions.map((node) => {
                     const active = node.node_id === selectedId
                     const expanding = node.node_id === expandingId
+                    const dimmed = Boolean(highlightedNodeIds) && !highlightedNodeIds.has(node.node_id)
+                    const showLabel = shouldShowLabel(node, {
+                      selectedId,
+                      hoveredId,
+                      findLower,
+                      scale: view.scale,
+                      rootId: graph.root_id,
+                    })
+                    const dotR = nodeDotRadius(node, active, heuristicIds, graph.root_id)
+                    const pinned = watchlist?.getState(node.entity_id) === 'pin'
+                    const inThread = investigation?.isCveInThread?.(node.entity_id)
                     return (
                       <g
                         key={node.node_id}
                         data-node-id={node.node_id}
-                        className="investigate-node"
-                        onClick={() => expandNode(node)}
+                        className={[
+                          'investigate-node',
+                          dimmed ? 'investigate-node-dim' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={() => onNodeClick(node)}
+                        onDoubleClick={() => onNodeDoubleClick(node)}
+                        onMouseEnter={() => setHoveredId(node.node_id)}
+                        onMouseLeave={() => setHoveredId(null)}
                         onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
+                          if (event.key === 'Enter' && event.shiftKey) {
                             event.preventDefault()
-                            expandNode(node)
+                            onNodeDoubleClick(node)
+                          } else if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            onNodeClick(node)
                           }
                         }}
                         tabIndex={0}
                         role="button"
+                        aria-pressed={active}
                         aria-label={`${node.entity_type} ${node.label}`}
                       >
                         <circle
                           className="investigate-node-hit"
                           cx={node.x}
                           cy={node.y}
-                          r={HIT_R}
+                          r={hitRadius(view.scale)}
                         />
-                        <circle
-                          className="investigate-node-dot"
-                          cx={node.x}
-                          cy={node.y}
-                          r={active ? NODE_R_ACTIVE : NODE_R}
-                          fill={active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'}
-                          stroke={active ? 'var(--accent-selected)' : 'var(--border-active, var(--border2))'}
-                          strokeWidth={expanding ? 3 : 1.5}
-                        />
-                        <text
-                          x={node.x}
-                          y={node.y + 22}
-                          textAnchor="middle"
-                          className="investigate-node-label"
-                        >
-                          {truncateNodeLabel(node.label || node.entity_id || '', 28)}
-                        </text>
+                        {inThread && (
+                          <circle
+                            className="investigate-node-thread"
+                            cx={node.x}
+                            cy={node.y}
+                            r={dotR + 5}
+                            fill="none"
+                            stroke="var(--accent-primary, var(--c-accent))"
+                            strokeWidth={1.25}
+                            strokeDasharray="3 2"
+                          />
+                        )}
+                        {renderNodeShape(node, node.x, node.y, active, expanding, heuristicIds, graph.root_id)}
+                        {pinned && (
+                          <polygon
+                            className="investigate-node-pin"
+                            points={`${node.x},${node.y - dotR - 6} ${node.x - 4},${node.y - dotR - 2} ${node.x + 4},${node.y - dotR - 2}`}
+                            fill="none"
+                            stroke="var(--accent-primary, var(--c-accent))"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                        {showLabel && (
+                          <text
+                            x={node.x}
+                            y={node.y + 22}
+                            textAnchor="middle"
+                            className="investigate-node-label"
+                          >
+                            {truncateNodeLabel(node.label || node.entity_id || '', 28)}
+                          </text>
+                        )}
                       </g>
                     )
                   })}

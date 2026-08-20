@@ -144,6 +144,10 @@
   cursor: pointer;
 }
 
+.investigate-node-dim {
+  opacity: 0.28;
+}
+
 .investigate-node-hit {
   fill: transparent;
   stroke: transparent;
@@ -156,7 +160,12 @@
 .investigate-node-label {
   fill: var(--text-secondary, var(--text2));
   font-family: var(--font-mono);
-  font-size: var(--font-size-micro);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.investigate-node-pin,
+.investigate-node-thread {
   pointer-events: none;
 }
 

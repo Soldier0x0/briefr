@@ -1099,7 +1099,7 @@ function AppLayout({
             {mountedTabs.investigate && (
               <Suspense fallback={<TabLoading label="Investigate" />}>
                 <ToolErrorBoundary label="Investigate">
-                  <InvestigateGraph isActive={activeTab === 'investigate'} onOpenCve={openCveById} />
+                  <InvestigateGraph isActive={activeTab === 'investigate'} onOpenCve={openCveById} watchlist={watchlist} />
                 </ToolErrorBoundary>
               </Suspense>
             )}
