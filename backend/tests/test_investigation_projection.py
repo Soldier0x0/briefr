@@ -245,3 +245,23 @@ def test_expand_cve_includes_publication_hop(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
+
+
+def test_candidate_edge_coerces_postgres_timestamps():
+    from datetime import datetime, timezone
+
+    from investigations.contracts import EntityRef
+    from investigations.projection import _candidate_edge
+
+    dt = datetime(2024, 6, 15, 12, 30, 0, tzinfo=timezone.utc)
+    ref = EntityRef(entity_type="cve", entity_id="CVE-2024-9001", label="CVE-2024-9001")
+    candidate = _candidate_edge(
+        source_node_id="cve:CVE-2024-ROOT",
+        target_ref=ref,
+        edge_class=EdgeClass.REPORTED,
+        source_key="otx",
+        observed_at=dt,
+        fetched_at=dt,
+    )
+    assert candidate.edge.observed_at == "2024-06-15T12:30:00Z"
+    assert candidate.edge.fetched_at == "2024-06-15T12:30:00Z"
