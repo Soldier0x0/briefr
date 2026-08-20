@@ -1,8 +1,10 @@
 # INVESTIGATE canvas — Obsidian+ design spec
 
-**Date:** 2026-08-20  
+**Date:** 2026-08-20 (v2 — self-review pass)  
 **Status:** Draft — supersedes UX *quality bar* in `2026-08-20-investigate-canvas-ux-design.md` (P1.5 mechanics remain; product defaults and motion model change)  
 **Benchmark:** Obsidian Graph view (smooth pan/zoom, local-first readability) — **target: measurably better for CVE intel workflow**
+
+> **v2 changes:** node drag with physics (drag threshold preserves click-select), continuous alpha-decay simulation with reheat (no hard 180-tick freeze), pan inertia + smoothed zoom, explicit frame-budget gate with a Canvas-edge-layer contingency, hover fade transitions, `:focus-visible` node rings, `aria-live` status. Related-CVE default is now **decided: OFF + counted banner** (no longer an open question).
 
 ## Executive summary
 
@@ -18,7 +20,8 @@ This spec defines **Obsidian+**: local-first stored-intel map, buttery camera, p
 |-----------|----------------|-------------------|------------------|
 | **First paint** | Local neighborhood around active note | Up to 50 `related_cve_heuristic` nodes as equal citizens | **Hub + 1-hop incident** only; heuristic CVEs opt-in |
 | **Pan/zoom** | GPU transform, continuous, cursor-anchored | Cursor-anchored but stateful jumps; no inertia/lerp | **RAF-interpolated view**; optional pan inertia |
-| **Simulation** | Continuous low-energy forces; pause control | 180 ticks then freeze; `setState` every frame | **Decoupled sim loop**; settle + gentle idle or static + expand tween |
+| **Simulation** | Continuous alpha-decay forces; reheat on interaction | 180 ticks then freeze; `setState` every frame | **Alpha-decay loop with reheat** on drag/expand/filter; decoupled from React |
+| **Node drag** | Grab any node, physics follows, spring settle | None (P1.5 rejected) | **Drag with 4px threshold** — click still selects; drag reheats sim |
 | **Search** | Highlights + centers camera | Weak label LOD only | **Select + pulse + fly-to** |
 | **Filters** | Groups/tags hide classes | Toggle can empty canvas without refit | **Always refit visible set**; never empty-with-selection |
 | **Text** | Size scales with zoom smoothly | Step LOD thresholds | **Continuous opacity/size** by zoom |
@@ -45,7 +48,7 @@ This spec defines **Obsidian+**: local-first stored-intel map, buttery camera, p
 1. **Local-first, honest-second** — Default view shows **stored incident neighborhood** (root + edges that are not `related_cve_heuristic`). Heuristic bulk is **available, labeled, counted**, but not painted until the analyst opts in. This is not hiding data: inspector + “Show N related CVEs” banner state what the API returned.
 2. **Camera never lies** — If nodes are visible in the merged graph, the camera **frames them** after any filter/layer/resolve/expand. User manual zoom/pan is preserved only until the next **structural** change (filter, resolve, expand, find fly-to).
 3. **Motion is a feature** — Pan/zoom/fit use **eased interpolation** (respect `prefers-reduced-motion`: instant jump).
-4. **Inspect ≠ expand** (unchanged) — click select; double-click / EXPAND / Shift+Enter stored hops only.
+4. **Inspect ≠ expand** (unchanged) — click select; double-click / EXPAND / Shift+Enter stored hops only. **v2:** node **drag** is added without breaking this: pointer-down on a node starts a candidate drag; movement < 4px on pointer-up = click-select, ≥ 4px = drag (never selects, never expands). This is the standard disambiguation every graph tool uses — P1.5's "drag fights click" objection is solved by the threshold, not by dropping the feature.
 5. **No live enrichment on canvas** (unchanged).
 6. **GraphPage contract frozen** (unchanged) — client-side projection/filter only unless a separate API proposal is approved.
 
@@ -109,17 +112,24 @@ Replace `userMovedRef` boolean with:
 
 ### 3. Simulation engine
 
-New **`investigateGraphEngine.js`**:
+New **`investigateGraphEngine.js`** — modeled on d3-force's alpha model (implemented in-house, no new dependency):
 
-- Holds `positionsRef`, `velocitiesRef`
-- RAF loop:
-  - Phase **simulate** (force ticks while `energy > epsilon` or max 240 ticks on load)
-  - Phase **idle** (0–2 ticks/frame optional micro-settle)
-  - Phase **expand tween** — new nodes lerp from parent position over 300ms
-- **No React setState per frame** — mutate refs; write `transform` attribute on `#investigate-world`
-- React re-render on: selection, hover, topology change, filter change, sim **settled** (once)
+- Holds `positionsRef`, `velocitiesRef`, `alpha` (starts 1.0, decays ×0.985/tick, floor 0.001)
+- RAF loop runs while `alpha > floor`; **reheat** (`alpha = max(alpha, 0.4)`) on: node drag, expand merge, layer/filter change
+- Dragged node is pinned to the pointer (`fx/fy` semantics); neighbors follow via springs — this is the Obsidian "alive" feel
+- Expand tween — new nodes spawn at parent position with small jitter; alpha reheat integrates them (no separate lerp needed — simpler than v1)
+- **No React setState per frame** — mutate refs; write node `cx/cy` and edge endpoints via direct DOM (`ref.setAttribute`), batched per frame; world pan/zoom is a single `transform` on `#investigate-world`
+- React re-render only on: selection, hover-target change, topology change, filter change
 
-`prefers-reduced-motion`: 12 ticks, no tween, instant fit.
+**Frame budget gate:** with 200 nodes / 300 edges, sim+draw must fit **≤ 12ms p95** per frame (Chrome perf trace, mid-tier laptop throttle 4×). If SVG endpoint updates blow the budget, the **contingency** is a single Canvas 2D layer for edges under the SVG node layer (nodes stay SVG for a11y/focus). This is a scoped fallback task, not a rewrite.
+
+`prefers-reduced-motion`: 12 ticks, no reheat animation (drag still works, positions update instantly), instant fit.
+
+### 3b. Camera feel (v2)
+
+- **Wheel zoom smoothing:** wheel updates a *target* view; display view lerps toward it (~120ms) so successive wheel events feel continuous, not stepped. Reduced-motion: direct.
+- **Pan inertia:** on pointer-up after a pan with velocity, glide with friction (~0.92/frame), cancellable by any input. Reduced-motion: none.
+- **Hover fade:** non-neighbor dim uses a 150ms opacity transition (class toggle, not per-property style writes).
 
 ### 4. Visual system (BRIEFR tokens, Obsidian clarity)
 
@@ -141,7 +151,9 @@ New **`investigateGraphEngine.js`**:
 - Arrow keys: cycle neighbors by incident edge order
 - Enter: select; Space: toggle select; Shift+Enter: expand
 - Escape: clear selection
-- Every node: `role="button"`, `aria-label={`${type} ${label}`}`
+- Every node: `role="button"`, `aria-label={`${type} ${label}`}`, **visible `:focus-visible` ring** (SVG stroke ring, semantic token — never `outline: none` without replacement)
+- **`aria-live="polite"` status region**: announces resolve/expand results ("Added 12 nodes"), filter changes ("Showing core neighborhood, 47 related CVEs hidden"), and find matches
+- Nodes keep `onKeyDown` alongside pointer handlers (no click-only interaction)
 
 BrowserStack **`scan-and-fix-accessibility`** gate before merge.
 
@@ -162,15 +174,17 @@ BrowserStack **`scan-and-fix-accessibility`** gate before merge.
 | # | Criterion |
 |---|-----------|
 | 1 | Resolve CVE hub: **≤12 nodes** on first paint (Core), IOC/technique visible without scrolling Fit |
-| 2 | Pan/zoom **≥55fps** median on 100-node graph (Chrome perf trace, no setState in sim loop) |
+| 2 | Pan/zoom/sim **≤12ms p95 frame time** on 200-node graph (Chrome perf trace, 4× CPU throttle; no React setState in sim loop) |
 | 3 | Toggle Related CVEs ON → graph refits within **300ms**; never blank while inspector shows selection |
 | 4 | Find → camera flies to node; selected ring visible |
-| 5 | Tab into graph → focus visible node; arrow keys move |
-| 6 | 390px: graph tab shows interactive canvas |
-| 7 | `prefers-reduced-motion`: no tween; instant fit |
-| 8 | Unit tests: local-first filter, flyTo bounds, structural refit lock |
-| 9 | Playwright smoke: resolve → inspect → filter → find |
-| 10 | Analyst dogfood: **ce-dogfood** report ≥ “experiential pass” on investigate flows |
+| 5 | **Drag a node** → node follows pointer, neighbors respond, sim settles smoothly; release <4px = select instead |
+| 6 | Tab into graph → visible `:focus-visible` ring on node; arrow keys move; Shift+Enter expands |
+| 7 | 390px: graph tab shows interactive canvas |
+| 8 | `prefers-reduced-motion`: no tween/inertia; instant fit; drag still functional |
+| 9 | Unit tests: local-first filter, flyTo bounds, structural refit, alpha decay + reheat, drag-threshold disambiguation |
+| 10 | Playwright smoke: resolve → inspect → drag → filter → find |
+| 11 | Analyst dogfood: **ce-dogfood** report ≥ “experiential pass” on investigate flows |
+| 12 | `aria-live` announces resolve/expand/filter/find outcomes |
 
 ---
 
@@ -178,21 +192,19 @@ BrowserStack **`scan-and-fix-accessibility`** gate before merge.
 
 - Graph DB / server-side layout
 - Live VT on hover
-- Node drag reposition persist
+- **Persisting** dragged node positions (drag is session-ephemeral; sim owns layout after reheat decays)
 - KEV/EPSS on nodes (drawer only)
 - Replacing InvestigationPanel
 
 ## Deferred (P2)
 
 - Minimap (Obsidian parity)
-- Force sliders (repulsion/link distance)
+- Force sliders (repulsion/link distance) — Obsidian has them; add only if dogfood says the fixed tuning fails on real graphs
 - `sessionStorage` camera per root id
-- Canvas/WebGL if >200 nodes becomes normal
+- Full Canvas/WebGL renderer if the 200-node cap is ever raised (Canvas **edge layer** is already an in-spec contingency)
 
 ---
 
-## Open product decision (needs your call)
+## Decision (was open in v1 — now locked)
 
-**Default Related CVE layer:** This spec sets **OFF** (local-first). P1.5 locked **ON** for “honesty.” Obsidian+ treats honesty as **banner + one-click reveal**, not **paint everything**.
-
-If you prefer default ON with **cap (e.g. 8)** instead of OFF, say so before implementation — it changes first-paint layout only, not engine work.
+**Related CVE layer defaults OFF** with a counted banner (`47 related CVEs available · Show related CVEs`). Rationale: honesty is preserved by disclosure (exact count + one click), while first paint stays local-first — the single highest-leverage fix for the "orange star" complaint. A cap-at-8 variant was considered and rejected: a partial star is neither honest (which 8?) nor clean.

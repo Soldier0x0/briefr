@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Raise INVESTIGATE from ~2/10 to Obsidian+-class UX: local-first graph, buttery camera, RAF decoupled simulation, fly-to Find, keyboard graph navigation, mobile graph tab.
+**Goal:** Raise INVESTIGATE from ~2/10 to Obsidian+-class UX: local-first graph, buttery camera (smoothed zoom + inertia), alpha-decay simulation with reheat, node drag with physics, fly-to Find, keyboard graph navigation, mobile graph tab.
+
+**Spec version:** v2 (`2026-08-20-investigate-obsidian-plus-design.md`) — related CVEs default **OFF + banner** is decided, not open.
 
 **Architecture:** Keep SVG + `architectureGraphView.js` math. Add pure modules `investigateGraphProjection.js` (Core / Related / Semantic layers), `investigateCameraController.js` (lerp + fly-to + structural refit), `investigateGraphEngine.js` (RAF sim without per-frame React). `InvestigateGraph.jsx` becomes orchestrator; world transform on single `<g id="investigate-world">`.
 
@@ -35,7 +37,10 @@
 | Create: `frontend/src/utils/investigateGraphEngine.test.js` | settle detection, tween completion |
 | Modify: `frontend/src/utils/investigateGraphFilters.js` | Integrate projection; export `buildVisibleGraph` |
 | Modify: `frontend/src/utils/investigateGraphFilters.test.js` | Core default excludes heuristic-only nodes |
-| Modify: `frontend/src/components/investigate/InvestigateGraph.jsx` | Wire engine + camera; remove per-frame setState |
+| Create: `frontend/src/utils/investigateDragPolicy.js` | Click vs drag threshold tracker |
+| Create: `frontend/src/utils/investigateDragPolicy.test.js` | Threshold disambiguation tests |
+| Create (contingency): `frontend/src/components/investigate/InvestigateEdgeCanvas.jsx` | Canvas edge layer if perf gate fails |
+| Modify: `frontend/src/components/investigate/InvestigateGraph.jsx` | Wire engine + camera + drag; remove per-frame setState |
 | Modify: `frontend/src/components/investigate/InvestigateGraph.css` | dot grid, pulse, mobile tabs, sticky camera |
 | Modify: `docs/PRODUCT_STATUS.md`, `docs/USE.md` | Obsidian+ behavior |
 | Modify: `docs/superpowers/specs/2026-08-20-investigate-canvas-ux-design.md` | Add superseded note at top |
@@ -158,7 +163,7 @@ git commit -m "fix(investigate): refit on structural filter changes (no black ca
 
 ---
 
-### Task 3: Camera controller with fly-to
+### Task 3: Camera controller — fly-to, smoothed zoom, pan inertia
 
 **Files:**
 - Create: `frontend/src/utils/investigateCameraController.js`
@@ -166,14 +171,16 @@ git commit -m "fix(investigate): refit on structural filter changes (no black ca
 - Modify: `frontend/src/components/investigate/InvestigateGraph.jsx`
 
 **Interfaces:**
-- `createCameraController(initialView) → { getDisplayView, setTargetView, flyToView, flyToBounds, tick(dt), isAnimating }`
+- `createCameraController(initialView, { reducedMotion }) → { getDisplayView, setTargetView, flyToView, flyToBounds, nudgePanVelocity(vx, vy), tick(dt), isAnimating }`
 - `flyToBounds(bounds, viewportW, viewportH, paddingPx)` uses `computeFitView`
+- Wheel handler sets **target** view via `zoomAtCursor`; display lerps toward target (~120ms). `reducedMotion: true` → display = target instantly.
+- Pan pointer-up passes release velocity to `nudgePanVelocity`; `tick` applies friction 0.92/frame until |v| < 0.5px; any pointer/wheel input cancels.
 
-- [ ] **Step 1: Write failing tests for lerp completion and flyToBounds centering**
+- [ ] **Step 1: Write failing tests — lerp completion, flyToBounds centering, inertia decays to rest, reducedMotion skips animation**
 
-- [ ] **Step 2: Implement easeOutCubic over 280ms default**
+- [ ] **Step 2: Implement easeOutCubic fly-to (280ms), zoom lerp, inertia with cancel**
 
-- [ ] **Step 3: Integrate: Fit button → `flyToBounds`; filter refit → `flyToBounds(visible positions)`**
+- [ ] **Step 3: Integrate: Fit button → `flyToBounds`; filter refit → `flyToBounds(visible positions)`; wheel → target; pan release → inertia**
 
 - [ ] **Step 4: Run tests**
 
@@ -182,12 +189,12 @@ Run: `cd frontend && node --test src/utils/investigateCameraController.test.js`
 - [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(investigate): animated camera controller with fly-to fit"
+git commit -m "feat(investigate): animated camera with fly-to, smoothed zoom, pan inertia"
 ```
 
 ---
 
-### Task 4: RAF graph engine (Obsidian-smooth sim)
+### Task 4: Alpha-decay graph engine with reheat (Obsidian-smooth sim)
 
 **Files:**
 - Create: `frontend/src/utils/investigateGraphEngine.js`
@@ -196,22 +203,67 @@ git commit -m "feat(investigate): animated camera controller with fly-to fit"
 - Modify: `frontend/src/components/investigate/InvestigateGraph.css`
 
 **Interfaces:**
-- `createGraphEngine({ onSettled, prefersReducedMotion }) → { setTopology(nodes, edges, rootId), setPositions(map), start(), stop(), getPositionsRef }`
-- Component applies `transform={`translate(${x},${y}) scale(${scale})`}` on `#investigate-world` from camera display view
-- **Remove** `setPositions` inside force RAF loop (lines ~564–575)
+- `createGraphEngine({ onFrame, onSettled, prefersReducedMotion }) → { setTopology(nodes, edges, rootId), reheat(alpha = 0.4), pinNode(nodeId, x, y), unpinNode(nodeId), start(), stop(), getPositions(), alpha() }`
+- Alpha model: starts 1.0 on topology change, decays ×0.985/tick, loop stops below 0.001. `reheat()` on expand merge and layer/filter change. `pinNode` holds a node at pointer coordinates during drag (fx/fy semantics) while springs move neighbors.
+- `onFrame(positions)` writes node `cx/cy` and edge `x1/y1/x2/y2` via **direct DOM refs** (`setAttribute`, batched in one pass) — **no React setState per frame**. World pan/zoom is a single `transform` on `#investigate-world`.
+- **Remove** `setPositions` inside the current force RAF loop (lines ~564–575).
 
-- [ ] **Step 1: Write failing test — engine runs N ticks without calling callback more than once at settle**
+- [ ] **Step 1: Write failing tests — alpha decays to stop; `reheat` restarts; `pinNode` keeps pinned node fixed while neighbors move; `onSettled` fires exactly once per settle**
 
-- [ ] **Step 2: Implement engine with expand tween API: `tweenNodeIn(nodeId, fromX, fromY)`**
+- [ ] **Step 2: Implement engine (reuse force math from `investigateForceLayout.js`; alpha scales velocity contribution)**
 
-- [ ] **Step 3: Refactor InvestigateGraph to read positions from ref for SVG node cx/cy only on `engineVersion` bump (settled/throttled 30fps max for labels if needed)**
+- [ ] **Step 3: Refactor InvestigateGraph — element refs map (`nodeRefs`, `edgeRefs`); `onFrame` writes attributes; React renders topology/selection only**
 
-- [ ] **Step 4: Profile: confirm no React re-render storm in 10s sim (manual or test hook counting renders)**
+- [ ] **Step 4: Perf gate — record 10s Chrome trace (4× CPU throttle) while panning + sim on 200-node seeded graph. Budget: ≤12ms p95 frame. Document numbers in PR. If budget missed → execute Task 4b, else skip 4b.**
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "perf(investigate): decouple force sim from React render loop"
+git commit -m "perf(investigate): alpha-decay sim engine decoupled from React"
+```
+
+---
+
+### Task 4b (contingency — only if Task 4 perf gate fails): Canvas edge layer
+
+**Files:**
+- Create: `frontend/src/components/investigate/InvestigateEdgeCanvas.jsx`
+- Modify: `frontend/src/components/investigate/InvestigateGraph.jsx`
+
+- [ ] **Step 1: Render edges to a `<canvas>` positioned under the SVG node layer; redraw in `onFrame`; nodes stay SVG (focus/a11y unchanged)**
+
+- [ ] **Step 2: Re-run perf gate; document before/after**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "perf(investigate): canvas edge layer under SVG nodes"
+```
+
+---
+
+### Task 4c: Node drag with click-threshold disambiguation
+
+**Files:**
+- Modify: `frontend/src/components/investigate/InvestigateGraph.jsx`
+- Create: `frontend/src/utils/investigateDragPolicy.js`
+- Create: `frontend/src/utils/investigateDragPolicy.test.js`
+
+**Interfaces:**
+- `createDragTracker(thresholdPx = 4) → { start(x, y), move(x, y) → 'pending'|'drag', end() → 'click'|'drag' }`
+- Pointer-down on node: `tracker.start`, capture pointer. Move ≥4px: `engine.pinNode` + `engine.reheat()`, cursor `grabbing`. Pointer-up: `'click'` → existing select path; `'drag'` → `engine.unpinNode()` (sim settles node naturally).
+- Double-click expand unchanged (dblclick only fires after two sub-threshold clicks).
+
+- [ ] **Step 1: Write failing tests — sub-threshold = click, over-threshold = drag, no selection after drag**
+
+- [ ] **Step 2: Implement tracker + wire pointer handlers**
+
+- [ ] **Step 3: Manual test — drag hub node: neighbors follow springs, release settles; quick click still selects**
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "feat(investigate): node drag with physics and click threshold"
 ```
 
 ---
@@ -238,23 +290,26 @@ git commit -m "feat(investigate): find fly-to and match highlight"
 
 ---
 
-### Task 6: Keyboard roving + focus
+### Task 6: Keyboard roving + focus + aria-live
 
 **Files:**
 - Modify: `frontend/src/components/investigate/InvestigateGraph.jsx`
+- Modify: `frontend/src/components/investigate/InvestigateGraph.css`
 
-- [ ] **Step 1: Add `focusedNodeId` state; roving tabindex on visible nodes**
+- [ ] **Step 1: Add `focusedNodeId` state; roving tabindex on visible nodes; `onKeyDown` alongside pointer handlers**
 
-- [ ] **Step 2: Keydown on canvas: Arrow* cycles `neighborIds(selected)`; Enter select; Shift+Enter expand; Escape clear**
+- [ ] **Step 2: Keydown on canvas: Arrow* cycles `neighborIds(selected)`; Enter select; Space toggle; Shift+Enter expand; Escape clear**
 
-- [ ] **Step 3: Ensure `aria-label` on each interactive node group**
+- [ ] **Step 3: `aria-label` on each node group; visible `:focus-visible` SVG ring (semantic token stroke — never remove focus without replacement)**
 
-- [ ] **Step 4: Run frontend unit tests; optional BrowserStack `startAccessibilityScan` on `/` investigate tab**
+- [ ] **Step 4: Add `aria-live="polite"` status region announcing resolve/expand node counts, filter changes, find matches**
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Run frontend unit tests; BrowserStack `startAccessibilityScan` on investigate tab; fix criticals**
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git commit -m "a11y(investigate): keyboard roving and focusable graph nodes"
+git commit -m "a11y(investigate): keyboard roving, focus-visible rings, aria-live status"
 ```
 
 ---
@@ -323,17 +378,18 @@ git commit -m "docs(investigate): Obsidian+ local-first UX and related-CVE banne
 
 | Spec requirement | Task |
 |------------------|------|
-| Core layer default | 1 |
-| Related opt-in banner | 8 |
+| Core layer default OFF + banner | 1, 8 |
 | Structural refit | 2 |
-| Camera lerp / fly-to | 3 |
-| RAF decoupled sim | 4 |
+| Camera fly-to / smoothed zoom / inertia | 3 |
+| Alpha-decay sim + reheat, direct DOM | 4 |
+| Frame budget gate + contingency | 4 (gate), 4b |
+| Node drag w/ threshold | 4c |
 | Find fly-to | 5 |
-| Keyboard a11y | 6 |
+| Keyboard, focus-visible, aria-live | 6 |
 | Mobile layout | 7 |
 | Success metrics tests | 1–6, 9 |
 
-No placeholders remain. Types consistent across `applyGraphLayers` → `visibleGraph` → engine topology.
+No placeholders remain. Types consistent across `applyGraphLayers` → `visibleGraph` → engine topology; `pinNode`/`unpinNode`/`reheat` names consistent between Tasks 4 and 4c.
 
 ---
 
@@ -347,5 +403,3 @@ No placeholders remain. Types consistent across `applyGraphLayers` → `visibleG
 2. **Inline Execution** — same session, task-by-task with checkpoints
 
 **Which approach?**
-
-Also confirm: **Related CVEs default OFF** (local-first banner) vs **default ON with cap 8** — before Task 1 lands.
