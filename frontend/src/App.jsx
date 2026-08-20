@@ -710,6 +710,17 @@ export default function App() {
     })
   }, [setSearchParams, setActiveTab])
 
+  const investigateInitialQuery = activeTab === 'investigate' ? (searchParams.get('q') || '') : ''
+
+  const onInvestigateQueryResolved = useCallback((q) => {
+    pushContext(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'investigate')
+      if (q) next.set('q', q)
+      else next.delete('q')
+      return next
+    })
+  }, [setSearchParams])
+
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
     const ql = q.toLowerCase()
@@ -932,6 +943,8 @@ export default function App() {
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
               onOpenAdvisories={openAdvisories}
+              investigateInitialQuery={investigateInitialQuery}
+              onInvestigateQueryResolved={onInvestigateQueryResolved}
             />
             </RequireAuth>
           )}
@@ -991,6 +1004,8 @@ function AppLayout({
   watchlist,
   onWatchlistChange,
   onOpenAdvisories,
+  investigateInitialQuery,
+  onInvestigateQueryResolved,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const [mountedTabs, setMountedTabs] = useState({ brief: true })
@@ -1117,6 +1132,8 @@ function AppLayout({
                     onWatchlistChange={onWatchlistChange}
                     onOpenForgeCampaigns={onOpenForgeCampaigns}
                     onOpenAdvisories={onOpenAdvisories}
+                    initialQuery={investigateInitialQuery}
+                    onQueryResolved={onInvestigateQueryResolved}
                   />
                 </ToolErrorBoundary>
               </Suspense>

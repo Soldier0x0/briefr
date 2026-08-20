@@ -30,6 +30,8 @@ describe('AppLayout InvestigateGraph wiring', () => {
     assert.match(block, /onWatchlistChange=\{onWatchlistChange\}/)
     assert.match(block, /onOpenForgeCampaigns=\{onOpenForgeCampaigns\}/)
     assert.match(block, /onOpenAdvisories=\{onOpenAdvisories\}/)
+    assert.match(block, /initialQuery=\{investigateInitialQuery\}/)
+    assert.match(block, /onQueryResolved=\{onInvestigateQueryResolved\}/)
     assert.doesNotMatch(block, /handleWatchlistChange/)
     assert.doesNotMatch(block, /\bonOpenAdvisories=\{openAdvisories\}/)
     assert.doesNotMatch(block, /\bonOpenForgeCampaigns=\{openForgeCampaigns\}/)

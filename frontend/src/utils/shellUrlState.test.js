@@ -90,6 +90,19 @@ describe('buildAppTabSearchParams', () => {
     assert.equal(next.get('view'), 'backlog')
     assert.equal(next.get('technique'), 'T1059')
   })
+
+  it('drops investigate q when leaving the investigate tab', () => {
+    const prev = new URLSearchParams('tab=investigate&q=CVE-2024-9100')
+    const next = buildAppTabSearchParams(prev, 'feed')
+    assert.equal(next.get('tab'), 'feed')
+    assert.equal(next.get('q'), null)
+  })
+
+  it('keeps investigate q when staying on investigate', () => {
+    const prev = new URLSearchParams('tab=investigate&q=CVE-2024-9100')
+    const next = buildAppTabSearchParams(prev, 'investigate')
+    assert.equal(next.get('q'), 'CVE-2024-9100')
+  })
 })
 
 describe('buildAdminPageSearchParams', () => {

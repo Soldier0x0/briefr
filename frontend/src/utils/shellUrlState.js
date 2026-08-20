@@ -39,6 +39,7 @@ export function buildAppTabSearchParams(prev, tab) {
   const next = new URLSearchParams(prev)
   next.set('tab', nextTab)
   next.delete('cve')
+  if (nextTab !== 'investigate') next.delete('q')
   if (nextTab === 'atlas') {
     const view = next.get('view')
     if (!view || !ATLAS_VIEWS.has(view)) next.set('view', 'headlines')

@@ -181,6 +181,8 @@ export default function InvestigateGraph({
   onWatchlistChange,
   onOpenForgeCampaigns,
   onOpenAdvisories,
+  initialQuery = '',
+  onQueryResolved,
 }) {
   const investigation = useInvestigationOptional()
   const [query, setQuery] = useState('')
@@ -210,6 +212,7 @@ export default function InvestigateGraph({
   const positionsRef = useRef([])
   const graphRef = useRef(graph)
   const searchGenRef = useRef(0)
+  const lastConsumedInitialQueryRef = useRef('')
   graphRef.current = graph
   positionsRef.current = positions
 
@@ -389,6 +392,7 @@ export default function InvestigateGraph({
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
       setSelectedId(root.node_id)
+      onQueryResolved?.(resolved.query || q)
     } catch (err) {
       if (generation !== searchGenRef.current) return
       if (err?.status === 404) {
@@ -402,7 +406,15 @@ export default function InvestigateGraph({
     } finally {
       if (generation === searchGenRef.current) setLoading(false)
     }
-  }, [])
+  }, [onQueryResolved])
+
+  useEffect(() => {
+    const q = (initialQuery || '').trim()
+    if (!q || q === lastConsumedInitialQueryRef.current) return
+    lastConsumedInitialQueryRef.current = q
+    setQuery(q)
+    runSearch(q)
+  }, [initialQuery, runSearch])
 
   useEffect(() => {
     const handle = setTimeout(() => {
