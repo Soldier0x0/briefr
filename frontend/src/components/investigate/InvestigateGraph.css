@@ -33,6 +33,59 @@
   gap: var(--space-3);
 }
 
+.investigate-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.investigate-chrome-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.investigate-type-tabs,
+.investigate-edge-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.investigate-type-tab,
+.investigate-edge-tab {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: 1px solid var(--border-subtle, var(--border));
+  color: var(--text-secondary, var(--text2));
+  cursor: pointer;
+}
+
+.investigate-type-tab:hover,
+.investigate-edge-tab:hover {
+  background: var(--surface-raised, var(--bg2));
+  color: var(--text-primary, var(--text));
+}
+
+.investigate-type-tab.active,
+.investigate-edge-tab.active {
+  background: var(--surface-selected, var(--bg3));
+  border-color: var(--border-active, var(--border2));
+  color: var(--accent-selected);
+}
+
+.investigate-edge-tab--latent {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.investigate-find {
+  max-width: min(28rem, 100%);
+}
+
 .investigate-search {
   min-width: min(42rem, 100%);
   height: var(--control-height-md, 32px);
@@ -146,6 +199,11 @@
 
 .investigate-node-dim {
   opacity: 0.28;
+}
+
+.investigate-node-match .investigate-node-dot {
+  stroke: var(--accent-primary, var(--c-accent));
+  stroke-width: 2.5;
 }
 
 .investigate-node-hit {

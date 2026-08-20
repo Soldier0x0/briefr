@@ -2,17 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchInvestigationRelationships, resolveInvestigation } from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
 import AsyncState from '../ui/AsyncState.jsx'
+import Checkbox from '../ui/Checkbox.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { useInvestigationOptional, INV_TYPES, INV_SOURCES } from '../../context/InvestigationContext.jsx'
 import { copyToClipboard } from '../../utils/report.js'
 import {
   canExpandEntityType,
+  DEFAULT_EDGE_CLASSES,
+  EDGE_CLASS_CHIPS,
   formatNeighborhoodMarkdown,
   heuristicCveIds,
   incidentEdges,
   neighborIds,
   otherNodeId,
   parseIocEntityId,
+  relatedCveCount,
   visibleGraph,
 } from '../../utils/investigateGraphFilters.js'
 import {
@@ -41,6 +45,14 @@ const EDGE_STROKE = {
 
 const NODE_R = 8
 const NODE_R_ACTIVE = 11
+const ENTITY_TYPE_CHIPS = ['all', 'cve', 'ioc', 'technique', 'campaign', 'publication']
+const EDGE_CLASS_LABELS = {
+  direct_fact: 'FACT',
+  reported: 'reported',
+  derived: 'derived',
+  analyst_assertion: 'analyst_assertion',
+  semantic: 'semantic',
+}
 
 function hitRadius(scale) {
   return Math.min(24, Math.max(8, 12 / scale))
@@ -48,7 +60,7 @@ function hitRadius(scale) {
 
 function shouldShowLabel(node, { selectedId, hoveredId, findLower, scale, rootId }) {
   if (node.node_id === rootId || node.node_id === selectedId || node.node_id === hoveredId) return true
-  if (findLower && (node.label || '').toLowerCase().includes(findLower)) return true
+  if (findLower && (node.label || node.entity_id || '').toLowerCase().includes(findLower)) return true
   if (node.entity_type !== 'cve' && scale >= 1.25) return true
   return scale >= 2
 }
@@ -179,6 +191,12 @@ export default function InvestigateGraph({
   const [hoveredId, setHoveredId] = useState(null)
   const [positions, setPositions] = useState([])
   const [expandingId, setExpandingId] = useState(null)
+  const [showRelatedCves, setShowRelatedCves] = useState(true)
+  const [entityType, setEntityType] = useState('all')
+  const [edgeClasses, setEdgeClasses] = useState(() => new Set(DEFAULT_EDGE_CLASSES))
+  const [isolate, setIsolate] = useState(false)
+  const [findText, setFindText] = useState('')
+  const [includeSemantic, setIncludeSemantic] = useState(false)
   const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
   const viewRef = useRef(view)
   viewRef.current = view
@@ -315,7 +333,22 @@ export default function InvestigateGraph({
     [graph.nodes],
   )
 
-  const visible = useMemo(() => visibleGraph(graph), [graph])
+  const visible = useMemo(
+    () => visibleGraph(graph, {
+      showRelatedCves,
+      entityType,
+      edgeClasses,
+      isolateNodeId: isolate ? (selectedId || graph.root_id) : null,
+    }),
+    [graph, showRelatedCves, entityType, edgeClasses, isolate, selectedId],
+  )
+
+  const visibleNodeIds = useMemo(
+    () => new Set(visible.nodes.map((node) => node.node_id)),
+    [visible.nodes],
+  )
+
+  const edgeClassesKey = useMemo(() => [...edgeClasses].sort().join(','), [edgeClasses])
 
   const selected = useMemo(
     () => graph.nodes.find((node) => node.node_id === selectedId) || null,
@@ -373,12 +406,35 @@ export default function InvestigateGraph({
     return () => clearTimeout(handle)
   }, [query, runSearch])
 
-  const expandNode = useCallback(async (node) => {
+  const enableSemantic = useCallback(async () => {
+    setIncludeSemantic(true)
+    setEdgeClasses((prev) => {
+      const next = new Set(prev)
+      next.add('semantic')
+      return next
+    })
+    if (!graph.root_id) return
+    const root = graph.nodes.find((n) => n.node_id === graph.root_id)
+    if (!root) return
+    try {
+      const page = await fetchInvestigationRelationships(root.entity_type, root.entity_id, {
+        include_semantic: true,
+      })
+      setGraph((prev) => mergeGraphPage(prev, page))
+    } catch (err) {
+      notifyApiError(err)
+    }
+  }, [graph.root_id, graph.nodes])
+
+  const expandNode = useCallback(async (node, params) => {
     if (!node?.entity_type || !node?.entity_id) return
     setExpandingId(node.node_id)
     setError(null)
     try {
-      const page = await fetchInvestigationRelationships(node.entity_type, node.entity_id)
+      const page = await fetchInvestigationRelationships(node.entity_type, node.entity_id, {
+        ...(params || {}),
+        ...(includeSemantic ? { include_semantic: true } : {}),
+      })
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
     } catch (err) {
@@ -391,7 +447,20 @@ export default function InvestigateGraph({
     } finally {
       setExpandingId(null)
     }
-  }, [])
+  }, [includeSemantic])
+
+  const toggleEdgeClass = useCallback((cls) => {
+    if (cls === 'semantic' && !includeSemantic) {
+      void enableSemantic()
+      return
+    }
+    setEdgeClasses((prev) => {
+      const next = new Set(prev)
+      if (next.has(cls)) next.delete(cls)
+      else next.add(cls)
+      return next
+    })
+  }, [enableSemantic, includeSemantic])
 
   const onNodeDoubleClick = useCallback((node) => {
     if (!canExpandEntityType(node.entity_type)) return
@@ -399,7 +468,7 @@ export default function InvestigateGraph({
   }, [expandNode])
 
   const focusId = hoveredId || selectedId
-  const findLower = query.trim().toLowerCase()
+  const findLower = findText.trim().toLowerCase()
   const heuristicIds = useMemo(() => heuristicCveIds(graph), [graph])
   const highlightedNodeIds = useMemo(() => {
     if (!focusId) return null
@@ -417,8 +486,14 @@ export default function InvestigateGraph({
       const height = Math.max(el.clientHeight, 360)
       sizeRef.current = { width, height }
       const prior = new Map(positionsRef.current.map((node) => [node.node_id, node]))
+      const layoutNodes = visibleGraph(graphRef.current, {
+        showRelatedCves,
+        entityType,
+        edgeClasses,
+        isolateNodeId: isolate ? (selectedId || graphRef.current.root_id) : null,
+      }).nodes
       setPositions(seedPositions(
-        graphRef.current.nodes,
+        layoutNodes,
         width,
         height,
         prior,
@@ -430,20 +505,21 @@ export default function InvestigateGraph({
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [graph.nodes])
+  }, [visible.nodes, showRelatedCves, entityType, edgeClasses, isolate, selectedId])
 
   useEffect(() => {
-    if (!isActive || graph.nodes.length === 0) return undefined
+    if (!isActive || visible.nodes.length === 0) return undefined
     const reduced = prefersReducedMotion()
     let frame = 0
     let ticks = 0
     const maxTicks = reduced ? 12 : 180
     const rootId = graph.root_id
+    const layoutEdges = visible.edges
     const loop = () => {
       const { width, height } = sizeRef.current
       const stepped = stepForce(
         positionsRef.current,
-        graphRef.current.edges,
+        layoutEdges,
         width,
         height,
         rootId,
@@ -459,7 +535,14 @@ export default function InvestigateGraph({
     }
     frame = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(frame)
-  }, [isActive, graph.nodes, graph.edges, graph.root_id, fitGraphToView])
+  }, [isActive, visible, fitGraphToView, graph.root_id])
+
+  useEffect(() => {
+    if (!visible.nodes.length) return undefined
+    userMovedRef.current = false
+    const id = requestAnimationFrame(() => fitGraphToView())
+    return () => cancelAnimationFrame(id)
+  }, [showRelatedCves, entityType, edgeClassesKey, isolate, fitGraphToView, visible.nodes.length])
 
   const pinNode = useCallback((node) => {
     if (!investigation || !node) return
@@ -489,6 +572,9 @@ export default function InvestigateGraph({
   }, [investigation])
 
   const idle = !loading && graph.nodes.length === 0 && !error && !emptyTitle
+  const hasLoadMoreCursor = Boolean(
+    graph.cursorsByNodeId && Object.values(graph.cursorsByNodeId).some(Boolean),
+  )
   const showHonesty = graph.nodes.length > 0
     && (graph.truncated || graph.capped || graph.source_status === 'degraded'
       || graph.knowledge_state === 'stale' || graph.knowledge_state === 'partial')
@@ -525,6 +611,112 @@ export default function InvestigateGraph({
         </button>
       </form>
 
+      {graph.nodes.length > 0 && (
+        <div className="investigate-chrome">
+          <div className="investigate-chrome-checks">
+            <Checkbox
+              checked={showRelatedCves}
+              onCheckedChange={(v) => setShowRelatedCves(v === true)}
+              label={`Related CVEs (${relatedCveCount(graph)})`}
+            />
+            <Checkbox
+              checked={isolate}
+              onCheckedChange={(v) => setIsolate(v === true)}
+              label="Isolate"
+            />
+            <Checkbox
+              checked={includeSemantic}
+              onCheckedChange={async (v) => {
+                const on = v === true
+                setIncludeSemantic(on)
+                setEdgeClasses((prev) => {
+                  const next = new Set(prev)
+                  if (on) next.add('semantic')
+                  else next.delete('semantic')
+                  return next
+                })
+                if (on && graph.root_id) {
+                  const root = graph.nodes.find((n) => n.node_id === graph.root_id)
+                  if (root) {
+                    try {
+                      const page = await fetchInvestigationRelationships(
+                        root.entity_type,
+                        root.entity_id,
+                        { include_semantic: true },
+                      )
+                      setGraph((prev) => mergeGraphPage(prev, page))
+                    } catch (err) {
+                      notifyApiError(err)
+                    }
+                  }
+                }
+              }}
+              label="Semantic"
+            />
+          </div>
+          <div className="investigate-type-tabs mono" role="tablist" aria-label="Entity type filter">
+            {ENTITY_TYPE_CHIPS.map((type) => (
+              <button
+                key={type}
+                type="button"
+                role="tab"
+                aria-selected={entityType === type}
+                className={`investigate-type-tab${entityType === type ? ' active' : ''}`}
+                onClick={() => setEntityType(type)}
+              >
+                {type.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <div className="investigate-edge-tabs mono" role="tablist" aria-label="Edge class filter">
+            {EDGE_CLASS_CHIPS.map((cls) => (
+              <button
+                key={cls}
+                type="button"
+                role="tab"
+                aria-selected={edgeClasses.has(cls)}
+                className={[
+                  'investigate-edge-tab',
+                  edgeClasses.has(cls) ? 'active' : '',
+                  cls === 'semantic' && !includeSemantic ? 'investigate-edge-tab--latent' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => toggleEdgeClass(cls)}
+              >
+                {EDGE_CLASS_LABELS[cls] || cls}
+              </button>
+            ))}
+          </div>
+          <label className="investigate-find control-field">
+            <span className="control-field-label">FIND</span>
+            <input
+              className="investigate-search mono"
+              aria-label="Find in graph"
+              value={findText}
+              onChange={(e) => setFindText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                const q = findText.trim().toLowerCase()
+                const match = visible.nodes.find((n) =>
+                  (n.label || n.entity_id || '').toLowerCase().includes(q))
+                if (!match) return
+                const pos = positions.find((p) => p.node_id === match.node_id)
+                const el = canvasRef.current
+                if (!pos || !el) return
+                userMovedRef.current = true
+                setView((v) => ({
+                  ...v,
+                  x: el.clientWidth / 2 - pos.x * v.scale,
+                  y: el.clientHeight / 2 - pos.y * v.scale,
+                }))
+                setSelectedId(match.node_id)
+              }}
+              placeholder="Label or id…"
+              autoComplete="off"
+            />
+          </label>
+        </div>
+      )}
+
       <p className="investigate-hint mono">
         Scroll to zoom · drag to pan · click to inspect · double-click to expand. Edges encode evidence class, not certainty.
       </p>
@@ -534,7 +726,9 @@ export default function InvestigateGraph({
           {graph.capped
             ? `Canvas capped at ${INVESTIGATE_GRAPH_MAX_NODES} nodes / ${INVESTIGATE_GRAPH_MAX_EDGES} edges — expand a focused node instead of widening everything. `
             : ''}
-          {graph.truncated ? 'Truncated — more hops exist than this page returned. ' : ''}
+          {graph.truncated
+            ? `Truncated — more hops exist than this page returned.${hasLoadMoreCursor ? ' Use LOAD MORE on selected nodes.' : ''} `
+            : ''}
           {graph.source_status === 'degraded' ? 'Source status degraded. ' : ''}
           {graph.knowledge_state === 'stale' ? 'Knowledge is stale. ' : ''}
           {graph.knowledge_state === 'partial' ? 'Partial neighborhood.' : ''}
@@ -577,7 +771,7 @@ export default function InvestigateGraph({
                   className="investigate-svg-scene"
                   transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
                 >
-                  {graph.edges.map((edge) => {
+                  {visible.edges.map((edge) => {
                     const source = positionById.get(edge.source_node_id)
                     const target = positionById.get(edge.target_node_id)
                     if (!source || !target) return null
@@ -599,10 +793,12 @@ export default function InvestigateGraph({
                       />
                     )
                   })}
-                  {positions.map((node) => {
+                  {positions.filter((node) => visibleNodeIds.has(node.node_id)).map((node) => {
                     const active = node.node_id === selectedId
                     const expanding = node.node_id === expandingId
                     const dimmed = Boolean(highlightedNodeIds) && !highlightedNodeIds.has(node.node_id)
+                    const findMatch = Boolean(findLower)
+                      && (node.label || node.entity_id || '').toLowerCase().includes(findLower)
                     const showLabel = shouldShowLabel(node, {
                       selectedId,
                       hoveredId,
@@ -620,6 +816,7 @@ export default function InvestigateGraph({
                         className={[
                           'investigate-node',
                           dimmed ? 'investigate-node-dim' : '',
+                          findMatch ? 'investigate-node-match' : '',
                         ].filter(Boolean).join(' ')}
                         onClick={() => onNodeClick(node)}
                         onDoubleClick={() => onNodeDoubleClick(node)}
@@ -767,6 +964,18 @@ export default function InvestigateGraph({
                     disabled={expandingId === selected.node_id}
                   >
                     EXPAND
+                  </button>
+                )}
+                {selected && graph.cursorsByNodeId?.[selected.node_id] && !graph.capped && (
+                  <button
+                    type="button"
+                    className="investigate-search-btn mono"
+                    onClick={() => expandNode(selected, {
+                      cursor: graph.cursorsByNodeId[selected.node_id],
+                    })}
+                    disabled={expandingId === selected.node_id}
+                  >
+                    LOAD MORE
                   </button>
                 )}
                 {selected.entity_type === 'cve' && onOpenCve && (
