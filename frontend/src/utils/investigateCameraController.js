@@ -83,6 +83,12 @@ export function createCameraController(initialView = DEFAULT_VIEW, { reducedMoti
     flyToBounds(bounds, viewportW, viewportH) {
       this.flyToView(computeFitView(bounds, viewportW, viewportH))
     },
+    /** Snap display to target and cancel in-flight camera motion (e.g. before pan). */
+    syncDisplayToTarget() {
+      cancelMotion()
+      display = cloneView(target)
+      return cloneView(display)
+    },
     nudgePan(dx, dy) {
       cancelMotion()
       target = { ...target, x: target.x + dx, y: target.y + dy }

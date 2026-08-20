@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { fetchInvestigationRelationships, resolveInvestigation } from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
 import AsyncState from '../ui/AsyncState.jsx'
@@ -23,7 +23,14 @@ import { shouldRefitAfterStructuralChange } from '../../utils/investigateCameraP
 import { createCameraController } from '../../utils/investigateCameraController.js'
 import { createGraphEngine } from '../../utils/investigateGraphEngine.js'
 import { createDragTracker } from '../../utils/investigateDragPolicy.js'
-import { applyGraphDom, applyWorldTransform, screenToWorld } from '../../utils/investigateGraphDom.js'
+import {
+  applyGraphDom,
+  applyNodeScaleDom,
+  applyWorldTransform,
+  hitRadius,
+  screenToWorld,
+  shouldShowLabel,
+} from '../../utils/investigateGraphDom.js'
 import {
   emptyGraphState,
   INVESTIGATE_GRAPH_MAX_EDGES,
@@ -55,17 +62,6 @@ const EDGE_CLASS_LABELS = {
   derived: 'DERIVED',
   analyst_assertion: 'ASSERTION',
   semantic: 'SEMANTIC',
-}
-
-function hitRadius(scale) {
-  return Math.min(24, Math.max(8, 12 / scale))
-}
-
-function shouldShowLabel(node, { selectedId, hoveredId, findLower, scale, rootId }) {
-  if (node.node_id === rootId || node.node_id === selectedId || node.node_id === hoveredId) return true
-  if (findLower && (node.label || node.entity_id || '').toLowerCase().includes(findLower)) return true
-  if (node.entity_type !== 'cve' && scale >= 1.25) return true
-  return scale >= 2
 }
 
 function hexPoints(cx, cy, r) {
@@ -204,9 +200,7 @@ export default function InvestigateGraph({
   const [includeSemantic, setIncludeSemantic] = useState(false)
   const includeSemanticRef = useRef(includeSemantic)
   includeSemanticRef.current = includeSemantic
-  const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
-  const viewRef = useRef(view)
-  viewRef.current = view
+  const viewRef = useRef({ ...DEFAULT_VIEW })
   const [structuralVersion, setStructuralVersion] = useState(0)
   const lastFitVersionRef = useRef(-1)
   const [liveStatus, setLiveStatus] = useState('')
@@ -215,6 +209,8 @@ export default function InvestigateGraph({
   const [filtersOpen, setFiltersOpen] = useState(true)
   const dragRef = useRef(null)
   const nodeDragRef = useRef(null)
+  const draggingNodeIdRef = useRef(null)
+  const panningRef = useRef(false)
   const canvasRef = useRef(null)
   const worldRef = useRef(null)
   const sizeRef = useRef({ width: 800, height: 560 })
@@ -228,8 +224,12 @@ export default function InvestigateGraph({
   const cameraRef = useRef(null)
   const engineRef = useRef(null)
   const cameraRafRef = useRef(0)
+  const selectedIdRef = useRef(null)
+  const hoveredIdRef = useRef(null)
+  const findLowerRef = useRef('')
   graphRef.current = graph
-  positionsRef.current = positions
+  selectedIdRef.current = selectedId
+  hoveredIdRef.current = hoveredId
 
   if (!cameraRef.current) {
     cameraRef.current = createCameraController(DEFAULT_VIEW, {
@@ -244,6 +244,7 @@ export default function InvestigateGraph({
         applyGraphDom(canvasRef.current, pos, visibleRef.current.edges)
       },
       onSettled: (pos) => {
+        if (draggingNodeIdRef.current) return
         positionsRef.current = pos
         setPositions(pos)
         const ver = structuralVersionRef.current
@@ -268,8 +269,13 @@ export default function InvestigateGraph({
 
   const syncCameraView = useCallback((next) => {
     viewRef.current = next
-    setView(next)
     applyWorldTransform(worldRef.current, next)
+    applyNodeScaleDom(canvasRef.current, next.scale, {
+      selectedId: selectedIdRef.current,
+      hoveredId: hoveredIdRef.current,
+      findLower: findLowerRef.current,
+      rootId: graphRef.current.root_id,
+    })
   }, [])
 
   const startCameraLoop = useCallback(() => {
@@ -282,14 +288,26 @@ export default function InvestigateGraph({
       const display = cam.tick(dt)
       viewRef.current = display
       applyWorldTransform(worldRef.current, display)
+      applyNodeScaleDom(canvasRef.current, display.scale, {
+        selectedId: selectedIdRef.current,
+        hoveredId: hoveredIdRef.current,
+        findLower: findLowerRef.current,
+        rootId: graphRef.current.root_id,
+      })
       if (cam.isAnimating()) {
         cameraRafRef.current = requestAnimationFrame(loop)
       } else {
         cameraRafRef.current = 0
-        setView(display)
       }
     }
     cameraRafRef.current = requestAnimationFrame(loop)
+  }, [])
+
+  const stopCameraLoop = useCallback(() => {
+    if (cameraRafRef.current && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(cameraRafRef.current)
+      cameraRafRef.current = 0
+    }
   }, [])
 
   useEffect(() => {
@@ -346,10 +364,11 @@ export default function InvestigateGraph({
       return
     }
     if (e.target.closest('button, input, a, [role="tab"], .investigate-camera-tools, .ui-checkbox, label')) return
+    stopCameraLoop()
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      origin: cameraRef.current.getDisplayView(),
+      panOrigin: null,
       lastX: e.clientX,
       lastY: e.clientY,
       vx: 0,
@@ -357,13 +376,14 @@ export default function InvestigateGraph({
       panning: false,
     }
     e.currentTarget.setPointerCapture(e.pointerId)
-  }, [])
+  }, [stopCameraLoop])
 
   const onPointerMove = useCallback((e) => {
     if (nodeDragRef.current) {
       const { tracker, nodeId } = nodeDragRef.current
       const mode = tracker.move(e.clientX, e.clientY)
       if (mode === 'drag') {
+        draggingNodeIdRef.current = nodeId
         const rect = canvasRef.current.getBoundingClientRect()
         const world = screenToWorld(
           cameraRef.current.getDisplayView(),
@@ -371,34 +391,41 @@ export default function InvestigateGraph({
           e.clientY - rect.top,
         )
         engineRef.current.pinNode(nodeId, world.x, world.y)
-        engineRef.current.reheat()
       }
       return
     }
     if (!dragRef.current) return
-    const { startX, startY, origin } = dragRef.current
-    const dx = e.clientX - startX
-    const dy = e.clientY - startY
-    dragRef.current.vx = e.clientX - dragRef.current.lastX
-    dragRef.current.vy = e.clientY - dragRef.current.lastY
+    const { startX, startY } = dragRef.current
+    const frameDx = e.clientX - dragRef.current.lastX
+    const frameDy = e.clientY - dragRef.current.lastY
+    dragRef.current.vx = frameDx
+    dragRef.current.vy = frameDy
     dragRef.current.lastX = e.clientX
     dragRef.current.lastY = e.clientY
-    if (Math.hypot(dx, dy) >= 4) {
+    if (!dragRef.current.panning) {
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
       dragRef.current.panning = true
+      panningRef.current = true
+      stopCameraLoop()
+      dragRef.current.panOrigin = cameraRef.current.syncDisplayToTarget()
+      dragRef.current.startX = e.clientX
+      dragRef.current.startY = e.clientY
     }
-    if (!dragRef.current.panning) return
-    cameraRef.current.applyPanDelta(origin, dx, dy)
-    const display = cameraRef.current.getDisplayView()
-    viewRef.current = display
-    applyWorldTransform(worldRef.current, display)
-  }, [])
+    const dx = e.clientX - dragRef.current.startX
+    const dy = e.clientY - dragRef.current.startY
+    cameraRef.current.applyPanDelta(dragRef.current.panOrigin, dx, dy)
+    syncCameraView(cameraRef.current.getDisplayView())
+  }, [stopCameraLoop, syncCameraView])
 
   const onPointerUp = useCallback((e) => {
     if (nodeDragRef.current) {
       const { tracker, nodeId } = nodeDragRef.current
       const result = tracker.end()
       if (result === 'drag') {
-        engineRef.current.unpinNode(nodeId)
+        const dragged = engineRef.current.getPositions()
+        positionsRef.current = dragged
+        setPositions(dragged)
+        draggingNodeIdRef.current = null
       } else if (result === 'click') {
         const node = graphRef.current.nodes.find((n) => n.node_id === nodeId)
         if (node) {
@@ -410,6 +437,7 @@ export default function InvestigateGraph({
     }
     if (dragRef.current) {
       const { panning, vx, vy } = dragRef.current
+      panningRef.current = false
       if (panning) {
         cameraRef.current.nudgePanVelocity(vx, vy)
         startCameraLoop()
@@ -501,11 +529,6 @@ export default function InvestigateGraph({
   visibleRef.current = visible
 
   const layers = useMemo(() => splitGraphLayers(graph), [graph])
-
-  const visibleNodeIds = useMemo(
-    () => new Set(visible.nodes.map((node) => node.node_id)),
-    [visible.nodes],
-  )
 
   const edgeClassesKey = useMemo(() => [...edgeClasses].sort().join(','), [edgeClasses])
 
@@ -668,6 +691,7 @@ export default function InvestigateGraph({
 
   const focusId = hoveredId || selectedId
   const findLower = findText.trim().toLowerCase()
+  findLowerRef.current = findLower
   const findMatches = useMemo(() => {
     if (!findLower) return []
     return visible.nodes
@@ -727,7 +751,13 @@ export default function InvestigateGraph({
     return () => ro.disconnect()
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!graph.nodes.length || !positionsRef.current.length) return
+    syncCameraView(viewRef.current)
+    applyGraphDom(canvasRef.current, positionsRef.current, visibleRef.current.edges)
+  })
+
+  useLayoutEffect(() => {
     if (!isActive || visible.nodes.length === 0) return undefined
     const engine = engineRef.current
     engine.setSize(sizeRef.current.width, sizeRef.current.height)
@@ -736,6 +766,7 @@ export default function InvestigateGraph({
     positionsRef.current = seeded
     setPositions(seeded)
     applyGraphDom(canvasRef.current, seeded, visible.edges)
+    syncCameraView(viewRef.current)
     engine.start()
     return () => engine.stop()
   }, [isActive, visible, graph.root_id, structuralVersion])
@@ -994,7 +1025,6 @@ export default function InvestigateGraph({
                   id="investigate-world"
                   ref={worldRef}
                   className="investigate-svg-scene"
-                  transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
                 >
                   {visible.edges.map((edge) => {
                     const source = positionById.get(edge.source_node_id)
@@ -1008,10 +1038,6 @@ export default function InvestigateGraph({
                       <line
                         key={edge.edge_id}
                         data-edge-id={edge.edge_id}
-                        x1={source.x}
-                        y1={source.y}
-                        x2={target.x}
-                        y2={target.y}
                         stroke={EDGE_STROKE[edge.edge_class] || 'var(--text-muted, var(--text3))'}
                         strokeWidth={edge.edge_class === 'direct_fact' ? 2 : 1.25}
                         strokeDasharray={dashed ? '4 3' : undefined}
@@ -1019,17 +1045,20 @@ export default function InvestigateGraph({
                       />
                     )
                   })}
-                  {positions.filter((node) => visibleNodeIds.has(node.node_id)).map((node) => {
+                  {visible.nodes.map((node) => {
+                    const nodePos = positionById.get(node.node_id)
+                    if (!nodePos) return null
                     const active = node.node_id === selectedId
                     const expanding = node.node_id === expandingId
                     const dimmed = Boolean(highlightedNodeIds) && !highlightedNodeIds.has(node.node_id)
                     const findMatch = Boolean(findLower)
                       && (node.label || node.entity_id || '').toLowerCase().includes(findLower)
+                    const liveScale = viewRef.current.scale
                     const showLabel = shouldShowLabel(node, {
                       selectedId,
                       hoveredId,
                       findLower,
-                      scale: view.scale,
+                      scale: liveScale,
                       rootId: graph.root_id,
                     })
                     const dotR = nodeDotRadius(node, active, heuristicIds, graph.root_id)
@@ -1039,7 +1068,8 @@ export default function InvestigateGraph({
                       <g
                         key={node.node_id}
                         data-node-id={node.node_id}
-                        transform={`translate(${node.x} ${node.y})`}
+                        data-entity-type={node.entity_type}
+                        data-label={node.label || node.entity_id || ''}
                         className={[
                           'investigate-node',
                           dimmed ? 'investigate-node-dim' : '',
@@ -1047,7 +1077,10 @@ export default function InvestigateGraph({
                           node.node_id === focusedNodeId ? 'investigate-node-focused' : '',
                         ].filter(Boolean).join(' ')}
                         onDoubleClick={() => onNodeDoubleClick(node)}
-                        onMouseEnter={() => setHoveredId(node.node_id)}
+                        onMouseEnter={() => {
+                          if (panningRef.current) return
+                          setHoveredId(node.node_id)
+                        }}
                         onMouseLeave={() => setHoveredId(null)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' && event.shiftKey) {
@@ -1067,7 +1100,7 @@ export default function InvestigateGraph({
                           className="investigate-node-hit"
                           cx={0}
                           cy={0}
-                          r={hitRadius(view.scale)}
+                          r={hitRadius(liveScale)}
                         />
                         {inThread && (
                           <circle
@@ -1091,16 +1124,15 @@ export default function InvestigateGraph({
                             strokeWidth={1.5}
                           />
                         )}
-                        {showLabel && (
-                          <text
-                            x={0}
-                            y={22}
-                            textAnchor="middle"
-                            className="investigate-node-label"
-                          >
-                            {truncateNodeLabel(node.label || node.entity_id || '', 28)}
-                          </text>
-                        )}
+                        <text
+                          x={0}
+                          y={22}
+                          textAnchor="middle"
+                          className="investigate-node-label"
+                          visibility={showLabel ? 'visible' : 'hidden'}
+                        >
+                          {truncateNodeLabel(node.label || node.entity_id || '', 28)}
+                        </text>
                       </g>
                     )
                   })}
