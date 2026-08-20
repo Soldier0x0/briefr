@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from feeds.feodo import _parse_feodo_csv, parse_feodo_row
-from feeds.phishtank import parse_phishtank_row
+from feeds.phishtank import fetch_phishtank_iocs, parse_phishtank_row
 
 
 def test_parse_feodo_row_maps_ip():
@@ -61,3 +63,34 @@ def test_parse_phishtank_row_requires_verified_online():
     assert row["ioc_type"] == "url"
     assert row["host_ioc"] == "wvc3bayjg.com"
     assert row["threat_type"] == "phishing:Apple"
+
+
+def test_fetch_phishtank_iocs_kwargs_match_resilient_request(monkeypatch):
+    """PhishTank must not pass kwargs resilient_request does not accept."""
+    import httpx
+    from resilient_client import resilient_request
+
+    seen = {}
+
+    async def fake_request(*args, **kwargs):
+        seen["args"] = args
+        seen["kwargs"] = kwargs
+        inspect.signature(resilient_request).bind(*args, **kwargs)
+        return httpx.Response(
+            200,
+            text=(
+                "phish_id,url,verified,online,verification_time,target\n"
+                "9506592,https://wvc3bayjg.com/Cxpu5t,yes,yes,2026-08-18T03:12:32+00:00,Apple\n"
+            ),
+        )
+
+    async def fake_record(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr("feeds.phishtank.resilient_request", fake_request)
+    monkeypatch.setattr("feeds.phishtank.record_api_call", fake_record)
+
+    rows = asyncio.run(fetch_phishtank_iocs())
+    assert len(rows) == 1
+    assert "follow_redirects" not in seen["kwargs"]
+

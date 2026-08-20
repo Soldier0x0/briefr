@@ -414,6 +414,8 @@ async def _run_manual_job(fn, job_id: str) -> None:
     """
     try:
         await fn()
+    except Exception:
+        logger.exception("Manual scheduler job %s failed", job_id)
     finally:
         release_job_run(job_id)
 
