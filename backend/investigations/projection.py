@@ -25,7 +25,7 @@ from investigations.contracts import (
     make_node_id,
     utc_now_iso,
 )
-from investigations.resolve import _mirror_ioc_type
+from investigations.resolve import _mirror_ioc_type, is_valid_cve_id
 
 logger = logging.getLogger(__name__)
 
@@ -419,10 +419,25 @@ async def _cve_edges(
         logger.warning("OTX hop skipped for %s: %s", cve_id, exc)
     otx_pairs: list[tuple[str, str]] = []
     for row in otx_rows:
-        ioc_ref = _ioc_ref_from_row(row["ioc_type"], row["ioc_value"])
+        ioc_type = _row_get(row, "ioc_type") or ""
+        ioc_value = _row_get(row, "ioc_value") or ""
+        cve_ref = _cve_ref_from_otx_indicator(ioc_type, ioc_value, cve_id)
+        if cve_ref is not None:
+            edges.append(
+                _candidate_edge(
+                    source_node_id=source_node_id,
+                    target_ref=cve_ref,
+                    edge_class=EdgeClass.REPORTED,
+                    source_key="otx",
+                    observed_at=_row_get(row, "observed_at"),
+                    fetched_at=_row_get(row, "fetched_at"),
+                )
+            )
+            continue
+        ioc_ref = _ioc_ref_from_row(ioc_type, ioc_value)
         if ioc_ref is None:
             continue
-        otx_pairs.append((row["ioc_type"], row["ioc_value"]))
+        otx_pairs.append((ioc_type, ioc_value))
         edges.append(
             _candidate_edge(
                 source_node_id=source_node_id,
@@ -773,6 +788,22 @@ def _candidate_edge(
     return _CandidateEdge(edge=edge, target=target_node)
 
 
+def _cve_ref_from_otx_indicator(
+    ioc_type: str, ioc_value: str, anchor_cve_id: str
+) -> EntityRef | None:
+    """Map OTX CVE-as-indicator rows to CVE graph nodes (not IOC nodes)."""
+    normalized = normalize_ioc(ioc_type, ioc_value)
+    if normalized is None:
+        return None
+    canon_type, canon_value, _meta = normalized
+    if canon_type != "CVE" or not is_valid_cve_id(canon_value):
+        return None
+    related_id = canon_value.upper()
+    if related_id == anchor_cve_id.upper():
+        return None
+    return EntityRef(entity_type="cve", entity_id=related_id, label=related_id)
+
+
 def _ioc_ref_from_row(ioc_type: str, ioc_value: str) -> EntityRef | None:
     normalized = normalize_ioc(ioc_type, ioc_value)
     if normalized is None:
@@ -781,7 +812,10 @@ def _ioc_ref_from_row(ioc_type: str, ioc_value: str) -> EntityRef | None:
     try:
         kind = _mirror_ioc_type(canon_type)
     except ValueError:
-        # OTX pulses include email/mutex/CVE indicators we do not graph as IOC nodes.
+        # P0 graph contract: IocKind is ip/hash/domain/url only (see contracts.IocKind).
+        # OTX also ships email/mutex/etc.; correlation stores them but INVESTIGATE
+        # does not model them as IOC nodes until a future entity type lands.
+        logger.debug("skip non-graph IOC indicator type %s", canon_type)
         return None
     entity_id = f"{kind}:{canon_value}"
     return EntityRef(entity_type="ioc", entity_id=entity_id, label=canon_value)

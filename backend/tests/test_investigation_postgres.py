@@ -24,7 +24,7 @@ from main import app
     reason="DATABASE_URL not PostgreSQL",
 )
 def test_investigate_cve_relationships_on_postgres():
-    cve_id = "CVE-2024-INVESTIGATE-PG"
+    cve_id = "CVE-2024-99101"
 
     async def seed():
         await init_db()

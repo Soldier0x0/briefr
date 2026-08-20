@@ -9,6 +9,11 @@ from correlation.ioc_normalize import normalize_ioc
 from investigations.contracts import EntityRef, GRAPH_ENTITY_TYPES, RESOLVE_ROOT_ENTITY_TYPES
 
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
+
+
+def is_valid_cve_id(value: str) -> bool:
+    """True when ``value`` matches the investigation CVE id pattern."""
+    return _CVE_RE.match((value or "").strip()) is not None
 _TECHNIQUE_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$", re.IGNORECASE)
 _CAMPAIGN_ID_RE = re.compile(r"^camp_[0-9a-fA-F]{12}$")
 _HEX_HASH_RE = re.compile(r"^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
