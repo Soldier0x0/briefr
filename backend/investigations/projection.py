@@ -73,6 +73,11 @@ def _optional_str(value: Any) -> str | None:
     return text or None
 
 
+def _required_str_id(value: Any) -> str | None:
+    """Non-empty string id from a DB row; None when NULL/blank."""
+    return _optional_str(value)
+
+
 @dataclass(frozen=True)
 class _CandidateEdge:
     edge: GraphEdge
@@ -362,23 +367,30 @@ async def _cve_edges(
     source_node_id = make_node_id(entity.entity_type, entity.entity_id)
     edges: list[_CandidateEdge] = []
 
-    technique_rows = await db.execute_fetchall(
-        """
-        SELECT m.technique_id, t.name
-        FROM cve_technique_map m
-        LEFT JOIN mitre_techniques t ON t.technique_id = m.technique_id
-        WHERE m.cve_id = ?
-        ORDER BY m.technique_id ASC
-        LIMIT ?
-        """,
-        (cve_id, _MAX_HOP_ROWS),
-    )
+    technique_rows: list[Any] = []
+    try:
+        technique_rows = await db.execute_fetchall(
+            """
+            SELECT m.technique_id, t.name
+            FROM cve_technique_map m
+            LEFT JOIN mitre_techniques t ON t.technique_id = m.technique_id
+            WHERE m.cve_id = ?
+            ORDER BY m.technique_id ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("technique hop skipped for %s: %s", cve_id, exc)
     for row in technique_rows:
-        technique_id = row["technique_id"]
+        technique_id = _required_str_id(_row_get(row, "technique_id"))
+        if technique_id is None:
+            continue
         target_ref = EntityRef(
             entity_type="technique",
             entity_id=technique_id,
-            label=row["name"] or technique_id,
+            label=_optional_str(_row_get(row, "name")) or technique_id,
         )
         edges.append(
             _candidate_edge(
@@ -446,23 +458,30 @@ async def _cve_edges(
                 )
             )
 
-    campaign_rows = await db.execute_fetchall(
-        """
-        SELECT c.campaign_id, c.label
-        FROM correlation_campaign_members m
-        INNER JOIN correlation_campaigns c ON c.campaign_id = m.campaign_id
-        WHERE m.cve_id = ? AND c.retracted_at IS NULL
-        ORDER BY c.campaign_id ASC
-        LIMIT ?
-        """,
-        (cve_id, _MAX_HOP_ROWS),
-    )
+    campaign_rows: list[Any] = []
+    try:
+        campaign_rows = await db.execute_fetchall(
+            """
+            SELECT c.campaign_id, c.label
+            FROM correlation_campaign_members m
+            INNER JOIN correlation_campaigns c ON c.campaign_id = m.campaign_id
+            WHERE m.cve_id = ? AND c.retracted_at IS NULL
+            ORDER BY c.campaign_id ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("campaign hop skipped for %s: %s", cve_id, exc)
     for row in campaign_rows:
-        campaign_id = row["campaign_id"]
+        campaign_id = _required_str_id(_row_get(row, "campaign_id"))
+        if campaign_id is None:
+            continue
         target_ref = EntityRef(
             entity_type="campaign",
             entity_id=campaign_id,
-            label=row["label"] or campaign_id,
+            label=_optional_str(_row_get(row, "label")) or campaign_id,
         )
         edges.append(
             _candidate_edge(
@@ -477,11 +496,13 @@ async def _cve_edges(
     if sigma_degraded:
         flags.degraded = True
     for row in sigma_rows:
-        repo_path = row["repo_path"]
+        repo_path = _required_str_id(_row_get(row, "repo_path"))
+        if repo_path is None:
+            continue
         target_ref = EntityRef(
             entity_type="sigma_rule",
             entity_id=repo_path,
-            label=row["title"] or repo_path,
+            label=_optional_str(_row_get(row, "title")) or repo_path,
         )
         edge_class = (
             EdgeClass.DIRECT_FACT
@@ -494,7 +515,7 @@ async def _cve_edges(
                 target_ref=target_ref,
                 edge_class=edge_class,
                 source_key="sigmahq",
-                fetched_at=_row_get(row, "fetched_at"),
+                fetched_at=_row_get(row, "updated_at"),
             )
         )
 
@@ -757,7 +778,11 @@ def _ioc_ref_from_row(ioc_type: str, ioc_value: str) -> EntityRef | None:
     if normalized is None:
         return None
     canon_type, canon_value, _meta = normalized
-    kind = _mirror_ioc_type(canon_type)
+    try:
+        kind = _mirror_ioc_type(canon_type)
+    except ValueError:
+        # OTX pulses include email/mutex/CVE indicators we do not graph as IOC nodes.
+        return None
     entity_id = f"{kind}:{canon_value}"
     return EntityRef(entity_type="ioc", entity_id=entity_id, label=canon_value)
 
@@ -796,13 +821,17 @@ async def _ioc_row_exists(db, entity_id: str) -> bool:
 
 
 async def _mirror_ioc_exists(db, canon_type: str, canon_value: str) -> bool:
+    try:
+        mirror_type = _mirror_ioc_type(canon_type)
+    except ValueError:
+        return False
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM ti_mirror_iocs
         WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
         LIMIT 1
         """,
-        (_mirror_ioc_type(canon_type), canon_value.lower()),
+        (mirror_type, canon_value.lower()),
     )
     return bool(rows)
 
@@ -834,7 +863,7 @@ async def _sigma_rows_for_cve(
     try:
         rows = await db.execute_fetchall(
             """
-            SELECT r.title, r.repo_path, r.fetched_at, c.match_basis
+            SELECT r.title, r.repo_path, r.updated_at, c.match_basis
             FROM detection_rules r
             INNER JOIN detection_rule_cves c ON c.rule_id = r.id
             WHERE c.cve_id = ? AND r.source = ? AND r.retired_at IS NULL
