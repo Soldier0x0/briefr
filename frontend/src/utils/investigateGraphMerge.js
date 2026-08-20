@@ -12,6 +12,8 @@ export function emptyGraphState() {
     knowledge_state: 'unknown',
     source_status: 'ok',
     root_id: null,
+    next_cursor: null,
+    cursorsByNodeId: {},
   }
 }
 
@@ -64,6 +66,11 @@ export function mergeGraphPage(existing, page) {
   const rootId = page.root?.node_id || prior.root_id
   const trimmed = trimGraph(nodes, edges, rootId)
   const degraded = page.source_status === 'degraded' || prior.source_status === 'degraded'
+  const expandedId = page.root?.node_id
+  const cursorsByNodeId = { ...(prior.cursorsByNodeId || {}) }
+  if (expandedId) {
+    cursorsByNodeId[expandedId] = page.next_cursor || null
+  }
   return {
     nodes: trimmed.nodes,
     edges: trimmed.edges,
@@ -72,6 +79,8 @@ export function mergeGraphPage(existing, page) {
     knowledge_state: page.knowledge_state || prior.knowledge_state,
     source_status: degraded ? 'degraded' : (page.source_status || prior.source_status || 'ok'),
     root_id: rootId,
+    next_cursor: page.next_cursor ?? prior.next_cursor ?? null,
+    cursorsByNodeId,
   }
 }
 
@@ -81,10 +90,20 @@ export function investigationEntityPath(entityType, entityId) {
   return `/investigations/entities/${type}/${id}`
 }
 
+/** Extra fetch params when the Semantic filter is enabled. */
+export function investigationRelationshipParams(includeSemantic, extra = {}) {
+  return {
+    ...extra,
+    ...(includeSemantic ? { include_semantic: true } : {}),
+  }
+}
+
 export function buildInvestigationRelationshipQuery(params = {}) {
   const qs = new URLSearchParams()
   if (params.limit != null) qs.set('limit', String(params.limit))
   if (params.depth != null) qs.set('depth', String(params.depth))
   if (params.cursor) qs.set('cursor', params.cursor)
+  if (params.include_semantic === true) qs.set('include_semantic', 'true')
+  if (params.edge_class) qs.set('edge_class', String(params.edge_class))
   return qs.toString() ? `?${qs.toString()}` : ''
 }

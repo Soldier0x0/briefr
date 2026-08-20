@@ -49,6 +49,33 @@ export function computeGraphBounds(positioned, nodeW = NODE_W, nodeH = NODE_H, p
   }
 }
 
+/** Bounding box for force-layout dots (cx, cy) rather than architecture rects. */
+export function computePointCloudBounds(positions, radius = 12, padding = 48) {
+  if (!positions?.length) {
+    return { minX: 0, minY: 0, maxX: 400, maxY: 300 }
+  }
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const node of positions) {
+    if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) continue
+    minX = Math.min(minX, node.x - radius)
+    minY = Math.min(minY, node.y - radius)
+    maxX = Math.max(maxX, node.x + radius)
+    maxY = Math.max(maxY, node.y + radius)
+  }
+  if (!Number.isFinite(minX)) {
+    return { minX: 0, minY: 0, maxX: 400, maxY: 300 }
+  }
+  return {
+    minX: minX - padding,
+    minY: minY - padding,
+    maxX: maxX + padding,
+    maxY: maxY + padding,
+  }
+}
+
 /**
  * Fit all laid-out nodes inside the viewport with uniform scale.
  * Does not use wheel MIN_SCALE — tall graphs must be allowed to shrink.

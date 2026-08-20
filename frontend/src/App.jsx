@@ -701,6 +701,26 @@ export default function App() {
     })
   }, [setSearchParams, setActiveTab])
 
+  const openAdvisories = useCallback(() => {
+    setActiveTab('atlas')
+    pushContext(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'atlas')
+      next.set('view', 'advisories')
+      return next
+    })
+  }, [setSearchParams, setActiveTab])
+
+  const investigateInitialQuery = activeTab === 'investigate' ? (searchParams.get('q') || '') : ''
+
+  const onInvestigateQueryResolved = useCallback((q) => {
+    pushContext(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'investigate')
+      if (q) next.set('q', q)
+      else next.delete('q')
+      return next
+    })
+  }, [setSearchParams])
+
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
     const ql = q.toLowerCase()
@@ -922,6 +942,9 @@ export default function App() {
               onRetryDrawer={handleRetryDrawer}
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
+              onOpenAdvisories={openAdvisories}
+              investigateInitialQuery={investigateInitialQuery}
+              onInvestigateQueryResolved={onInvestigateQueryResolved}
             />
             </RequireAuth>
           )}
@@ -980,6 +1003,9 @@ function AppLayout({
   onRetryDrawer,
   watchlist,
   onWatchlistChange,
+  onOpenAdvisories,
+  investigateInitialQuery,
+  onInvestigateQueryResolved,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const [mountedTabs, setMountedTabs] = useState({ brief: true })
@@ -1099,7 +1125,16 @@ function AppLayout({
             {mountedTabs.investigate && (
               <Suspense fallback={<TabLoading label="Investigate" />}>
                 <ToolErrorBoundary label="Investigate">
-                  <InvestigateGraph isActive={activeTab === 'investigate'} onOpenCve={openCveById} />
+                  <InvestigateGraph
+                    isActive={activeTab === 'investigate'}
+                    onOpenCve={openCveById}
+                    watchlist={watchlist}
+                    onWatchlistChange={onWatchlistChange}
+                    onOpenForgeCampaigns={onOpenForgeCampaigns}
+                    onOpenAdvisories={onOpenAdvisories}
+                    initialQuery={investigateInitialQuery}
+                    onQueryResolved={onInvestigateQueryResolved}
+                  />
                 </ToolErrorBoundary>
               </Suspense>
             )}

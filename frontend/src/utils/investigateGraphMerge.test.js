@@ -6,6 +6,7 @@ import {
   INVESTIGATE_GRAPH_MAX_NODES,
   buildInvestigationRelationshipQuery,
   investigationEntityPath,
+  investigationRelationshipParams,
   mergeGraphPage,
 } from './investigateGraphMerge.js'
 
@@ -72,6 +73,29 @@ describe('mergeGraphPage', () => {
     assert.equal(again.capped, true)
     assert.equal(again.truncated, true)
   })
+
+  it('stores next_cursor per expanded root id', () => {
+    const page = {
+      root: { node_id: 'cve:CVE-1', entity_type: 'cve', entity_id: 'CVE-1', label: 'CVE-1' },
+      nodes: [{ node_id: 'cve:CVE-1', entity_type: 'cve', entity_id: 'CVE-1', label: 'CVE-1' }],
+      edges: [],
+      truncated: true,
+      next_cursor: 'abc',
+      source_status: 'ok',
+      knowledge_state: 'partial',
+    }
+    const first = mergeGraphPage(emptyGraphState(), page)
+    assert.equal(first.cursorsByNodeId['cve:CVE-1'], 'abc')
+    const second = mergeGraphPage(first, {
+      ...page,
+      root: { node_id: 'cve:CVE-2', entity_type: 'cve', entity_id: 'CVE-2', label: 'CVE-2' },
+      nodes: [{ node_id: 'cve:CVE-2', entity_type: 'cve', entity_id: 'CVE-2', label: 'CVE-2' }],
+      truncated: false,
+      next_cursor: null,
+    })
+    assert.equal(second.cursorsByNodeId['cve:CVE-1'], 'abc')
+    assert.equal(second.cursorsByNodeId['cve:CVE-2'], null)
+  })
 })
 
 describe('investigationEntityPath', () => {
@@ -94,6 +118,23 @@ describe('investigationEntityPath', () => {
   })
 })
 
+describe('investigationRelationshipParams', () => {
+  it('adds include_semantic when enabled', () => {
+    assert.deepEqual(investigationRelationshipParams(true), { include_semantic: true })
+  })
+
+  it('omits include_semantic when disabled', () => {
+    assert.deepEqual(investigationRelationshipParams(false), {})
+  })
+
+  it('merges extra params and semantic flag', () => {
+    assert.deepEqual(
+      investigationRelationshipParams(true, { cursor: 'abc', limit: 10 }),
+      { cursor: 'abc', limit: 10, include_semantic: true },
+    )
+  })
+})
+
 describe('buildInvestigationRelationshipQuery', () => {
   it('serializes limit and depth when zero', () => {
     assert.equal(buildInvestigationRelationshipQuery({ limit: 0, depth: 0 }), '?limit=0&depth=0')
@@ -102,5 +143,16 @@ describe('buildInvestigationRelationshipQuery', () => {
   it('omits absent params', () => {
     assert.equal(buildInvestigationRelationshipQuery(), '')
     assert.equal(buildInvestigationRelationshipQuery({ cursor: 'abc' }), '?cursor=abc')
+  })
+
+  it('sends include_semantic when true', () => {
+    assert.equal(
+      buildInvestigationRelationshipQuery({ include_semantic: true }),
+      '?include_semantic=true',
+    )
+  })
+
+  it('omits include_semantic when false', () => {
+    assert.equal(buildInvestigationRelationshipQuery({ include_semantic: false }), '')
   })
 })

@@ -7,6 +7,7 @@ import {
   clampScale,
   computeFitView,
   computeGraphBounds,
+  computePointCloudBounds,
   truncateNodeLabel,
   zoomAtCursor,
 } from './architectureGraphView.js'
@@ -101,6 +102,34 @@ describe('clampScale', () => {
   it('accepts an explicit fit floor below wheel MIN_SCALE', () => {
     assert.equal(clampScale(0.05, FIT_MIN_SCALE, 4), FIT_MIN_SCALE)
     assert.equal(clampScale(0.1, FIT_MIN_SCALE, 4), 0.1)
+  })
+})
+
+describe('computePointCloudBounds', () => {
+  it('pads circular nodes so Fit can frame force-layout dots', () => {
+    const positions = [
+      { x: 100, y: 100 },
+      { x: 300, y: 180 },
+    ]
+    const bounds = computePointCloudBounds(positions, 12, 10)
+    assert.equal(bounds.minX, 78)
+    assert.equal(bounds.minY, 78)
+    assert.equal(bounds.maxX, 322)
+    assert.equal(bounds.maxY, 202)
+  })
+
+  it('fits a compact clump into a large viewport (scale > 1)', () => {
+    const bounds = computePointCloudBounds(
+      [{ x: 400, y: 300 }, { x: 420, y: 310 }],
+      8,
+      20,
+    )
+    const fit = computeFitView(bounds, 800, 600)
+    assert.ok(fit.scale > 1)
+    const cx = (bounds.minX + bounds.maxX) / 2
+    const cy = (bounds.minY + bounds.maxY) / 2
+    assert.ok(Math.abs(fit.x + cx * fit.scale - 400) < 2)
+    assert.ok(Math.abs(fit.y + cy * fit.scale - 300) < 2)
   })
 })
 

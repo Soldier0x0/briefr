@@ -27,7 +27,7 @@ Click any image to expand inline on the docs portal. Regenerate captures: [`scri
 | `brief` | **BRIEF** | Morning queue, OP/Threat-ranked cards, charts, heatmap, what changed |
 | `feed` | **FEED** | Full CVE list, filters, KEV deadlines, export, hybrid search |
 | `ioc` | **IOC LOOKUP** | IP / hash / domain enrichment and investigation pivots |
-| `investigate` | **INVESTIGATE** | Obsidian-like graph of stored CVE / IOC / technique hops (search + expand) |
+| `investigate` | **INVESTIGATE** | Stored-intel graph (CVE / IOC / technique hops); pan/zoom, inspect/expand, filters; deep-link `?q=` |
 | `atlas` | **ADVISORIES & INTEL** | Headlines, structured advisories, MITRE ATLAS |
 | `forge` | **FORGE** | ATT&CK navigator, hunt packs, scenarios, campaigns, backlog, library |
 
@@ -65,6 +65,16 @@ OTX pulse names are normalized with `formatIntelLabel`, so cluster labels stay r
 ## IOC lookup
 
 Sources depend on keys: VirusTotal, AbuseIPDB, GreyNoise, OTX, abuse.ch. Results cache about 6 hours; GreyNoise is opt-in per lookup.
+
+---
+
+## INVESTIGATE
+
+Graph browser over stored CVE, IOC, technique, campaign, and publication hops — no live enrichment on each click. Open with `?tab=investigate&q=` (CVE, IP, hash, domain, or technique id).
+
+**Navigation:** scroll to zoom · drag to pan · click to inspect · double-click to expand. On a laptop without a scroll wheel, use **FIT GRAPH** (same as **RESET VIEW**) to frame the map.
+
+Filters: **Related CVEs** (default on), entity-type chips, edge-class chips, **Isolate**, **Find**, optional **Semantic**. Truncated neighborhoods show **LOAD MORE** on the selected node. The inspector lists evidence as `edge_class · source_key`. IOC nodes pivot via **LOOKUP LIVE** (correct `IocKind`); CVE scoring (KEV/EPSS) stays in **OPEN CVE**, not on graph nodes. Sigma nodes inspect only — no expand.
 
 ---
 
