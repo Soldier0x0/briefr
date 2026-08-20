@@ -282,3 +282,84 @@ def test_candidate_edge_coerces_decimal_confidence():
         confidence=Decimal("3"),
     )
     assert candidate.edge.confidence == "3"
+
+
+def test_ioc_ref_from_row_skips_non_graph_ioc_kinds():
+    from investigations.projection import _ioc_ref_from_row
+
+    assert _ioc_ref_from_row("email", "attacker@evil.example") is None
+    assert _ioc_ref_from_row("mutex", "Global\\Foo") is None
+    assert _ioc_ref_from_row("domain", "evil.example") is not None
+
+
+def test_cve_ref_from_otx_indicator_maps_related_cve():
+    from investigations.projection import _cve_ref_from_otx_indicator
+
+    ref = _cve_ref_from_otx_indicator(
+        "CVE", "CVE-2021-44228", anchor_cve_id="CVE-2024-9001"
+    )
+    assert ref is not None
+    assert ref.entity_type == "cve"
+    assert ref.entity_id == "CVE-2021-44228"
+    assert _cve_ref_from_otx_indicator("CVE", "CVE-2024-9001", "CVE-2024-9001") is None
+
+
+def test_expand_cve_tolerates_non_graph_otx_indicator_types(tmp_path, monkeypatch):
+    async def run():
+        db_path = str(tmp_path / "projection-exotic-ioc.db")
+        use_sqlite_backend(monkeypatch, db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            cve_id = await _seed_projection_db(db)
+            await replace_otx_pulse_iocs(
+                db,
+                "pulse-investigation-1",
+                [
+                    {
+                        "ioc_type": "domain",
+                        "ioc_value": "evil.investigation.example",
+                        "description": "",
+                    },
+                    {
+                        "ioc_type": "email",
+                        "ioc_value": "attacker@evil.example",
+                        "description": "",
+                    },
+                    {
+                        "ioc_type": "mutex",
+                        "ioc_value": "Global\\Foo",
+                        "description": "",
+                    },
+                    {
+                        "ioc_type": "CVE",
+                        "ioc_value": "CVE-2021-44228",
+                        "description": "",
+                    },
+                ],
+            )
+            await db.commit()
+
+            root = parse_investigation_query(cve_id)
+            page = await expand_relationships(
+                db,
+                root,
+                RelationshipFilters(depth=1, limit=50),
+            )
+            ioc_targets = [
+                edge.target_node_id
+                for edge in page.edges
+                if edge.target_node_id.startswith("ioc:")
+            ]
+            assert any("domain:evil.investigation.example" in node for node in ioc_targets)
+            assert not any("email:" in node for node in ioc_targets)
+            assert not any("mutex:" in node for node in ioc_targets)
+            assert any(
+                edge.target_node_id == "cve:CVE-2021-44228"
+                for edge in page.edges
+                if edge.source_key == "otx"
+            )
+        finally:
+            await db.close()
+
+    run_db_test(run())

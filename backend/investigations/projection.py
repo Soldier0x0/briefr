@@ -25,7 +25,11 @@ from investigations.contracts import (
     make_node_id,
     utc_now_iso,
 )
-from investigations.resolve import _mirror_ioc_type
+from investigations.resolve import (
+    _mirror_ioc_type,
+    is_valid_cve_id,
+    is_valid_technique_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +75,11 @@ def _optional_str(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _required_str_id(value: Any) -> str | None:
+    """Non-empty string id from a DB row; None when NULL/blank."""
+    return _optional_str(value)
 
 
 @dataclass(frozen=True)
@@ -362,23 +371,30 @@ async def _cve_edges(
     source_node_id = make_node_id(entity.entity_type, entity.entity_id)
     edges: list[_CandidateEdge] = []
 
-    technique_rows = await db.execute_fetchall(
-        """
-        SELECT m.technique_id, t.name
-        FROM cve_technique_map m
-        LEFT JOIN mitre_techniques t ON t.technique_id = m.technique_id
-        WHERE m.cve_id = ?
-        ORDER BY m.technique_id ASC
-        LIMIT ?
-        """,
-        (cve_id, _MAX_HOP_ROWS),
-    )
+    technique_rows: list[Any] = []
+    try:
+        technique_rows = await db.execute_fetchall(
+            """
+            SELECT m.technique_id, t.name
+            FROM cve_technique_map m
+            LEFT JOIN mitre_techniques t ON t.technique_id = m.technique_id
+            WHERE m.cve_id = ?
+            ORDER BY m.technique_id ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("technique hop skipped for %s: %s", cve_id, exc)
     for row in technique_rows:
-        technique_id = row["technique_id"]
+        technique_id = _required_str_id(_row_get(row, "technique_id"))
+        if technique_id is None or not is_valid_technique_id(technique_id):
+            continue
         target_ref = EntityRef(
             entity_type="technique",
             entity_id=technique_id,
-            label=row["name"] or technique_id,
+            label=_optional_str(_row_get(row, "name")) or technique_id,
         )
         edges.append(
             _candidate_edge(
@@ -407,10 +423,25 @@ async def _cve_edges(
         logger.warning("OTX hop skipped for %s: %s", cve_id, exc)
     otx_pairs: list[tuple[str, str]] = []
     for row in otx_rows:
-        ioc_ref = _ioc_ref_from_row(row["ioc_type"], row["ioc_value"])
+        ioc_type = _row_get(row, "ioc_type") or ""
+        ioc_value = _row_get(row, "ioc_value") or ""
+        cve_ref = _cve_ref_from_otx_indicator(ioc_type, ioc_value, cve_id)
+        if cve_ref is not None:
+            edges.append(
+                _candidate_edge(
+                    source_node_id=source_node_id,
+                    target_ref=cve_ref,
+                    edge_class=EdgeClass.REPORTED,
+                    source_key="otx",
+                    observed_at=_row_get(row, "observed_at"),
+                    fetched_at=_row_get(row, "fetched_at"),
+                )
+            )
+            continue
+        ioc_ref = _ioc_ref_from_row(ioc_type, ioc_value)
         if ioc_ref is None:
             continue
-        otx_pairs.append((row["ioc_type"], row["ioc_value"]))
+        otx_pairs.append((ioc_type, ioc_value))
         edges.append(
             _candidate_edge(
                 source_node_id=source_node_id,
@@ -446,23 +477,30 @@ async def _cve_edges(
                 )
             )
 
-    campaign_rows = await db.execute_fetchall(
-        """
-        SELECT c.campaign_id, c.label
-        FROM correlation_campaign_members m
-        INNER JOIN correlation_campaigns c ON c.campaign_id = m.campaign_id
-        WHERE m.cve_id = ? AND c.retracted_at IS NULL
-        ORDER BY c.campaign_id ASC
-        LIMIT ?
-        """,
-        (cve_id, _MAX_HOP_ROWS),
-    )
+    campaign_rows: list[Any] = []
+    try:
+        campaign_rows = await db.execute_fetchall(
+            """
+            SELECT c.campaign_id, c.label
+            FROM correlation_campaign_members m
+            INNER JOIN correlation_campaigns c ON c.campaign_id = m.campaign_id
+            WHERE m.cve_id = ? AND c.retracted_at IS NULL
+            ORDER BY c.campaign_id ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("campaign hop skipped for %s: %s", cve_id, exc)
     for row in campaign_rows:
-        campaign_id = row["campaign_id"]
+        campaign_id = _required_str_id(_row_get(row, "campaign_id"))
+        if campaign_id is None:
+            continue
         target_ref = EntityRef(
             entity_type="campaign",
             entity_id=campaign_id,
-            label=row["label"] or campaign_id,
+            label=_optional_str(_row_get(row, "label")) or campaign_id,
         )
         edges.append(
             _candidate_edge(
@@ -477,11 +515,13 @@ async def _cve_edges(
     if sigma_degraded:
         flags.degraded = True
     for row in sigma_rows:
-        repo_path = row["repo_path"]
+        repo_path = _required_str_id(_row_get(row, "repo_path"))
+        if repo_path is None:
+            continue
         target_ref = EntityRef(
             entity_type="sigma_rule",
             entity_id=repo_path,
-            label=row["title"] or repo_path,
+            label=_optional_str(_row_get(row, "title")) or repo_path,
         )
         edge_class = (
             EdgeClass.DIRECT_FACT
@@ -494,7 +534,7 @@ async def _cve_edges(
                 target_ref=target_ref,
                 edge_class=edge_class,
                 source_key="sigmahq",
-                fetched_at=_row_get(row, "fetched_at"),
+                fetched_at=_row_get(row, "updated_at"),
             )
         )
 
@@ -752,12 +792,35 @@ def _candidate_edge(
     return _CandidateEdge(edge=edge, target=target_node)
 
 
+def _cve_ref_from_otx_indicator(
+    ioc_type: str, ioc_value: str, anchor_cve_id: str
+) -> EntityRef | None:
+    """Map OTX CVE-as-indicator rows to CVE graph nodes (not IOC nodes)."""
+    normalized = normalize_ioc(ioc_type, ioc_value)
+    if normalized is None:
+        return None
+    canon_type, canon_value, _meta = normalized
+    if canon_type != "CVE" or not is_valid_cve_id(canon_value):
+        return None
+    related_id = canon_value.upper()
+    if related_id == anchor_cve_id.upper():
+        return None
+    return EntityRef(entity_type="cve", entity_id=related_id, label=related_id)
+
+
 def _ioc_ref_from_row(ioc_type: str, ioc_value: str) -> EntityRef | None:
     normalized = normalize_ioc(ioc_type, ioc_value)
     if normalized is None:
         return None
     canon_type, canon_value, _meta = normalized
-    kind = _mirror_ioc_type(canon_type)
+    try:
+        kind = _mirror_ioc_type(canon_type)
+    except ValueError:
+        # P0 graph contract: IocKind is ip/hash/domain/url only (see contracts.IocKind).
+        # OTX also ships email/mutex/etc.; correlation stores them but INVESTIGATE
+        # does not model them as IOC nodes until a future entity type lands.
+        logger.debug("skip non-graph IOC indicator type %s", canon_type)
+        return None
     entity_id = f"{kind}:{canon_value}"
     return EntityRef(entity_type="ioc", entity_id=entity_id, label=canon_value)
 
@@ -796,13 +859,17 @@ async def _ioc_row_exists(db, entity_id: str) -> bool:
 
 
 async def _mirror_ioc_exists(db, canon_type: str, canon_value: str) -> bool:
+    try:
+        mirror_type = _mirror_ioc_type(canon_type)
+    except ValueError:
+        return False
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM ti_mirror_iocs
         WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
         LIMIT 1
         """,
-        (_mirror_ioc_type(canon_type), canon_value.lower()),
+        (mirror_type, canon_value.lower()),
     )
     return bool(rows)
 
@@ -834,7 +901,7 @@ async def _sigma_rows_for_cve(
     try:
         rows = await db.execute_fetchall(
             """
-            SELECT r.title, r.repo_path, r.fetched_at, c.match_basis
+            SELECT r.title, r.repo_path, r.updated_at, c.match_basis
             FROM detection_rules r
             INNER JOIN detection_rule_cves c ON c.rule_id = r.id
             WHERE c.cve_id = ? AND r.source = ? AND r.retired_at IS NULL
