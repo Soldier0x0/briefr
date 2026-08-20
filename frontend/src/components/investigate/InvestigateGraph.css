@@ -150,8 +150,9 @@
   min-height: 480px;
   border: 1px solid var(--border-subtle, var(--border));
   background-color: var(--surface-sunken, var(--bg));
-  background-image: radial-gradient(var(--border-subtle, var(--border)) 0.6px, transparent 0.6px);
-  background-size: 18px 18px;
+  background-image: radial-gradient(var(--border-subtle, var(--border)) var(--investigate-grid-dot, 0.6px), transparent var(--investigate-grid-dot, 0.6px));
+  background-size: var(--investigate-grid-step, calc(var(--space-4) + var(--space-1))) var(--investigate-grid-step, calc(var(--space-4) + var(--space-1)));
+  --investigate-tools-z: 2;
 }
 
 .investigate-canvas:active {
@@ -160,16 +161,16 @@
 
 .investigate-camera-tools {
   position: absolute;
-  left: 12px;
-  bottom: 12px;
+  left: var(--space-3);
+  bottom: var(--space-3);
   display: flex;
   gap: var(--space-1);
-  z-index: 2;
+  z-index: var(--investigate-tools-z, 2);
 }
 
 .investigate-node {
   cursor: pointer;
-  transition: opacity 150ms ease;
+  transition: opacity var(--transition-fast, var(--motion-fast) ease);
 }
 
 .investigate-node-dim {
@@ -194,7 +195,11 @@
   width: 1px;
   height: 1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
 }
 
 .investigate-related-banner {
@@ -204,22 +209,18 @@
   flex-wrap: wrap;
 }
 
-.investigate-chrome-body.is-collapsed {
-  display: none;
-}
-
 .investigate-mobile-tabs,
 .investigate-filters-toggle {
   display: none;
 }
 
 .investigate-node-find-match .investigate-node-dot {
-  animation: investigate-pulse 1.2s ease-out 1;
+  animation: investigate-pulse var(--motion-slow, 220ms) var(--ease-standard, ease-out) 1;
 }
 
 @keyframes investigate-pulse {
-  from { stroke-width: 6; opacity: 1; }
-  to { stroke-width: 2.5; opacity: 1; }
+  from { opacity: 0.55; transform: scale(1.12); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .investigate-camera-tools button {
@@ -426,6 +427,10 @@
   .investigate-filters-toggle {
     display: inline-flex;
     align-self: flex-start;
+  }
+
+  .investigate-chrome-body.is-collapsed {
+    display: none;
   }
 }
 

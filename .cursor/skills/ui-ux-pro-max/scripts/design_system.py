@@ -16,9 +16,16 @@ Usage:
 import csv
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from core import search, DATA_DIR
+
+
+def slugify_project_name(name: str) -> str:
+    """Safe directory slug for persisted design-system paths."""
+    slug = re.sub(r'[^a-z0-9]+', '-', (name or 'default').lower()).strip('-')
+    return slug or 'default'
 
 
 # ============ CONFIGURATION ============
@@ -505,7 +512,7 @@ def persist_design_system(design_system: dict, page: str = None, output_dir: str
     
     # Use project name for project-specific folder
     project_name = design_system.get("project_name", "default")
-    project_slug = project_name.lower().replace(' ', '-')
+    project_slug = slugify_project_name(project_name)
     
     design_system_dir = base_dir / "design-system" / project_slug
     pages_dir = design_system_dir / "pages"
@@ -526,7 +533,8 @@ def persist_design_system(design_system: dict, page: str = None, output_dir: str
     
     # If page is specified, create page override file with intelligent content
     if page:
-        page_file = pages_dir / f"{page.lower().replace(' ', '-')}.md"
+        page_slug = slugify_project_name(page)
+        page_file = pages_dir / f"{page_slug}.md"
         page_content = format_page_override_md(design_system, page, page_query)
         with open(page_file, 'w', encoding='utf-8') as f:
             f.write(page_content)
@@ -556,7 +564,7 @@ def format_master_md(design_system: dict) -> str:
     # Logic header
     lines.append("# Design System Master File")
     lines.append("")
-    lines.append("> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.")
+    lines.append("> **LOGIC:** When building a specific page, first check `design-system/<project-slug>/pages/[page-name].md`.")
     lines.append("> If that file exists, its rules **override** this Master file.")
     lines.append("> If not, strictly follow the rules below.")
     lines.append("")

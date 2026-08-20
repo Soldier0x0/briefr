@@ -73,7 +73,7 @@ export function heuristicCveIds(graph) {
 
 export function visibleGraph(graph, {
   showRelatedCves = false,
-  showSemantic = true,
+  showSemantic = false,
   entityType = 'all',
   edgeClasses = null,
   isolateNodeId = null,

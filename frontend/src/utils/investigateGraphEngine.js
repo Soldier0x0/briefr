@@ -35,6 +35,7 @@ export function createGraphEngine({
       applyPins()
       reducedTicksLeft -= 1
       notifyFrame()
+      if (reducedTicksLeft <= 0) finishSettle()
       return reducedTicksLeft > 0
     }
     if (alpha <= ALPHA_MIN && pins.size === 0) {
@@ -99,6 +100,10 @@ export function createGraphEngine({
       const prior = new Map(positions.map((n) => [n.node_id, n]))
       edges = nextEdges || []
       rootId = nextRootId
+      const nodeIds = new Set((nodes || []).map((n) => n.node_id))
+      for (const id of pins.keys()) {
+        if (!nodeIds.has(id)) pins.delete(id)
+      }
       positions = seedPositions(nodes, width, height, prior, rootId)
       this.reheat(1)
       notifyFrame()

@@ -16,7 +16,6 @@ import {
   neighborIds,
   otherNodeId,
   parseIocEntityId,
-  relatedCveCount,
   splitGraphLayers,
   visibleGraph,
 } from '../../utils/investigateGraphFilters.js'
@@ -293,6 +292,15 @@ export default function InvestigateGraph({
     cameraRafRef.current = requestAnimationFrame(loop)
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (cameraRafRef.current && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(cameraRafRef.current)
+        cameraRafRef.current = 0
+      }
+    }
+  }, [])
+
   const fitGraphToView = useCallback(() => {
     const el = canvasRef.current
     const pos = positionsRef.current
@@ -380,8 +388,10 @@ export default function InvestigateGraph({
     }
     if (!dragRef.current.panning) return
     cameraRef.current.applyPanDelta(origin, dx, dy)
-    syncCameraView(cameraRef.current.getDisplayView())
-  }, [syncCameraView])
+    const display = cameraRef.current.getDisplayView()
+    viewRef.current = display
+    applyWorldTransform(worldRef.current, display)
+  }, [])
 
   const onPointerUp = useCallback((e) => {
     if (nodeDragRef.current) {
@@ -449,7 +459,10 @@ export default function InvestigateGraph({
         e.preventDefault()
         const ids = [...neighborIds(graphRef.current, selected.node_id)]
         if (!ids.length) return
-        const idx = Math.max(0, ids.indexOf(focusedNodeId))
+        const pivot = (focusedNodeId && ids.includes(focusedNodeId))
+          ? focusedNodeId
+          : selected.node_id
+        const idx = ids.indexOf(pivot)
         const next = e.key === 'ArrowLeft' || e.key === 'ArrowUp'
           ? ids[(idx - 1 + ids.length) % ids.length]
           : ids[(idx + 1) % ids.length]
@@ -479,11 +492,12 @@ export default function InvestigateGraph({
   const visible = useMemo(
     () => visibleGraph(graph, {
       showRelatedCves,
+      showSemantic: includeSemantic,
       entityType,
       edgeClasses,
       isolateNodeId: isolate ? (selectedId || graph.root_id) : null,
     }),
-    [graph, showRelatedCves, entityType, edgeClasses, isolate, selectedId],
+    [graph, showRelatedCves, includeSemantic, entityType, edgeClasses, isolate, selectedId],
   )
   visibleRef.current = visible
 
@@ -672,12 +686,31 @@ export default function InvestigateGraph({
 
   useEffect(() => {
     if (!graph.nodes.length) return
-    bumpStructure(
+    setStructuralVersion((n) => n + 1)
+  }, [showRelatedCves, entityType, edgeClassesKey, isolate, graph.nodes.length])
+
+  useEffect(() => {
+    if (!graph.nodes.length) return
+    const parts = [
       showRelatedCves
-        ? `Showing related CVEs (${layers.counts.relatedCves}).`
-        : `Showing core neighborhood, ${layers.counts.relatedCves} related CVEs hidden.`,
-    )
-  }, [showRelatedCves, entityType, edgeClassesKey, isolate, bumpStructure, layers.counts.relatedCves, graph.nodes.length])
+        ? `${layers.counts.relatedCves} related CVEs shown`
+        : `${layers.counts.relatedCves} related CVEs hidden`,
+    ]
+    if (entityType !== 'all') parts.push(`${entityType} filter active`)
+    if (isolate) parts.push('isolate mode')
+    if (edgeClasses.size < EDGE_CLASS_CHIPS.length) {
+      parts.push(`edge classes: ${[...edgeClasses].sort().join(', ')}`)
+    }
+    setLiveStatus(parts.join('; '))
+  }, [
+    showRelatedCves,
+    entityType,
+    edgeClassesKey,
+    isolate,
+    layers.counts.relatedCves,
+    graph.nodes.length,
+    edgeClasses,
+  ])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -810,7 +843,7 @@ export default function InvestigateGraph({
             <Checkbox
               checked={showRelatedCves}
               onCheckedChange={(v) => setShowRelatedCves(v === true)}
-              label={`Related CVEs (${relatedCveCount(graph)})`}
+              label={`Related CVEs (${layers.counts.relatedCves})`}
             />
             <Checkbox
               checked={isolate}

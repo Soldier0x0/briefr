@@ -64,4 +64,19 @@ describe('createGraphEngine', () => {
     engine.tick()
     assert.equal(settled, 1)
   })
+
+  it('drops pins when nodes leave the topology', () => {
+    const engine = createGraphEngine()
+    engine.setSize(800, 600)
+    engine.setTopology(nodes, edges, 'root')
+    engine.pinNode('a', 10, 20)
+    engine.setTopology(
+      nodes.filter((n) => n.node_id !== 'a'),
+      edges.filter((e) => e.source_node_id !== 'a' && e.target_node_id !== 'a'),
+      'root',
+    )
+    engine.reheat(1)
+    for (let i = 0; i < 20; i += 1) engine.tick()
+    assert.ok(!engine.getPositions().some((n) => n.node_id === 'a'))
+  })
 })
