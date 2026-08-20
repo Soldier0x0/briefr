@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from correlation.ioc_normalize import normalize_ioc
@@ -43,6 +44,21 @@ def _row_get(row: Any, key: str, default: Any = None) -> Any:
         return row[key]
     except (KeyError, IndexError, TypeError):
         return default
+
+
+def _optional_db_timestamp(value: Any) -> str | None:
+    """Normalize SQLite TEXT / Postgres TIMESTAMPTZ for GraphEdge string fields."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped or None
+    if isinstance(value, datetime):
+        dt = value
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
+    return str(value)
 
 
 @dataclass(frozen=True)
@@ -200,12 +216,10 @@ async def expand_relationships(
     page_edges: list[GraphEdge] = []
     for candidate in candidates:
         page_edges.append(candidate.edge)
-        page_nodes[candidate.edge.source_node_id] = nodes_by_id[
-            candidate.edge.source_node_id
-        ]
-        page_nodes[candidate.edge.target_node_id] = nodes_by_id[
-            candidate.edge.target_node_id
-        ]
+        for node_id in (candidate.edge.source_node_id, candidate.edge.target_node_id):
+            node = nodes_by_id.get(node_id)
+            if node is not None:
+                page_nodes[node_id] = node
 
     if flags.degraded:
         partial = True
@@ -695,8 +709,8 @@ def _candidate_edge(
     edge_class: EdgeClass,
     source_key: str,
     confidence: str | None = None,
-    observed_at: str | None = None,
-    fetched_at: str | None = None,
+    observed_at: Any = None,
+    fetched_at: Any = None,
 ) -> _CandidateEdge:
     target_node = _node_from_ref(target_ref, KnowledgeState.KNOWN)
     target_node_id = target_node.node_id
@@ -707,8 +721,8 @@ def _candidate_edge(
         edge_class=edge_class,
         source_key=source_key,
         confidence=confidence,
-        observed_at=observed_at,
-        fetched_at=fetched_at,
+        observed_at=_optional_db_timestamp(observed_at),
+        fetched_at=_optional_db_timestamp(fetched_at),
     )
     return _CandidateEdge(edge=edge, target=target_node)
 
