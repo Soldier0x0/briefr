@@ -25,7 +25,11 @@ from investigations.contracts import (
     make_node_id,
     utc_now_iso,
 )
-from investigations.resolve import _mirror_ioc_type, is_valid_cve_id
+from investigations.resolve import (
+    _mirror_ioc_type,
+    is_valid_cve_id,
+    is_valid_technique_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -385,7 +389,7 @@ async def _cve_edges(
         logger.warning("technique hop skipped for %s: %s", cve_id, exc)
     for row in technique_rows:
         technique_id = _required_str_id(_row_get(row, "technique_id"))
-        if technique_id is None:
+        if technique_id is None or not is_valid_technique_id(technique_id):
             continue
         target_ref = EntityRef(
             entity_type="technique",
