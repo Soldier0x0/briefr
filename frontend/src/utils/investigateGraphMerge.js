@@ -90,6 +90,14 @@ export function investigationEntityPath(entityType, entityId) {
   return `/investigations/entities/${type}/${id}`
 }
 
+/** Extra fetch params when the Semantic filter is enabled. */
+export function investigationRelationshipParams(includeSemantic, extra = {}) {
+  return {
+    ...extra,
+    ...(includeSemantic ? { include_semantic: true } : {}),
+  }
+}
+
 export function buildInvestigationRelationshipQuery(params = {}) {
   const qs = new URLSearchParams()
   if (params.limit != null) qs.set('limit', String(params.limit))

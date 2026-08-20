@@ -6,6 +6,7 @@ import {
   INVESTIGATE_GRAPH_MAX_NODES,
   buildInvestigationRelationshipQuery,
   investigationEntityPath,
+  investigationRelationshipParams,
   mergeGraphPage,
 } from './investigateGraphMerge.js'
 
@@ -113,6 +114,23 @@ describe('investigationEntityPath', () => {
     assert.equal(
       investigationEntityPath('../ioc', 'ip:1.1.1.1'),
       '/investigations/entities/..%2Fioc/ip%3A1.1.1.1',
+    )
+  })
+})
+
+describe('investigationRelationshipParams', () => {
+  it('adds include_semantic when enabled', () => {
+    assert.deepEqual(investigationRelationshipParams(true), { include_semantic: true })
+  })
+
+  it('omits include_semantic when disabled', () => {
+    assert.deepEqual(investigationRelationshipParams(false), {})
+  })
+
+  it('merges extra params and semantic flag', () => {
+    assert.deepEqual(
+      investigationRelationshipParams(true, { cursor: 'abc', limit: 10 }),
+      { cursor: 'abc', limit: 10, include_semantic: true },
     )
   })
 })

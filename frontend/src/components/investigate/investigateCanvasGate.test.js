@@ -13,4 +13,15 @@ describe('InvestigateGraph canvas gates', () => {
     assert.match(src, /addEventListener\('wheel', handler, \{ passive: false \}\)/)
     assert.doesNotMatch(src, /onWheel=/)
   })
+  it('runSearch passes include_semantic via includeSemanticRef', () => {
+    assert.match(src, /includeSemanticRef\.current/)
+    assert.match(
+      src,
+      /fetchInvestigationRelationships\([\s\S]*investigationRelationshipParams\(includeSemanticRef\.current\)/,
+    )
+  })
+  it('semantic checkbox refetch guards with searchGenRef and root_id', () => {
+    assert.match(src, /searchGenRef\.current \+ 1/)
+    assert.match(src, /graphRef\.current\.root_id !== requestedRootId/)
+  })
 })

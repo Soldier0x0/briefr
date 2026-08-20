@@ -23,6 +23,7 @@ import {
   emptyGraphState,
   INVESTIGATE_GRAPH_MAX_EDGES,
   INVESTIGATE_GRAPH_MAX_NODES,
+  investigationRelationshipParams,
   mergeGraphPage,
 } from '../../utils/investigateGraphMerge.js'
 import {
@@ -197,6 +198,8 @@ export default function InvestigateGraph({
   const [isolate, setIsolate] = useState(false)
   const [findText, setFindText] = useState('')
   const [includeSemantic, setIncludeSemantic] = useState(false)
+  const includeSemanticRef = useRef(includeSemantic)
+  includeSemanticRef.current = includeSemantic
   const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
   const viewRef = useRef(view)
   viewRef.current = view
@@ -377,7 +380,11 @@ export default function InvestigateGraph({
         setEmptyTitle('Could not resolve that query.')
         return
       }
-      const page = await fetchInvestigationRelationships(root.entity_type, root.entity_id)
+      const page = await fetchInvestigationRelationships(
+        root.entity_type,
+        root.entity_id,
+        investigationRelationshipParams(includeSemanticRef.current),
+      )
       if (generation !== searchGenRef.current) return
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
@@ -416,12 +423,20 @@ export default function InvestigateGraph({
     if (!graph.root_id) return
     const root = graph.nodes.find((n) => n.node_id === graph.root_id)
     if (!root) return
+    const generation = searchGenRef.current + 1
+    searchGenRef.current = generation
+    const requestedRootId = graph.root_id
     try {
-      const page = await fetchInvestigationRelationships(root.entity_type, root.entity_id, {
-        include_semantic: true,
-      })
+      const page = await fetchInvestigationRelationships(
+        root.entity_type,
+        root.entity_id,
+        investigationRelationshipParams(true),
+      )
+      if (generation !== searchGenRef.current) return
+      if (graphRef.current.root_id !== requestedRootId) return
       setGraph((prev) => mergeGraphPage(prev, page))
     } catch (err) {
+      if (generation !== searchGenRef.current) return
       notifyApiError(err)
     }
   }, [graph.root_id, graph.nodes])
@@ -431,10 +446,11 @@ export default function InvestigateGraph({
     setExpandingId(node.node_id)
     setError(null)
     try {
-      const page = await fetchInvestigationRelationships(node.entity_type, node.entity_id, {
-        ...(params || {}),
-        ...(includeSemantic ? { include_semantic: true } : {}),
-      })
+      const page = await fetchInvestigationRelationships(
+        node.entity_type,
+        node.entity_id,
+        investigationRelationshipParams(includeSemantic, params),
+      )
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
     } catch (err) {
@@ -638,14 +654,20 @@ export default function InvestigateGraph({
                 if (on && graph.root_id) {
                   const root = graph.nodes.find((n) => n.node_id === graph.root_id)
                   if (root) {
+                    const generation = searchGenRef.current + 1
+                    searchGenRef.current = generation
+                    const requestedRootId = graph.root_id
                     try {
                       const page = await fetchInvestigationRelationships(
                         root.entity_type,
                         root.entity_id,
-                        { include_semantic: true },
+                        investigationRelationshipParams(true),
                       )
+                      if (generation !== searchGenRef.current) return
+                      if (graphRef.current.root_id !== requestedRootId) return
                       setGraph((prev) => mergeGraphPage(prev, page))
                     } catch (err) {
+                      if (generation !== searchGenRef.current) return
                       notifyApiError(err)
                     }
                   }
