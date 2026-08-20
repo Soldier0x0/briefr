@@ -130,7 +130,6 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `astro`, `vue`, `nuxtjs`, 
 | `ux` | Best practices, anti-patterns | animation, accessibility, z-index, loading |
 | `react` | React/Next.js performance | waterfall, bundle, suspense, memo, rerender, cache |
 | `web` | Web interface guidelines | aria, focus, keyboard, semantic, virtualize |
-| `prompt` | AI prompts, CSS keywords | (style name) |
 
 ### Available Stacks
 
@@ -237,6 +236,8 @@ These are frequently overlooked issues that make UI look unprofessional:
 | **Smooth transitions** | Use `transition-colors duration-200` | Instant state changes or too slow (>500ms) |
 
 ### Light/Dark Mode Contrast
+
+> **Scope:** The Tailwind/raw-hex examples below apply to **generated external projects** only. When editing `frontend/src` in this repository, use semantic design tokens from `frontend/src/styles/tokens.css` — no Tailwind utilities or hardcoded colors.
 
 | Rule | Do | Don't |
 |------|----|----- |

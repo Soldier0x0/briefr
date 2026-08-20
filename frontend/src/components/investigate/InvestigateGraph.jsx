@@ -413,9 +413,7 @@ export default function InvestigateGraph({
       if (panning) {
         cameraRef.current.nudgePanVelocity(vx, vy)
         startCameraLoop()
-        if (!cameraRef.current.isAnimating()) {
-          setView(cameraRef.current.getDisplayView())
-        }
+        syncCameraView(cameraRef.current.getDisplayView())
       } else if (!e.target.closest('[data-node-id]')) {
         setSelectedId(null)
       }
@@ -424,7 +422,7 @@ export default function InvestigateGraph({
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
-  }, [startCameraLoop])
+  }, [startCameraLoop, syncCameraView])
 
   const onNodeClick = useCallback((node) => {
     setSelectedId((id) => (id === node.node_id ? null : node.node_id))
@@ -462,13 +460,11 @@ export default function InvestigateGraph({
         e.preventDefault()
         const ids = [...neighborIds(graphRef.current, selected.node_id)]
         if (!ids.length) return
-        const pivot = (focusedNodeId && ids.includes(focusedNodeId))
-          ? focusedNodeId
-          : selected.node_id
-        const idx = ids.indexOf(pivot)
-        const next = e.key === 'ArrowLeft' || e.key === 'ArrowUp'
-          ? ids[(idx - 1 + ids.length) % ids.length]
-          : ids[(idx + 1) % ids.length]
+        const found = ids.indexOf(focusedNodeId)
+        const backwards = e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+        const next = found < 0
+          ? ids[backwards ? ids.length - 1 : 0]
+          : ids[(found + (backwards ? -1 : 1) + ids.length) % ids.length]
         setFocusedNodeId(next)
         setSelectedId(next)
         flyToNode(next)
