@@ -413,6 +413,9 @@ export default function InvestigateGraph({
       if (panning) {
         cameraRef.current.nudgePanVelocity(vx, vy)
         startCameraLoop()
+        if (!cameraRef.current.isAnimating()) {
+          setView(cameraRef.current.getDisplayView())
+        }
       } else if (!e.target.closest('[data-node-id]')) {
         setSelectedId(null)
       }
