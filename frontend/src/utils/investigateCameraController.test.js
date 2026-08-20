@@ -27,6 +27,17 @@ describe('createCameraController', () => {
     assert.ok(Math.abs(view.y + cy * view.scale - 300) < 2)
   })
 
+  it('syncDisplayToTarget snaps mid-flight display to target', () => {
+    const cam = createCameraController({ x: 0, y: 0, scale: 1 })
+    cam.flyToView({ x: 100, y: 40, scale: 2 }, { durationMs: 280 })
+    cam.tick(140)
+    assert.notEqual(cam.getDisplayView().x, 100)
+    const synced = cam.syncDisplayToTarget()
+    assert.equal(synced.x, 100)
+    assert.equal(cam.getDisplayView().x, 100)
+    assert.equal(cam.isAnimating(), false)
+  })
+
   it('decays pan inertia to rest', () => {
     const cam = createCameraController({ x: 0, y: 0, scale: 1 })
     cam.nudgePanVelocity(20, 0)

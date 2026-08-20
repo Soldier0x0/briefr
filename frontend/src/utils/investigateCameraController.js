@@ -83,6 +83,11 @@ export function createCameraController(initialView = DEFAULT_VIEW, { reducedMoti
     flyToBounds(bounds, viewportW, viewportH) {
       this.flyToView(computeFitView(bounds, viewportW, viewportH))
     },
+    syncDisplayToTarget() {
+      cancelMotion()
+      display = cloneView(target)
+      return cloneView(display)
+    },
     nudgePan(dx, dy) {
       cancelMotion()
       target = { ...target, x: target.x + dx, y: target.y + dy }
