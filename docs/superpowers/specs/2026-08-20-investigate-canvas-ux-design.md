@@ -1,7 +1,7 @@
 # INVESTIGATE canvas UX — design spec
 
 **Date:** 2026-08-20  
-**Status:** Ready for implementation (P1.5 — canvas UX; reuse existing BRIEFR surfaces)  
+**Status:** P1.5 shipped (camera/inspect/filters). **Quality bar superseded by** [`2026-08-20-investigate-obsidian-plus-design.md`](./2026-08-20-investigate-obsidian-plus-design.md) for Obsidian+-class UX.  
 **Related:** `docs/plans/2026-08-13-investigation-platform-roadmap.md`, `docs/PRODUCT_STATUS.md`, Admin **System Architecture** graph (`ArchitectureGraphSection.jsx`)
 
 ## Scroll / zoom — current evidence (does **not** work today)

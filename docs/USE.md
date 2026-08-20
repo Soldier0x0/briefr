@@ -72,9 +72,9 @@ Sources depend on keys: VirusTotal, AbuseIPDB, GreyNoise, OTX, abuse.ch. Results
 
 Graph browser over stored CVE, IOC, technique, campaign, and publication hops — no live enrichment on each click. Open with `?tab=investigate&q=` (CVE, IP, hash, domain, or technique id).
 
-**Navigation:** scroll to zoom · drag to pan · click to inspect · double-click to expand. On a laptop without a scroll wheel, use **FIT GRAPH** (same as **RESET VIEW**) to frame the map.
+**Navigation:** scroll to zoom (smoothed) · drag empty canvas to pan (inertia) · drag a node to rearrange · click to inspect · double-click to expand · Find + Enter flies the camera to a match. On a laptop without a scroll wheel, use **FIT GRAPH** (same as **RESET VIEW**) to frame the map.
 
-Filters: **Related CVEs** (default on), entity-type chips, edge-class chips, **Isolate**, **Find**, optional **Semantic**. Truncated neighborhoods show **LOAD MORE** on the selected node. The inspector lists evidence as `edge_class · source_key`. IOC nodes pivot via **LOOKUP LIVE** (correct `IocKind`); CVE scoring (KEV/EPSS) stays in **OPEN CVE**, not on graph nodes. Sigma nodes inspect only — no expand.
+Filters: **Related CVEs** (default **off** — first paint is the stored incident neighborhood; a banner shows the related-CVE count and **Show related CVEs**). Entity-type chips, edge-class chips, **Isolate**, **Find**, optional **Semantic**. Truncated neighborhoods show **LOAD MORE** on the selected node. The inspector lists evidence as `edge_class · source_key`. IOC nodes pivot via **LOOKUP LIVE** (correct `IocKind`); CVE scoring (KEV/EPSS) stays in **OPEN CVE**, not on graph nodes. Sigma nodes inspect only — no expand.
 
 ---
 

@@ -16,9 +16,14 @@ import {
   neighborIds,
   otherNodeId,
   parseIocEntityId,
-  relatedCveCount,
+  splitGraphLayers,
   visibleGraph,
 } from '../../utils/investigateGraphFilters.js'
+import { shouldRefitAfterStructuralChange } from '../../utils/investigateCameraPolicy.js'
+import { createCameraController } from '../../utils/investigateCameraController.js'
+import { createGraphEngine } from '../../utils/investigateGraphEngine.js'
+import { createDragTracker } from '../../utils/investigateDragPolicy.js'
+import { applyGraphDom, applyWorldTransform, screenToWorld } from '../../utils/investigateGraphDom.js'
 import {
   emptyGraphState,
   INVESTIGATE_GRAPH_MAX_EDGES,
@@ -28,12 +33,9 @@ import {
 } from '../../utils/investigateGraphMerge.js'
 import {
   DEFAULT_VIEW,
-  computeFitView,
   computePointCloudBounds,
   truncateNodeLabel,
-  zoomAtCursor,
 } from '../../utils/architectureGraphView.js'
-import { seedPositions, stepForce } from '../../utils/investigateForceLayout.js'
 import './InvestigateGraph.css'
 
 const EDGE_STROKE = {
@@ -194,7 +196,7 @@ export default function InvestigateGraph({
   const [hoveredId, setHoveredId] = useState(null)
   const [positions, setPositions] = useState([])
   const [expandingId, setExpandingId] = useState(null)
-  const [showRelatedCves, setShowRelatedCves] = useState(true)
+  const [showRelatedCves, setShowRelatedCves] = useState(false)
   const [entityType, setEntityType] = useState('all')
   const [edgeClasses, setEdgeClasses] = useState(() => new Set(DEFAULT_EDGE_CLASSES))
   const [isolate, setIsolate] = useState(false)
@@ -205,86 +207,214 @@ export default function InvestigateGraph({
   const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
   const viewRef = useRef(view)
   viewRef.current = view
-  const userMovedRef = useRef(false)
+  const [structuralVersion, setStructuralVersion] = useState(0)
+  const lastFitVersionRef = useRef(-1)
+  const [liveStatus, setLiveStatus] = useState('')
+  const [focusedNodeId, setFocusedNodeId] = useState(null)
+  const [mobilePane, setMobilePane] = useState('graph')
+  const [filtersOpen, setFiltersOpen] = useState(true)
   const dragRef = useRef(null)
+  const nodeDragRef = useRef(null)
   const canvasRef = useRef(null)
+  const worldRef = useRef(null)
   const sizeRef = useRef({ width: 800, height: 560 })
   const positionsRef = useRef([])
   const graphRef = useRef(graph)
+  const visibleRef = useRef({ nodes: [], edges: [] })
   const searchGenRef = useRef(0)
   const expandGenRef = useRef(0)
   const lastConsumedInitialQueryRef = useRef('')
   const skipDebounceRef = useRef(false)
+  const cameraRef = useRef(null)
+  const engineRef = useRef(null)
+  const cameraRafRef = useRef(0)
   graphRef.current = graph
   positionsRef.current = positions
 
-  useEffect(() => {
-    userMovedRef.current = false
-  }, [graph.root_id])
+  if (!cameraRef.current) {
+    cameraRef.current = createCameraController(DEFAULT_VIEW, {
+      reducedMotion: prefersReducedMotion(),
+    })
+  }
+  if (!engineRef.current) {
+    engineRef.current = createGraphEngine({
+      prefersReducedMotion: prefersReducedMotion(),
+      onFrame: (pos) => {
+        positionsRef.current = pos
+        applyGraphDom(canvasRef.current, pos, visibleRef.current.edges)
+      },
+      onSettled: (pos) => {
+        positionsRef.current = pos
+        setPositions(pos)
+        const ver = structuralVersionRef.current
+        if (shouldRefitAfterStructuralChange({
+          structuralVersion: ver,
+          lastFitVersion: lastFitVersionRef.current,
+        })) {
+          lastFitVersionRef.current = ver
+          fitGraphToViewRef.current?.()
+        }
+      },
+    })
+  }
+  const structuralVersionRef = useRef(0)
+  structuralVersionRef.current = structuralVersion
+  const fitGraphToViewRef = useRef(null)
+
+  const bumpStructure = useCallback((message) => {
+    setStructuralVersion((n) => n + 1)
+    if (message) setLiveStatus(message)
+  }, [])
+
+  const syncCameraView = useCallback((next) => {
+    viewRef.current = next
+    setView(next)
+    applyWorldTransform(worldRef.current, next)
+  }, [])
+
+  const startCameraLoop = useCallback(() => {
+    if (cameraRafRef.current) return
+    let last = performance.now()
+    const loop = (now) => {
+      const dt = now - last
+      last = now
+      const cam = cameraRef.current
+      const display = cam.tick(dt)
+      viewRef.current = display
+      applyWorldTransform(worldRef.current, display)
+      if (cam.isAnimating()) {
+        cameraRafRef.current = requestAnimationFrame(loop)
+      } else {
+        cameraRafRef.current = 0
+        setView(display)
+      }
+    }
+    cameraRafRef.current = requestAnimationFrame(loop)
+  }, [])
 
   useEffect(() => {
-    const el = canvasRef.current
-    if (!el) return undefined
-    const handler = (e) => {
-      e.preventDefault()
-      userMovedRef.current = true
-      const rect = el.getBoundingClientRect()
-      const cursorX = e.clientX - rect.left
-      const cursorY = e.clientY - rect.top
-      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
-      setView((v) => zoomAtCursor(v, cursorX, cursorY, factor))
+    return () => {
+      if (cameraRafRef.current && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(cameraRafRef.current)
+        cameraRafRef.current = 0
+      }
     }
-    el.addEventListener('wheel', handler, { passive: false })
-    return () => el.removeEventListener('wheel', handler)
-  }, [graph.root_id])
+  }, [])
 
   const fitGraphToView = useCallback(() => {
     const el = canvasRef.current
     const pos = positionsRef.current
     if (!el || !pos.length) return
     const bounds = computePointCloudBounds(pos, 12, 48)
-    setView(computeFitView(bounds, el.clientWidth, el.clientHeight))
-  }, [])
+    cameraRef.current.flyToBounds(bounds, el.clientWidth, el.clientHeight)
+    startCameraLoop()
+  }, [startCameraLoop])
+  fitGraphToViewRef.current = fitGraphToView
+
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return undefined
+    const handler = (e) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      cameraRef.current.zoomAtCursor(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+        e.deltaY < 0 ? 1.1 : 1 / 1.1,
+      )
+      startCameraLoop()
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [graph.root_id, startCameraLoop])
 
   const zoomFromButton = useCallback((factor) => {
     const el = canvasRef.current
     if (!el) return
-    userMovedRef.current = true
-    setView((v) => zoomAtCursor(v, el.clientWidth / 2, el.clientHeight / 2, factor))
-  }, [])
+    cameraRef.current.zoomAtCursor(el.clientWidth / 2, el.clientHeight / 2, factor)
+    startCameraLoop()
+  }, [startCameraLoop])
 
   const onPointerDown = useCallback((e) => {
-    if (e.target.closest('[data-node-id], button, input, a, [role="tab"], .investigate-camera-tools, .ui-checkbox, label')) return
+    const nodeEl = e.target.closest('[data-node-id]')
+    if (nodeEl) {
+      const nodeId = nodeEl.getAttribute('data-node-id')
+      const tracker = createDragTracker(4)
+      tracker.start(e.clientX, e.clientY)
+      nodeDragRef.current = { tracker, nodeId, pointerId: e.pointerId }
+      e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
+    if (e.target.closest('button, input, a, [role="tab"], .investigate-camera-tools, .ui-checkbox, label')) return
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      origin: view,
+      origin: cameraRef.current.getDisplayView(),
+      lastX: e.clientX,
+      lastY: e.clientY,
+      vx: 0,
+      vy: 0,
       panning: false,
     }
     e.currentTarget.setPointerCapture(e.pointerId)
-  }, [view])
+  }, [])
 
   const onPointerMove = useCallback((e) => {
+    if (nodeDragRef.current) {
+      const { tracker, nodeId } = nodeDragRef.current
+      const mode = tracker.move(e.clientX, e.clientY)
+      if (mode === 'drag') {
+        const rect = canvasRef.current.getBoundingClientRect()
+        const world = screenToWorld(
+          cameraRef.current.getDisplayView(),
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+        )
+        engineRef.current.pinNode(nodeId, world.x, world.y)
+        engineRef.current.reheat()
+      }
+      return
+    }
     if (!dragRef.current) return
     const { startX, startY, origin } = dragRef.current
     const dx = e.clientX - startX
     const dy = e.clientY - startY
+    dragRef.current.vx = e.clientX - dragRef.current.lastX
+    dragRef.current.vy = e.clientY - dragRef.current.lastY
+    dragRef.current.lastX = e.clientX
+    dragRef.current.lastY = e.clientY
     if (Math.hypot(dx, dy) >= 4) {
       dragRef.current.panning = true
     }
     if (!dragRef.current.panning) return
-    userMovedRef.current = true
-    setView({
-      ...origin,
-      x: origin.x + dx,
-      y: origin.y + dy,
-    })
+    cameraRef.current.applyPanDelta(origin, dx, dy)
+    const display = cameraRef.current.getDisplayView()
+    viewRef.current = display
+    applyWorldTransform(worldRef.current, display)
   }, [])
 
   const onPointerUp = useCallback((e) => {
+    if (nodeDragRef.current) {
+      const { tracker, nodeId } = nodeDragRef.current
+      const result = tracker.end()
+      if (result === 'drag') {
+        engineRef.current.unpinNode(nodeId)
+      } else if (result === 'click') {
+        const node = graphRef.current.nodes.find((n) => n.node_id === nodeId)
+        if (node) {
+          setSelectedId((id) => (id === node.node_id ? null : node.node_id))
+          setFocusedNodeId(node.node_id)
+        }
+      }
+      nodeDragRef.current = null
+    }
     if (dragRef.current) {
-      const { panning } = dragRef.current
-      if (!panning && !e.target.closest('[data-node-id]')) {
+      const { panning, vx, vy } = dragRef.current
+      if (panning) {
+        cameraRef.current.nudgePanVelocity(vx, vy)
+        startCameraLoop()
+        syncCameraView(cameraRef.current.getDisplayView())
+      } else if (!e.target.closest('[data-node-id]')) {
         setSelectedId(null)
       }
     }
@@ -292,11 +422,21 @@ export default function InvestigateGraph({
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
-  }, [])
+  }, [startCameraLoop, syncCameraView])
 
   const onNodeClick = useCallback((node) => {
     setSelectedId((id) => (id === node.node_id ? null : node.node_id))
+    setFocusedNodeId(node.node_id)
   }, [])
+
+  const flyToNode = useCallback((nodeId) => {
+    const pos = positionsRef.current.find((n) => n.node_id === nodeId)
+    const el = canvasRef.current
+    if (!pos || !el) return
+    const bounds = computePointCloudBounds([pos], 28, 80)
+    cameraRef.current.flyToBounds(bounds, el.clientWidth, el.clientHeight)
+    startCameraLoop()
+  }, [startCameraLoop])
 
   const onCanvasKeyDown = useCallback((e) => {
     if (e.target.closest('input, textarea')) return
@@ -310,26 +450,33 @@ export default function InvestigateGraph({
       zoomFromButton(1 / 1.1)
     } else if (e.key === '0') {
       e.preventDefault()
-      userMovedRef.current = false
       fitGraphToView()
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === 'Escape') {
       e.preventDefault()
-      userMovedRef.current = true
-      setView((v) => ({ ...v, x: v.x + 40 }))
-    } else if (e.key === 'ArrowRight') {
+      setSelectedId(null)
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const selected = graphRef.current.nodes.find((n) => n.node_id === (focusedNodeId || selectedId))
+      if (selected) {
+        e.preventDefault()
+        const ids = [...neighborIds(graphRef.current, selected.node_id)]
+        if (!ids.length) return
+        const found = ids.indexOf(focusedNodeId)
+        const backwards = e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+        const next = found < 0
+          ? ids[backwards ? ids.length - 1 : 0]
+          : ids[(found + (backwards ? -1 : 1) + ids.length) % ids.length]
+        setFocusedNodeId(next)
+        setSelectedId(next)
+        flyToNode(next)
+        return
+      }
       e.preventDefault()
-      userMovedRef.current = true
-      setView((v) => ({ ...v, x: v.x - 40 }))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      userMovedRef.current = true
-      setView((v) => ({ ...v, y: v.y + 40 }))
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      userMovedRef.current = true
-      setView((v) => ({ ...v, y: v.y - 40 }))
+      const dx = e.key === 'ArrowLeft' ? 40 : e.key === 'ArrowRight' ? -40 : 0
+      const dy = e.key === 'ArrowUp' ? 40 : e.key === 'ArrowDown' ? -40 : 0
+      cameraRef.current.nudgePan(dx, dy)
+      syncCameraView(cameraRef.current.getDisplayView())
     }
-  }, [fitGraphToView, zoomFromButton])
+  }, [fitGraphToView, zoomFromButton, focusedNodeId, selectedId, flyToNode, syncCameraView])
 
   const positionById = useMemo(
     () => new Map(positions.map((node) => [node.node_id, node])),
@@ -344,12 +491,16 @@ export default function InvestigateGraph({
   const visible = useMemo(
     () => visibleGraph(graph, {
       showRelatedCves,
+      showSemantic: includeSemantic,
       entityType,
       edgeClasses,
       isolateNodeId: isolate ? (selectedId || graph.root_id) : null,
     }),
-    [graph, showRelatedCves, entityType, edgeClasses, isolate, selectedId],
+    [graph, showRelatedCves, includeSemantic, entityType, edgeClasses, isolate, selectedId],
   )
+  visibleRef.current = visible
+
+  const layers = useMemo(() => splitGraphLayers(graph), [graph])
 
   const visibleNodeIds = useMemo(
     () => new Set(visible.nodes.map((node) => node.node_id)),
@@ -396,6 +547,7 @@ export default function InvestigateGraph({
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
       setSelectedId(root.node_id)
+      bumpStructure(`Resolved ${root.entity_id}. ${merged.nodes.length} nodes.`)
       const canonical = (resolved.query || q).trim()
       if (canonical) lastConsumedInitialQueryRef.current = canonical
       onQueryResolved?.(canonical || q)
@@ -412,7 +564,7 @@ export default function InvestigateGraph({
     } finally {
       if (generation === searchGenRef.current) setLoading(false)
     }
-  }, [onQueryResolved])
+  }, [onQueryResolved, bumpStructure])
 
   useEffect(() => {
     const q = (initialQuery || '').trim()
@@ -482,6 +634,7 @@ export default function InvestigateGraph({
       if (graphRef.current.root_id !== requestedRootId) return
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
+      bumpStructure(`Expanded ${node.entity_id}`)
     } catch (err) {
       if (generation !== expandGenRef.current) return
       if (err?.status === 404) {
@@ -493,7 +646,7 @@ export default function InvestigateGraph({
     } finally {
       if (generation === expandGenRef.current) setExpandingId(null)
     }
-  }, [includeSemantic])
+  }, [includeSemantic, bumpStructure])
 
   const toggleEdgeClass = useCallback((cls) => {
     if (cls === 'semantic' && !includeSemantic) {
@@ -515,6 +668,12 @@ export default function InvestigateGraph({
 
   const focusId = hoveredId || selectedId
   const findLower = findText.trim().toLowerCase()
+  const findMatches = useMemo(() => {
+    if (!findLower) return []
+    return visible.nodes
+      .filter((n) => (n.label || n.entity_id || '').toLowerCase().includes(findLower))
+      .slice(0, 20)
+  }, [visible.nodes, findLower])
   const heuristicIds = useMemo(() => heuristicCveIds(graph), [graph])
   const highlightedNodeIds = useMemo(() => {
     if (!focusId) return null
@@ -525,70 +684,61 @@ export default function InvestigateGraph({
   }, [focusId, graph])
 
   useEffect(() => {
+    if (!graph.nodes.length) return
+    setStructuralVersion((n) => n + 1)
+  }, [showRelatedCves, entityType, edgeClassesKey, isolate, graph.nodes.length])
+
+  useEffect(() => {
+    if (!graph.nodes.length) return
+    const parts = [
+      showRelatedCves
+        ? `${layers.counts.relatedCves} related CVEs shown`
+        : `${layers.counts.relatedCves} related CVEs hidden`,
+    ]
+    if (entityType !== 'all') parts.push(`${entityType} filter active`)
+    if (isolate) parts.push('isolate mode')
+    if (edgeClasses.size < EDGE_CLASS_CHIPS.length) {
+      parts.push(`edge classes: ${[...edgeClasses].sort().join(', ')}`)
+    }
+    setLiveStatus(parts.join('; '))
+  }, [
+    showRelatedCves,
+    entityType,
+    edgeClassesKey,
+    isolate,
+    layers.counts.relatedCves,
+    graph.nodes.length,
+    edgeClasses,
+  ])
+
+  useEffect(() => {
     const el = canvasRef.current
     if (!el) return undefined
     const measure = () => {
       const width = Math.max(el.clientWidth, 320)
       const height = Math.max(el.clientHeight, 360)
       sizeRef.current = { width, height }
-      const prior = new Map(positionsRef.current.map((node) => [node.node_id, node]))
-      const layoutNodes = visibleGraph(graphRef.current, {
-        showRelatedCves,
-        entityType,
-        edgeClasses,
-        isolateNodeId: isolate ? (selectedId || graphRef.current.root_id) : null,
-      }).nodes
-      setPositions(seedPositions(
-        layoutNodes,
-        width,
-        height,
-        prior,
-        graphRef.current.root_id,
-      ))
+      engineRef.current.setSize(width, height)
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return undefined
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [visible.nodes, showRelatedCves, entityType, edgeClasses, isolate, selectedId])
+  }, [])
 
   useEffect(() => {
     if (!isActive || visible.nodes.length === 0) return undefined
-    const reduced = prefersReducedMotion()
-    let frame = 0
-    let ticks = 0
-    const maxTicks = reduced ? 12 : 180
-    const rootId = graph.root_id
-    const layoutEdges = visible.edges
-    const loop = () => {
-      const { width, height } = sizeRef.current
-      const stepped = stepForce(
-        positionsRef.current,
-        layoutEdges,
-        width,
-        height,
-        rootId,
-      )
-      positionsRef.current = stepped
-      ticks += 1
-      setPositions(stepped)
-      if (ticks < maxTicks) {
-        frame = requestAnimationFrame(loop)
-      } else if (!userMovedRef.current) {
-        fitGraphToView()
-      }
-    }
-    frame = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(frame)
-  }, [isActive, visible, fitGraphToView, graph.root_id])
-
-  useEffect(() => {
-    if (!visible.nodes.length) return undefined
-    userMovedRef.current = false
-    const id = requestAnimationFrame(() => fitGraphToView())
-    return () => cancelAnimationFrame(id)
-  }, [showRelatedCves, entityType, edgeClassesKey, isolate, fitGraphToView, visible.nodes.length])
+    const engine = engineRef.current
+    engine.setSize(sizeRef.current.width, sizeRef.current.height)
+    engine.setTopology(visible.nodes, visible.edges, graph.root_id)
+    const seeded = engine.getPositions()
+    positionsRef.current = seeded
+    setPositions(seeded)
+    applyGraphDom(canvasRef.current, seeded, visible.edges)
+    engine.start()
+    return () => engine.stop()
+  }, [isActive, visible, graph.root_id, structuralVersion])
 
   const pinNode = useCallback((node) => {
     if (!investigation || !node) return
@@ -659,11 +809,40 @@ export default function InvestigateGraph({
 
       {graph.nodes.length > 0 && (
         <div className="investigate-chrome">
-          <div className="investigate-chrome-checks">
+          <div className="investigate-mobile-tabs" role="tablist" aria-label="Investigate panes">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobilePane === 'graph'}
+              className={`investigate-type-tab${mobilePane === 'graph' ? ' active' : ''}`}
+              onClick={() => setMobilePane('graph')}
+            >
+              GRAPH
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobilePane === 'inspector'}
+              className={`investigate-type-tab${mobilePane === 'inspector' ? ' active' : ''}`}
+              onClick={() => setMobilePane('inspector')}
+            >
+              INSPECTOR
+            </button>
+          </div>
+          <button
+            type="button"
+            className="investigate-filters-toggle investigate-ghost-btn mono"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+          >
+            {filtersOpen ? 'HIDE FILTERS' : 'FILTERS'}
+          </button>
+          <div className={`investigate-chrome-body${filtersOpen ? '' : ' is-collapsed'}`}>
+            <div className="investigate-chrome-checks">
             <Checkbox
               checked={showRelatedCves}
               onCheckedChange={(v) => setShowRelatedCves(v === true)}
-              label={`Related CVEs (${relatedCveCount(graph)})`}
+              label={`Related CVEs (${layers.counts.relatedCves})`}
             />
             <Checkbox
               checked={isolate}
@@ -686,7 +865,7 @@ export default function InvestigateGraph({
               }}
               label="Semantic"
             />
-          </div>
+            </div>
           <div className="investigate-type-tabs mono" role="tablist" aria-label="Entity type filter">
             {ENTITY_TYPE_CHIPS.map((type) => (
               <button
@@ -728,31 +907,42 @@ export default function InvestigateGraph({
               onChange={(e) => setFindText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return
-                const q = findText.trim().toLowerCase()
-                const match = visible.nodes.find((n) =>
-                  (n.label || n.entity_id || '').toLowerCase().includes(q))
-                if (!match) return
-                const pos = positions.find((p) => p.node_id === match.node_id)
-                const el = canvasRef.current
-                if (!pos || !el) return
-                userMovedRef.current = true
-                setView((v) => ({
-                  ...v,
-                  x: el.clientWidth / 2 - pos.x * v.scale,
-                  y: el.clientHeight / 2 - pos.y * v.scale,
-                }))
+                const match = findMatches[0]
+                if (!match) {
+                  setLiveStatus('No matching nodes')
+                  return
+                }
                 setSelectedId(match.node_id)
+                setFocusedNodeId(match.node_id)
+                flyToNode(match.node_id)
+                setLiveStatus(`Found ${findMatches.length} match${findMatches.length === 1 ? '' : 'es'}`)
               }}
               placeholder="Label or id…"
               autoComplete="off"
             />
           </label>
+          </div>
         </div>
       )}
 
       <p className="investigate-hint mono">
-        Scroll to zoom · drag to pan · click to inspect · double-click to expand. Edges encode evidence class, not certainty.
+        Scroll to zoom · drag to pan · drag a node to rearrange · click to inspect · double-click to expand.
       </p>
+      <div className="investigate-live" aria-live="polite">{liveStatus}</div>
+
+      {!showRelatedCves && layers.counts.relatedCves > 0 && (
+        <div className="investigate-honesty investigate-related-banner mono" role="status">
+          {layers.counts.relatedCves} related CVEs available
+          {' '}
+          <button
+            type="button"
+            className="investigate-ghost-btn mono"
+            onClick={() => setShowRelatedCves(true)}
+          >
+            Show related CVEs
+          </button>
+        </div>
+      )}
 
       {showHonesty && (
         <div className="investigate-honesty mono" role="status">
@@ -768,7 +958,7 @@ export default function InvestigateGraph({
         </div>
       )}
 
-      <div className="investigate-stage">
+      <div className={`investigate-stage investigate-stage--${mobilePane}`}>
         <div
           className="investigate-canvas"
           ref={canvasRef}
@@ -801,6 +991,8 @@ export default function InvestigateGraph({
                 aria-label="Investigation relationship graph"
               >
                 <g
+                  id="investigate-world"
+                  ref={worldRef}
                   className="investigate-svg-scene"
                   transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
                 >
@@ -815,6 +1007,7 @@ export default function InvestigateGraph({
                     return (
                       <line
                         key={edge.edge_id}
+                        data-edge-id={edge.edge_id}
                         x1={source.x}
                         y1={source.y}
                         x2={target.x}
@@ -846,12 +1039,13 @@ export default function InvestigateGraph({
                       <g
                         key={node.node_id}
                         data-node-id={node.node_id}
+                        transform={`translate(${node.x} ${node.y})`}
                         className={[
                           'investigate-node',
                           dimmed ? 'investigate-node-dim' : '',
-                          findMatch ? 'investigate-node-match' : '',
+                          findMatch ? 'investigate-node-find-match investigate-node-match' : '',
+                          node.node_id === focusedNodeId ? 'investigate-node-focused' : '',
                         ].filter(Boolean).join(' ')}
-                        onClick={() => onNodeClick(node)}
                         onDoubleClick={() => onNodeDoubleClick(node)}
                         onMouseEnter={() => setHoveredId(node.node_id)}
                         onMouseLeave={() => setHoveredId(null)}
@@ -864,22 +1058,22 @@ export default function InvestigateGraph({
                             onNodeClick(node)
                           }
                         }}
-                        tabIndex={0}
+                        tabIndex={node.node_id === (focusedNodeId || selectedId || graph.root_id) ? 0 : -1}
                         role="button"
                         aria-pressed={active}
                         aria-label={`${node.entity_type} ${node.label || node.entity_id || ''}`.trim()}
                       >
                         <circle
                           className="investigate-node-hit"
-                          cx={node.x}
-                          cy={node.y}
+                          cx={0}
+                          cy={0}
                           r={hitRadius(view.scale)}
                         />
                         {inThread && (
                           <circle
                             className="investigate-node-thread"
-                            cx={node.x}
-                            cy={node.y}
+                            cx={0}
+                            cy={0}
                             r={dotR + 5}
                             fill="none"
                             stroke="var(--accent-primary, var(--c-accent))"
@@ -887,11 +1081,11 @@ export default function InvestigateGraph({
                             strokeDasharray="3 2"
                           />
                         )}
-                        {renderNodeShape(node, node.x, node.y, active, expanding, heuristicIds, graph.root_id)}
+                        {renderNodeShape(node, 0, 0, active, expanding, heuristicIds, graph.root_id)}
                         {pinned && (
                           <polygon
                             className="investigate-node-pin"
-                            points={`${node.x},${node.y - dotR - 6} ${node.x - 4},${node.y - dotR - 2} ${node.x + 4},${node.y - dotR - 2}`}
+                            points={`0,${-dotR - 6} -4,${-dotR - 2} 4,${-dotR - 2}`}
                             fill="none"
                             stroke="var(--accent-primary, var(--c-accent))"
                             strokeWidth={1.5}
@@ -899,8 +1093,8 @@ export default function InvestigateGraph({
                         )}
                         {showLabel && (
                           <text
-                            x={node.x}
-                            y={node.y + 22}
+                            x={0}
+                            y={22}
                             textAnchor="middle"
                             className="investigate-node-label"
                           >
@@ -921,20 +1115,14 @@ export default function InvestigateGraph({
               <button
                 type="button"
                 aria-label="Fit graph"
-                onClick={() => {
-                  userMovedRef.current = false
-                  fitGraphToView()
-                }}
+                onClick={() => fitGraphToView()}
               >
                 FIT GRAPH
               </button>
               <button
                 type="button"
                 aria-label="Reset view"
-                onClick={() => {
-                  userMovedRef.current = false
-                  fitGraphToView()
-                }}
+                onClick={() => fitGraphToView()}
               >
                 RESET VIEW
               </button>

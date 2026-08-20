@@ -41,10 +41,28 @@ const graph = {
       source_key: 'sigmahq',
       edge_class: 'direct_fact',
     },
+    {
+      edge_id: 'e-sem',
+      source_node_id: 'cve:ROOT',
+      target_node_id: 'ioc:hash:abcd',
+      source_key: 'embeddings',
+      edge_class: 'semantic',
+    },
   ],
 }
 
 describe('visibleGraph', () => {
+  it('defaults to core neighborhood (related CVEs off)', () => {
+    const out = visibleGraph(graph)
+    assert.equal(out.nodes.some((n) => n.node_id === 'cve:REL'), false)
+    assert.ok(out.nodes.some((n) => n.node_id === 'ioc:hash:abcd'))
+  })
+
+  it('hides semantic edges by default', () => {
+    const out = visibleGraph(graph)
+    assert.equal(out.edges.some((e) => e.edge_class === 'semantic'), false)
+  })
+
   it('hides heuristic-only CVEs when showRelatedCves is false', () => {
     const out = visibleGraph(graph, { showRelatedCves: false })
     assert.deepEqual(
@@ -121,7 +139,7 @@ describe('canExpandEntityType', () => {
 describe('incidentEdges', () => {
   it('returns edges touching the selected node with source_key', () => {
     const rows = incidentEdges(graph, 'cve:ROOT')
-    assert.equal(rows.length, 3)
+    assert.equal(rows.length, 4)
     assert.equal(rows[0].source_key, 'otx')
   })
 })
