@@ -265,3 +265,20 @@ def test_candidate_edge_coerces_postgres_timestamps():
     )
     assert candidate.edge.observed_at == "2024-06-15T12:30:00Z"
     assert candidate.edge.fetched_at == "2024-06-15T12:30:00Z"
+
+
+def test_candidate_edge_coerces_decimal_confidence():
+    from decimal import Decimal
+
+    from investigations.contracts import EntityRef
+    from investigations.projection import _candidate_edge
+
+    ref = EntityRef(entity_type="cve", entity_id="CVE-2024-9001", label="CVE-2024-9001")
+    candidate = _candidate_edge(
+        source_node_id="cve:CVE-2024-ROOT",
+        target_ref=ref,
+        edge_class=EdgeClass.REPORTED,
+        source_key="threatfox",
+        confidence=Decimal("3"),
+    )
+    assert candidate.edge.confidence == "3"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
@@ -17,6 +19,8 @@ from investigations.contracts import (
 )
 from investigations.projection import expand_relationships, get_entity
 from investigations.resolve import is_graph_entity_type, resolve_entity
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -92,6 +96,13 @@ async def investigations_relationships(
         )
         page: GraphPage = await expand_relationships(db, ref, filters)
         return page.model_dump(mode="json")
+    except Exception:
+        logger.exception(
+            "investigations_relationships failed for %s/%s",
+            normalized_type,
+            entity_id,
+        )
+        raise
     finally:
         await db.close()
 
