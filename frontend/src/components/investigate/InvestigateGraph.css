@@ -220,6 +220,47 @@
   gap: var(--space-2);
 }
 
+.investigate-incidents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.investigate-incident {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.investigate-incident-neighbor {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-primary, var(--c-accent));
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-size-micro);
+  word-break: break-all;
+}
+
+.investigate-incident-neighbor:hover {
+  text-decoration: underline;
+}
+
+.investigate-incident-neighbor:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.investigate-incident-meta {
+  color: var(--text-muted, var(--text3));
+  font-size: var(--font-size-micro);
+  word-break: break-all;
+}
+
 .investigate-legend {
   margin: 0;
   padding: 0;

@@ -4,10 +4,16 @@ import { notifyApiError } from '../Toast.jsx'
 import AsyncState from '../ui/AsyncState.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { useInvestigationOptional, INV_TYPES, INV_SOURCES } from '../../context/InvestigationContext.jsx'
+import { copyToClipboard } from '../../utils/report.js'
 import {
   canExpandEntityType,
+  formatNeighborhoodMarkdown,
   heuristicCveIds,
+  incidentEdges,
   neighborIds,
+  otherNodeId,
+  parseIocEntityId,
+  visibleGraph,
 } from '../../utils/investigateGraphFilters.js'
 import {
   emptyGraphState,
@@ -155,7 +161,14 @@ function renderNodeShape(node, cx, cy, active, expanding, heuristicIds, rootId) 
   )
 }
 
-export default function InvestigateGraph({ onOpenCve, isActive = true, watchlist }) {
+export default function InvestigateGraph({
+  onOpenCve,
+  isActive = true,
+  watchlist,
+  onWatchlistChange,
+  onOpenForgeCampaigns,
+  onOpenAdvisories,
+}) {
   const investigation = useInvestigationOptional()
   const [query, setQuery] = useState('')
   const [graph, setGraph] = useState(emptyGraphState)
@@ -297,9 +310,21 @@ export default function InvestigateGraph({ onOpenCve, isActive = true, watchlist
     [positions],
   )
 
+  const nodesById = useMemo(
+    () => new Map(graph.nodes.map((node) => [node.node_id, node])),
+    [graph.nodes],
+  )
+
+  const visible = useMemo(() => visibleGraph(graph), [graph])
+
   const selected = useMemo(
     () => graph.nodes.find((node) => node.node_id === selectedId) || null,
     [graph.nodes, selectedId],
+  )
+
+  const selectedIncidents = useMemo(
+    () => (selectedId ? incidentEdges(graph, selectedId) : []),
+    [graph, selectedId],
   )
 
   const runSearch = useCallback(async (raw) => {
@@ -706,13 +731,42 @@ export default function InvestigateGraph({ onOpenCve, isActive = true, watchlist
                   <dd className="mono">{selected.knowledge_state || 'known'}</dd>
                 </div>
               </dl>
+              {selectedIncidents.length > 0 && (
+                <>
+                  <h3 className="investigate-inspector-title mono">INCIDENT EDGES</h3>
+                  <ul className="investigate-incidents">
+                    {selectedIncidents.map((edge) => {
+                      const neighborId = otherNodeId(edge, selected.node_id)
+                      const neighbor = nodesById.get(neighborId)
+                      return (
+                        <li key={edge.edge_id} className="investigate-incident">
+                          <button
+                            type="button"
+                            className="investigate-incident-neighbor mono"
+                            onClick={() => setSelectedId(neighborId)}
+                          >
+                            {neighbor?.entity_id || neighborId}
+                          </button>
+                          <span className="investigate-incident-meta mono">
+                            {edge.edge_class} · {edge.source_key}
+                            {edge.observed_at ? ` · observed ${edge.observed_at}` : ''}
+                            {edge.fetched_at ? ` · fetched ${edge.fetched_at}` : ''}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
               <div className="investigate-inspector-actions">
-                <button type="button" className="investigate-search-btn mono" onClick={() => expandNode(selected)} disabled={expandingId === selected.node_id}>
-                  EXPAND
-                </button>
-                {investigation && (
-                  <button type="button" className="investigate-ghost-btn mono" onClick={() => pinNode(selected)}>
-                    PIN THREAD
+                {canExpandEntityType(selected.entity_type) && (
+                  <button
+                    type="button"
+                    className="investigate-search-btn mono"
+                    onClick={() => expandNode(selected)}
+                    disabled={expandingId === selected.node_id}
+                  >
+                    EXPAND
                   </button>
                 )}
                 {selected.entity_type === 'cve' && onOpenCve && (
@@ -720,6 +774,82 @@ export default function InvestigateGraph({ onOpenCve, isActive = true, watchlist
                     OPEN CVE
                   </button>
                 )}
+                {selected.entity_type === 'ioc' && investigation && (
+                  <button
+                    type="button"
+                    className="investigate-ghost-btn mono"
+                    onClick={() => {
+                      const parsed = parseIocEntityId(selected.entity_id, selected.label)
+                      investigation.pivotToIoc(parsed.value, null, parsed.type)
+                    }}
+                  >
+                    LOOKUP LIVE
+                  </button>
+                )}
+                {selected.entity_type === 'technique' && investigation && (
+                  <button
+                    type="button"
+                    className="investigate-ghost-btn mono"
+                    onClick={() => investigation.pivotToTechnique(selected.entity_id, selected.label)}
+                  >
+                    OPEN IN FORGE
+                  </button>
+                )}
+                {selected.entity_type === 'campaign' && onOpenForgeCampaigns && (
+                  <button type="button" className="investigate-ghost-btn mono" onClick={onOpenForgeCampaigns}>
+                    OPEN CAMPAIGNS
+                  </button>
+                )}
+                {selected.entity_type === 'publication' && onOpenAdvisories && (
+                  <button type="button" className="investigate-ghost-btn mono" onClick={onOpenAdvisories}>
+                    OPEN ADVISORIES
+                  </button>
+                )}
+                {selected.entity_type === 'cve' && onWatchlistChange && (
+                  <button
+                    type="button"
+                    className="investigate-ghost-btn mono"
+                    onClick={() => onWatchlistChange(selected.entity_id, 'pin')}
+                  >
+                    {watchlist?.getState(selected.entity_id) === 'pin' ? 'UNPIN WATCHLIST' : 'PIN WATCHLIST'}
+                  </button>
+                )}
+                {investigation && (
+                  <button type="button" className="investigate-ghost-btn mono" onClick={() => pinNode(selected)}>
+                    PIN THREAD
+                  </button>
+                )}
+                {investigation && (
+                  <button
+                    type="button"
+                    className="investigate-ghost-btn mono"
+                    onClick={() => visible.nodes
+                      .filter((n) => n.entity_type === 'cve')
+                      .forEach((n) => investigation.ensureCveInThread(n.entity_id))}
+                  >
+                    PIN VISIBLE CVEs
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="investigate-ghost-btn mono"
+                  onClick={() => copyToClipboard(selected.entity_id)}
+                >
+                  COPY ID
+                </button>
+                <button
+                  type="button"
+                  className="investigate-ghost-btn mono"
+                  onClick={() => copyToClipboard(
+                    formatNeighborhoodMarkdown(
+                      selected,
+                      incidentEdges(graph, selected.node_id),
+                      nodesById,
+                    ),
+                  )}
+                >
+                  COPY NEIGHBORHOOD
+                </button>
               </div>
             </>
           )}

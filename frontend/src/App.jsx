@@ -701,6 +701,15 @@ export default function App() {
     })
   }, [setSearchParams, setActiveTab])
 
+  const openAdvisories = useCallback(() => {
+    setActiveTab('atlas')
+    pushContext(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'atlas')
+      next.set('view', 'advisories')
+      return next
+    })
+  }, [setSearchParams, setActiveTab])
+
   const getPaletteCommands = useCallback((query) => {
     const q = query.trim()
     const ql = q.toLowerCase()
@@ -1099,7 +1108,14 @@ function AppLayout({
             {mountedTabs.investigate && (
               <Suspense fallback={<TabLoading label="Investigate" />}>
                 <ToolErrorBoundary label="Investigate">
-                  <InvestigateGraph isActive={activeTab === 'investigate'} onOpenCve={openCveById} watchlist={watchlist} />
+                  <InvestigateGraph
+                    isActive={activeTab === 'investigate'}
+                    onOpenCve={openCveById}
+                    watchlist={watchlist}
+                    onWatchlistChange={handleWatchlistChange}
+                    onOpenForgeCampaigns={openForgeCampaigns}
+                    onOpenAdvisories={openAdvisories}
+                  />
                 </ToolErrorBoundary>
               </Suspense>
             )}
