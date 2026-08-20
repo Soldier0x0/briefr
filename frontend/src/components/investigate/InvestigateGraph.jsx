@@ -49,10 +49,10 @@ const NODE_R_ACTIVE = 11
 const ENTITY_TYPE_CHIPS = ['all', 'cve', 'ioc', 'technique', 'campaign', 'publication']
 const EDGE_CLASS_LABELS = {
   direct_fact: 'FACT',
-  reported: 'reported',
-  derived: 'derived',
-  analyst_assertion: 'analyst_assertion',
-  semantic: 'semantic',
+  reported: 'REPORTED',
+  derived: 'DERIVED',
+  analyst_assertion: 'ASSERTION',
+  semantic: 'SEMANTIC',
 }
 
 function hitRadius(scale) {
@@ -212,6 +212,7 @@ export default function InvestigateGraph({
   const positionsRef = useRef([])
   const graphRef = useRef(graph)
   const searchGenRef = useRef(0)
+  const expandGenRef = useRef(0)
   const lastConsumedInitialQueryRef = useRef('')
   const skipDebounceRef = useRef(false)
   graphRef.current = graph
@@ -372,6 +373,8 @@ export default function InvestigateGraph({
     if (!q) return
     const generation = searchGenRef.current + 1
     searchGenRef.current = generation
+    expandGenRef.current += 1
+    setExpandingId(null)
     setLoading(true)
     setError(null)
     setEmptyTitle('')
@@ -464,8 +467,8 @@ export default function InvestigateGraph({
 
   const expandNode = useCallback(async (node, params) => {
     if (!node?.entity_type || !node?.entity_id) return
-    const generation = searchGenRef.current + 1
-    searchGenRef.current = generation
+    const generation = expandGenRef.current + 1
+    expandGenRef.current = generation
     const requestedRootId = graphRef.current.root_id
     setExpandingId(node.node_id)
     setError(null)
@@ -475,12 +478,12 @@ export default function InvestigateGraph({
         node.entity_id,
         investigationRelationshipParams(includeSemantic, params),
       )
-      if (generation !== searchGenRef.current) return
+      if (generation !== expandGenRef.current) return
       if (graphRef.current.root_id !== requestedRootId) return
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
     } catch (err) {
-      if (generation !== searchGenRef.current) return
+      if (generation !== expandGenRef.current) return
       if (err?.status === 404) {
         setError(new Error('No relationships stored for this node.'))
         return
@@ -488,7 +491,7 @@ export default function InvestigateGraph({
       setError(err)
       notifyApiError(err)
     } finally {
-      if (generation === searchGenRef.current) setExpandingId(null)
+      if (generation === expandGenRef.current) setExpandingId(null)
     }
   }, [includeSemantic])
 
@@ -669,36 +672,17 @@ export default function InvestigateGraph({
             />
             <Checkbox
               checked={includeSemantic}
-              onCheckedChange={async (v) => {
-                const on = v === true
-                setIncludeSemantic(on)
+              onCheckedChange={(v) => {
+                if (v === true) {
+                  void enableSemantic()
+                  return
+                }
+                setIncludeSemantic(false)
                 setEdgeClasses((prev) => {
                   const next = new Set(prev)
-                  if (on) next.add('semantic')
-                  else next.delete('semantic')
+                  next.delete('semantic')
                   return next
                 })
-                if (on && graph.root_id) {
-                  const root = graph.nodes.find((n) => n.node_id === graph.root_id)
-                  if (root) {
-                    const generation = searchGenRef.current + 1
-                    searchGenRef.current = generation
-                    const requestedRootId = graph.root_id
-                    try {
-                      const page = await fetchInvestigationRelationships(
-                        root.entity_type,
-                        root.entity_id,
-                        investigationRelationshipParams(true),
-                      )
-                      if (generation !== searchGenRef.current) return
-                      if (graphRef.current.root_id !== requestedRootId) return
-                      setGraph((prev) => mergeGraphPage(prev, page))
-                    } catch (err) {
-                      if (generation !== searchGenRef.current) return
-                      notifyApiError(err)
-                    }
-                  }
-                }
               }}
               label="Semantic"
             />
@@ -883,7 +867,7 @@ export default function InvestigateGraph({
                         tabIndex={0}
                         role="button"
                         aria-pressed={active}
-                        aria-label={`${node.entity_type} ${node.label}`}
+                        aria-label={`${node.entity_type} ${node.label || node.entity_id || ''}`.trim()}
                       >
                         <circle
                           className="investigate-node-hit"

@@ -32,6 +32,19 @@ export function normalizeIocValue(val, type) {
   return v
 }
 
+/** Graph IocKind includes `url`; `/api/ioc/lookup` only accepts ip|hash|domain. */
+export function lookupCompatibleIoc(value, type) {
+  const raw = String(type || '').toLowerCase()
+  const text = String(value || '').trim()
+  if (raw === 'url' || raw === 'domain') {
+    return { type: 'domain', value: normalizeIocValue(text, 'domain') }
+  }
+  if (raw === 'hash') {
+    return { type: 'hash', value: normalizeIocValue(text, 'hash') }
+  }
+  return { type: 'ip', value: text }
+}
+
 export function detectType(val) {
   const v = val.trim()
   if (!v) return null

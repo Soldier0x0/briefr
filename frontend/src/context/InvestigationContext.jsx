@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { extractIndicatorsFromCve } from '../utils/extractIndicatorsFromCve.js'
+import { lookupCompatibleIoc } from '../components/ioc/iocUtils.js'
 import { fetchOTXPulseIocs } from '../api.js'
 import {
   INV_TYPE_TECHNIQUE,
@@ -155,7 +156,7 @@ export function InvestigationProvider({ children, navigation }) {
   }, [recordItem])
 
   const pivotToIoc = useCallback((value, cveContext, indicatorType = 'ip') => {
-    const kind = ['ip', 'hash', 'domain', 'url'].includes(indicatorType) ? indicatorType : 'ip'
+    const mapped = lookupCompatibleIoc(value, indicatorType)
     const from = cveContext || itemsRef.current[itemsRef.current.length - 1]
     if (from?.type === INV_TYPES.CVE && from.id) {
       const hasCve = itemsRef.current.some(i => i.type === INV_TYPES.CVE && i.id === from.id)
@@ -170,11 +171,11 @@ export function InvestigationProvider({ children, navigation }) {
         })
       }
     }
-    recordIocPivot(value, from)
+    recordIocPivot(mapped.value, from)
     navigation?.setActiveTab?.('ioc')
     navigation?.setIocPrefill?.({
-      value,
-      indicators: [{ type: kind, value }],
+      value: mapped.value,
+      indicators: [{ type: mapped.type, value: mapped.value }],
       trigger: Date.now(),
     })
   }, [recordItem, recordIocPivot, navigation])

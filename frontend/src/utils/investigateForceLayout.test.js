@@ -33,13 +33,18 @@ describe('investigateForceLayout', () => {
       source_node_id: 'n0',
       target_node_id: node.node_id,
     }))
-    let positions = seedPositions(nodes, 800, 600, new Map(), 'n0')
+    const overlap = { x: 400, y: 400, vx: 0, vy: 0 }
+    const prior = new Map(nodes.map((node) => [node.node_id, overlap]))
+    let positions = seedPositions(nodes, 800, 600, prior, 'n0')
+    const startXs = positions.map((p) => p.x)
+    const startSpan = Math.max(...startXs) - Math.min(...startXs)
+    assert.equal(startSpan, 0)
     for (let i = 0; i < 40; i += 1) {
       positions = stepForce(positions, edges, 800, 600, 'n0')
     }
     const xs = positions.map((p) => p.x)
     const span = Math.max(...xs) - Math.min(...xs)
-    assert.ok(span > 200, `expected spread, got ${span}`)
+    assert.ok(span > startSpan, `expected spread from overlap, got ${span}`)
   })
 
   it('does not clamp a node to a 36px viewport pad', () => {

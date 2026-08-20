@@ -19,6 +19,7 @@ function extractAppLayoutInvestigateGraphBlock(source) {
 describe('LOOKUP LIVE kind', () => {
   it('pivotToIoc accepts indicatorType and does not hardcode only ip in the graph path', () => {
     assert.match(ctx, /indicatorType/)
+    assert.match(ctx, /lookupCompatibleIoc/)
     assert.match(graph, /parseIocEntityId/)
     assert.match(graph, /LOOKUP LIVE/)
   })

@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   detectType,
+  lookupCompatibleIoc,
   normalizeIocValue,
   parseError,
   verdictInfo,
@@ -19,6 +20,15 @@ describe('iocUtils', () => {
   it('normalizes domains from URLs and hashes to lowercase', () => {
     assert.equal(normalizeIocValue('https://Example.COM:443/path?x=1', 'domain'), 'example.com')
     assert.equal(normalizeIocValue('ABCDEF0123456789ABCDEF0123456789', 'hash'), 'abcdef0123456789abcdef0123456789')
+  })
+
+  it('maps graph url IocKind onto lookup-compatible domain', () => {
+    assert.deepEqual(
+      lookupCompatibleIoc('https://evil.example/x', 'url'),
+      { type: 'domain', value: 'evil.example' },
+    )
+    assert.deepEqual(lookupCompatibleIoc('8.8.8.8', 'ip'), { type: 'ip', value: '8.8.8.8' })
+    assert.deepEqual(lookupCompatibleIoc('deadbeef', 'hash'), { type: 'hash', value: 'deadbeef' })
   })
 
   it('maps lookup errors to operator-safe messages', () => {

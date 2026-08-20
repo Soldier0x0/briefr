@@ -26,6 +26,7 @@ import {
 import {
   TYPE_LABELS,
   detectType,
+  lookupCompatibleIoc,
   normalizeIocValue,
   parseError,
   verdictInfo,
@@ -224,17 +225,17 @@ export default function IOCLookup({ prefill }) {
     const first = indicators[0]
     if (!first?.value) return
 
-    setValue(first.value)
-    const t = first.type === 'domain' ? 'domain' : first.type === 'hash' ? 'hash' : 'ip'
-    setDetectedType(t)
+    const mapped = lookupCompatibleIoc(first.value, first.type)
+    setValue(mapped.value)
+    setDetectedType(mapped.type)
     // Analyst reviews chips first; prefill input only (no auto-lookup blast)
   }, [prefill?.trigger, prefill?.value, prefill?.indicators, prefill?.fromCveId, prefill?.pivotFrom])
 
   function selectQueuedIndicator(ind) {
     if (!ind?.value) return
-    const t = ind.type === 'domain' ? 'domain' : ind.type === 'hash' ? 'hash' : 'ip'
-    setValue(ind.value)
-    setDetectedType(t)
+    const mapped = lookupCompatibleIoc(ind.value, ind.type)
+    setValue(mapped.value)
+    setDetectedType(mapped.type)
   }
 
   function clearLookup() {

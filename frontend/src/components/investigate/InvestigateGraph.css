@@ -58,6 +58,7 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-micro);
   padding: var(--space-1) var(--space-2);
+  min-height: var(--hit-target-min, 24px);
   background: transparent;
   border: 1px solid var(--border-subtle, var(--border));
   color: var(--text-secondary, var(--text2));
@@ -78,8 +79,8 @@
 }
 
 .investigate-edge-tab--latent {
-  opacity: 0.55;
   border-style: dashed;
+  color: var(--text-muted, var(--text3));
 }
 
 .investigate-find {
