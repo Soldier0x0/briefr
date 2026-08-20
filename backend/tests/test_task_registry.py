@@ -1,6 +1,7 @@
 """PR-R1: task registry + bounded graceful shutdown."""
 
 import asyncio
+import logging
 import sys
 import time
 from pathlib import Path
@@ -80,18 +81,28 @@ def test_register_discards_on_completion():
     asyncio.run(_run())
 
 
-def test_failed_background_task_exception_is_retrieved():
+def test_failed_background_task_exception_is_retrieved(caplog):
     async def _run():
         async def _boom():
             raise RuntimeError("boom")
 
         task = spawn_background_task(_boom())
         await asyncio.wait({task})
-        assert isinstance(task.exception(), RuntimeError)
         await asyncio.sleep(0)
         assert task not in task_registry._tasks
 
-    asyncio.run(_run())
+    with caplog.at_level(logging.ERROR, logger="task_registry"):
+        asyncio.run(_run())
+
+    logged = [
+        record
+        for record in caplog.records
+        if record.name == "task_registry"
+        and record.exc_info
+        and isinstance(record.exc_info[1], RuntimeError)
+        and str(record.exc_info[1]) == "boom"
+    ]
+    assert logged
 
 
 def test_wait_for_running_jobs_returns_empty_when_idle():
