@@ -931,6 +931,7 @@ export default function App() {
               onRetryDrawer={handleRetryDrawer}
               watchlist={watchlist}
               onWatchlistChange={handleWatchlistChange}
+              onOpenAdvisories={openAdvisories}
             />
             </RequireAuth>
           )}
@@ -989,6 +990,7 @@ function AppLayout({
   onRetryDrawer,
   watchlist,
   onWatchlistChange,
+  onOpenAdvisories,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const [mountedTabs, setMountedTabs] = useState({ brief: true })
@@ -1112,9 +1114,9 @@ function AppLayout({
                     isActive={activeTab === 'investigate'}
                     onOpenCve={openCveById}
                     watchlist={watchlist}
-                    onWatchlistChange={handleWatchlistChange}
-                    onOpenForgeCampaigns={openForgeCampaigns}
-                    onOpenAdvisories={openAdvisories}
+                    onWatchlistChange={onWatchlistChange}
+                    onOpenForgeCampaigns={onOpenForgeCampaigns}
+                    onOpenAdvisories={onOpenAdvisories}
                   />
                 </ToolErrorBoundary>
               </Suspense>

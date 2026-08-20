@@ -193,7 +193,7 @@
   margin: 0;
   font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
-  color: var(--text-secondary, var(--text2));
+  color: var(--text-muted, var(--text3));
 }
 
 .investigate-meta {
