@@ -10,6 +10,13 @@ import {
   INVESTIGATE_GRAPH_MAX_NODES,
   mergeGraphPage,
 } from '../../utils/investigateGraphMerge.js'
+import {
+  DEFAULT_VIEW,
+  computeFitView,
+  computePointCloudBounds,
+  truncateNodeLabel,
+  zoomAtCursor,
+} from '../../utils/architectureGraphView.js'
 import { seedPositions, stepForce } from '../../utils/investigateForceLayout.js'
 import './InvestigateGraph.css'
 
@@ -51,6 +58,11 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   const [selectedId, setSelectedId] = useState(null)
   const [positions, setPositions] = useState([])
   const [expandingId, setExpandingId] = useState(null)
+  const [view, setView] = useState(() => ({ ...DEFAULT_VIEW }))
+  const viewRef = useRef(view)
+  viewRef.current = view
+  const userMovedRef = useRef(false)
+  const dragRef = useRef(null)
   const canvasRef = useRef(null)
   const sizeRef = useRef({ width: 800, height: 560 })
   const positionsRef = useRef([])
@@ -58,6 +70,98 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
   const searchGenRef = useRef(0)
   graphRef.current = graph
   positionsRef.current = positions
+
+  useEffect(() => {
+    userMovedRef.current = false
+  }, [graph.root_id])
+
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return undefined
+    const handler = (e) => {
+      e.preventDefault()
+      userMovedRef.current = true
+      const rect = el.getBoundingClientRect()
+      const cursorX = e.clientX - rect.left
+      const cursorY = e.clientY - rect.top
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+      setView((v) => zoomAtCursor(v, cursorX, cursorY, factor))
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [graph.root_id])
+
+  const fitGraphToView = useCallback(() => {
+    const el = canvasRef.current
+    const pos = positionsRef.current
+    if (!el || !pos.length) return
+    const bounds = computePointCloudBounds(pos, 12, 48)
+    setView(computeFitView(bounds, el.clientWidth, el.clientHeight))
+  }, [])
+
+  const zoomFromButton = useCallback((factor) => {
+    const el = canvasRef.current
+    if (!el) return
+    userMovedRef.current = true
+    setView((v) => zoomAtCursor(v, el.clientWidth / 2, el.clientHeight / 2, factor))
+  }, [])
+
+  const onPointerDown = useCallback((e) => {
+    if (e.target.closest('[data-node-id]')) return
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origin: view }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [view])
+
+  const onPointerMove = useCallback((e) => {
+    if (!dragRef.current) return
+    const { startX, startY, origin } = dragRef.current
+    userMovedRef.current = true
+    setView({
+      ...origin,
+      x: origin.x + (e.clientX - startX),
+      y: origin.y + (e.clientY - startY),
+    })
+  }, [])
+
+  const onPointerUp = useCallback((e) => {
+    dragRef.current = null
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+  }, [])
+
+  const onCanvasKeyDown = useCallback((e) => {
+    if (e.target.closest('input, textarea')) return
+    const el = canvasRef.current
+    if (!el) return
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault()
+      zoomFromButton(1.1)
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault()
+      zoomFromButton(1 / 1.1)
+    } else if (e.key === '0') {
+      e.preventDefault()
+      userMovedRef.current = false
+      fitGraphToView()
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      userMovedRef.current = true
+      setView((v) => ({ ...v, x: v.x + 40 }))
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      userMovedRef.current = true
+      setView((v) => ({ ...v, x: v.x - 40 }))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      userMovedRef.current = true
+      setView((v) => ({ ...v, y: v.y + 40 }))
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      userMovedRef.current = true
+      setView((v) => ({ ...v, y: v.y - 40 }))
+    }
+  }, [fitGraphToView, zoomFromButton])
 
   const positionById = useMemo(
     () => new Map(positions.map((node) => [node.node_id, node])),
@@ -143,7 +247,13 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       const height = Math.max(el.clientHeight, 360)
       sizeRef.current = { width, height }
       const prior = new Map(positionsRef.current.map((node) => [node.node_id, node]))
-      setPositions(seedPositions(graphRef.current.nodes, width, height, prior))
+      setPositions(seedPositions(
+        graphRef.current.nodes,
+        width,
+        height,
+        prior,
+        graphRef.current.root_id,
+      ))
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return undefined
@@ -158,17 +268,28 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
     let frame = 0
     let ticks = 0
     const maxTicks = reduced ? 12 : 180
+    const rootId = graph.root_id
     const loop = () => {
       const { width, height } = sizeRef.current
-      const stepped = stepForce(positionsRef.current, graphRef.current.edges, width, height)
+      const stepped = stepForce(
+        positionsRef.current,
+        graphRef.current.edges,
+        width,
+        height,
+        rootId,
+      )
       positionsRef.current = stepped
       ticks += 1
       setPositions(stepped)
-      if (ticks < maxTicks) frame = requestAnimationFrame(loop)
+      if (ticks < maxTicks) {
+        frame = requestAnimationFrame(loop)
+      } else if (!userMovedRef.current) {
+        fitGraphToView()
+      }
     }
     frame = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(frame)
-  }, [isActive, graph.nodes, graph.edges])
+  }, [isActive, graph.nodes, graph.edges, graph.root_id, fitGraphToView])
 
   const pinNode = useCallback((node) => {
     if (!investigation || !node) return
@@ -235,7 +356,7 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       </form>
 
       <p className="investigate-hint mono">
-        One-hop graph over stored intel. Click a node to expand. Edges encode evidence class, not certainty.
+        Scroll to zoom · drag to pan · click to inspect · double-click to expand. Edges encode evidence class, not certainty.
       </p>
 
       {showHonesty && (
@@ -251,7 +372,17 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
       )}
 
       <div className="investigate-stage">
-        <div className="investigate-canvas" ref={canvasRef}>
+        <div
+          className="investigate-canvas"
+          ref={canvasRef}
+          tabIndex={0}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
+          onKeyDown={onCanvasKeyDown}
+          aria-label="Investigation graph canvas"
+        >
           <AsyncState
             loading={loading && graph.nodes.length === 0}
             error={error}
@@ -272,72 +403,104 @@ export default function InvestigateGraph({ onOpenCve, isActive = true }) {
                 role="img"
                 aria-label="Investigation relationship graph"
               >
-                {graph.edges.map((edge) => {
-                  const source = positionById.get(edge.source_node_id)
-                  const target = positionById.get(edge.target_node_id)
-                  if (!source || !target) return null
-                  const dashed = edge.edge_class === 'semantic'
-                  return (
-                    <line
-                      key={edge.edge_id}
-                      x1={source.x}
-                      y1={source.y}
-                      x2={target.x}
-                      y2={target.y}
-                      stroke={EDGE_STROKE[edge.edge_class] || 'var(--text-muted, var(--text3))'}
-                      strokeWidth={edge.edge_class === 'direct_fact' ? 2 : 1.25}
-                      strokeDasharray={dashed ? '4 3' : undefined}
-                      opacity={0.85}
-                    />
-                  )
-                })}
-                {positions.map((node) => {
-                  const active = node.node_id === selectedId
-                  const expanding = node.node_id === expandingId
-                  return (
-                    <g
-                      key={node.node_id}
-                      className="investigate-node"
-                      onClick={() => expandNode(node)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          expandNode(node)
-                        }
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${node.entity_type} ${node.label}`}
-                    >
-                      <circle
-                        className="investigate-node-hit"
-                        cx={node.x}
-                        cy={node.y}
-                        r={HIT_R}
+                <g
+                  className="investigate-svg-scene"
+                  transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
+                >
+                  {graph.edges.map((edge) => {
+                    const source = positionById.get(edge.source_node_id)
+                    const target = positionById.get(edge.target_node_id)
+                    if (!source || !target) return null
+                    const dashed = edge.edge_class === 'semantic'
+                    return (
+                      <line
+                        key={edge.edge_id}
+                        x1={source.x}
+                        y1={source.y}
+                        x2={target.x}
+                        y2={target.y}
+                        stroke={EDGE_STROKE[edge.edge_class] || 'var(--text-muted, var(--text3))'}
+                        strokeWidth={edge.edge_class === 'direct_fact' ? 2 : 1.25}
+                        strokeDasharray={dashed ? '4 3' : undefined}
+                        opacity={0.85}
                       />
-                      <circle
-                        className="investigate-node-dot"
-                        cx={node.x}
-                        cy={node.y}
-                        r={active ? NODE_R_ACTIVE : NODE_R}
-                        fill={active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'}
-                        stroke={active ? 'var(--accent-selected)' : 'var(--border-active, var(--border2))'}
-                        strokeWidth={expanding ? 3 : 1.5}
-                      />
-                      <text
-                        x={node.x}
-                        y={node.y + 22}
-                        textAnchor="middle"
-                        className="investigate-node-label"
+                    )
+                  })}
+                  {positions.map((node) => {
+                    const active = node.node_id === selectedId
+                    const expanding = node.node_id === expandingId
+                    return (
+                      <g
+                        key={node.node_id}
+                        data-node-id={node.node_id}
+                        className="investigate-node"
+                        onClick={() => expandNode(node)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            expandNode(node)
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`${node.entity_type} ${node.label}`}
                       >
-                        {(node.label || node.entity_id || '').slice(0, 28)}
-                      </text>
-                    </g>
-                  )
-                })}
+                        <circle
+                          className="investigate-node-hit"
+                          cx={node.x}
+                          cy={node.y}
+                          r={HIT_R}
+                        />
+                        <circle
+                          className="investigate-node-dot"
+                          cx={node.x}
+                          cy={node.y}
+                          r={active ? NODE_R_ACTIVE : NODE_R}
+                          fill={active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'}
+                          stroke={active ? 'var(--accent-selected)' : 'var(--border-active, var(--border2))'}
+                          strokeWidth={expanding ? 3 : 1.5}
+                        />
+                        <text
+                          x={node.x}
+                          y={node.y + 22}
+                          textAnchor="middle"
+                          className="investigate-node-label"
+                        >
+                          {truncateNodeLabel(node.label || node.entity_id || '', 28)}
+                        </text>
+                      </g>
+                    )
+                  })}
+                </g>
               </svg>
             )}
           </AsyncState>
+          {graph.nodes.length > 0 && (
+            <div className="investigate-camera-tools">
+              <button type="button" aria-label="Zoom in" onClick={() => zoomFromButton(1.1)}>+</button>
+              <button type="button" aria-label="Zoom out" onClick={() => zoomFromButton(1 / 1.1)}>−</button>
+              <button
+                type="button"
+                aria-label="Fit graph"
+                onClick={() => {
+                  userMovedRef.current = false
+                  fitGraphToView()
+                }}
+              >
+                FIT GRAPH
+              </button>
+              <button
+                type="button"
+                aria-label="Reset view"
+                onClick={() => {
+                  userMovedRef.current = false
+                  fitGraphToView()
+                }}
+              >
+                RESET VIEW
+              </button>
+            </div>
+          )}
         </div>
 
         <aside className="investigate-inspector" aria-label="Selected node">

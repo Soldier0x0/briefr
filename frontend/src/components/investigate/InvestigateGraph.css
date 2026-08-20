@@ -87,10 +87,43 @@
 }
 
 .investigate-canvas {
-  min-height: 520px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 360px;
   border: 1px solid var(--border-subtle, var(--border));
   background: var(--surface-sunken, var(--bg));
-  position: relative;
+}
+
+.investigate-canvas:active {
+  cursor: grabbing;
+}
+
+.investigate-camera-tools {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  z-index: 1;
+}
+
+.investigate-camera-tools button {
+  min-width: var(--hit-target-min, 24px);
+  min-height: var(--control-height-md, 32px);
+  border: 1px solid var(--border-default, var(--border2));
+  background: var(--surface-raised, var(--bg2));
+  color: var(--text-primary, var(--text));
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+.investigate-svg-scene {
+  transform-box: fill-box;
+  transform-origin: 0 0;
 }
 
 .investigate-svg {
