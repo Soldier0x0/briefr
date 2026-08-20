@@ -201,6 +201,6 @@ def test_ioc_tab_accepts_input(smoke_page):
 
 
 def test_incidents_renders_cards(smoke_page):
-    smoke_page.get_by_role("button", name="Switch to incidents and news").click()
+    smoke_page.get_by_role("button", name="Switch to advisories and intel").click()
     count = _wait_for_incidents_cards(smoke_page)
     assert count >= 1

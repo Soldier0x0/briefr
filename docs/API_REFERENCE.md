@@ -1139,7 +1139,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 
 ### GET /api/investigations/resolve
 
-**Auth:** Analyst session (`briefr_at` cookie).
+**Auth:** Analyst session (`briefr_at` cookie). The analyst **INVESTIGATE** tab (`?tab=investigate`) calls this endpoint, then `.../relationships`. Layout is client-only.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -1173,7 +1173,7 @@ Clusters rank by stack overlap, then watchlisted members, then size and lifecycl
 
 **Auth:** Analyst session.
 
-Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`, or `publication`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Percent-encode reserved characters when building the URL. Publication hops also appear on CVE relationship pages (`edge_class=reported`, `source_key=publication:{source_key}`). Resolve search (`GET /api/investigations/resolve`) still accepts only CVE, IOC, technique, and campaign queries.
+Path `entity_type` must be one of `cve`, `ioc`, `technique`, `campaign`, or `publication`. `entity_id` uses a path converter (`{entity_id:path}`) so URL IOCs that contain `/` stay one identifier. Clients must percent-encode **both** path segments with `encodeURIComponent` (slashes become `%2F`; `../` traversal attempts stay inside the segment). Publication hops also appear on CVE relationship pages (`edge_class=reported`, `source_key=publication:{source_key}`). Resolve search (`GET /api/investigations/resolve`) still accepts only CVE, IOC, technique, and campaign queries.
 
 Returns a single `GraphNode` (same shape as `root` above) or **404** when unknown.
 

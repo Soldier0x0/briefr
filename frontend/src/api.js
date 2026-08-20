@@ -1,4 +1,5 @@
 import { outboundJobsPath, outboundJobsPingPath } from './apiOutboundJobs.js'
+import { investigationEntityPath, buildInvestigationRelationshipQuery } from './utils/investigateGraphMerge.js'
 
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
@@ -218,6 +219,17 @@ export function fetchSemanticSearch({
 
 export function fetchCVE(cveId) {
   return request(`/cves/${encodeURIComponent(cveId)}`)
+}
+
+export function resolveInvestigation(q) {
+  const qs = new URLSearchParams()
+  qs.set('q', q || '')
+  return request(`/investigations/resolve?${qs.toString()}`)
+}
+
+export function fetchInvestigationRelationships(entityType, entityId, params = {}) {
+  const suffix = buildInvestigationRelationshipQuery(params)
+  return request(`${investigationEntityPath(entityType, entityId)}/relationships${suffix}`)
 }
 
 /** Asset profile CPE match — sole API endpoint that receives asset inventory. */

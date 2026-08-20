@@ -1,6 +1,6 @@
 /** Primary navigation ↔ URL sync for analyst shell and Admin. */
 
-export const APP_TABS = new Set(['brief', 'feed', 'ioc', 'atlas', 'forge'])
+export const APP_TABS = new Set(['brief', 'feed', 'ioc', 'investigate', 'atlas', 'forge'])
 
 export const FORGE_URL_PARAMS = ['view', 'technique', 'pack']
 

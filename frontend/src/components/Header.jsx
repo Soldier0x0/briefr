@@ -33,11 +33,12 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
   const feedLabel = feedHealthLabel(feedLevel)
 
   const TABS = [
-    { id: 'brief', label: 'BRIEF', aria: 'Switch to morning brief' },
-    { id: 'feed', label: 'FEED', aria: 'Switch to full CVE feed' },
-    { id: 'ioc', label: 'IOC LOOKUP', aria: 'Switch to IOC lookup' },
-    { id: 'atlas', label: 'ADVISORIES & INTEL', aria: 'Switch to advisories and intel' },
-    { id: 'forge', label: 'FORGE', aria: 'Switch to Forge detection engineering' },
+    { id: 'brief', label: 'BRIEF', short: 'BRIEF', aria: 'Switch to morning brief' },
+    { id: 'feed', label: 'FEED', short: 'FEED', aria: 'Switch to full CVE feed' },
+    { id: 'ioc', label: 'IOC LOOKUP', short: 'IOC', aria: 'Switch to IOC lookup' },
+    { id: 'investigate', label: 'INVESTIGATE', short: 'GRAPH', aria: 'Switch to investigate graph' },
+    { id: 'atlas', label: 'ADVISORIES & INTEL', short: 'INTEL', aria: 'Switch to advisories and intel' },
+    { id: 'forge', label: 'FORGE', short: 'FORGE', aria: 'Switch to Forge detection engineering' },
   ]
 
   return (
@@ -70,46 +71,17 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
         {/* Center: tabs */}
         {activeTab !== null && (
           <nav className="header-nav" aria-label="Main navigation">
-            <button
-              className={`header-tab${activeTab === 'brief' ? ' active' : ''}`}
-              onClick={() => onTabChange('brief')}
-              aria-label="Switch to morning brief"
-              aria-current={activeTab === 'brief' ? 'page' : undefined}
-            >
-              BRIEF
-            </button>
-            <button
-              className={`header-tab${activeTab === 'feed' ? ' active' : ''}`}
-              onClick={() => onTabChange('feed')}
-              aria-label="Switch to full CVE feed"
-              aria-current={activeTab === 'feed' ? 'page' : undefined}
-            >
-              FEED
-            </button>
-            <button
-              className={`header-tab${activeTab === 'ioc' ? ' active' : ''}`}
-              onClick={() => onTabChange('ioc')}
-              aria-label="Switch to IOC lookup"
-              aria-current={activeTab === 'ioc' ? 'page' : undefined}
-            >
-              IOC LOOKUP
-            </button>
-            <button
-              className={`header-tab${activeTab === 'atlas' ? ' active' : ''}`}
-              onClick={() => onTabChange('atlas')}
-              aria-label="Switch to incidents and news"
-              aria-current={activeTab === 'atlas' ? 'page' : undefined}
-            >
-              ADVISORIES &amp; INTEL
-            </button>
-            <button
-              className={`header-tab${activeTab === 'forge' ? ' active' : ''}`}
-              onClick={() => onTabChange('forge')}
-              aria-label="Switch to Forge detection engineering"
-              aria-current={activeTab === 'forge' ? 'page' : undefined}
-            >
-              FORGE
-            </button>
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                className={`header-tab${activeTab === t.id ? ' active' : ''}`}
+                onClick={() => onTabChange(t.id)}
+                aria-label={t.aria}
+                aria-current={activeTab === t.id ? 'page' : undefined}
+              >
+                {t.label}
+              </button>
+            ))}
           </nav>
         )}
 
@@ -239,7 +211,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
             aria-label={t.aria}
             aria-current={activeTab === t.id ? 'page' : undefined}
           >
-            {t.label}
+            {t.short}
           </button>
         ))}
       </nav>
