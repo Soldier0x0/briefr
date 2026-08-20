@@ -23,7 +23,14 @@ import { shouldRefitAfterStructuralChange } from '../../utils/investigateCameraP
 import { createCameraController } from '../../utils/investigateCameraController.js'
 import { createGraphEngine } from '../../utils/investigateGraphEngine.js'
 import { createDragTracker } from '../../utils/investigateDragPolicy.js'
-import { applyGraphDom, applyWorldTransform, screenToWorld } from '../../utils/investigateGraphDom.js'
+import {
+  applyGraphDom,
+  applyNodeScaleDom,
+  applyWorldTransform,
+  hitRadius,
+  screenToWorld,
+  shouldShowLabel,
+} from '../../utils/investigateGraphDom.js'
 import {
   emptyGraphState,
   INVESTIGATE_GRAPH_MAX_EDGES,
@@ -55,17 +62,6 @@ const EDGE_CLASS_LABELS = {
   derived: 'DERIVED',
   analyst_assertion: 'ASSERTION',
   semantic: 'SEMANTIC',
-}
-
-function hitRadius(scale) {
-  return Math.min(24, Math.max(8, 12 / scale))
-}
-
-function shouldShowLabel(node, { selectedId, hoveredId, findLower, scale, rootId }) {
-  if (node.node_id === rootId || node.node_id === selectedId || node.node_id === hoveredId) return true
-  if (findLower && (node.label || node.entity_id || '').toLowerCase().includes(findLower)) return true
-  if (node.entity_type !== 'cve' && scale >= 1.25) return true
-  return scale >= 2
 }
 
 function hexPoints(cx, cy, r) {
@@ -228,7 +224,12 @@ export default function InvestigateGraph({
   const cameraRef = useRef(null)
   const engineRef = useRef(null)
   const cameraRafRef = useRef(0)
+  const selectedIdRef = useRef(null)
+  const hoveredIdRef = useRef(null)
+  const findLowerRef = useRef('')
   graphRef.current = graph
+  selectedIdRef.current = selectedId
+  hoveredIdRef.current = hoveredId
 
   if (!cameraRef.current) {
     cameraRef.current = createCameraController(DEFAULT_VIEW, {
@@ -269,6 +270,12 @@ export default function InvestigateGraph({
   const syncCameraView = useCallback((next) => {
     viewRef.current = next
     applyWorldTransform(worldRef.current, next)
+    applyNodeScaleDom(canvasRef.current, next.scale, {
+      selectedId: selectedIdRef.current,
+      hoveredId: hoveredIdRef.current,
+      findLower: findLowerRef.current,
+      rootId: graphRef.current.root_id,
+    })
   }, [])
 
   const startCameraLoop = useCallback(() => {
@@ -281,6 +288,12 @@ export default function InvestigateGraph({
       const display = cam.tick(dt)
       viewRef.current = display
       applyWorldTransform(worldRef.current, display)
+      applyNodeScaleDom(canvasRef.current, display.scale, {
+        selectedId: selectedIdRef.current,
+        hoveredId: hoveredIdRef.current,
+        findLower: findLowerRef.current,
+        rootId: graphRef.current.root_id,
+      })
       if (cam.isAnimating()) {
         cameraRafRef.current = requestAnimationFrame(loop)
       } else {
@@ -401,10 +414,8 @@ export default function InvestigateGraph({
     const dx = e.clientX - dragRef.current.startX
     const dy = e.clientY - dragRef.current.startY
     cameraRef.current.applyPanDelta(dragRef.current.panOrigin, dx, dy)
-    const display = cameraRef.current.getDisplayView()
-    viewRef.current = display
-    applyWorldTransform(worldRef.current, display)
-  }, [stopCameraLoop])
+    syncCameraView(cameraRef.current.getDisplayView())
+  }, [stopCameraLoop, syncCameraView])
 
   const onPointerUp = useCallback((e) => {
     if (nodeDragRef.current) {
@@ -680,6 +691,7 @@ export default function InvestigateGraph({
 
   const focusId = hoveredId || selectedId
   const findLower = findText.trim().toLowerCase()
+  findLowerRef.current = findLower
   const findMatches = useMemo(() => {
     if (!findLower) return []
     return visible.nodes
@@ -741,7 +753,7 @@ export default function InvestigateGraph({
 
   useLayoutEffect(() => {
     if (!graph.nodes.length || !positionsRef.current.length) return
-    applyWorldTransform(worldRef.current, viewRef.current)
+    syncCameraView(viewRef.current)
     applyGraphDom(canvasRef.current, positionsRef.current, visibleRef.current.edges)
   })
 
@@ -754,7 +766,7 @@ export default function InvestigateGraph({
     positionsRef.current = seeded
     setPositions(seeded)
     applyGraphDom(canvasRef.current, seeded, visible.edges)
-    applyWorldTransform(worldRef.current, viewRef.current)
+    syncCameraView(viewRef.current)
     engine.start()
     return () => engine.stop()
   }, [isActive, visible, graph.root_id, structuralVersion])
@@ -1056,6 +1068,8 @@ export default function InvestigateGraph({
                       <g
                         key={node.node_id}
                         data-node-id={node.node_id}
+                        data-entity-type={node.entity_type}
+                        data-label={node.label || node.entity_id || ''}
                         className={[
                           'investigate-node',
                           dimmed ? 'investigate-node-dim' : '',
@@ -1110,16 +1124,15 @@ export default function InvestigateGraph({
                             strokeWidth={1.5}
                           />
                         )}
-                        {showLabel && (
-                          <text
-                            x={0}
-                            y={22}
-                            textAnchor="middle"
-                            className="investigate-node-label"
-                          >
-                            {truncateNodeLabel(node.label || node.entity_id || '', 28)}
-                          </text>
-                        )}
+                        <text
+                          x={0}
+                          y={22}
+                          textAnchor="middle"
+                          className="investigate-node-label"
+                          visibility={showLabel ? 'visible' : 'hidden'}
+                        >
+                          {truncateNodeLabel(node.label || node.entity_id || '', 28)}
+                        </text>
                       </g>
                     )
                   })}
