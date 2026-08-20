@@ -1,3 +1,7 @@
+import { applyGraphLayers } from './investigateGraphProjection.js'
+
+export { applyGraphLayers, heuristicOnlyNodeIds, splitGraphLayers } from './investigateGraphProjection.js'
+
 export const EXPANDABLE_ENTITY_TYPES = new Set([
   'cve', 'ioc', 'technique', 'campaign', 'publication',
 ])
@@ -68,20 +72,21 @@ export function heuristicCveIds(graph) {
 }
 
 export function visibleGraph(graph, {
-  showRelatedCves = true,
+  showRelatedCves = false,
+  showSemantic = true,
   entityType = 'all',
   edgeClasses = null,
   isolateNodeId = null,
 } = {}) {
-  const nodes = graph.nodes || []
-  const edges = graph.edges || []
+  const layered = applyGraphLayers(graph, { showRelatedCves, showSemantic })
+  const nodes = layered.nodes
+  const edges = layered.edges
   const rootId = graph.root_id
   const hiddenHeuristic = showRelatedCves ? new Set() : heuristicCveIds(graph)
   const allowedClass = edgeClasses || null
 
   let visibleEdges = edges.filter((e) => {
     if (allowedClass && !allowedClass.has(e.edge_class)) return false
-    if (!showRelatedCves && e.source_key === 'related_cve_heuristic') return false
     return true
   })
 

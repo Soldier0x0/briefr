@@ -45,6 +45,12 @@ const graph = {
 }
 
 describe('visibleGraph', () => {
+  it('defaults to core neighborhood (related CVEs off)', () => {
+    const out = visibleGraph(graph)
+    assert.equal(out.nodes.some((n) => n.node_id === 'cve:REL'), false)
+    assert.ok(out.nodes.some((n) => n.node_id === 'ioc:hash:abcd'))
+  })
+
   it('hides heuristic-only CVEs when showRelatedCves is false', () => {
     const out = visibleGraph(graph, { showRelatedCves: false })
     assert.deepEqual(

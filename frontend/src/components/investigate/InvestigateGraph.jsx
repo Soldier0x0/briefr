@@ -194,7 +194,7 @@ export default function InvestigateGraph({
   const [hoveredId, setHoveredId] = useState(null)
   const [positions, setPositions] = useState([])
   const [expandingId, setExpandingId] = useState(null)
-  const [showRelatedCves, setShowRelatedCves] = useState(true)
+  const [showRelatedCves, setShowRelatedCves] = useState(false)
   const [entityType, setEntityType] = useState('all')
   const [edgeClasses, setEdgeClasses] = useState(() => new Set(DEFAULT_EDGE_CLASSES))
   const [isolate, setIsolate] = useState(false)
