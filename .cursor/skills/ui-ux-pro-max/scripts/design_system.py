@@ -927,8 +927,6 @@ def _generate_intelligent_overrides(page_name: str, page_query: str, design_syst
     Uses the existing search infrastructure to find relevant style, UX, and layout
     data instead of hardcoded page types.
     """
-    from core import search
-    
     page_lower = page_name.lower()
     query_lower = (page_query or "").lower()
     combined_context = f"{page_lower} {query_lower}"

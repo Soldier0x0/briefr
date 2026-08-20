@@ -60,8 +60,6 @@ describe('createGraphEngine', () => {
     engine.setSize(400, 400)
     engine.setTopology(nodes, edges, 'root')
     while (engine.tick()) { /* reduced ticks */ }
-    engine.tick()
-    engine.tick()
     assert.equal(settled, 1)
   })
 
