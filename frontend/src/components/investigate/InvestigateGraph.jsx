@@ -146,7 +146,7 @@ function renderNodeShape(node, cx, cy, active, expanding, heuristicIds, rootId) 
       />
     )
   }
-  if (node.entity_type === 'technique' || node.entity_type === 'sigma' || node.entity_type === 'publication') {
+  if (node.entity_type === 'technique' || node.entity_type === 'sigma_rule' || node.entity_type === 'publication') {
     return (
       <rect
         className="investigate-node-dot"
@@ -213,6 +213,7 @@ export default function InvestigateGraph({
   const graphRef = useRef(graph)
   const searchGenRef = useRef(0)
   const lastConsumedInitialQueryRef = useRef('')
+  const skipDebounceRef = useRef(false)
   graphRef.current = graph
   positionsRef.current = positions
 
@@ -252,7 +253,7 @@ export default function InvestigateGraph({
   }, [])
 
   const onPointerDown = useCallback((e) => {
-    if (e.target.closest('[data-node-id]')) return
+    if (e.target.closest('[data-node-id], button, input, a, [role="tab"], .investigate-camera-tools, .ui-checkbox, label')) return
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -392,7 +393,9 @@ export default function InvestigateGraph({
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
       setSelectedId(root.node_id)
-      onQueryResolved?.(resolved.query || q)
+      const canonical = (resolved.query || q).trim()
+      if (canonical) lastConsumedInitialQueryRef.current = canonical
+      onQueryResolved?.(canonical || q)
     } catch (err) {
       if (generation !== searchGenRef.current) return
       if (err?.status === 404) {
@@ -412,14 +415,20 @@ export default function InvestigateGraph({
     const q = (initialQuery || '').trim()
     if (!q || q === lastConsumedInitialQueryRef.current) return
     lastConsumedInitialQueryRef.current = q
+    skipDebounceRef.current = true
     setQuery(q)
     runSearch(q)
   }, [initialQuery, runSearch])
 
   useEffect(() => {
     const handle = setTimeout(() => {
+      if (skipDebounceRef.current) {
+        skipDebounceRef.current = false
+        return
+      }
       const q = query.trim()
       if (!looksResolvable(q)) return
+      if (q === lastConsumedInitialQueryRef.current) return
       runSearch(q)
     }, 400)
     return () => clearTimeout(handle)
@@ -455,6 +464,9 @@ export default function InvestigateGraph({
 
   const expandNode = useCallback(async (node, params) => {
     if (!node?.entity_type || !node?.entity_id) return
+    const generation = searchGenRef.current + 1
+    searchGenRef.current = generation
+    const requestedRootId = graphRef.current.root_id
     setExpandingId(node.node_id)
     setError(null)
     try {
@@ -463,9 +475,12 @@ export default function InvestigateGraph({
         node.entity_id,
         investigationRelationshipParams(includeSemantic, params),
       )
+      if (generation !== searchGenRef.current) return
+      if (graphRef.current.root_id !== requestedRootId) return
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
     } catch (err) {
+      if (generation !== searchGenRef.current) return
       if (err?.status === 404) {
         setError(new Error('No relationships stored for this node.'))
         return
@@ -473,7 +488,7 @@ export default function InvestigateGraph({
       setError(err)
       notifyApiError(err)
     } finally {
-      setExpandingId(null)
+      if (generation === searchGenRef.current) setExpandingId(null)
     }
   }, [includeSemantic])
 
@@ -980,6 +995,7 @@ export default function InvestigateGraph({
                           </button>
                           <span className="investigate-incident-meta mono">
                             {edge.edge_class} · {edge.source_key}
+                            {edge.confidence ? ` · confidence ${edge.confidence}` : ''}
                             {edge.observed_at ? ` · observed ${edge.observed_at}` : ''}
                             {edge.fetched_at ? ` · fetched ${edge.fetched_at}` : ''}
                           </span>

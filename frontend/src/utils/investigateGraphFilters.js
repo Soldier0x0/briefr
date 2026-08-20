@@ -100,6 +100,7 @@ export function visibleGraph(graph, {
       if (edge.source_node_id === isolateNodeId) keep.add(edge.target_node_id)
       if (edge.target_node_id === isolateNodeId) keep.add(edge.source_node_id)
     }
+    for (const hid of hiddenHeuristic) keep.delete(hid)
     ids = keep
   }
 

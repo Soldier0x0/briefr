@@ -75,6 +75,19 @@ describe('visibleGraph', () => {
       ['cve:ROOT', 'ioc:hash:abcd'],
     )
   })
+
+  it('does not resurrect heuristic CVEs when isolating with showRelatedCves false', () => {
+    const out = visibleGraph(graph, { showRelatedCves: false, isolateNodeId: 'cve:REL' })
+    assert.equal(out.nodes.some((n) => n.node_id === 'cve:REL'), false)
+  })
+
+  it('keeps non-heuristic neighbors when isolating with showRelatedCves false', () => {
+    const out = visibleGraph(graph, { showRelatedCves: false, isolateNodeId: 'ioc:hash:abcd' })
+    assert.deepEqual(
+      out.nodes.map((n) => n.node_id).sort(),
+      ['cve:ROOT', 'ioc:hash:abcd'],
+    )
+  })
 })
 
 describe('parseIocEntityId', () => {

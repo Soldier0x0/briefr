@@ -218,7 +218,7 @@
 .investigate-node-label {
   fill: var(--text-secondary, var(--text2));
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   pointer-events: none;
 }
 
