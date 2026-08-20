@@ -89,6 +89,16 @@ _fetch_cve_detail() {
   fi
 }
 
+_fetch_investigate_relationships() {
+  if [ -n "${AUTH_HEADER}" ]; then
+    curl -sf -H "Cookie: ${AUTH_HEADER}" \
+      "${BASE_URL}/api/investigations/entities/cve/${CVE_ID}/relationships"
+  else
+    curl -sf -b "${COOKIE_JAR}" \
+      "${BASE_URL}/api/investigations/entities/cve/${CVE_ID}/relationships"
+  fi
+}
+
 echo "==> Smoke: ${BASE_URL}/api/cves/${CVE_ID}"
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -126,3 +136,11 @@ if [ "$pulse_count" -lt 1 ]; then
 fi
 
 echo "OK: Intel smoke passed for ${CVE_ID}"
+
+echo "==> Smoke: INVESTIGATE relationships for ${CVE_ID}"
+if ! _fetch_investigate_relationships | jq -e '.root.node_id' >/dev/null; then
+  echo "FAIL: INVESTIGATE relationships did not return a graph page for ${CVE_ID}"
+  echo "HINT: bash ${INSTALL_DIR}/deploy/diagnose-investigate.sh"
+  exit 1
+fi
+echo "    investigate    OK"

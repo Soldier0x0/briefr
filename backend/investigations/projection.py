@@ -6,7 +6,8 @@ import base64
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from decimal import Decimal
 from typing import Any
 
 from correlation.ioc_normalize import normalize_ioc
@@ -58,7 +59,18 @@ def _optional_db_timestamp(value: Any) -> str | None:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat().replace("+00:00", "Z")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
     return str(value)
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 @dataclass(frozen=True)
@@ -377,17 +389,22 @@ async def _cve_edges(
             )
         )
 
-    otx_rows = await db.execute_fetchall(
-        """
-        SELECT DISTINCT pi.ioc_type, pi.ioc_value, pi.observed_at, cp.fetched_at
-        FROM otx_cve_pulses cp
-        INNER JOIN otx_pulse_iocs pi ON pi.pulse_id = cp.pulse_id
-        WHERE cp.cve_id = ?
-        ORDER BY pi.ioc_value ASC
-        LIMIT ?
-        """,
-        (cve_id, _MAX_HOP_ROWS),
-    )
+    otx_rows: list[Any] = []
+    try:
+        otx_rows = await db.execute_fetchall(
+            """
+            SELECT DISTINCT pi.ioc_type, pi.ioc_value, pi.observed_at, cp.fetched_at
+            FROM otx_cve_pulses cp
+            INNER JOIN otx_pulse_iocs pi ON pi.pulse_id = cp.pulse_id
+            WHERE cp.cve_id = ?
+            ORDER BY pi.ioc_value ASC
+            LIMIT ?
+            """,
+            (cve_id, _MAX_HOP_ROWS),
+        )
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("OTX hop skipped for %s: %s", cve_id, exc)
     otx_pairs: list[tuple[str, str]] = []
     for row in otx_rows:
         ioc_ref = _ioc_ref_from_row(row["ioc_type"], row["ioc_value"])
@@ -405,13 +422,18 @@ async def _cve_edges(
             )
         )
 
-    mirror_hits = await batch_source_evidence(db, otx_pairs)
+    try:
+        mirror_hits = await batch_source_evidence(db, otx_pairs)
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("TI mirror hop skipped for %s: %s", cve_id, exc)
+        mirror_hits = {}
     for (_canon_type, canon_value), mirror_rows in mirror_hits.items():
         ioc_ref = _ioc_ref_from_row(_canon_type, canon_value)
         if ioc_ref is None:
             continue
         for mirror in mirror_rows:
-            source_key = mirror.get("source") or "ti_mirror"
+            source_key = _optional_str(mirror.get("source")) or "ti_mirror"
             edges.append(
                 _candidate_edge(
                     source_node_id=source_node_id,
@@ -420,9 +442,7 @@ async def _cve_edges(
                     source_key=source_key,
                     observed_at=_row_get(mirror, "first_seen"),
                     fetched_at=_row_get(mirror, "fetched_at"),
-                    confidence=str(_row_get(mirror, "confidence_level"))
-                    if _row_get(mirror, "confidence_level") is not None
-                    else None,
+                    confidence=_optional_str(_row_get(mirror, "confidence_level")),
                 )
             )
 
@@ -478,7 +498,12 @@ async def _cve_edges(
             )
         )
 
-    related = await get_related_cves(db, cve_id, limit=filters.limit)
+    try:
+        related = await get_related_cves(db, cve_id, limit=filters.limit)
+    except Exception as exc:
+        flags.degraded = True
+        logger.warning("related CVE hop skipped for %s: %s", cve_id, exc)
+        related = []
     for row in related:
         related_id = row["cve_id"]
         target_ref = EntityRef(
@@ -708,7 +733,7 @@ def _candidate_edge(
     target_ref: EntityRef,
     edge_class: EdgeClass,
     source_key: str,
-    confidence: str | None = None,
+    confidence: Any = None,
     observed_at: Any = None,
     fetched_at: Any = None,
 ) -> _CandidateEdge:
@@ -720,7 +745,7 @@ def _candidate_edge(
         target_node_id=target_node_id,
         edge_class=edge_class,
         source_key=source_key,
-        confidence=confidence,
+        confidence=_optional_str(confidence),
         observed_at=_optional_db_timestamp(observed_at),
         fetched_at=_optional_db_timestamp(fetched_at),
     )
