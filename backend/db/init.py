@@ -866,7 +866,7 @@ async def init_db() -> None:
             );
 
             CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest
-                ON ti_mirror_iocs(ioc_type, ioc_value_digest);
+                ON ti_mirror_iocs(lower(ioc_type), ioc_value_digest);
             CREATE INDEX IF NOT EXISTS idx_ti_mirror_host
                 ON ti_mirror_iocs(host_ioc);
             CREATE INDEX IF NOT EXISTS idx_ti_mirror_source
@@ -983,10 +983,10 @@ async def init_db() -> None:
             "ALTER TABLE ti_mirror_iocs ADD COLUMN ioc_value_digest TEXT DEFAULT ''",
             "ALTER TABLE otx_pulse_iocs ADD COLUMN ioc_value_digest TEXT DEFAULT ''",
             "DROP INDEX IF EXISTS idx_ti_mirror_type_value",
-            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(ioc_type, ioc_value_digest)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(lower(ioc_type), ioc_value_digest)",
             "DROP INDEX IF EXISTS idx_otx_pulse_iocs_type_value",
             "DROP INDEX IF EXISTS idx_otx_pulse_iocs_value",
-            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(ioc_type, ioc_value_digest)",
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(lower(ioc_type), ioc_value_digest)",
             """
             CREATE TABLE IF NOT EXISTS correlation_campaigns (
                 campaign_id TEXT PRIMARY KEY,
@@ -1034,7 +1034,7 @@ async def init_db() -> None:
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve ON correlation_campaign_members(cve_id)",
-            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(ioc_type, ioc_value_digest)",
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(lower(ioc_type), ioc_value_digest)",
             """
             CREATE TABLE IF NOT EXISTS correlation_suppressions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1221,7 +1221,7 @@ async def init_db() -> None:
                 PRIMARY KEY (source, ref_id)
             )
             """,
-            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(ioc_type, ioc_value_digest)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(lower(ioc_type), ioc_value_digest)",
             "CREATE INDEX IF NOT EXISTS idx_ti_mirror_host ON ti_mirror_iocs(host_ioc)",
             "CREATE INDEX IF NOT EXISTS idx_ti_mirror_source ON ti_mirror_iocs(source)",
             """

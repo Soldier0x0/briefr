@@ -29,7 +29,11 @@ _RETRO_MATCH_SQL_PG = """
            NULL AS mirror_first_seen
     FROM ioc_watchlist w
     INNER JOIN otx_pulse_iocs o
-        ON o.ioc_value_digest = md5(lower(w.ioc_value))
+        ON o.ioc_type = UPPER(w.ioc_type)
+        AND (
+            o.ioc_value_digest = md5(trim(w.ioc_value))
+            OR LOWER(o.ioc_value) = LOWER(w.ioc_value)
+        )
     LEFT JOIN correlation_campaigns camp
         ON camp.primary_pulse_id = o.pulse_id
     UNION ALL
@@ -44,7 +48,10 @@ _RETRO_MATCH_SQL_PG = """
     FROM ioc_watchlist w
     INNER JOIN ti_mirror_iocs m
         ON (
-            (m.ioc_type = w.ioc_type AND m.ioc_value_digest = md5(lower(w.ioc_value)))
+            (m.ioc_type = w.ioc_type AND (
+                m.ioc_value_digest = md5(trim(w.ioc_value))
+                OR LOWER(m.ioc_value) = LOWER(w.ioc_value)
+            ))
             OR (m.ioc_type = 'url' AND UPPER(w.ioc_type) IN ('DOMAIN', 'URL')
                 AND m.host_ioc != '' AND LOWER(m.host_ioc) = LOWER(w.ioc_value))
         )
@@ -65,7 +72,8 @@ _RETRO_MATCH_SQL_SQLITE = """
            NULL AS mirror_first_seen
     FROM ioc_watchlist w
     INNER JOIN otx_pulse_iocs o
-        ON LOWER(o.ioc_value) = LOWER(w.ioc_value)
+        ON o.ioc_type = UPPER(w.ioc_type)
+        AND LOWER(o.ioc_value) = LOWER(w.ioc_value)
     LEFT JOIN correlation_campaigns camp
         ON camp.primary_pulse_id = o.pulse_id
     UNION ALL

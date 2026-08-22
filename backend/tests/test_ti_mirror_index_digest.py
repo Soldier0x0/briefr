@@ -24,12 +24,56 @@ def _oversized_phish_url() -> str:
     return f"https://{host}/{path}"
 
 
+def test_ioc_value_digest_preserves_url_path_case():
+    upper = ioc_value_digest("https://evil.example/A")
+    lower = ioc_value_digest("https://evil.example/a")
+    assert upper != lower
+
+
 def test_ioc_value_digest_is_fixed_width():
     short = ioc_value_digest("https://evil.example/a")
     long = ioc_value_digest(_oversized_phish_url())
     assert len(short) == 32
     assert len(long) == 32
     assert short != long
+
+
+def test_retro_match_ignores_cross_type_digest_collision(tmp_path, monkeypatch):
+    """Same value under different IOC types must not retro-match OTX."""
+    async def run():
+        db_path = str(tmp_path / "retro-type.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        await init_db()
+        db = await database.get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role)
+                VALUES (1, 'pytest-admin', 'hash', 'admin')
+                """
+            )
+            await db.execute(
+                """
+                INSERT INTO ioc_watchlist (user_id, ioc_type, ioc_value, label)
+                VALUES (1, 'domain', 'shared.example', 'watch')
+                """
+            )
+            await db.execute(
+                """
+                INSERT INTO otx_pulse_iocs (pulse_id, ioc_type, ioc_value, description)
+                VALUES ('p-cross', 'IPv4', 'shared.example', 'ip row')
+                """
+            )
+            await db.commit()
+            from ioc.retro_match import find_retro_matches
+
+            matches = await find_retro_matches(db)
+            assert not any(m.get("source") == "otx" for m in matches)
+        finally:
+            await db.close()
+
+    run_db_test(run())
 
 
 def test_upsert_ti_mirror_accepts_oversized_url(tmp_path, monkeypatch):
