@@ -13,6 +13,7 @@ from weakref import WeakKeyDictionary
 
 from db.cache import set_feed_cache
 from db.cve import _SQLITE_IN_CHUNK
+from db.ioc_digest import ioc_value_digest
 from db.timeutil import utcnow_str
 from db.metadata import _parse_json_list
 from db.types import DbConnection
@@ -109,10 +110,11 @@ _DELETE_OTX_PULSE_IOCS_PG = "DELETE FROM otx_pulse_iocs WHERE pulse_id = $1"
 
 _UPSERT_OTX_PULSE_IOCS_SQLITE = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at,
-    raw_ioc, host_ioc
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    pulse_id, ioc_type, ioc_value, ioc_value_digest, description, fetched_at,
+    observed_at, raw_ioc, host_ioc
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
+    ioc_value_digest = excluded.ioc_value_digest,
     description = excluded.description,
     fetched_at = excluded.fetched_at,
     observed_at = excluded.observed_at,
@@ -122,10 +124,11 @@ ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
 
 _UPSERT_OTX_PULSE_IOCS_PG = """
 INSERT INTO otx_pulse_iocs (
-    pulse_id, ioc_type, ioc_value, description, fetched_at, observed_at,
-    raw_ioc, host_ioc
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-ON CONFLICT(pulse_id, ioc_type, ioc_value) DO UPDATE SET
+    pulse_id, ioc_type, ioc_value, ioc_value_digest, description, fetched_at,
+    observed_at, raw_ioc, host_ioc
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+ON CONFLICT(pulse_id, ioc_type, ioc_value_digest) DO UPDATE SET
+    ioc_value = excluded.ioc_value,
     description = excluded.description,
     fetched_at = excluded.fetched_at,
     observed_at = excluded.observed_at,
@@ -140,7 +143,7 @@ WHERE pulse_id = ?
 """
 
 _SELECT_OTX_PULSE_IOCS_PG = """
-SELECT ioc_type, ioc_value
+SELECT ioc_type, ioc_value, ioc_value_digest
 FROM otx_pulse_iocs
 WHERE pulse_id = $1
 """
@@ -152,7 +155,7 @@ WHERE pulse_id = ? AND ioc_type = ? AND ioc_value = ?
 
 _DELETE_STALE_OTX_PULSE_IOC_PG = """
 DELETE FROM otx_pulse_iocs
-WHERE pulse_id = $1 AND ioc_type = $2 AND ioc_value = $3
+WHERE pulse_id = $1 AND ioc_type = $2 AND ioc_value_digest = $3
 """
 
 _READ_OTX_PULSE_IOCS_FRESH_SQLITE = """
@@ -471,11 +474,13 @@ async def replace_otx_pulse_iocs(
         if norm is None:
             continue
         meta = norm.get("ioc_meta") or {}
+        ioc_value = norm.get("ioc_value") or ""
         normalized_rows.append(
             (
                 pulse_id,
                 norm.get("ioc_type") or "",
-                norm.get("ioc_value") or "",
+                ioc_value,
+                ioc_value_digest(ioc_value),
                 norm.get("description") or "",
                 utcnow_str(),
                 str(norm.get("observed_at") or "").strip() or None,
@@ -486,14 +491,24 @@ async def replace_otx_pulse_iocs(
     if not normalized_rows:
         await db.execute(delete_sql, (pulse_id,))
         return
-    new_keys = {(row[1], row[2]) for row in normalized_rows}
+    if pg:
+        new_keys = {(row[1], row[3]) for row in normalized_rows}
+    else:
+        new_keys = {(row[1], row[2]) for row in normalized_rows}
     await db.executemany(upsert_sql, normalized_rows)
     existing = await db.execute_fetchall(select_sql, (pulse_id,))
-    stale = [
-        (pulse_id, row["ioc_type"], row["ioc_value"])
-        for row in existing
-        if (row["ioc_type"], row["ioc_value"]) not in new_keys
-    ]
+    if pg:
+        stale = [
+            (pulse_id, row["ioc_type"], row["ioc_value_digest"])
+            for row in existing
+            if (row["ioc_type"], row["ioc_value_digest"]) not in new_keys
+        ]
+    else:
+        stale = [
+            (pulse_id, row["ioc_type"], row["ioc_value"])
+            for row in existing
+            if (row["ioc_type"], row["ioc_value"]) not in new_keys
+        ]
     if stale:
         await db.executemany(stale_delete_sql, stale)
 

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from db.config import is_postgres
 from db.connection import get_connection
+from db.ioc_digest import ioc_value_digest
 from db.types import DbConnection
 
 _NORMALIZE_EPSS_SCORES_SQL = (
@@ -103,6 +104,23 @@ async def _backfill_sqlite_host_ioc(db: DbConnection) -> None:
             (host, row["pulse_id"], row["ioc_type"], row["ioc_value"]),
         )
     await db.commit()
+
+
+async def _backfill_sqlite_ioc_value_digest(db: DbConnection) -> None:
+    """Backfill ioc_value_digest for legacy SQLite rows."""
+    for table in ("ti_mirror_iocs", "otx_pulse_iocs"):
+        rows = await db.execute_fetchall(
+            f"SELECT rowid AS _rowid, ioc_value FROM {table} "
+            "WHERE ioc_value_digest = '' OR ioc_value_digest IS NULL"
+        )
+        for row in rows:
+            digest = ioc_value_digest(row["ioc_value"])
+            await db.execute(
+                f"UPDATE {table} SET ioc_value_digest = ? WHERE rowid = ?",
+                (digest, row["_rowid"]),
+            )
+    await db.commit()
+
 
 async def run_postgres_migrations() -> None:
     """Apply Alembic DDL before the asyncpg pool opens (avoids migration lock waits)."""
@@ -541,6 +559,7 @@ async def init_db() -> None:
                 pulse_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL DEFAULT '',
                 ioc_value TEXT NOT NULL,
+                ioc_value_digest TEXT NOT NULL DEFAULT '',
                 description TEXT DEFAULT '',
                 fetched_at TEXT DEFAULT (datetime('now')),
                 observed_at TEXT,
@@ -835,6 +854,7 @@ async def init_db() -> None:
                 ref_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
+                ioc_value_digest TEXT NOT NULL DEFAULT '',
                 raw_ioc TEXT DEFAULT '',
                 host_ioc TEXT DEFAULT '',
                 malware TEXT DEFAULT '',
@@ -845,8 +865,8 @@ async def init_db() -> None:
                 PRIMARY KEY (source, ref_id)
             );
 
-            CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_value
-                ON ti_mirror_iocs(ioc_type, ioc_value);
+            CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest
+                ON ti_mirror_iocs(ioc_type, ioc_value_digest);
             CREATE INDEX IF NOT EXISTS idx_ti_mirror_host
                 ON ti_mirror_iocs(host_ioc);
             CREATE INDEX IF NOT EXISTS idx_ti_mirror_source
@@ -960,6 +980,13 @@ async def init_db() -> None:
             "ALTER TABLE otx_pulse_iocs ADD COLUMN observed_at TEXT",
             "ALTER TABLE otx_pulse_iocs ADD COLUMN raw_ioc TEXT DEFAULT ''",
             "ALTER TABLE otx_pulse_iocs ADD COLUMN host_ioc TEXT DEFAULT ''",
+            "ALTER TABLE ti_mirror_iocs ADD COLUMN ioc_value_digest TEXT DEFAULT ''",
+            "ALTER TABLE otx_pulse_iocs ADD COLUMN ioc_value_digest TEXT DEFAULT ''",
+            "DROP INDEX IF EXISTS idx_ti_mirror_type_value",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(ioc_type, ioc_value_digest)",
+            "DROP INDEX IF EXISTS idx_otx_pulse_iocs_type_value",
+            "DROP INDEX IF EXISTS idx_otx_pulse_iocs_value",
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(ioc_type, ioc_value_digest)",
             """
             CREATE TABLE IF NOT EXISTS correlation_campaigns (
                 campaign_id TEXT PRIMARY KEY,
@@ -1007,7 +1034,7 @@ async def init_db() -> None:
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_correlation_campaign_members_cve ON correlation_campaign_members(cve_id)",
-            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_value ON otx_pulse_iocs(ioc_type, ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_digest ON otx_pulse_iocs(ioc_type, ioc_value_digest)",
             """
             CREATE TABLE IF NOT EXISTS correlation_suppressions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1183,6 +1210,7 @@ async def init_db() -> None:
                 ref_id TEXT NOT NULL,
                 ioc_type TEXT NOT NULL,
                 ioc_value TEXT NOT NULL,
+                ioc_value_digest TEXT NOT NULL DEFAULT '',
                 raw_ioc TEXT DEFAULT '',
                 host_ioc TEXT DEFAULT '',
                 malware TEXT DEFAULT '',
@@ -1193,7 +1221,7 @@ async def init_db() -> None:
                 PRIMARY KEY (source, ref_id)
             )
             """,
-            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_value ON ti_mirror_iocs(ioc_type, ioc_value)",
+            "CREATE INDEX IF NOT EXISTS idx_ti_mirror_type_digest ON ti_mirror_iocs(ioc_type, ioc_value_digest)",
             "CREATE INDEX IF NOT EXISTS idx_ti_mirror_host ON ti_mirror_iocs(host_ioc)",
             "CREATE INDEX IF NOT EXISTS idx_ti_mirror_source ON ti_mirror_iocs(source)",
             """
@@ -1266,6 +1294,11 @@ async def init_db() -> None:
 
         try:
             await _backfill_sqlite_host_ioc(db)
+        except Exception:
+            pass
+
+        try:
+            await _backfill_sqlite_ioc_value_digest(db)
         except Exception:
             pass
 

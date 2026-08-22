@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from correlation.ioc_normalize import _url_host, normalize_ioc
+from db.ioc_digest import ioc_value_digest
 from sources.registry import CATALOG_SOURCES, SourceDescriptor
 
 
@@ -65,8 +66,16 @@ def _mirror_clauses(
     for (join_column, mirror_type), value in lookup.values():
         if join_column not in ("host_ioc", "ioc_value"):
             raise ValueError(f"unexpected mirror join column: {join_column!r}")
-        clauses.append(f"(ioc_type = ? AND LOWER({join_column}) = ?)")
-        params.extend([mirror_type, value])
+        if join_column == "ioc_value":
+            digest = ioc_value_digest(value)
+            clauses.append(
+                "(ioc_type = ? AND (ioc_value_digest = ? OR "
+                "(ioc_value_digest = '' AND LOWER(ioc_value) = ?)))"
+            )
+            params.extend([mirror_type, digest, value])
+        else:
+            clauses.append("(ioc_type = ? AND LOWER(host_ioc) = ?)")
+            params.extend([mirror_type, value])
     return " OR ".join(clauses), params
 
 
