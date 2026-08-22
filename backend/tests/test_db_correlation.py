@@ -32,7 +32,8 @@ def test_correlation_sql_uses_native_placeholders():
     assert "$1" in correlation_mod._READ_OTX_CVE_PULSES_PG
     assert "$2" in correlation_mod._READ_OTX_CVE_PULSES_PG
     assert "?" in correlation_mod._READ_OTX_CVE_PULSES_SQLITE
-    assert "ON CONFLICT(pulse_id, ioc_type, ioc_value)" in correlation_mod._UPSERT_OTX_PULSE_IOCS_PG
+    assert "ON CONFLICT(pulse_id, ioc_type, ioc_value_digest)" in correlation_mod._UPSERT_OTX_PULSE_IOCS_PG
+    assert "ON CONFLICT(pulse_id, ioc_type, ioc_value)" in correlation_mod._UPSERT_OTX_PULSE_IOCS_SQLITE
     assert "$6" in correlation_mod._UPSERT_CORRELATION_SUPPRESSION_PG
     assert "ON CONFLICT(cve_id, scope, scope_key)" in correlation_mod._UPSERT_CORRELATION_SUPPRESSION_PG
 

@@ -13,6 +13,7 @@ from typing import Any
 from correlation.ioc_normalize import normalize_ioc
 from correlation.source_evidence import batch_source_evidence
 from db.cve import get_related_cves
+from db.ioc_digest import ioc_value_digest
 from investigations.contracts import (
     EdgeClass,
     EntityRef,
@@ -625,17 +626,22 @@ async def _ioc_edges(db, entity: EntityRef, flags: _HopFlags) -> list[_Candidate
     if normalized is None:
         return []
     canon_type, canon_value, _meta = normalized
+    value_digest = ioc_value_digest(canon_value)
 
     rows = await db.execute_fetchall(
         """
         SELECT DISTINCT cp.cve_id, cp.fetched_at
         FROM otx_pulse_iocs pi
         INNER JOIN otx_cve_pulses cp ON cp.pulse_id = pi.pulse_id
-        WHERE LOWER(pi.ioc_type) = LOWER(?) AND LOWER(pi.ioc_value) = LOWER(?)
+        WHERE LOWER(pi.ioc_type) = LOWER(?)
+          AND (
+            pi.ioc_value_digest = ?
+            OR (pi.ioc_value_digest = '' AND LOWER(pi.ioc_value) = LOWER(?))
+          )
         ORDER BY cp.cve_id ASC
         LIMIT ?
         """,
-        (canon_type, canon_value, _MAX_HOP_ROWS),
+        (canon_type, value_digest, canon_value, _MAX_HOP_ROWS),
     )
     edges: list[_CandidateEdge] = []
     for row in rows:
@@ -845,13 +851,18 @@ async def _ioc_row_exists(db, entity_id: str) -> bool:
     if normalized is None:
         return False
     canon_type, canon_value, _meta = normalized
+    value_digest = ioc_value_digest(canon_value)
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM otx_pulse_iocs
-        WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
+        WHERE LOWER(ioc_type) = LOWER(?)
+          AND (
+            ioc_value_digest = ?
+            OR (ioc_value_digest = '' AND LOWER(ioc_value) = LOWER(?))
+          )
         LIMIT 1
         """,
-        (canon_type, canon_value),
+        (canon_type, value_digest, canon_value),
     )
     if rows:
         return True
@@ -863,13 +874,18 @@ async def _mirror_ioc_exists(db, canon_type: str, canon_value: str) -> bool:
         mirror_type = _mirror_ioc_type(canon_type)
     except ValueError:
         return False
+    value_digest = ioc_value_digest(canon_value)
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM ti_mirror_iocs
-        WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
+        WHERE LOWER(ioc_type) = LOWER(?)
+          AND (
+            ioc_value_digest = ?
+            OR (ioc_value_digest = '' AND LOWER(ioc_value) = LOWER(?))
+          )
         LIMIT 1
         """,
-        (mirror_type, canon_value.lower()),
+        (mirror_type, value_digest, canon_value.lower()),
     )
     return bool(rows)
 

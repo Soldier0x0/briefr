@@ -11,21 +11,34 @@ from correlation.confidence import (
 from correlation.config import get_hub_cve_pulse_cap
 from correlation.confirm import confirmation_receipt, confirmations_for_iocs_batch
 from correlation.narrative import infrastructure_summary
-from correlation.ioc_normalize import is_noise_ip
+from correlation.ioc_normalize import is_noise_ip, normalize_ioc
 from correlation.source_evidence import (
     batch_source_evidence,
     corroboration_receipt,
     ioc_edge_key,
 )
+from db.ioc_digest import ioc_value_digest
 
 _CONFIDENCE_RANK = {"low": 0, "medium": 1, "high": 2}
+
+_SHARED_IOC_DIGEST_JOIN = """
+    oi2.ioc_type = oi.ioc_type
+    AND (
+        (oi.ioc_value_digest <> '' AND oi2.ioc_value_digest <> ''
+         AND oi2.ioc_value_digest = oi.ioc_value_digest)
+        OR (
+            (oi.ioc_value_digest = '' OR oi2.ioc_value_digest = '')
+            AND LOWER(oi2.ioc_value) = LOWER(oi.ioc_value)
+        )
+    )
+"""
 
 
 async def _shared_ioc_rows(db, cve_id: str) -> list:
     cve_upper = cve_id.upper()
     hub_cap = get_hub_cve_pulse_cap()
     return await db.execute_fetchall(
-        """
+        f"""
         SELECT ocp2.cve_id AS cve_id_b,
                oi.ioc_type,
                oi.ioc_value,
@@ -35,7 +48,7 @@ async def _shared_ioc_rows(db, cve_id: str) -> list:
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
         JOIN otx_pulse_iocs oi2
-            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+            ON {_SHARED_IOC_DIGEST_JOIN}
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id != ?
         JOIN cves c ON c.cve_id = ocp2.cve_id
         LEFT JOIN ioc_degree deg
@@ -53,12 +66,12 @@ async def count_hub_suppressed_ioc_peers(db, cve_id: str) -> int:
     cve_upper = cve_id.upper()
     hub_cap = get_hub_cve_pulse_cap()
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT COUNT(DISTINCT ocp2.cve_id) AS n
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
         JOIN otx_pulse_iocs oi2
-            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+            ON {_SHARED_IOC_DIGEST_JOIN}
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id != ?
         JOIN cves c ON c.cve_id = ocp2.cve_id
         LEFT JOIN ioc_degree deg
@@ -190,12 +203,12 @@ async def ioc_edges_between(
 ) -> list[dict[str, Any]]:
     """Shared IOC edges for a specific CVE pair (campaign enrichment)."""
     rows = await db.execute_fetchall(
-        """
+        f"""
         SELECT oi.ioc_type, oi.ioc_value
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
         JOIN otx_pulse_iocs oi2
-            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+            ON {_SHARED_IOC_DIGEST_JOIN}
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id = ?
         GROUP BY oi.ioc_type, oi.ioc_value
         """,
@@ -214,12 +227,11 @@ async def related_cves_for_ioc(
     db, ioc_type: str, ioc_value: str, limit: int = 50
 ) -> list[str]:
     """CVE IDs sharing a canonical IOC (unified with correlation tables)."""
-    from correlation.ioc_normalize import normalize_ioc
-
     normalized = normalize_ioc(ioc_type, ioc_value)
     if normalized is None:
         return []
     canon_type, canon_value, _meta = normalized
+    value_digest = ioc_value_digest(canon_value)
 
     rows = await db.execute_fetchall(
         """
@@ -227,12 +239,16 @@ async def related_cves_for_ioc(
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id
         JOIN cves c ON c.cve_id = ocp.cve_id
-        WHERE oi.ioc_type = ? AND oi.ioc_value = ?
+        WHERE LOWER(oi.ioc_type) = LOWER(?)
+          AND (
+            oi.ioc_value_digest = ?
+            OR (oi.ioc_value_digest = '' AND LOWER(oi.ioc_value) = LOWER(?))
+          )
         GROUP BY ocp.cve_id
         ORDER BY ocp.cve_id ASC
         LIMIT ?
         """,
-        (canon_type, canon_value, limit),
+        (canon_type, value_digest, canon_value, limit),
     )
     return [row["cve_id"] for row in rows]
 
@@ -255,7 +271,7 @@ async def batch_ioc_edges_for_peers(
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = $1
         JOIN otx_pulse_iocs oi2
-            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+            ON {_SHARED_IOC_DIGEST_JOIN}
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id IN ({placeholders})
         GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
         """ if pg else f"""
@@ -263,7 +279,7 @@ async def batch_ioc_edges_for_peers(
         FROM otx_pulse_iocs oi
         JOIN otx_cve_pulses ocp ON ocp.pulse_id = oi.pulse_id AND ocp.cve_id = ?
         JOIN otx_pulse_iocs oi2
-            ON oi2.ioc_type = oi.ioc_type AND oi2.ioc_value = oi.ioc_value
+            ON {_SHARED_IOC_DIGEST_JOIN}
         JOIN otx_cve_pulses ocp2 ON ocp2.pulse_id = oi2.pulse_id AND ocp2.cve_id IN ({placeholders})
         GROUP BY ocp2.cve_id, oi.ioc_type, oi.ioc_value
         """,

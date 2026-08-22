@@ -6,6 +6,7 @@ import ipaddress
 import re
 
 from correlation.ioc_normalize import normalize_ioc
+from db.ioc_digest import ioc_value_digest
 from investigations.contracts import EntityRef, GRAPH_ENTITY_TYPES, RESOLVE_ROOT_ENTITY_TYPES
 
 _CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
@@ -163,14 +164,19 @@ async def _ioc_exists(db, entity_id: str) -> bool:
     if normalized is None:
         return False
     _canon_type, canon_value, _meta = normalized
+    value_digest = ioc_value_digest(canon_value)
 
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM otx_pulse_iocs
-        WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
+        WHERE LOWER(ioc_type) = LOWER(?)
+          AND (
+            ioc_value_digest = ?
+            OR (ioc_value_digest = '' AND LOWER(ioc_value) = LOWER(?))
+          )
         LIMIT 1
         """,
-        (canon_type, canon_value),
+        (canon_type, value_digest, canon_value),
     )
     if rows:
         return True
@@ -178,10 +184,14 @@ async def _ioc_exists(db, entity_id: str) -> bool:
     rows = await db.execute_fetchall(
         """
         SELECT 1 FROM ti_mirror_iocs
-        WHERE LOWER(ioc_type) = LOWER(?) AND LOWER(ioc_value) = LOWER(?)
+        WHERE LOWER(ioc_type) = LOWER(?)
+          AND (
+            ioc_value_digest = ?
+            OR (ioc_value_digest = '' AND LOWER(ioc_value) = LOWER(?))
+          )
         LIMIT 1
         """,
-        (_mirror_ioc_type(canon_type), canon_value.lower()),
+        (_mirror_ioc_type(canon_type), value_digest, canon_value.lower()),
     )
     return bool(rows)
 
