@@ -76,8 +76,62 @@ def upgrade() -> None:
         "ON intel.otx_pulse_iocs (ioc_type, ioc_value_digest)"
     )
 
+    # Auto-populate digest on any write path (tests, legacy SQL, ad-hoc inserts).
+    op.execute(
+        """
+        CREATE OR REPLACE FUNCTION app.set_ioc_value_digest()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+            IF NEW.ioc_value_digest IS NULL OR NEW.ioc_value_digest = '' THEN
+                NEW.ioc_value_digest := md5(lower(NEW.ioc_value));
+            END IF;
+            RETURN NEW;
+        END;
+        $$
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER ti_mirror_iocs_digest_trg
+        BEFORE INSERT OR UPDATE OF ioc_value ON app.ti_mirror_iocs
+        FOR EACH ROW EXECUTE FUNCTION app.set_ioc_value_digest()
+        """
+    )
+    op.execute(
+        """
+        CREATE OR REPLACE FUNCTION intel.set_ioc_value_digest()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+            IF NEW.ioc_value_digest IS NULL OR NEW.ioc_value_digest = '' THEN
+                NEW.ioc_value_digest := md5(lower(NEW.ioc_value));
+            END IF;
+            RETURN NEW;
+        END;
+        $$
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER otx_pulse_iocs_digest_trg
+        BEFORE INSERT OR UPDATE OF ioc_value ON intel.otx_pulse_iocs
+        FOR EACH ROW EXECUTE FUNCTION intel.set_ioc_value_digest()
+        """
+    )
+
 
 def downgrade() -> None:
+    op.execute(
+        "DROP TRIGGER IF EXISTS otx_pulse_iocs_digest_trg ON intel.otx_pulse_iocs"
+    )
+    op.execute("DROP FUNCTION IF EXISTS intel.set_ioc_value_digest()")
+    op.execute(
+        "DROP TRIGGER IF EXISTS ti_mirror_iocs_digest_trg ON app.ti_mirror_iocs"
+    )
+    op.execute("DROP FUNCTION IF EXISTS app.set_ioc_value_digest()")
     op.execute("DROP INDEX IF EXISTS intel.idx_otx_pulse_iocs_type_digest")
     op.execute(
         "CREATE INDEX IF NOT EXISTS idx_otx_pulse_iocs_type_value "
