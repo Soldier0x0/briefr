@@ -4,20 +4,47 @@ import { investigationEntityPath, buildInvestigationRelationshipQuery } from './
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
 
-// Shared in-flight refresh promise so concurrent 401s share one
-// /api/auth/refresh call instead of each racing to rotate the same refresh
-// token — a second independent call would find the token already rotated
-// and trip the backend's reuse-detection, revoking every session.
+// Shared in-flight refresh promise so concurrent 401s share one rotation.
+// Cross-tab: navigator.locks + GET /auth/me probe so a second tab does not
+// POST the already-rotated refresh cookie (reuse detection revokes every
+// session, including Remember me / 30-day briefr_rt).
 // Callers (including AuthContext bootstrap via fetchMe → request) must use
-// this helper — never bare-fetch /auth/refresh — or a parallel refresh can
-// revoke the session and leave BRIEF widgets sticky "Not authenticated"
-// while the header still briefly shows the cached user.
+// this helper — never bare-fetch /auth/refresh.
 let refreshPromise = null
+const REFRESH_LOCK = 'briefr-auth-refresh'
+
+async function probeSessionAlive() {
+  try {
+    const res = await fetch(`${BASE}/auth/me`, { credentials: 'include' })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+async function postRefresh() {
+  const res = await fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+  return res.ok
+}
+
+/** Serialize rotation across tabs. Two tabs both POSTing /auth/refresh with the
+ *  same cookie trips reuse detection and revokes every session (Remember me
+ *  included). Web Locks are origin-wide; if unavailable, in-tab promise only. */
+async function rotateAccessToken() {
+  if (await probeSessionAlive()) return true
+  return postRefresh()
+}
+
+function withRefreshLock(fn) {
+  const locks = globalThis.navigator?.locks
+  if (!locks?.request) return fn()
+  return locks.request(REFRESH_LOCK, fn)
+}
 
 export function refreshAccessToken() {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then(res => res.ok)
+    refreshPromise = withRefreshLock(rotateAccessToken)
+      .then((ok) => Boolean(ok))
       .catch(() => false)
       .finally(() => { refreshPromise = null })
   }

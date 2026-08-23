@@ -8,10 +8,15 @@ import { mock, test } from 'node:test'
  */
 
 test('refreshAccessToken dedupes concurrent callers onto one /auth/refresh', async () => {
+  let meCalls = 0
   let refreshCalls = 0
   const originalFetch = globalThis.fetch
   globalThis.fetch = mock.fn(async (url, opts) => {
     const path = typeof url === 'string' ? url : String(url)
+    if (path.includes('/auth/me')) {
+      meCalls += 1
+      return { ok: false, status: 401 }
+    }
     if (path.includes('/auth/refresh')) {
       refreshCalls += 1
       assert.equal(opts?.method, 'POST')
@@ -34,7 +39,32 @@ test('refreshAccessToken dedupes concurrent callers onto one /auth/refresh', asy
     assert.equal(a, true)
     assert.equal(b, true)
     assert.equal(c, true)
+    assert.equal(meCalls, 1, 'session probe must run once per rotation')
     assert.equal(refreshCalls, 1, 'concurrent refreshAccessToken must share one HTTP call')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('refreshAccessToken skips /auth/refresh when another holder already restored /auth/me', async () => {
+  let refreshCalls = 0
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = mock.fn(async (url) => {
+    const path = typeof url === 'string' ? url : String(url)
+    if (path.includes('/auth/me')) {
+      return { ok: true, status: 200 }
+    }
+    if (path.includes('/auth/refresh')) {
+      refreshCalls += 1
+      return { ok: true, status: 200 }
+    }
+    throw new Error(`unexpected fetch: ${path}`)
+  })
+
+  try {
+    const api = await import(`../api.js?refreshSkip=${Date.now()}`)
+    assert.equal(await api.refreshAccessToken(), true)
+    assert.equal(refreshCalls, 0, 'must not rotate when /auth/me already succeeds')
   } finally {
     globalThis.fetch = originalFetch
   }
