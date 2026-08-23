@@ -127,7 +127,12 @@ From a self-hosted deployment (dark theme, BRIEFR accent `#e85533`).
 <tr>
 <td align="center"><img src="docs/assets/screenshots/investigate.png" alt="INVESTIGATE graph" width="360" /><br><sub>INVESTIGATE</sub></td>
 <td align="center"><img src="docs/assets/screenshots/ioc-lookup.png" alt="IOC LOOKUP" width="360" /><br><sub>IOC LOOKUP</sub></td>
-<td align="center"><img src="docs/assets/screenshots/incidents-news.png" alt="Incidents and News" width="360" /><br><sub>Incidents &amp; News</sub></td>
+<td align="center"><img src="docs/assets/screenshots/advisories-intel.png" alt="Advisories and Intel" width="360" /><br><sub>Advisories &amp; Intel</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/assets/screenshots/forge.png" alt="FORGE MITRE coverage and hunt packs" width="360" /><br><sub>FORGE</sub></td>
+<td align="center"><img src="docs/assets/screenshots/admin-analyst.png" alt="Admin analyst view" width="360" /><br><sub>Admin · Analyst</sub></td>
+<td align="center"><img src="docs/assets/screenshots/admin-operator.png" alt="Admin operator view" width="360" /><br><sub>Admin · Operator</sub></td>
 </tr>
 </table>
 

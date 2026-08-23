@@ -287,21 +287,44 @@ async function main() {
   await sleep(1500);
   await shot(page, 'ioc-lookup.png');
 
-  await clickTab(page, 'INCIDENTS & NEWS');
+  await clickTab(page, 'ADVISORIES & INTEL');
   await waitForIncidentsContent(page);
-  await shot(page, 'incidents-news.png');
+  await shot(page, 'advisories-intel.png');
 
-  await page.goto(`${baseUrl}/admin?p=security`, { waitUntil: 'networkidle', timeout: 120000 });
+  await clickTab(page, 'FORGE');
+  await page.waitForSelector('.forge-root, .forge-page, [class*="forge"]', { timeout: 30000 });
+  await sleep(1500);
+  await shot(page, 'forge.png');
+
+  await clickTab(page, 'INVESTIGATE');
+  await page.waitForSelector('.investigate-canvas, .investigate-root, [class*="investigate"]', {
+    timeout: 30000,
+  });
+  await sleep(1500);
+  await shot(page, 'investigate.png');
+
+  await page.goto(`${baseUrl}/admin?p=overview`, { waitUntil: 'networkidle', timeout: 120000 });
   await page.waitForSelector('.admin-root, .admin-page-title', { timeout: 60000 });
   await sleep(2000);
-  await shot(page, 'admin-security.png');
+  await shot(page, 'admin-analyst.png');
+
+  await page.goto(`${baseUrl}/admin?p=security`, { waitUntil: 'networkidle', timeout: 120000 });
+  await page.evaluate(() => {
+    localStorage.setItem('briefr-admin-mode', 'operator');
+    sessionStorage.setItem('briefr-operator-ack', '1');
+  });
+  await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+  await page.waitForSelector('.admin-root, .admin-page-title', { timeout: 60000 });
+  await sleep(2000);
+  await shot(page, 'admin-operator.png');
 
   const aliases = [
     ['brief.png', 'ui-brief-tab.png'],
     ['feed.png', 'ui-feed-tab.png'],
     ['detail-drawer.png', 'ui-detail-drawer.png'],
     ['ioc-lookup.png', 'ui-ioc-lookup.png'],
-    ['admin-security.png', 'ui-admin-security.png'],
+    ['admin-analyst.png', 'ui-admin-analyst.png'],
+    ['admin-operator.png', 'ui-admin-operator.png'],
   ];
   for (const [src, dest] of aliases) {
     await copyFile(path.join(outDir, src), path.join(assetDir, dest));
