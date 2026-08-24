@@ -418,7 +418,7 @@ Signed-in users keep their pinned CVEs in `watchlist`; legacy snooze data is cle
 2. **API:** `GET/POST/DELETE /api/watchlist` (`routers/watchlist.py`). POST validates the CVE exists; snooze default is 7 days (`snooze_days` 1–365).
 3. **Feed behaviour (`GET /api/cves`):** `LEFT JOIN` active watchlist rows. Pinned CVEs sort first. `watchlist_only=true` returns watchlist rows for the feed quick filter.
 4. **UI:** `useWatchlist` hook loads pins on mount and clears legacy snoozes via `DELETE /api/watchlist/snoozes`. Pin on `CVECard` and `DetailDrawer`; **WATCHLIST** quick-filter chip. Mutations bump a version counter so `CVEFeed` refetches without a full page reload. No `localStorage`. Snooze controls were removed from the UI (API retained for migration).
-5. **Monitor alerts:** `watchlist_monitor_alerts` checks pinned CVEs hourly for KEV / EPSS / PoC changes and emits optional `watchlist_alert` webhooks.
+5. **Monitor alerts:** `watchlist_monitor_alerts` checks watched CVEs hourly for KEV / EPSS / PoC / optional patch / withdrawn changes, gated by `GET/PUT /api/admin/watchlist/policy`. All-triggers-on is digest, not firehose.
 
 ### G1. SigmaHQ local detection index (2026-07)
 

@@ -111,6 +111,7 @@ from webhooks.alerts import (
     process_kev_stack_alerts,
     process_watchlist_kev_alerts,
     process_watchlist_monitor_alerts,
+    process_watchlist_withdrawn_alerts,
 )
 from backup.manager import run_backup
 from structured_logging import job_log_context, run_id_var
@@ -379,6 +380,8 @@ async def _run_nvd_incremental_sync() -> None:
             new_watermark = mod_end_iso
 
         updated_ids: list[str] = []
+        if rejected_ids:
+            await process_watchlist_withdrawn_alerts(rejected_ids)
         db = await get_db()
         try:
             _job_progress["nvd_incremental_sync"] = f"Writing {len(cves)} CVEs to database, purging {len(rejected_ids)} rejected IDs…"
@@ -1464,6 +1467,7 @@ async def run_cvelistv5_sync() -> bool:
                     )
                 if rejected_ids:
                     _job_progress["cvelistv5_incremental_sync"] = f"Purging {len(rejected_ids)} CVEs rejected by cvelistV5 maintainers…"
+                    await process_watchlist_withdrawn_alerts(rejected_ids, db=db)
                     purged = await delete_cves_by_ids(db, rejected_ids)
                 await set_sync_state_value(db, CVELISTV5_SYNC_STATE_KEY, new_head)
                 await db.commit()

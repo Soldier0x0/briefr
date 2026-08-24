@@ -12,7 +12,9 @@ from datetime import datetime, timedelta, timezone
 from db.timeutil import utcnow_for_db, utcnow_str
 from db.types import DbConnection
 
-TRACKED_CVE_FIELDS = frozenset({"cvss_score", "epss_score", "is_kev", "has_poc"})
+TRACKED_CVE_FIELDS = frozenset(
+    {"cvss_score", "epss_score", "is_kev", "has_poc", "patch_available"}
+)
 
 _SQLITE_IN_CHUNK = 500
 
@@ -362,6 +364,7 @@ def _append_upsert_change_rows(
 ) -> None:
     incoming_poc = 1 if cve.get("has_poc") else 0
     incoming_kev = 1 if cve.get("is_kev") else 0
+    incoming_patch = 1 if cve.get("patch_available") else 0
     new_poc = (1 if prior["has_poc"] or incoming_poc else 0) if prior else incoming_poc
     new_cvss = cve.get("cvss_score")
 
@@ -377,11 +380,15 @@ def _append_upsert_change_rows(
             )
         if prior["has_poc"] == 0 and new_poc == 1:
             history.append((cve_id, "has_poc", "0", "1"))
+        if int(prior.get("patch_available") or 0) == 0 and incoming_patch == 1:
+            history.append((cve_id, "patch_available", "0", "1"))
     else:
         if incoming_kev:
             history.append((cve_id, "is_kev", "0", "1"))
         if incoming_poc:
             history.append((cve_id, "has_poc", "0", "1"))
+        if incoming_patch:
+            history.append((cve_id, "patch_available", "0", "1"))
         if new_cvss is not None:
             history.append(
                 (cve_id, "cvss_score", "", _change_value_str(new_cvss))
@@ -411,7 +418,7 @@ async def _load_cve_change_snapshots(
         placeholders = _in_placeholders(len(chunk), pg=pg, start=1)
         rows = await db.execute_fetchall(
             f"""
-            SELECT cve_id, cvss_score, epss_score, is_kev, has_poc
+            SELECT cve_id, cvss_score, epss_score, is_kev, has_poc, patch_available
             FROM cves WHERE cve_id IN ({placeholders})
             """,
             tuple(chunk),
@@ -422,6 +429,7 @@ async def _load_cve_change_snapshots(
                 "epss_score": row["epss_score"],
                 "is_kev": int(row["is_kev"] or 0),
                 "has_poc": int(row["has_poc"] or 0),
+                "patch_available": int(row["patch_available"] or 0),
             }
     return snapshots
 

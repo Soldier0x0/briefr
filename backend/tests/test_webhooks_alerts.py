@@ -33,6 +33,7 @@ from webhooks.alerts import (
     process_kev_stack_alerts,
     process_watchlist_kev_alerts,
     process_watchlist_monitor_alerts,
+    process_watchlist_withdrawn_alerts,
 )
 
 
@@ -353,6 +354,108 @@ def test_watchlist_monitor_second_epss_jump_alerts(tmp_path, monkeypatch):
     run_db_test(seed_second_jump())
     assert run_db_test(process_watchlist_monitor_alerts()) == 1
     assert len(calls) == 2
+
+
+def test_watchlist_monitor_skips_disabled_epss(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2005", "policy skip"))
+
+    async def seed():
+        from watchlist.policy import save_policy
+
+        db = await get_db()
+        try:
+            await save_policy(db, {"triggers": {"epss": False, "poc": True}})
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2005', 'pin')"
+            )
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2005",
+                    "epss_score",
+                    "0.05",
+                    "0.20",
+                    _history_ts(1),
+                    "CVE-2024-2005",
+                    "has_poc",
+                    "0",
+                    "1",
+                    _history_ts(0.5),
+                ),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    sent = run_db_test(process_watchlist_monitor_alerts())
+    assert sent == 1
+    assert len(calls) == 1
+
+
+def test_watchlist_monitor_patch_when_enabled(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2006", "patch target"))
+
+    async def seed():
+        from watchlist.policy import save_policy
+
+        db = await get_db()
+        try:
+            await save_policy(db, {"triggers": {"patch": True}})
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2006', 'pin')"
+            )
+            await db.execute(
+                """
+                INSERT INTO cve_change_history (
+                    cve_id, field_name, old_value, new_value, detected_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2006",
+                    "patch_available",
+                    "0",
+                    "1",
+                    _history_ts(1),
+                ),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    assert run_db_test(process_watchlist_monitor_alerts()) == 1
+    assert len(calls) == 1
+    assert run_db_test(process_watchlist_monitor_alerts()) == 0
+
+
+def test_watchlist_withdrawn_alerts_pinned(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_cve(db_path, "CVE-2024-2007", "withdrawn pin"))
+
+    async def seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO watchlist (cve_id, state) VALUES ('CVE-2024-2007', 'pin')"
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    assert run_db_test(process_watchlist_withdrawn_alerts(["CVE-2024-2007"])) == 1
+    assert len(calls) == 1
+    assert run_db_test(process_watchlist_withdrawn_alerts(["CVE-2024-2007"])) == 0
 
 
 def test_webhook_alert_log_helpers(tmp_path, monkeypatch):

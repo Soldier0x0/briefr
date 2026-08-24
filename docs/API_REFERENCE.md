@@ -255,6 +255,34 @@ Each item includes core card fields (`cve_id`, `severity`, `cvss_score`, `epss_s
 
 Single-user for now — no `user_id` column. Built-in app login will add per-user keying (ROADMAP amendment 2026-06-11).
 
+The feed/drawer control is **Watch / Watching**. Rows still use `state: "pin"` in the API.
+
+### GET /api/admin/watchlist/policy
+
+**Auth:** admin. Instance-wide watchlist alert policy stored in `app_settings` (`watchlist.policy`).
+
+**Response:**
+
+```json
+{
+  "triggers": {
+    "kev": true,
+    "epss": true,
+    "poc": true,
+    "patch": false,
+    "withdrawn": true
+  },
+  "delivery": "immediate",
+  "overrides": {}
+}
+```
+
+Quiet defaults skip patch-available noise. Enabling every trigger forces `delivery` to digest (one combined monitor alert per CVE per run). `overrides` is a rare per-CVE map: `{ "CVE-2024-0001": { "triggers": { "epss": false } } }`.
+
+### PUT /api/admin/watchlist/policy
+
+**Auth:** admin. Body is the same shape as GET. Sanitizes unknown keys. Audit: `watchlist.policy.update`.
+
 ### GET /api/watchlist
 
 **Description:** List active watchlist entries (pins and snoozes whose `snooze_until` has not passed).

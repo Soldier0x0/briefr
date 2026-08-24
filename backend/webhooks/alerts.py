@@ -15,6 +15,7 @@ from database import (
     list_pinned_cve_ids,
     set_sync_state_value,
 )
+from notifications.emit import emit_watchlist_notification
 from preferences.repo import get_effective_stack_terms
 from routers.cves import _stack_match_clause
 from webhooks.destinations import (
@@ -25,6 +26,14 @@ from webhooks.destinations import (
 )
 from webhooks.engine import clear_event_dedupe, dispatch_event
 from webhooks.destinations import webhooks_enabled
+from watchlist.policy import (
+    CHANGE_FIELD_TO_TRIGGER,
+    TRIGGER_KEV,
+    TRIGGER_WITHDRAWN,
+    delivery_mode,
+    load_policy,
+    trigger_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +181,53 @@ async def _fetch_cve_blurb(db, cve_id: str) -> str:
     return (row.get("summary") or row.get("description") or "").strip()
 
 
+async def _emit_watchlist_change(
+    db,
+    *,
+    cve_id: str,
+    reason: str,
+    detail: str,
+    dedupe_key: str,
+    field: str,
+) -> bool:
+    description = await _fetch_cve_blurb(db, cve_id)
+    campaign_hint = await _campaign_hint_for_cve(db, cve_id)
+
+    in_app = await emit_watchlist_notification(
+        db,
+        cve_id=cve_id,
+        reason=reason,
+        detail=detail,
+        dedupe_key=dedupe_key,
+        severity="high",
+    )
+    await db.commit()
+    webhook_sent = False
+    if await webhooks_enabled():
+        result = await dispatch_event(
+            EVENT_WATCHLIST_ALERT,
+            _format_watchlist_alert(
+                cve_id=cve_id,
+                reason=reason,
+                detail=detail,
+                description=description,
+                campaign_hint=campaign_hint,
+            ),
+            dedupe_key=dedupe_key,
+        )
+        webhook_sent = bool(result.get("sent"))
+    if in_app or webhook_sent:
+        logger.info(
+            "Watchlist monitor alert for %s (%s) in_app=%s webhook=%s",
+            cve_id,
+            field,
+            in_app,
+            webhook_sent,
+        )
+        return True
+    return False
+
+
 async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
     """Alert when a pinned CVE enters CISA KEV."""
     if not newly_kev_ids:
@@ -193,9 +249,11 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
             continue
         db = await get_db()
         try:
+            policy = await load_policy(db)
+            if not trigger_enabled(policy, cve_id, TRIGGER_KEV):
+                continue
             description = await _fetch_cve_blurb(db, cve_id)
             campaign_hint = await _campaign_hint_for_cve(db, cve_id)
-            from notifications.emit import emit_watchlist_notification
 
             in_app = await emit_watchlist_notification(
                 db,
@@ -228,6 +286,41 @@ async def process_watchlist_kev_alerts(newly_kev_ids: list[str]) -> int:
     return sent
 
 
+async def process_watchlist_withdrawn_alerts(
+    cve_ids: list[str],
+    db=None,
+) -> int:
+    """Alert when a pinned CVE is rejected/withdrawn before the row is purged."""
+    if not cve_ids:
+        return 0
+    owns_db = db is None
+    if owns_db:
+        db = await get_db()
+    try:
+        policy = await load_policy(db)
+        pinned = {cve_id.upper() for cve_id in await list_pinned_cve_ids(db)}
+        sent = 0
+        for raw_id in cve_ids:
+            cve_id = (raw_id or "").upper()
+            if cve_id not in pinned:
+                continue
+            if not trigger_enabled(policy, cve_id, TRIGGER_WITHDRAWN):
+                continue
+            if await _emit_watchlist_change(
+                db,
+                cve_id=cve_id,
+                reason="withdrawn / rejected",
+                detail="NVD or CVE list maintainers rejected this record.",
+                dedupe_key=f"{cve_id}:withdrawn",
+                field="withdrawn",
+            ):
+                sent += 1
+        return sent
+    finally:
+        if owns_db:
+            await db.close()
+
+
 async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
     """Alert on significant changes to pinned CVEs (EPSS jump, PoC surfaced)."""
     db = await get_db()
@@ -235,14 +328,20 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
         pinned = {cve_id.upper() for cve_id in await list_pinned_cve_ids(db)}
         if not pinned:
             return 0
+        policy = await load_policy(db)
+        digest = delivery_mode(policy) == "digest"
         changes = await get_recent_cve_changes(db, since_hours=since_hours, limit=500)
 
         sent = 0
+        digest_bucket: dict[str, list[tuple[str, str, str]]] = {}
         for change in changes:
             cve_id = (change.get("cve_id") or "").upper()
             if cve_id not in pinned:
                 continue
             field = change.get("field_name") or ""
+            trigger = CHANGE_FIELD_TO_TRIGGER.get(field)
+            if trigger is None or not trigger_enabled(policy, cve_id, trigger):
+                continue
             old_val = change.get("old_value")
             new_val = change.get("new_value")
 
@@ -266,46 +365,42 @@ async def process_watchlist_monitor_alerts(*, since_hours: int = 24) -> int:
                 reason = "proof-of-concept surfaced"
                 detail = "Public exploit or PoC reference detected for this pinned CVE."
                 dedupe_suffix = "1"
+            elif field == "patch_available":
+                if _truthy_value(old_val) or not _truthy_value(new_val):
+                    continue
+                reason = "patch available"
+                detail = "Vendor or NVD reference indicates a patch is available."
+                dedupe_suffix = "1"
             else:
                 continue
 
-            description = await _fetch_cve_blurb(db, cve_id)
-            campaign_hint = await _campaign_hint_for_cve(db, cve_id)
-            dedupe_key = f"{cve_id}:{field}:{dedupe_suffix}"
-            from notifications.emit import emit_watchlist_notification
+            if digest:
+                digest_bucket.setdefault(cve_id, []).append(
+                    (reason, detail, f"{field}:{dedupe_suffix}")
+                )
+                continue
 
-            in_app = await emit_watchlist_notification(
+            if await _emit_watchlist_change(
                 db,
                 cve_id=cve_id,
                 reason=reason,
                 detail=detail,
-                dedupe_key=dedupe_key,
-                severity="high",
-            )
-            await db.commit()
-            webhook_sent = False
-            if await webhooks_enabled():
-                result = await dispatch_event(
-                    EVENT_WATCHLIST_ALERT,
-                    _format_watchlist_alert(
-                        cve_id=cve_id,
-                        reason=reason,
-                        detail=detail,
-                        description=description,
-                        campaign_hint=campaign_hint,
-                    ),
-                    dedupe_key=dedupe_key,
-                )
-                webhook_sent = bool(result.get("sent"))
-            if in_app or webhook_sent:
+                dedupe_key=f"{cve_id}:{field}:{dedupe_suffix}",
+                field=field,
+            ):
                 sent += 1
-                logger.info(
-                    "Watchlist monitor alert for %s (%s) in_app=%s webhook=%s",
-                    cve_id,
-                    field,
-                    in_app,
-                    webhook_sent,
-                )
+        for cve_id, items in digest_bucket.items():
+            reasons = "; ".join(f"{reason} ({detail})" for reason, detail, _suffix in items)
+            suffixes = ",".join(sorted(suffix for _r, _d, suffix in items))
+            if await _emit_watchlist_change(
+                db,
+                cve_id=cve_id,
+                reason="watchlist digest",
+                detail=reasons,
+                dedupe_key=f"{cve_id}:digest:{suffixes}",
+                field="digest",
+            ):
+                sent += 1
         return sent
     finally:
         await db.close()

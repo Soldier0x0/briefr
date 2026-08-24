@@ -7,7 +7,15 @@ import HelpTip from './shared/HelpTip.jsx'
 import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
 import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 import { fmtAge, fmtIso } from './formatters.js'
-import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
+
+const TRIGGER_LABELS = [
+  ['kev', 'CISA KEV'],
+  ['epss', 'EPSS jump'],
+  ['poc', 'Public PoC'],
+  ['patch', 'Patch available'],
+  ['withdrawn', 'Withdrawn / rejected'],
+]
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
@@ -19,6 +27,17 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
+  const [policy, setPolicy] = useState(null)
+  const [policySaving, setPolicySaving] = useState(false)
+
+  async function loadPolicy() {
+    try {
+      const data = await adminApi.getJson('/watchlist/policy')
+      setPolicy(data)
+    } catch {
+      setPolicy(null)
+    }
+  }
 
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
@@ -49,11 +68,31 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   }
 
   useEffect(() => { if (subtab === 'watchlist') loadWatchlist() }, [subtab, watchlistState])
+  useEffect(() => { if (subtab === 'watchlist' && !isAnalyst) loadPolicy() }, [subtab, isAnalyst])
   useEffect(() => { if (subtab === 'ioc') loadIoc() }, [subtab, iocType, iocSearch])
   useEffect(() => { if (subtab === 'hunt') loadHunts() }, [subtab, huntTechnique])
 
   const pinCount = watchlistRows?.filter(r => r.state === 'pin').length ?? 0
   const snoozeCount = watchlistRows?.filter(r => r.state === 'snooze').length ?? 0
+  const allTriggersOn = policy && TRIGGER_LABELS.every(([id]) => policy.triggers?.[id])
+
+  async function updateTrigger(id, on) {
+    if (!policy || policySaving) return
+    const next = {
+      ...policy,
+      triggers: { ...policy.triggers, [id]: on },
+    }
+    setPolicySaving(true)
+    try {
+      const saved = await adminApi.putJson('/watchlist/policy', next)
+      setPolicy(saved)
+      toast('Watchlist alert policy saved', true)
+    } catch (e) {
+      toast(String(e.message), false)
+    } finally {
+      setPolicySaving(false)
+    }
+  }
 
   async function removeWatchlist(cveId) {
     try {
@@ -124,8 +163,33 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
       {subtab === 'watchlist' && (
         <div>
+          {!isAnalyst && policy && (
+            <div className="admin-card" style={{ marginBottom: '1rem' }}>
+              <h2 className="admin-card-title" style={{ marginBottom: '0.35rem' }}>
+                Alert triggers
+                <HelpTip text="One instance policy for watched CVEs. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
+              </h2>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
+                {allTriggersOn
+                  ? 'All triggers on — delivery is digest (one combined alert per CVE per run).'
+                  : 'Per-change alerts for enabled triggers. Overrides per CVE are rare and stored in policy JSON.'}
+              </p>
+              <div style={{ display: 'grid', gap: '0.5rem' }}>
+                {TRIGGER_LABELS.map(([id, label]) => (
+                  <div key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <span className="mono" style={{ fontSize: '0.8125rem' }}>{label}</span>
+                    <ToggleSwitch
+                      on={!!policy.triggers?.[id]}
+                      onChange={(v) => updateTrigger(id, v)}
+                      disabled={policySaving}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
-            {pinCount} pinned CVEs · {snoozeCount} snoozed CVEs
+            {pinCount} watched CVEs · {snoozeCount} snoozed CVEs
           </div>
           <div className="admin-action-bar">
             <div className="admin-filter-chips">
