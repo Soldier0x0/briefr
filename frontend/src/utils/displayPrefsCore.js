@@ -4,6 +4,7 @@ import {
   getEffectiveTypographyPx,
 } from './typographyPrefs.js'
 import { osPrefersReducedMotion } from './motion.js'
+import { DEFAULT_NOTIFICATION_MUTES } from './notificationInbox.js'
 
 const FONT_SCALES = { xsmall: 0.8, small: 0.9, medium: 1, large: 1.15, xlarge: 1.3 }
 const DENSITY_MODES = ['compact', 'comfortable', 'spacious']
@@ -20,6 +21,7 @@ export const DISPLAY_DEFAULTS = {
   notificationSound: true,
   uiVariant: 'pitch',
   typographyPx: { ...DEFAULT_TYPOGRAPHY_PX },
+  notificationMutes: { ...DEFAULT_NOTIFICATION_MUTES },
 }
 
 export function toDisplayPrefs(data = {}) {
@@ -49,6 +51,10 @@ export function toDisplayPrefs(data = {}) {
     instanceUiVariantDefault: data.instance_ui_variant_default
       || data.instanceUiVariantDefault
       || null,
+    notificationMutes: {
+      ...DEFAULT_NOTIFICATION_MUTES,
+      ...(data.notification_mutes || data.notificationMutes || {}),
+    },
   }
 }
 

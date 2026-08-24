@@ -20,6 +20,18 @@ import {
   TYPOGRAPHY_ROLES,
 } from '../../utils/typographyPrefs.js'
 import { applyDisplayPrefs } from '../../utils/displayPrefsCore.js'
+import {
+  DEFAULT_NOTIFICATION_MUTES,
+  NOTIFICATION_MUTE_CATEGORIES,
+} from '../../utils/notificationInbox.js'
+
+const NOTIFICATION_MUTE_LABELS = {
+  watchlist: 'Watchlist (pinned CVE)',
+  ioc_watchlist: 'IOC watchlist hit',
+  job_error: 'Scheduler job failure',
+  api_key_unhealthy: 'API key unhealthy',
+  webhook_failure: 'Webhook delivery failure',
+}
 
 export default function DisplayPage() {
   const { user } = useAuth()
@@ -49,6 +61,15 @@ export default function DisplayPage() {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
     void setDisplayPrefs(next).catch(() => setPrefs(getDisplayPrefs()))
+  }
+
+  function updateNotificationMute(category, muted) {
+    const merged = {
+      ...DEFAULT_NOTIFICATION_MUTES,
+      ...(prefs.notificationMutes || {}),
+      [category]: muted,
+    }
+    update('notificationMutes', merged)
   }
 
   function updateTypographyRole(role, px) {
@@ -217,6 +238,23 @@ export default function DisplayPage() {
           <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
           Play a short chime when new high-priority notifications arrive
         </label>
+        <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {NOTIFICATION_MUTE_CATEGORIES.map((category) => (
+            <label
+              key={category}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}
+            >
+              <ToggleSwitch
+                on={!!prefs.notificationMutes?.[category]}
+                onChange={(v) => updateNotificationMute(category, v)}
+              />
+              Mute {NOTIFICATION_MUTE_LABELS[category]}
+            </label>
+          ))}
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+          Muted types are not added to the inbox. Discord and Telegram still follow Admin → Webhooks.
+        </p>
       </Card>
 
       <Card>
