@@ -9,8 +9,6 @@ from db.types import DbConnection
 
 _SCOPE_ANALYST = "analyst"
 _SCOPE_OPERATOR = "operator"
-_BADGE_SEVERITIES = frozenset({"critical", "high"})
-
 
 def _is_postgres_connection(db: DbConnection) -> bool:
     return type(db).__name__ == "PostgresConnection"
@@ -137,9 +135,18 @@ async def list_notifications(
     user_id: int,
     scope: str,
     limit: int = 30,
+    view: str = "inbox",
 ) -> list[dict[str, Any]]:
+    if view not in ("inbox", "done"):
+        raise ValueError("view must be inbox or done")
     pg = _is_postgres_connection(db)
     lim = _placeholder(pg, 3)
+    if view == "done":
+        dismissed_clause = "dismissed_at IS NOT NULL"
+        order_by = "datetime(dismissed_at) DESC"
+    else:
+        dismissed_clause = "dismissed_at IS NULL"
+        order_by = "datetime(created_at) DESC"
     rows = await db.execute_fetchall(
         f"""
         SELECT id, scope, category, severity, title, body,
@@ -147,8 +154,8 @@ async def list_notifications(
         FROM user_notifications
         WHERE user_id = {_placeholder(pg, 1)}
           AND scope = {_placeholder(pg, 2)}
-          AND dismissed_at IS NULL
-        ORDER BY datetime(created_at) DESC
+          AND {dismissed_clause}
+        ORDER BY {order_by}
         LIMIT {lim}
         """,
         (user_id, scope, max(1, min(limit, 100))),
@@ -163,7 +170,6 @@ async def count_unread(
     scope: str,
 ) -> int:
     pg = _is_postgres_connection(db)
-    sev_placeholders = ", ".join(_placeholder(pg, i + 3) for i in range(len(_BADGE_SEVERITIES)))
     rows = await db.execute_fetchall(
         f"""
         SELECT COUNT(*) AS cnt FROM user_notifications
@@ -171,9 +177,8 @@ async def count_unread(
           AND scope = {_placeholder(pg, 2)}
           AND dismissed_at IS NULL
           AND read_at IS NULL
-          AND severity IN ({sev_placeholders})
         """,
-        (user_id, scope, *_BADGE_SEVERITIES),
+        (user_id, scope),
     )
     return int(rows[0]["cnt"]) if rows else 0
 

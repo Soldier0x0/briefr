@@ -31,6 +31,7 @@ def _require_scope(scope: str) -> str:
 @router.get("")
 async def get_notifications(
     scope: str = Query("analyst"),
+    view: str = Query("inbox"),
     limit: int = Query(30, ge=1, le=100),
     payload: dict = Depends(require_user),
 ):
@@ -40,7 +41,12 @@ async def get_notifications(
     db = await get_db()
     try:
         user_id = int(payload["sub"])
-        rows = await list_notifications(db, user_id=user_id, scope=scope, limit=limit)
+        try:
+            rows = await list_notifications(
+                db, user_id=user_id, scope=scope, limit=limit, view=view
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         unread = await count_unread(db, user_id=user_id, scope=scope)
         return {"notifications": rows, "unread_count": unread}
     finally:

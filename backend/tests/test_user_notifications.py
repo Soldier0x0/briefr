@@ -124,7 +124,7 @@ def test_analyst_scope_lists_and_counts_unread(client):
     assert res.status_code == 200
     body = res.json()
     assert len(body["notifications"]) == 2
-    assert body["unread_count"] == 1
+    assert body["unread_count"] == 2
 
     seen = client.post("/api/me/notifications/seen", json={"scope": "analyst"})
     assert seen.status_code == 200
@@ -133,6 +133,20 @@ def test_analyst_scope_lists_and_counts_unread(client):
     after = client.get("/api/me/notifications?scope=analyst")
     assert after.json()["unread_count"] == 0
     assert len(after.json()["notifications"]) == 2
+
+
+def test_list_view_done_excludes_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="d1")
+    _login(client, "analyst1")
+    listed = client.get("/api/me/notifications?scope=analyst").json()
+    nid = listed["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+    inbox = client.get("/api/me/notifications?scope=analyst&view=inbox").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+    assert inbox["notifications"] == []
+    assert len(done["notifications"]) == 1
+    assert done["unread_count"] == 0
 
 
 def test_dismiss_one_and_dismiss_all(client):
