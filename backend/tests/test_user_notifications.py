@@ -248,3 +248,63 @@ def test_patch_preferences_notification_sound(client):
     patch = client.patch("/api/me/preferences", json={"notification_sound": False})
     assert patch.status_code == 200
     assert patch.json()["notification_sound"] is False
+
+
+def test_patch_notification_mutes(client):
+    _login(client, "admin1")
+    patch = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": True}},
+    )
+    assert patch.status_code == 200
+    assert patch.json()["notification_mutes"]["watchlist"] is True
+    assert patch.json()["notification_mutes"]["job_error"] is False
+
+
+def test_patch_notification_mutes_rejects_unknown_key(client):
+    _login(client, "admin1")
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"not_a_category": True}},
+    )
+    assert res.status_code == 422
+
+
+def test_muted_category_does_not_insert(client):
+    from notifications.emit import emit_watchlist_notification
+
+    _login(client, "analyst1")
+    client.patch("/api/me/preferences", json={"notification_mutes": {"watchlist": True}})
+
+    async def _only_analyst_active():
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE users SET is_active = 0 WHERE username = ?",
+                ("admin1",),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_only_analyst_active())
+
+    async def _emit():
+        db = await get_db()
+        try:
+            n = await emit_watchlist_notification(
+                db,
+                cve_id="CVE-2024-1",
+                reason="Entered KEV",
+                detail="x",
+                dedupe_key="watch:CVE-2024-1:kev",
+            )
+            await db.commit()
+            return n
+        finally:
+            await db.close()
+
+    created = run_db_test(_emit())
+    assert created == 0
+    listed = client.get("/api/me/notifications?scope=analyst").json()
+    assert listed["notifications"] == []

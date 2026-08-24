@@ -9,11 +9,13 @@ from db.timeutil import utcnow_str
 
 from preferences.display_validate import (
     DEFAULT_DISPLAY_PREFS,
+    DEFAULT_NOTIFICATION_MUTES,
     INSTANCE_TYPOGRAPHY_SETTING_KEY,
     INSTANCE_UI_VARIANT_SETTING_KEY,
     encode_display_prefs,
     merge_display_prefs,
     sanitize_display_prefs,
+    sanitize_notification_mutes,
     sanitize_typography_px,
     sanitize_ui_variant,
     validate_timezone,
@@ -30,6 +32,7 @@ def _decode_display_prefs(
     fallback_ui_variant = sanitize_ui_variant(instance_ui_variant)
     if not raw:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
         prefs["ui_variant"] = fallback_ui_variant
         return prefs
@@ -37,11 +40,13 @@ def _decode_display_prefs(
         data = json.loads(raw)
     except json.JSONDecodeError:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
         prefs["ui_variant"] = fallback_ui_variant
         return prefs
     if not isinstance(data, dict):
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
         prefs["ui_variant"] = fallback_ui_variant
         return prefs
@@ -49,6 +54,7 @@ def _decode_display_prefs(
         prefs = sanitize_display_prefs(data)
     except ValueError:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
     if "typography_px" in data:
         try:
             prefs["typography_px"] = sanitize_typography_px(data.get("typography_px"))
@@ -56,6 +62,13 @@ def _decode_display_prefs(
             prefs["typography_px"] = sanitize_typography_px(instance_typography)
     else:
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
+    if "notification_mutes" in data:
+        try:
+            prefs["notification_mutes"] = sanitize_notification_mutes(data.get("notification_mutes"))
+        except ValueError:
+            prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
+    elif "notification_mutes" not in prefs:
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
     if "ui_variant" not in data:
         prefs["ui_variant"] = fallback_ui_variant
     return prefs
@@ -220,6 +233,7 @@ async def get_user_preferences(db: Any, user_id: int) -> dict:
     )
     if not rows:
         prefs = dict(DEFAULT_DISPLAY_PREFS)
+        prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
         prefs["typography_px"] = sanitize_typography_px(instance_typography)
         prefs["ui_variant"] = sanitize_ui_variant(instance_ui_variant)
         return {
@@ -266,6 +280,7 @@ async def patch_user_preferences(db: Any, user_id: int, patch: dict) -> dict:
             "notification_sound",
             "ui_variant",
             "typography_px",
+            "notification_mutes",
         )
         if key in patch
     }

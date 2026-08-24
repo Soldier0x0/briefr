@@ -80,6 +80,13 @@ def test_get_preferences_defaults(client):
     assert body["reduce_motion"] is False
     assert body["ui_variant"] == "pitch"
     assert body["notification_sound"] is True
+    assert body["notification_mutes"] == {
+        "watchlist": False,
+        "ioc_watchlist": False,
+        "job_error": False,
+        "api_key_unhealthy": False,
+        "webhook_failure": False,
+    }
     assert body["timezone"] == "UTC"
     assert body["remember_profile_on_server"] is False
     assert body["updated_at"] is None

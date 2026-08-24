@@ -6,6 +6,7 @@ import logging
 import re
 
 from db.user_notifications import insert_notification, list_active_user_ids
+from preferences.repo import get_user_preferences
 from redact import mask_webhook_delivery_error
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,10 @@ async def _emit_to_users(
     created = 0
     for user_id in user_ids:
         try:
+            prefs = await get_user_preferences(db, user_id)
+            mutes = prefs.get("notification_mutes") or {}
+            if mutes.get(category):
+                continue
             if await insert_notification(
                 db,
                 user_id=user_id,
