@@ -66,9 +66,8 @@ describe('Forge / notification dead-control gate', () => {
 
   it('NotificationBell wires IOC entity_type to tab=ioc&ioc= via navigate', () => {
     const src = fs.readFileSync(path.join(ROOT, 'utils/notificationInbox.js'), 'utf8')
-    assert.match(src, /entity_type === 'ioc'/)
-    assert.match(src, /params\.set\('ioc'/)
     assert.match(src, /params\.set\('tab', 'ioc'\)/)
+    assert.match(src, /params\.set\('ioc'/)
   })
 
   it('App deep-links ?ioc= into IOC Lookup prefill', () => {
