@@ -57,6 +57,26 @@ def _disable_rate_limit(monkeypatch) -> None:
     _rl.wallboard_bucket._buckets.pop("testclient", None)
 
 
+def _open_or_static_wallboard_gate(
+    monkeypatch, *, token: str = ""
+) -> dict[str, str]:
+    """Turn off auto-token seeding so tests control the kiosk gate.
+
+    Default auto-token True seeds a rotated secret on lifespan, which 401s
+    unauthenticated GET /api/wallboard (Postgres CI: test_wallboard_rate_limited).
+    """
+    from settings import settings as _settings
+    from wallboard.token_store import _invalidate_caches
+
+    monkeypatch.setattr(_settings, "wallboard_auto_token", False)
+    monkeypatch.setattr(_settings, "wallboard_token", token)
+    monkeypatch.setenv("WALLBOARD_TOKEN", token)
+    _invalidate_caches()
+    if token:
+        return {"X-BRIEFR-Wallboard-Token": token}
+    return {}
+
+
 async def _seed_wallboard_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S")
@@ -120,7 +140,7 @@ def wallboard_client(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard.db"
     _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("BRIEFR_STACK_TERMS", "log4j")
-    monkeypatch.setenv("WALLBOARD_TOKEN", "")
+    _open_or_static_wallboard_gate(monkeypatch)
 
     _patch_app_lifecycle(monkeypatch)
     _disable_rate_limit(monkeypatch)
@@ -217,12 +237,13 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
     monkeypatch.setattr(_rl.wallboard_bucket, "capacity", 2.0)
     monkeypatch.setattr(_rl.wallboard_bucket, "refill_per_second", 2 / 60.0)
     _rl.wallboard_bucket._buckets.clear()
+    headers = _open_or_static_wallboard_gate(monkeypatch, token="kiosk-rl-token")
 
     from main import app
     with TestClient(app, raise_server_exceptions=False) as client:
-        assert client.get("/api/wallboard").status_code == 200
-        assert client.get("/api/wallboard").status_code == 200
-        blocked = client.get("/api/wallboard")
+        assert client.get("/api/wallboard", headers=headers).status_code == 200
+        assert client.get("/api/wallboard", headers=headers).status_code == 200
+        blocked = client.get("/api/wallboard", headers=headers)
         assert blocked.status_code == 429
         assert blocked.headers.get("Retry-After")
 
