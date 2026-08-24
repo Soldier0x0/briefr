@@ -872,6 +872,20 @@
   box-shadow: var(--focus-ring);
 }
 
+/* Popover (Radix primitive) */
+.ui-popover-content {
+  z-index: var(--z-dropdown);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--admin-surface-raised, var(--surface-raised));
+  box-shadow: var(--shadow-overlay);
+  color: var(--text);
+  outline: none;
+}
+.ui-popover-content:focus-visible {
+  box-shadow: var(--shadow-overlay), var(--focus-ring);
+}
+
 /* Dropdown menu (Radix primitive — E3-5) */
 .ui-dropdown-content {
   z-index: var(--z-dropdown);

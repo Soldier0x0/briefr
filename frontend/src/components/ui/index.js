@@ -52,3 +52,9 @@ export {
   DropdownMenuSubContent,
   DropdownMenuArrow,
 } from './DropdownMenu.jsx'
+export {
+  default as Popover,
+  PopoverTrigger,
+  PopoverAnchor,
+  PopoverContent,
+} from './Popover.jsx'
