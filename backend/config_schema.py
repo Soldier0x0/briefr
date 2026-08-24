@@ -351,8 +351,9 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 "Leave blank to keep the wallboard open (production warns when unset)."),
     ConfigField("WALLBOARD_AUTO_TOKEN", "security", "bool", restart_required=True,
                 display_label="Wallboard auto-token",
-                help_text="When enabled, authenticated analysts can bootstrap kiosk sessions "
+                help_text="Enabled by default. Authenticated analysts can bootstrap kiosk sessions "
                 "via POST /api/wallboard/token without typing WALLBOARD_TOKEN. "
+                "Disable only to require manual kiosk-token entry. "
                 "The backend rotates the active kiosk token on a schedule."),
     ConfigField("WALLBOARD_TOKEN_ROTATION_HOURS", "security", "int", min=1, max=168,
                 restart_required=True,

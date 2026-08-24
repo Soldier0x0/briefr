@@ -2334,9 +2334,11 @@ Public kiosk flags (no secrets): `auto_token_enabled`, `manual_fallback`, `rotat
 
 ### POST /api/wallboard/token
 
-**Auth:** valid analyst session (`briefr_at`). **Requires** `WALLBOARD_AUTO_TOKEN=1` and a configured wallboard gate token.
+**Auth:** valid analyst session (`briefr_at`). `WALLBOARD_AUTO_TOKEN=1` is the default;
+operators may set it to `0` to disable this route. A configured wallboard gate token is required.
 
-Returns a short-lived issuance JWT (`wbiss.…`) and sets the `briefr_wb` httpOnly session cookie. Audited as `wallboard.token_issued`.
+Returns a short-lived issuance JWT (`wbiss.…`) and sets the 30-day `briefr_wb` httpOnly
+session cookie. Audited as `wallboard.token_issued`.
 
 ### POST /api/wallboard/revoke · POST /api/wallboard/rotate
 
