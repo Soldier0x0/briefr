@@ -52,6 +52,54 @@ WHERE user_id = $1
   AND read_at IS NULL
 """
 
+_MARK_ONE_READ_SQLITE = """
+UPDATE user_notifications
+SET read_at = COALESCE(read_at, ?)
+WHERE id = ? AND user_id = ?
+  AND dismissed_at IS NULL
+"""
+
+_MARK_ONE_READ_PG = """
+UPDATE user_notifications
+SET read_at = COALESCE(read_at, $3)
+WHERE id = $1 AND user_id = $2
+  AND dismissed_at IS NULL
+"""
+
+_MARK_SCOPE_READ_SQLITE = """
+UPDATE user_notifications
+SET read_at = ?
+WHERE user_id = ?
+  AND scope = ?
+  AND dismissed_at IS NULL
+  AND read_at IS NULL
+"""
+
+_MARK_SCOPE_READ_PG = """
+UPDATE user_notifications
+SET read_at = $3
+WHERE user_id = $1
+  AND scope = $2
+  AND dismissed_at IS NULL
+  AND read_at IS NULL
+"""
+
+_MARK_SCOPE_READ_ALL_SQLITE = """
+UPDATE user_notifications
+SET read_at = ?
+WHERE user_id = ?
+  AND dismissed_at IS NULL
+  AND read_at IS NULL
+"""
+
+_MARK_SCOPE_READ_ALL_PG = """
+UPDATE user_notifications
+SET read_at = $2
+WHERE user_id = $1
+  AND dismissed_at IS NULL
+  AND read_at IS NULL
+"""
+
 _DISMISS_ONE_SQLITE = """
 UPDATE user_notifications
 SET dismissed_at = ?, read_at = COALESCE(read_at, ?)
@@ -140,7 +188,14 @@ async def list_notifications(
     if view not in ("inbox", "done"):
         raise ValueError("view must be inbox or done")
     pg = _is_postgres_connection(db)
-    lim = _placeholder(pg, 3)
+    if scope == "all":
+        scope_clause = ""
+        lim = _placeholder(pg, 2)
+        base_params: tuple[Any, ...] = (user_id, max(1, min(limit, 100)))
+    else:
+        scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+        lim = _placeholder(pg, 3)
+        base_params = (user_id, scope, max(1, min(limit, 100)))
     if view == "done":
         dismissed_clause = "dismissed_at IS NOT NULL"
         order_by = "datetime(dismissed_at) DESC"
@@ -153,12 +208,12 @@ async def list_notifications(
                entity_type, entity_id, dedupe_key, created_at, read_at, dismissed_at
         FROM user_notifications
         WHERE user_id = {_placeholder(pg, 1)}
-          AND scope = {_placeholder(pg, 2)}
+          {scope_clause}
           AND {dismissed_clause}
         ORDER BY {order_by}
         LIMIT {lim}
         """,
-        (user_id, scope, max(1, min(limit, 100))),
+        base_params,
     )
     return [dict(r) for r in rows]
 
@@ -170,28 +225,60 @@ async def count_unread(
     scope: str,
 ) -> int:
     pg = _is_postgres_connection(db)
+    if scope == "all":
+        scope_clause = ""
+        params: tuple[Any, ...] = (user_id,)
+    else:
+        scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+        params = (user_id, scope)
     rows = await db.execute_fetchall(
         f"""
         SELECT COUNT(*) AS cnt FROM user_notifications
         WHERE user_id = {_placeholder(pg, 1)}
-          AND scope = {_placeholder(pg, 2)}
+          {scope_clause}
           AND dismissed_at IS NULL
           AND read_at IS NULL
         """,
-        (user_id, scope),
+        params,
     )
     return int(rows[0]["cnt"]) if rows else 0
 
 
-async def mark_scope_seen(db: DbConnection, *, user_id: int, scope: str) -> int:
+async def mark_one_read(
+    db: DbConnection,
+    *,
+    user_id: int,
+    notification_id: int,
+) -> bool:
     now = utcnow_str()
     pg = _is_postgres_connection(db)
     if pg:
-        sql, params = _MARK_SEEN_PG, (user_id, scope, now)
+        sql, params = _MARK_ONE_READ_PG, (notification_id, user_id, now)
     else:
-        sql, params = _MARK_SEEN_SQLITE, (now, user_id, scope)
+        sql, params = _MARK_ONE_READ_SQLITE, (now, notification_id, user_id)
+    result = await db.execute(sql, params)
+    return int(getattr(result, "rowcount", 0) or 0) > 0
+
+
+async def mark_scope_read(db: DbConnection, *, user_id: int, scope: str) -> int:
+    now = utcnow_str()
+    pg = _is_postgres_connection(db)
+    if scope == "all":
+        if pg:
+            sql, params = _MARK_SCOPE_READ_ALL_PG, (user_id, now)
+        else:
+            sql, params = _MARK_SCOPE_READ_ALL_SQLITE, (now, user_id)
+    elif pg:
+        sql, params = _MARK_SCOPE_READ_PG, (user_id, scope, now)
+    else:
+        sql, params = _MARK_SCOPE_READ_SQLITE, (now, user_id, scope)
     result = await db.execute(sql, params)
     return int(getattr(result, "rowcount", 0) or 0)
+
+
+async def mark_scope_seen(db: DbConnection, *, user_id: int, scope: str) -> int:
+    """Legacy alias — use mark_scope_read."""
+    return await mark_scope_read(db, user_id=user_id, scope=scope)
 
 
 async def dismiss_notification(

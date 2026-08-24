@@ -186,6 +186,45 @@ def test_operator_scope_admin_only(client):
     assert len(ok.json()["notifications"]) == 1
 
 
+def test_read_does_not_remove_from_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="r1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications").json()["notifications"][0]["id"]
+    res = client.post(f"/api/me/notifications/{nid}/read")
+    assert res.status_code == 200
+    body = client.get("/api/me/notifications").json()
+    assert len(body["notifications"]) == 1
+    assert body["unread_count"] == 0
+    assert body["notifications"][0]["read_at"]
+
+
+def test_restore_returns_to_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="u1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications").json()["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+    assert client.post(f"/api/me/notifications/{nid}/restore").status_code == 200
+    inbox = client.get("/api/me/notifications?view=inbox").json()
+    assert len(inbox["notifications"]) == 1
+
+
+def test_scope_all_admin_only(client):
+    admin_id = _user_id("admin1")
+    analyst_id = _user_id("analyst1")
+    _insert(admin_id, "analyst", dedupe="aa")
+    _insert(admin_id, "operator", dedupe="oo")
+    _insert(analyst_id, "analyst", dedupe="xx")
+    _login(client, "analyst1")
+    assert client.get("/api/me/notifications?scope=all").status_code == 403
+    _login(client, "admin1")
+    body = client.get("/api/me/notifications?scope=all").json()
+    scopes = {n["scope"] for n in body["notifications"]}
+    assert scopes == {"analyst", "operator"}
+    assert len(body["notifications"]) == 2
+
+
 def test_patch_preferences_notification_sound(client):
     _login(client, "admin1")
     patch = client.patch("/api/me/preferences", json={"notification_sound": False})
