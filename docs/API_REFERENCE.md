@@ -435,30 +435,49 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| `scope` | str | `analyst` | `analyst` (watchlist/CVE/IOC alerts) or `operator` (job errors, unhealthy API keys; admin role only) |
+| `scope` | str | `analyst` | `analyst` (watchlist/CVE/IOC alerts), `operator` (job errors, unhealthy API keys, webhook failures; admin role only), or `all` (both scopes; admin role only) |
+| `view` | str | `inbox` | `inbox` (undismissed rows) or `done` (dismissed rows) |
 | `limit` | int | 30 | 1–100 |
 
-**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at}], unread_count}` — `unread_count` counts undismissed `critical`/`high` rows with `read_at` null.
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the inbox does not mark rows read.
 
 ### GET /api/me/notifications/unread-count
 
-**Description:** Lightweight badge count for one scope. Standard users requesting `operator` scope receive `{unread_count: 0}` rather than operator events.
+**Description:** Lightweight badge count for one scope.
 
-**Params:** `scope` = `analyst` (default) or `operator`.
+**Params:** `scope` = `analyst` (default), `operator`, or `all`. Non-admin users requesting `operator` or `all` receive `403`; `operator` on the unread-count endpoint alone returns `{unread_count: 0}` for non-admins (legacy compat).
 
 **Response:** `{unread_count}`
 
+### POST /api/me/notifications/read-all
+
+**Body:** `{scope}` — `analyst`, `operator`, or `all` (operator/all require admin). Marks all undismissed rows in scope as read (`read_at` set); rows stay in the inbox.
+
+**Response:** `{marked_read, unread_count}`
+
 ### POST /api/me/notifications/seen
 
-**Body:** `{scope}` — marks all undismissed rows in scope as read (clears badge). **Response:** `{marked_seen, unread_count}`.
+**Description:** Legacy alias of `POST /read-all` for backward compatibility.
+
+**Body:** `{scope}` — same as read-all.
+
+**Response:** `{marked_read, marked_seen, unread_count}` — `marked_seen` mirrors `marked_read`.
+
+### POST /api/me/notifications/{id}/read
+
+Mark one undismissed notification as read. **Response:** `{ok: true}` or `404`.
+
+### POST /api/me/notifications/{id}/restore
+
+Undo dismiss — moves a Done notification back to the inbox (`dismissed_at` cleared). **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/{id}/dismiss
 
-Dismiss one notification (removed from list). **Response:** `{ok: true}` or `404`.
+Dismiss one notification (moves to Done view). **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/dismiss-all
 
-**Body:** `{scope}` — dismiss all active rows in scope. **Response:** `{dismissed}`.
+**Body:** `{scope}` — dismiss all active rows in scope (`analyst`, `operator`, or `all`). **Response:** `{dismissed}`.
 
 **Notes:** `PUT /api/me/stack` updates `profile` only when the `profile` field is present in the body; omitting it preserves the saved inventory. Send `"profile": null` to clear.
 
