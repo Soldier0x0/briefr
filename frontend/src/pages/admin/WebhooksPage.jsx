@@ -231,7 +231,7 @@ export default function WebhooksPage({ toast }) {
     setExpanded(e => ({ ...e, [`cfg-${dest.id}`]: true }))
   }
 
-  const stackTerms = envStack || userStack
+  const stackTerms = userStack
 
   const healthById = useMemo(() => {
     const map = {}
@@ -476,7 +476,7 @@ export default function WebhooksPage({ toast }) {
       </AsyncSection>
 
       <div className="admin-card">
-        <div className="admin-card-title">Stack terms for KEV alerts</div>
+        <div className="admin-card-title">My Stack for KEV alerts</div>
         <div style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
           {stackTerms ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
@@ -484,14 +484,13 @@ export default function WebhooksPage({ toast }) {
                 <span key={t} className="badge badge-muted">{t}</span>
               ))}
             </div>
-          ) : <span style={{ color: 'var(--text3)' }}>No stack terms configured</span>}
+          ) : <span style={{ color: 'var(--text3)' }}>No My Stack saved — KEV-on-stack alerts will not fire</span>}
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+          Alerts match CPE / affected products from the header Asset wizard. FEED <code className="mono">STACK //</code> is a throwaway filter.
           {envStack ? (
-            <>Using operator override <code className="mono">BRIEFR_STACK_TERMS</code> from API keys &amp; config.</>
-          ) : (
-            <>Set stack in the Feed tab, or optional <code className="mono">BRIEFR_STACK_TERMS</code> on API keys &amp; config.</>
-          )}
+            <> <code className="mono">BRIEFR_STACK_TERMS</code> is set for wallboard tiles only.</>
+          ) : null}
         </div>
       </div>
 

@@ -112,5 +112,5 @@ async def resolve_nvd_watermark(db: DbConnection, *, min_cves: int = 10) -> str 
 
 
 def get_stack_terms() -> str:
-    """Operator stack profile for server-side matching (BRIEFR_STACK_TERMS)."""
+    """Operator wallboard keyword tiles (BRIEFR_STACK_TERMS). Not used for KEV alerts."""
     return os.environ.get("BRIEFR_STACK_TERMS", "").strip()

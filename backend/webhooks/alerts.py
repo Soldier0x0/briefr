@@ -8,16 +8,16 @@ from datetime import datetime, timedelta, timezone
 
 from backup.manager import BackupConfig, list_backups
 from database import (
-    filter_cves_matching_stack,
+    filter_cves_matching_assets,
     get_db,
     get_recent_cve_changes,
     get_sync_state_value,
     list_pinned_cve_ids,
     set_sync_state_value,
 )
+from matching.stack_assets import assets_to_terms
 from notifications.emit import emit_watchlist_notification
-from preferences.repo import get_effective_stack_terms
-from routers.cves import _stack_match_clause
+from preferences.repo import get_alert_stack_assets
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
     EVENT_KEV_ALERT,
@@ -413,13 +413,13 @@ async def process_kev_stack_alerts(newly_kev_ids: list[str]) -> int:
 
     db = await get_db()
     try:
-        stack = await get_effective_stack_terms(db)
-        clause, _, terms = _stack_match_clause(stack)
-        if not clause or not terms:
-            logger.debug("KEV stack alerts skipped: no stack terms configured")
+        assets = await get_alert_stack_assets(db)
+        terms = assets_to_terms(assets)
+        if not assets:
+            logger.debug("KEV stack alerts skipped: no admin My Stack assets")
             return 0
 
-        matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
+        matches = await filter_cves_matching_assets(db, newly_kev_ids, assets)
         candidates = []
         for cve in matches:
             cve["matched_terms"] = terms

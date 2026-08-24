@@ -217,3 +217,47 @@ def test_upsert_idempotent(tmp_path, monkeypatch):
     first_count, second_count = run_db_test(upsert_twice())
     assert first_count == 1
     assert second_count == 0
+
+
+def test_kev_backlog_skips_description_only(tmp_path, monkeypatch):
+    db_path = tmp_path / "backlog_desc.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
+
+    async def seed() -> None:
+        await init_db()
+        db = await get_db()
+        try:
+            await db.execute(
+                "INSERT INTO mitre_techniques (technique_id, name, tactic, url) VALUES (?, ?, ?, ?)",
+                (GAP_TID, "Phishing", "Initial Access", "https://attack.mitre.org/techniques/T1566/"),
+            )
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, mitre_technique,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2024-2099",
+                    "nginx path traversal in reverse proxy module",
+                    GAP_TID,
+                    "HIGH",
+                    8.1,
+                    0.4,
+                    1,
+                    "2024-06-01T00:00:00",
+                ),
+            )
+            await db.execute(
+                "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES (?, ?)",
+                ("CVE-2024-2099", GAP_TID),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    created = run_db_test(process_new_kev_backlog(["CVE-2024-2099"]))
+    assert created == []

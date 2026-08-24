@@ -15,6 +15,7 @@ from tests.conftest import run_db_test
 import httpx
 
 import resilient_client
+from auth.repo import create_user
 from database import (
     clear_webhook_alert,
     get_db,
@@ -23,6 +24,7 @@ from database import (
     record_webhook_alert,
     was_webhook_alert_sent,
 )
+from preferences.repo import upsert_user_stack
 from resilient_client import reset_feed_health
 from webhooks.alerts import (
     ALERT_BACKUP_DEADMAN,
@@ -84,7 +86,13 @@ def _mock_webhooks(monkeypatch):
     return calls
 
 
-async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 0):
+async def _seed_cve(
+    db_path: Path,
+    cve_id: str,
+    description: str,
+    is_kev: int = 0,
+    affected_products: str | None = None,
+):
     db = await get_db()
     try:
         await db.execute(
@@ -94,6 +102,21 @@ async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 
             """,
             (cve_id, description, is_kev),
         )
+        if affected_products is not None:
+            await db.execute(
+                "UPDATE cves SET affected_products = ? WHERE cve_id = ?",
+                (affected_products, cve_id),
+            )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def _seed_admin_stack(stack_terms: str) -> None:
+    db = await get_db()
+    try:
+        user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+        await upsert_user_stack(db, user["id"], stack_terms)
         await db.commit()
     finally:
         await db.close()
@@ -102,7 +125,15 @@ async def _seed_cve(db_path: Path, cve_id: str, description: str, is_kev: int = 
 def test_kev_stack_alert_sent_once(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     calls = _mock_webhooks(monkeypatch)
-    run_db_test(_seed_cve(db_path, "CVE-2024-1001", "nginx reverse proxy RCE"))
+    run_db_test(_seed_admin_stack("nginx"))
+    run_db_test(
+        _seed_cve(
+            db_path,
+            "CVE-2024-1001",
+            "nginx reverse proxy RCE",
+            affected_products='["f5:nginx"]',
+        )
+    )
 
     async def run():
         db = await get_db()
@@ -124,7 +155,15 @@ def test_kev_stack_alert_sent_once(tmp_path, monkeypatch):
 def test_kev_stack_skips_non_matching(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     calls = _mock_webhooks(monkeypatch)
-    run_db_test(_seed_cve(db_path, "CVE-2024-1002", "unrelated apache issue"))
+    run_db_test(_seed_admin_stack("nginx"))
+    run_db_test(
+        _seed_cve(
+            db_path,
+            "CVE-2024-1002",
+            "unrelated apache issue",
+            affected_products='["apache:httpd"]',
+        )
+    )
 
     async def run():
         db = await get_db()
@@ -143,7 +182,14 @@ def test_kev_stack_requires_stack_terms(tmp_path, monkeypatch):
     db_path = _setup_db(tmp_path, monkeypatch)
     _mock_webhooks(monkeypatch)
     monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
-    run_db_test(_seed_cve(db_path, "CVE-2024-1003", "nginx issue"))
+    run_db_test(
+        _seed_cve(
+            db_path,
+            "CVE-2024-1003",
+            "nginx issue",
+            affected_products='["f5:nginx"]',
+        )
+    )
 
     async def run():
         db = await get_db()
@@ -155,6 +201,50 @@ def test_kev_stack_requires_stack_terms(tmp_path, monkeypatch):
         return await process_kev_stack_alerts(newly)
 
     assert run_db_test(run()) == 0
+
+
+def test_kev_stack_skips_description_only(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(_seed_admin_stack("nginx"))
+    run_db_test(_seed_cve(db_path, "CVE-2024-1004", "nginx reverse proxy RCE"))
+
+    async def run():
+        db = await get_db()
+        try:
+            newly = await mark_cves_as_kev(db, ["CVE-2024-1004"])
+            await db.commit()
+        finally:
+            await db.close()
+        return await process_kev_stack_alerts(newly)
+
+    assert run_db_test(run()) == 0
+    assert calls == []
+
+
+def test_kev_stack_ignores_env_terms(tmp_path, monkeypatch):
+    db_path = _setup_db(tmp_path, monkeypatch)
+    calls = _mock_webhooks(monkeypatch)
+    run_db_test(
+        _seed_cve(
+            db_path,
+            "CVE-2024-1005",
+            "nginx reverse proxy RCE",
+            affected_products='["f5:nginx"]',
+        )
+    )
+
+    async def run():
+        db = await get_db()
+        try:
+            newly = await mark_cves_as_kev(db, ["CVE-2024-1005"])
+            await db.commit()
+        finally:
+            await db.close()
+        return await process_kev_stack_alerts(newly)
+
+    assert run_db_test(run()) == 0
+    assert calls == []
 
 
 def test_backup_deadman_alerts_when_stale(tmp_path, monkeypatch):

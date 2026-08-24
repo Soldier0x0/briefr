@@ -11,9 +11,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from database import get_db
-from db.enrichment import filter_cves_matching_stack
+from db.enrichment import filter_cves_matching_assets
 from db.types import DbConnection
-from preferences.repo import get_effective_stack_terms
+from matching.stack_assets import assets_to_terms, cve_matches_assets
+from preferences.repo import get_operator_stack_assets
 from routers.forge import _coverage_status, _derive_priority
 
 logger = logging.getLogger(__name__)
@@ -243,15 +244,16 @@ async def process_new_kev_backlog(newly_kev_ids: list[str]) -> list[dict[str, An
 
     db = await get_db()
     try:
-        stack = await get_effective_stack_terms(db)
-        if not stack.strip():
-            logger.debug("KEV backlog skipped: no stack terms configured")
+        assets = await get_operator_stack_assets(db)
+        if not assets:
+            logger.debug("KEV backlog skipped: no stack assets configured")
             return []
 
-        matches = await filter_cves_matching_stack(db, newly_kev_ids, stack)
+        matches = await filter_cves_matching_assets(db, newly_kev_ids, assets)
         if not matches:
             return []
 
+        stack = ",".join(assets_to_terms(assets))
         enriched = await _enrich_cve_scores(db, matches)
         created = await upsert_gap_items_for_cves(db, enriched, stack_terms=stack)
         if created:
@@ -266,27 +268,34 @@ async def reconcile_kev_backlog() -> int:
     """Weekly safety net: backlog rows for all stack-matched KEV CVEs with gap techniques."""
     db = await get_db()
     try:
-        from routers.cves import _stack_match_clause
-
-        stack = await get_effective_stack_terms(db)
-        clause, params, _terms = _stack_match_clause(stack)
-        if not clause:
+        assets = await get_operator_stack_assets(db)
+        if not assets:
             return 0
 
         rows = await db.execute_fetchall(
-            f"""
-            SELECT c.cve_id, c.is_kev, c.cvss_score, c.epss_score
+            """
+            SELECT c.cve_id, c.is_kev, c.cvss_score, c.epss_score,
+                   c.cpe_matches, c.affected_products
             FROM cves c
-            WHERE c.is_kev = 1 AND {clause}
-            """,
-            tuple(params),
+            WHERE c.is_kev = 1
+            """
         )
-        if not rows:
+        matched = []
+        for row in rows:
+            data = dict(row)
+            if cve_matches_assets(
+                data.get("cpe_matches"),
+                data.get("affected_products"),
+                assets,
+            ):
+                matched.append(data)
+        if not matched:
             return 0
 
+        stack = ",".join(assets_to_terms(assets))
         created = await upsert_gap_items_for_cves(
             db,
-            [dict(r) for r in rows],
+            matched,
             stack_terms=stack,
         )
         if created:

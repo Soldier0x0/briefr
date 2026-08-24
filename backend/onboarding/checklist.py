@@ -13,7 +13,8 @@ from typing import Any
 from database import get_nvd_sync_watermark
 from db.integrity import run_integrity_check
 from db.sync_state import get_stack_terms
-from preferences.repo import get_effective_stack_terms
+from matching.stack_assets import assets_to_terms
+from preferences.repo import get_alert_stack_assets, get_effective_stack_terms
 from resilient_client import get_feed_health
 from settings import production_posture_warnings, settings
 
@@ -61,7 +62,9 @@ async def build_onboarding_checklist(db: Any) -> dict[str, Any]:
     watermark = await get_nvd_sync_watermark(db)
     stack_env = (get_stack_terms() or "").strip()
     stack_effective = (await get_effective_stack_terms(db)).strip()
-    stack_configured = bool(stack_env or stack_effective)
+    stack_assets = await get_alert_stack_assets(db)
+    stack_asset_terms = ",".join(assets_to_terms(stack_assets))
+    stack_configured = bool(stack_env or stack_effective or stack_assets)
 
     feed_health = get_feed_health()
     open_circuits = sum(1 for v in feed_health.values() if v.get("circuit_open"))
@@ -97,9 +100,9 @@ async def build_onboarding_checklist(db: Any) -> dict[str, Any]:
         {
             "id": "stack_terms",
             "title": "Stack terms configured",
-            "detail": stack_effective or stack_env or "No stack terms yet",
+            "detail": stack_effective or stack_env or stack_asset_terms or "No stack terms yet",
             "done": stack_configured,
-            "hint": "Set BRIEFR_STACK_TERMS in config or save stack on the Feed tab.",
+            "hint": "Save My Stack from the header, or set BRIEFR_STACK_TERMS for wallboard tiles.",
         },
         {
             "id": "backup_ready",
