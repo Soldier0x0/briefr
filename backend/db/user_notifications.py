@@ -52,54 +52,6 @@ WHERE user_id = $1
   AND read_at IS NULL
 """
 
-_MARK_ONE_READ_SQLITE = """
-UPDATE user_notifications
-SET read_at = COALESCE(read_at, ?)
-WHERE id = ? AND user_id = ?
-  AND dismissed_at IS NULL
-"""
-
-_MARK_ONE_READ_PG = """
-UPDATE user_notifications
-SET read_at = COALESCE(read_at, $3)
-WHERE id = $1 AND user_id = $2
-  AND dismissed_at IS NULL
-"""
-
-_MARK_SCOPE_READ_SQLITE = """
-UPDATE user_notifications
-SET read_at = ?
-WHERE user_id = ?
-  AND scope = ?
-  AND dismissed_at IS NULL
-  AND read_at IS NULL
-"""
-
-_MARK_SCOPE_READ_PG = """
-UPDATE user_notifications
-SET read_at = $3
-WHERE user_id = $1
-  AND scope = $2
-  AND dismissed_at IS NULL
-  AND read_at IS NULL
-"""
-
-_MARK_SCOPE_READ_ALL_SQLITE = """
-UPDATE user_notifications
-SET read_at = ?
-WHERE user_id = ?
-  AND dismissed_at IS NULL
-  AND read_at IS NULL
-"""
-
-_MARK_SCOPE_READ_ALL_PG = """
-UPDATE user_notifications
-SET read_at = $2
-WHERE user_id = $1
-  AND dismissed_at IS NULL
-  AND read_at IS NULL
-"""
-
 _DISMISS_ONE_SQLITE = """
 UPDATE user_notifications
 SET dismissed_at = ?, read_at = COALESCE(read_at, ?)
@@ -127,20 +79,6 @@ UPDATE user_notifications
 SET dismissed_at = $3, read_at = COALESCE(read_at, $4)
 WHERE user_id = $1
   AND scope = $2
-  AND dismissed_at IS NULL
-"""
-
-_DISMISS_ALL_ALL_SQLITE = """
-UPDATE user_notifications
-SET dismissed_at = ?, read_at = COALESCE(read_at, ?)
-WHERE user_id = ?
-  AND dismissed_at IS NULL
-"""
-
-_DISMISS_ALL_ALL_PG = """
-UPDATE user_notifications
-SET dismissed_at = $2, read_at = COALESCE(read_at, $3)
-WHERE user_id = $1
   AND dismissed_at IS NULL
 """
 
@@ -266,10 +204,14 @@ async def mark_one_read(
 ) -> bool:
     now = utcnow_str()
     pg = _is_postgres_connection(db)
-    if pg:
-        sql, params = _MARK_ONE_READ_PG, (notification_id, user_id, now)
-    else:
-        sql, params = _MARK_ONE_READ_SQLITE, (now, notification_id, user_id)
+    sql = f"""
+        UPDATE user_notifications
+        SET read_at = COALESCE(read_at, {_placeholder(pg, 3 if pg else 1)})
+        WHERE id = {_placeholder(pg, 1 if pg else 2)}
+          AND user_id = {_placeholder(pg, 2 if pg else 3)}
+          AND dismissed_at IS NULL
+        """
+    params = (notification_id, user_id, now) if pg else (now, notification_id, user_id)
     result = await db.execute(sql, params)
     return int(getattr(result, "rowcount", 0) or 0) > 0
 
@@ -278,14 +220,18 @@ async def mark_scope_read(db: DbConnection, *, user_id: int, scope: str) -> int:
     now = utcnow_str()
     pg = _is_postgres_connection(db)
     if scope == "all":
-        if pg:
-            sql, params = _MARK_SCOPE_READ_ALL_PG, (user_id, now)
-        else:
-            sql, params = _MARK_SCOPE_READ_ALL_SQLITE, (now, user_id)
+        sql = f"""
+            UPDATE user_notifications
+            SET read_at = {_placeholder(pg, 2 if pg else 1)}
+            WHERE user_id = {_placeholder(pg, 1 if pg else 2)}
+              AND dismissed_at IS NULL
+              AND read_at IS NULL
+            """
+        params: tuple[Any, ...] = (user_id, now) if pg else (now, user_id)
     elif pg:
-        sql, params = _MARK_SCOPE_READ_PG, (user_id, scope, now)
+        sql, params = _MARK_SEEN_PG, (user_id, scope, now)
     else:
-        sql, params = _MARK_SCOPE_READ_SQLITE, (now, user_id, scope)
+        sql, params = _MARK_SEEN_SQLITE, (now, user_id, scope)
     result = await db.execute(sql, params)
     return int(getattr(result, "rowcount", 0) or 0)
 
@@ -320,10 +266,14 @@ async def dismiss_all_notifications(
     now = utcnow_str()
     pg = _is_postgres_connection(db)
     if scope == "all":
-        if pg:
-            sql, params = _DISMISS_ALL_ALL_PG, (user_id, now, now)
-        else:
-            sql, params = _DISMISS_ALL_ALL_SQLITE, (now, now, user_id)
+        sql = f"""
+            UPDATE user_notifications
+            SET dismissed_at = {_placeholder(pg, 2 if pg else 1)},
+                read_at = COALESCE(read_at, {_placeholder(pg, 3 if pg else 2)})
+            WHERE user_id = {_placeholder(pg, 1 if pg else 3)}
+              AND dismissed_at IS NULL
+            """
+        params = (user_id, now, now) if pg else (now, now, user_id)
     elif pg:
         sql, params = _DISMISS_ALL_PG, (user_id, scope, now, now)
     else:

@@ -370,6 +370,16 @@ terms:
   source: frontend/package.json
   ecosystem: npm
   version: null
+- id: self-stack-radix-ui-react-popover
+  title: '@radix-ui/react-popover'
+  summary: BRIEFR dependency term derived from frontend/package.json.
+  owner: platform
+  status: active
+  origin: generated
+  term: '@radix-ui/react-popover'
+  source: frontend/package.json
+  ecosystem: npm
+  version: null
 - id: self-stack-radix-ui-react-select
   title: '@radix-ui/react-select'
   summary: BRIEFR dependency term derived from frontend/package.json.

@@ -225,7 +225,10 @@ EXPECTED_ROUTES = [
     ("PATCH", "/api/me/preferences"),
     ("GET", "/api/me/notifications"),
     ("GET", "/api/me/notifications/unread-count"),
+    ("POST", "/api/me/notifications/read-all"),
     ("POST", "/api/me/notifications/seen"),
+    ("POST", "/api/me/notifications/{notification_id}/read"),
+    ("POST", "/api/me/notifications/{notification_id}/restore"),
     ("POST", "/api/me/notifications/{notification_id}/dismiss"),
     ("POST", "/api/me/notifications/dismiss-all"),
     # Q3 CPE software catalog autocomplete
