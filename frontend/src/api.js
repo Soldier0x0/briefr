@@ -4,20 +4,106 @@ import { investigationEntityPath, buildInvestigationRelationshipQuery } from './
 const BASE = '/api'
 const REQUEST_TIMEOUT_MS = 20000
 
-// Shared in-flight refresh promise so concurrent 401s share one
-// /api/auth/refresh call instead of each racing to rotate the same refresh
-// token — a second independent call would find the token already rotated
-// and trip the backend's reuse-detection, revoking every session.
+// Shared in-flight refresh promise so concurrent 401s share one rotation.
+// Cross-tab: Web Locks (HTTPS/localhost) or localStorage mutex + GET /auth/me
+// probe so a second tab does not POST the already-rotated refresh cookie
+// (reuse detection revokes every session, including Remember me).
 // Callers (including AuthContext bootstrap via fetchMe → request) must use
-// this helper — never bare-fetch /auth/refresh — or a parallel refresh can
-// revoke the session and leave BRIEF widgets sticky "Not authenticated"
-// while the header still briefly shows the cached user.
+// this helper — never bare-fetch /auth/refresh.
 let refreshPromise = null
+const REFRESH_LOCK = 'briefr-auth-refresh'
+const REFRESH_LS_LOCK = 'briefr-auth-refresh-lock'
+const REFRESH_LS_TTL_MS = 15000
+
+/** Auth rotation must not use doFetch/request — those 401-retry into this helper. */
+async function authFetch(path, options = {}) {
+  const opts = {
+    credentials: 'include',
+    cache: 'no-store',
+    ...options,
+  }
+  if (!opts.signal && typeof AbortSignal?.timeout === 'function') {
+    opts.signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  }
+  try {
+    return await fetch(`${BASE}${path}`, opts)
+  } catch {
+    return { ok: false, status: 0 }
+  }
+}
+
+async function probeSessionAlive() {
+  const res = await authFetch('/auth/me')
+  return Boolean(res?.ok)
+}
+
+async function postRefresh() {
+  const res = await authFetch('/auth/refresh', { method: 'POST' })
+  return Boolean(res?.ok)
+}
+
+/** Serialize rotation across tabs. Two tabs both POSTing /auth/refresh with the
+ *  same cookie trips reuse detection and revokes every session (Remember me
+ *  included). Prefer Web Locks (HTTPS / localhost); otherwise a localStorage
+ *  mutex so HTTP LAN still coordinates. */
+async function rotateAccessToken() {
+  if (await probeSessionAlive()) return true
+  return postRefresh()
+}
+
+async function withStorageLock(fn) {
+  const store = globalThis.localStorage
+  if (!store) return fn()
+  const owner = `${Date.now()}-${Math.random()}`
+  const deadline = Date.now() + REQUEST_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    let held = null
+    try {
+      held = JSON.parse(store.getItem(REFRESH_LS_LOCK) || 'null')
+    } catch {
+      held = null
+    }
+    const now = Date.now()
+    if (!held || typeof held.at !== 'number' || now - held.at > REFRESH_LS_TTL_MS) {
+      try {
+        store.setItem(REFRESH_LS_LOCK, JSON.stringify({ id: owner, at: now }))
+      } catch {
+        return fn()
+      }
+      await new Promise((r) => setTimeout(r, 0))
+      try {
+        const again = JSON.parse(store.getItem(REFRESH_LS_LOCK) || 'null')
+        if (again?.id === owner) {
+          try {
+            return await fn()
+          } finally {
+            try {
+              const cur = JSON.parse(store.getItem(REFRESH_LS_LOCK) || 'null')
+              if (cur?.id === owner) store.removeItem(REFRESH_LS_LOCK)
+            } catch {
+              store.removeItem(REFRESH_LS_LOCK)
+            }
+          }
+        }
+      } catch {
+        /* retry */
+      }
+    }
+    await new Promise((r) => setTimeout(r, 15 + Math.random() * 25))
+  }
+  return fn()
+}
+
+function withRefreshLock(fn) {
+  const locks = globalThis.navigator?.locks
+  if (locks?.request) return locks.request(REFRESH_LOCK, fn)
+  return withStorageLock(fn)
+}
 
 export function refreshAccessToken() {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then(res => res.ok)
+    refreshPromise = withRefreshLock(rotateAccessToken)
+      .then((ok) => Boolean(ok))
       .catch(() => false)
       .finally(() => { refreshPromise = null })
   }
