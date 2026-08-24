@@ -8,7 +8,6 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 import {
-  dismissAllNotifications,
   dismissNotification,
   fetchNotifications,
   readAllNotifications,
@@ -345,14 +344,30 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
   async function handleMoveAllDone() {
     const ids = items.map(item => item.id)
     if (!ids.length) return
-    try {
-      const result = await dismissAllNotifications(scope)
-      setItems([])
-      setUnreadCount(result.unread_count ?? 0)
-      beginUndo(ids, `${ids.length} notification${ids.length === 1 ? '' : 's'} moved to Done`)
+    const results = await Promise.allSettled(ids.map(id => dismissNotification(id)))
+    const dismissedIds = ids.filter((_, index) => results[index].status === 'fulfilled')
+    const dismissedIdSet = new Set(dismissedIds)
+    const dismissedUnread = items.filter(item => (
+      dismissedIdSet.has(item.id) && !item.read_at
+    )).length
+
+    if (dismissedIds.length) {
+      setItems(current => current.filter(item => !dismissedIdSet.has(item.id)))
+      setUnreadCount(current => Math.max(0, current - dismissedUnread))
+      beginUndo(
+        dismissedIds,
+        `${dismissedIds.length} notification${dismissedIds.length === 1 ? '' : 's'} moved to Done`,
+      )
+    }
+
+    if (dismissedIds.length === ids.length) {
       setError(null)
-    } catch (dismissError) {
-      setError(dismissError instanceof Error ? dismissError : new Error('Notifications could not be moved to Done.'))
+    } else {
+      setError(new Error(
+        dismissedIds.length
+          ? 'Some notifications could not be moved to Done.'
+          : 'Notifications could not be moved to Done.',
+      ))
     }
   }
 
@@ -389,10 +404,11 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
 
   function handleContentKeyDown(event) {
     const target = event.target
-    if (
-      target instanceof HTMLElement
-      && (target.matches('input, textarea, select') || target.isContentEditable)
-    ) return
+    if (target instanceof Element) {
+      const notificationRow = target.closest('.notification-inbox-row-hit')
+      const nestedControl = target.closest('button, a, [role="tab"], input, select, textarea')
+      if ((nestedControl && nestedControl !== notificationRow) || target.isContentEditable) return
+    }
     if (event.altKey || event.ctrlKey || event.metaKey || !rows.length) return
 
     if (event.key.toLowerCase() === 'j') {

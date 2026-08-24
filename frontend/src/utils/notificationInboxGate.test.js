@@ -23,4 +23,21 @@ describe('NotificationBell inbox gate', () => {
     assert.match(src, /Mark all as read/)
     assert.match(src, /Done/)
   })
+
+  it('leaves Enter handling to nested interactive controls', () => {
+    assert.match(
+      src,
+      /target\.closest\('button, a, \[role="tab"\], input, select, textarea'\)/,
+    )
+    assert.match(src, /nestedControl !== notificationRow/)
+  })
+
+  it('moves only the loaded notification ids to Done', () => {
+    assert.doesNotMatch(src, /dismissAllNotifications/)
+    assert.match(src, /const ids = items\.map\(item => item\.id\)/)
+    assert.match(
+      src,
+      /Promise\.allSettled\(ids\.map\(id => dismissNotification\(id\)\)\)/,
+    )
+  })
 })
