@@ -11,7 +11,7 @@ import './WebhooksPage.css'
 
 const EVENT_OPTIONS = [
   { id: 'kev_alert', label: 'KEV stack match' },
-  { id: 'kev_backlog', label: 'KEV detection backlog' },
+  { id: 'kev_backlog', label: 'KEV detection backlog (not sent — Forge only)' },
   { id: 'watchlist_alert', label: 'Watchlist (pinned CVE)' },
   { id: 'ioc_watchlist_hit', label: 'IOC watchlist hit' },
   { id: 'backup_failure', label: 'Backup failure' },

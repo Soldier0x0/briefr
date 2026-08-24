@@ -13,36 +13,12 @@ from typing import Any
 from database import get_db
 from db.enrichment import filter_cves_matching_stack
 from db.types import DbConnection
-from notifications.emit import emit_kev_backlog_notification
 from preferences.repo import get_effective_stack_terms
 from routers.forge import _coverage_status, _derive_priority
 
 logger = logging.getLogger(__name__)
 
 REASON_KEV_GAP = "kev_gap"
-
-
-async def _notify_new_backlog_items(db: DbConnection, created: list[dict[str, Any]]) -> None:
-    """In-app notification per new backlog row (forge-redesign.md §4) —
-    scheduler-side only, called from process_new_kev_backlog /
-    reconcile_kev_backlog after the backlog insert already committed.
-    Failure here must never fail the backlog refresh itself."""
-    for item in created:
-        try:
-            await emit_kev_backlog_notification(
-                db,
-                cve_id=item["cve_id"],
-                technique_id=item["technique_id"],
-                technique_name=item.get("technique_name") or item["technique_id"],
-                priority=item.get("priority", "medium"),
-                dedupe_key=f"kev_backlog:{item['cve_id']}:{item['technique_id']}",
-            )
-        except Exception as exc:
-            logger.warning(
-                "KEV backlog notification failed for %s/%s: %s",
-                item.get("cve_id"), item.get("technique_id"), exc,
-            )
-    await db.commit()
 
 
 async def _fetchone(db: DbConnection, sql: str, params: tuple = ()) -> Any | None:
@@ -281,7 +257,6 @@ async def process_new_kev_backlog(newly_kev_ids: list[str]) -> list[dict[str, An
         if created:
             await db.commit()
             logger.info("KEV backlog: %d new gap item(s)", len(created))
-            await _notify_new_backlog_items(db, created)
         return created
     finally:
         await db.close()
@@ -317,7 +292,6 @@ async def reconcile_kev_backlog() -> int:
         if created:
             await db.commit()
             logger.info("KEV backlog reconcile: %d new gap item(s)", len(created))
-            await _notify_new_backlog_items(db, created)
         return len(created)
     finally:
         await db.close()

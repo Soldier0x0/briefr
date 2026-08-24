@@ -1542,7 +1542,9 @@ Soft-dismiss a backlog row. Dismissed items are not recreated on later KEV sync.
 
 Backlog rows are created by the KEV metadata sync job when CVEs newly enter KEV
 and match the operator stack, and by the weekly `kev_backlog_reconcile` job.
-Optional webhook event: `kev_backlog`.
+They are **not** sent as in-app notifications or webhooks (`kev_backlog` remains
+a destination event id for compatibility but is never dispatched). Review gaps in
+Forge → Backlog.
 
 ---
 

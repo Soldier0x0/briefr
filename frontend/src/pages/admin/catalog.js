@@ -146,7 +146,7 @@ export const JOB_CATALOG = {
     label: 'KEV detection backlog',
     short: 'KEV backlog',
     operatorName: 'Weekly KEV Detection Backlog Reconcile',
-    analystDescription: 'Reconciles KEV detection backlog items on a weekly schedule.',
+    analystDescription: 'Reconciles KEV detection backlog rows in Forge (no notification).',
     refreshButton: 'Run KEV backlog reconcile',
   },
   threatfox_sync: {
