@@ -400,6 +400,13 @@ Auth required. Re-kicks a deferred/on_hold/partial run.
   "utc_time": false,
   "reduce_motion": false,
   "notification_sound": true,
+  "notification_mutes": {
+    "watchlist": false,
+    "ioc_watchlist": false,
+    "job_error": false,
+    "api_key_unhealthy": false,
+    "webhook_failure": false
+  },
   "typography_px": {
     "title": 20,
     "heading": 15,
@@ -425,7 +432,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 **Response:** Same shape as GET (with non-null `updated_at`).
 
-**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `notification_sound`, `remember_profile_on_server`; `typography_px` object with integer px per role (`title`, `heading`, `subheading`, `id`, `body`, `meta`, `micro`) in range 9–20; `timezone` must be a valid IANA zone. Invalid values → `422`.
+**Validation:** `font_scale` ∈ `xsmall|small|medium|large|xlarge`; `density` ∈ `compact|comfortable|spacious`; `poll_interval_seconds` ∈ `15|30|60|120`; booleans for `show_technical_ids`, `utc_time`, `reduce_motion`, `notification_sound`, `remember_profile_on_server`; `notification_mutes` object of known category booleans (`watchlist`, `ioc_watchlist`, `job_error`, `api_key_unhealthy`, `webhook_failure`; `true` = muted; unknown keys → `422`); `typography_px` object with integer px per role (`title`, `heading`, `subheading`, `id`, `body`, `meta`, `micro`) in range 9–20; `timezone` must be a valid IANA zone. Invalid values → `422`.
 
 **Response also includes:** `instance_typography_default` — operator-configured default profile from `app_settings` (null when unset). Users without a saved `typography_px` inherit this on read.
 
