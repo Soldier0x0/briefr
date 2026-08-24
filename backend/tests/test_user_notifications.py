@@ -128,7 +128,9 @@ def test_analyst_scope_lists_and_counts_unread(client):
 
     seen = client.post("/api/me/notifications/seen", json={"scope": "analyst"})
     assert seen.status_code == 200
-    assert seen.json()["unread_count"] == 0
+    seen_body = seen.json()
+    assert seen_body["marked_seen"] == 2
+    assert seen_body["unread_count"] == 0
 
     after = client.get("/api/me/notifications?scope=analyst")
     assert after.json()["unread_count"] == 0
@@ -208,6 +210,22 @@ def test_restore_returns_to_inbox(client):
     assert client.post(f"/api/me/notifications/{nid}/restore").status_code == 200
     inbox = client.get("/api/me/notifications?view=inbox").json()
     assert len(inbox["notifications"]) == 1
+
+
+def test_dismiss_all_scope_all(client):
+    admin_id = _user_id("admin1")
+    _insert(admin_id, "analyst", dedupe="da-a")
+    _insert(admin_id, "operator", dedupe="da-o")
+
+    _login(client, "admin1")
+    dismiss_all = client.post(
+        "/api/me/notifications/dismiss-all", json={"scope": "all"}
+    )
+    assert dismiss_all.status_code == 200
+    assert dismiss_all.json()["dismissed"] == 2
+
+    empty = client.get("/api/me/notifications?scope=all").json()
+    assert empty["notifications"] == []
 
 
 def test_scope_all_admin_only(client):

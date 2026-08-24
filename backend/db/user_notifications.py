@@ -130,6 +130,20 @@ WHERE user_id = $1
   AND dismissed_at IS NULL
 """
 
+_DISMISS_ALL_ALL_SQLITE = """
+UPDATE user_notifications
+SET dismissed_at = ?, read_at = COALESCE(read_at, ?)
+WHERE user_id = ?
+  AND dismissed_at IS NULL
+"""
+
+_DISMISS_ALL_ALL_PG = """
+UPDATE user_notifications
+SET dismissed_at = $2, read_at = COALESCE(read_at, $3)
+WHERE user_id = $1
+  AND dismissed_at IS NULL
+"""
+
 
 async def list_active_user_ids(db: DbConnection, *, scope: str) -> list[int]:
     if scope == _SCOPE_OPERATOR:
@@ -305,7 +319,12 @@ async def dismiss_all_notifications(
 ) -> int:
     now = utcnow_str()
     pg = _is_postgres_connection(db)
-    if pg:
+    if scope == "all":
+        if pg:
+            sql, params = _DISMISS_ALL_ALL_PG, (user_id, now, now)
+        else:
+            sql, params = _DISMISS_ALL_ALL_SQLITE, (now, now, user_id)
+    elif pg:
         sql, params = _DISMISS_ALL_PG, (user_id, scope, now, now)
     else:
         sql, params = _DISMISS_ALL_SQLITE, (now, now, user_id, scope)

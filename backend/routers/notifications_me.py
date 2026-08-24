@@ -109,7 +109,9 @@ async def mark_notifications_seen(
     payload: dict = Depends(require_user),
 ):
     """Alias of read-all for backward compatibility."""
-    return await mark_all_read(body, payload)
+    result = await mark_all_read(body, payload)
+    result["marked_seen"] = result["marked_read"]
+    return result
 
 
 @router.post("/{notification_id}/read")
