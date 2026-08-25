@@ -463,6 +463,9 @@ endpoints:
   path: /api/me/notifications/dismiss-all
   component_id: routers-notifications_me
 - method: POST
+  path: /api/me/notifications/read-all
+  component_id: routers-notifications_me
+- method: POST
   path: /api/me/notifications/seen
   component_id: routers-notifications_me
 - method: GET
@@ -470,6 +473,12 @@ endpoints:
   component_id: routers-notifications_me
 - method: POST
   path: /api/me/notifications/{notification_id}/dismiss
+  component_id: routers-notifications_me
+- method: POST
+  path: /api/me/notifications/{notification_id}/read
+  component_id: routers-notifications_me
+- method: POST
+  path: /api/me/notifications/{notification_id}/restore
   component_id: routers-notifications_me
 - method: GET
   path: /api/me/preferences

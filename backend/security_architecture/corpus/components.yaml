@@ -312,11 +312,11 @@ components:
     ref: backend/routers/meta.py
 - id: routers-notifications_me
   title: routers.notifications_me
-  summary: FastAPI router module with 5 endpoint(s).
+  summary: FastAPI router module with 8 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 5
+  endpoint_count: 8
   source_refs:
   - type: file
     ref: backend/routers/notifications_me.py

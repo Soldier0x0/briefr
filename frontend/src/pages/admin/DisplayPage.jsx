@@ -20,6 +20,18 @@ import {
   TYPOGRAPHY_ROLES,
 } from '../../utils/typographyPrefs.js'
 import { applyDisplayPrefs } from '../../utils/displayPrefsCore.js'
+import {
+  DEFAULT_NOTIFICATION_MUTES,
+  NOTIFICATION_MUTE_CATEGORIES,
+} from '../../utils/notificationInbox.js'
+
+const NOTIFICATION_MUTE_LABELS = {
+  watchlist: 'Watchlist (pinned CVE)',
+  ioc_watchlist: 'IOC watchlist hit',
+  job_error: 'Scheduler job failure',
+  api_key_unhealthy: 'API key unhealthy',
+  webhook_failure: 'Webhook delivery failure',
+}
 
 export default function DisplayPage() {
   const { user } = useAuth()
@@ -48,7 +60,31 @@ export default function DisplayPage() {
   function update(key, value) {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
-    void setDisplayPrefs(next).catch(() => setPrefs(getDisplayPrefs()))
+    void setDisplayPrefs(next).catch(() => {
+      setPrefs(getDisplayPrefs())
+      setStatus('Could not save display preferences.')
+    })
+  }
+
+  function updateNotificationMute(category, muted) {
+    const previous = prefs
+    const merged = {
+      ...DEFAULT_NOTIFICATION_MUTES,
+      ...(prefs.notificationMutes || {}),
+      [category]: muted,
+    }
+    const next = { ...prefs, notificationMutes: merged }
+    setPrefs(next)
+    setSaving(true)
+    void setDisplayPrefs(next)
+      .then(() => {
+        setStatus('')
+      })
+      .catch(() => {
+        setPrefs(previous)
+        setStatus('Could not save notification mutes.')
+      })
+      .finally(() => setSaving(false))
   }
 
   function updateTypographyRole(role, px) {
@@ -213,10 +249,32 @@ export default function DisplayPage() {
 
       <Card>
         <CardTitle>Notifications</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
-          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
+        <label className="display-typography-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} disabled={saving} />
           Play a short chime when new high-priority notifications arrive
         </label>
+        <div className="display-typography-grid" style={{ marginTop: '0.75rem' }}>
+          {NOTIFICATION_MUTE_CATEGORIES.map((category) => (
+            <label
+              key={category}
+              className="display-typography-row-label"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+            >
+              <ToggleSwitch
+                on={!!prefs.notificationMutes?.[category]}
+                onChange={(v) => updateNotificationMute(category, v)}
+                disabled={saving}
+              />
+              Mute {NOTIFICATION_MUTE_LABELS[category]}
+            </label>
+          ))}
+        </div>
+        <p className="admin-page-subtitle" style={{ margin: '0.4rem 0 0' }}>
+          Muted types are not added to the inbox. Discord and Telegram still follow Admin → Webhooks.
+        </p>
+        {status ? (
+          <p className="display-typography-status mono">{status}</p>
+        ) : null}
       </Card>
 
       <Card>

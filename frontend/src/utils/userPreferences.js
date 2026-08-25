@@ -72,6 +72,9 @@ function toApiPatch(displayPatch = {}, timezone) {
   if (displayPatch.typographyPx !== undefined) {
     patch.typography_px = displayPatch.typographyPx
   }
+  if (displayPatch.notificationMutes !== undefined) {
+    patch.notification_mutes = displayPatch.notificationMutes
+  }
   if (timezone !== undefined) patch.timezone = timezone
   return patch
 }

@@ -80,6 +80,13 @@ def test_get_preferences_defaults(client):
     assert body["reduce_motion"] is False
     assert body["ui_variant"] == "pitch"
     assert body["notification_sound"] is True
+    assert body["notification_mutes"] == {
+        "watchlist": False,
+        "ioc_watchlist": False,
+        "job_error": False,
+        "api_key_unhealthy": False,
+        "webhook_failure": False,
+    }
     assert body["timezone"] == "UTC"
     assert body["remember_profile_on_server"] is False
     assert body["updated_at"] is None
@@ -172,4 +179,22 @@ def test_patch_preferences_rejects_invalid_ui_variant(client):
 def test_patch_preferences_rejects_invalid_font_scale(client):
     _login(client)
     res = client.patch("/api/me/preferences", json={"font_scale": "huge"})
+    assert res.status_code == 422
+
+
+def test_patch_notification_mutes_rejects_string_false(client):
+    _login(client)
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": "false"}},
+    )
+    assert res.status_code == 422
+
+
+def test_patch_notification_mutes_rejects_integer_zero(client):
+    _login(client)
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": 0}},
+    )
     assert res.status_code == 422

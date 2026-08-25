@@ -12,6 +12,16 @@ MAX_TIMEZONE_LEN = 64
 
 UI_VARIANTS = frozenset({"default", "pitch"})
 
+NOTIFICATION_MUTE_CATEGORIES = (
+    "watchlist",
+    "ioc_watchlist",
+    "job_error",
+    "api_key_unhealthy",
+    "webhook_failure",
+)
+
+DEFAULT_NOTIFICATION_MUTES = {category: False for category in NOTIFICATION_MUTE_CATEGORIES}
+
 DEFAULT_DISPLAY_PREFS = {
     "font_scale": "medium",
     "density": "comfortable",
@@ -21,6 +31,7 @@ DEFAULT_DISPLAY_PREFS = {
     "reduce_motion": False,
     "notification_sound": True,
     "ui_variant": "pitch",
+    "notification_mutes": DEFAULT_NOTIFICATION_MUTES,
 }
 
 DEFAULT_TYPOGRAPHY_PX = {
@@ -87,8 +98,22 @@ def _coerce_bool(value: object, field: str) -> bool:
     raise ValueError(f"{field} must be a boolean")
 
 
+def sanitize_notification_mutes(data: dict | None) -> dict:
+    base = dict(DEFAULT_NOTIFICATION_MUTES)
+    if data is None:
+        return base
+    if not isinstance(data, dict):
+        raise ValueError("notification_mutes must be a JSON object")
+    for key, value in data.items():
+        if key not in NOTIFICATION_MUTE_CATEGORIES:
+            raise ValueError(f"notification_mutes.{key} is invalid")
+        base[key] = _coerce_bool(value, f"notification_mutes.{key}")
+    return base
+
+
 def sanitize_display_prefs(data: dict | None) -> dict:
     base = dict(DEFAULT_DISPLAY_PREFS)
+    base["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
     if data is None:
         return base
     if not isinstance(data, dict):
@@ -133,6 +158,9 @@ def sanitize_display_prefs(data: dict | None) -> dict:
             raise ValueError("ui_variant is invalid")
         base["ui_variant"] = ui_variant
 
+    if "notification_mutes" in data and data["notification_mutes"] is not None:
+        base["notification_mutes"] = sanitize_notification_mutes(data["notification_mutes"])
+
     return base
 
 
@@ -140,6 +168,8 @@ def merge_display_prefs(existing: dict, patch: dict) -> dict:
     merged = {k: existing[k] for k in DEFAULT_DISPLAY_PREFS if k in existing}
     if "typography_px" in existing:
         merged["typography_px"] = existing["typography_px"]
+    if "notification_mutes" in existing:
+        merged["notification_mutes"] = dict(existing["notification_mutes"])
     for key, value in patch.items():
         if value is None:
             continue
@@ -148,11 +178,18 @@ def merge_display_prefs(existing: dict, patch: dict) -> dict:
             if isinstance(value, dict):
                 base.update(value)
             merged["typography_px"] = sanitize_typography_px(base)
+        elif key == "notification_mutes":
+            base = dict(merged.get("notification_mutes") or DEFAULT_NOTIFICATION_MUTES)
+            if isinstance(value, dict):
+                base.update(value)
+            merged["notification_mutes"] = sanitize_notification_mutes(base)
         elif key in DEFAULT_DISPLAY_PREFS:
             merged[key] = value
     result = sanitize_display_prefs(merged)
     if "typography_px" in merged:
         result["typography_px"] = merged["typography_px"]
+    if "notification_mutes" in merged:
+        result["notification_mutes"] = merged["notification_mutes"]
     return result
 
 
@@ -162,6 +199,8 @@ def encode_display_prefs(prefs: dict) -> str:
     payload = {k: prefs[k] for k in DEFAULT_DISPLAY_PREFS if k in prefs}
     if "typography_px" in prefs:
         payload["typography_px"] = prefs["typography_px"]
+    if "notification_mutes" in prefs:
+        payload["notification_mutes"] = prefs["notification_mutes"]
     encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True)
     if len(encoded) > MAX_DISPLAY_PREFS_JSON_LEN:
         raise ValueError(

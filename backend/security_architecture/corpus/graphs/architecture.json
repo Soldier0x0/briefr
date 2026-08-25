@@ -976,7 +976,7 @@
       "label": "routers.notifications_me",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 5,
+      "endpoint_count": 8,
       "source_refs": [
         {
           "type": "file",

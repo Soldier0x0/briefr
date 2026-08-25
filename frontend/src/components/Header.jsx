@@ -13,7 +13,8 @@ import { feedHealthLevel, feedHealthLabel } from '../utils/feedHealthStatus.js'
 
 export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorialOpen, onLogoClick, onTimezoneChange, showShortcuts, feedHealth = null }) {
   const assetCtx = useAssetProfileOptional()
-  const { status: authStatus } = useAuth()
+  const { status: authStatus, user } = useAuth()
+  const notificationScope = user?.role === 'admin' ? 'all' : 'analyst'
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const overflowRef                     = useRef(null)
@@ -90,7 +91,7 @@ export default function Header({ activeTab, onTabChange, onAboutOpen, onTutorial
           <ApiQueueIndicator apiQueue={feedHealth?.api_queue} />
 
           {authStatus === 'authed' ? (
-            <NotificationBell scope="analyst" className="header-notification-bell" />
+            <NotificationBell scope={notificationScope} className="header-notification-bell" />
           ) : null}
 
           {authStatus === 'authed' ? (

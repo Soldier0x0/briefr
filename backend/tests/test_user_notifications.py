@@ -124,15 +124,31 @@ def test_analyst_scope_lists_and_counts_unread(client):
     assert res.status_code == 200
     body = res.json()
     assert len(body["notifications"]) == 2
-    assert body["unread_count"] == 1
+    assert body["unread_count"] == 2
 
     seen = client.post("/api/me/notifications/seen", json={"scope": "analyst"})
     assert seen.status_code == 200
-    assert seen.json()["unread_count"] == 0
+    seen_body = seen.json()
+    assert seen_body["marked_seen"] == 2
+    assert seen_body["unread_count"] == 0
 
     after = client.get("/api/me/notifications?scope=analyst")
     assert after.json()["unread_count"] == 0
     assert len(after.json()["notifications"]) == 2
+
+
+def test_list_view_done_excludes_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="d1")
+    _login(client, "analyst1")
+    listed = client.get("/api/me/notifications?scope=analyst").json()
+    nid = listed["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+    inbox = client.get("/api/me/notifications?scope=analyst&view=inbox").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+    assert inbox["notifications"] == []
+    assert len(done["notifications"]) == 1
+    assert done["unread_count"] == 0
 
 
 def test_dismiss_one_and_dismiss_all(client):
@@ -172,8 +188,123 @@ def test_operator_scope_admin_only(client):
     assert len(ok.json()["notifications"]) == 1
 
 
+def test_read_does_not_remove_from_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="r1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications").json()["notifications"][0]["id"]
+    res = client.post(f"/api/me/notifications/{nid}/read")
+    assert res.status_code == 200
+    body = client.get("/api/me/notifications").json()
+    assert len(body["notifications"]) == 1
+    assert body["unread_count"] == 0
+    assert body["notifications"][0]["read_at"]
+
+
+def test_restore_returns_to_inbox(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="u1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications").json()["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+    assert client.post(f"/api/me/notifications/{nid}/restore").status_code == 200
+    inbox = client.get("/api/me/notifications?view=inbox").json()
+    assert len(inbox["notifications"]) == 1
+
+
+def test_dismiss_all_scope_all(client):
+    admin_id = _user_id("admin1")
+    _insert(admin_id, "analyst", dedupe="da-a")
+    _insert(admin_id, "operator", dedupe="da-o")
+
+    _login(client, "admin1")
+    dismiss_all = client.post(
+        "/api/me/notifications/dismiss-all", json={"scope": "all"}
+    )
+    assert dismiss_all.status_code == 200
+    assert dismiss_all.json()["dismissed"] == 2
+
+    empty = client.get("/api/me/notifications?scope=all").json()
+    assert empty["notifications"] == []
+
+
+def test_scope_all_admin_only(client):
+    admin_id = _user_id("admin1")
+    analyst_id = _user_id("analyst1")
+    _insert(admin_id, "analyst", dedupe="aa")
+    _insert(admin_id, "operator", dedupe="oo")
+    _insert(analyst_id, "analyst", dedupe="xx")
+    _login(client, "analyst1")
+    assert client.get("/api/me/notifications?scope=all").status_code == 403
+    _login(client, "admin1")
+    body = client.get("/api/me/notifications?scope=all").json()
+    scopes = {n["scope"] for n in body["notifications"]}
+    assert scopes == {"analyst", "operator"}
+    assert len(body["notifications"]) == 2
+
+
 def test_patch_preferences_notification_sound(client):
     _login(client, "admin1")
     patch = client.patch("/api/me/preferences", json={"notification_sound": False})
     assert patch.status_code == 200
     assert patch.json()["notification_sound"] is False
+
+
+def test_patch_notification_mutes(client):
+    _login(client, "admin1")
+    patch = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": True}},
+    )
+    assert patch.status_code == 200
+    assert patch.json()["notification_mutes"]["watchlist"] is True
+    assert patch.json()["notification_mutes"]["job_error"] is False
+
+
+def test_patch_notification_mutes_rejects_unknown_key(client):
+    _login(client, "admin1")
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"not_a_category": True}},
+    )
+    assert res.status_code == 422
+
+
+def test_muted_category_does_not_insert(client):
+    from notifications.emit import emit_watchlist_notification
+
+    _login(client, "analyst1")
+    client.patch("/api/me/preferences", json={"notification_mutes": {"watchlist": True}})
+
+    async def _only_analyst_active():
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE users SET is_active = 0 WHERE username = ?",
+                ("admin1",),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_only_analyst_active())
+
+    async def _emit():
+        db = await get_db()
+        try:
+            n = await emit_watchlist_notification(
+                db,
+                cve_id="CVE-2024-1",
+                reason="Entered KEV",
+                detail="x",
+                dedupe_key="watch:CVE-2024-1:kev",
+            )
+            await db.commit()
+            return n
+        finally:
+            await db.close()
+
+    created = run_db_test(_emit())
+    assert created == 0
+    listed = client.get("/api/me/notifications?scope=analyst").json()
+    assert listed["notifications"] == []

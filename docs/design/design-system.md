@@ -249,8 +249,8 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
 ### Implemented today (`frontend/src/components/ui/`)
 
 1. **Primitives (Radix behavior + BRIEFR CSS tokens)** — Button, Checkbox, Switch,
-   Select, Slider, Tabs, Tooltip, Dialog/`Modal`, AlertDialog/`ConfirmModal`,
-   DropdownMenu (includes radio-item helpers).
+   Select, Slider, Tabs, Tooltip, Popover (Radix, portaled, `--shadow-overlay`),
+   Dialog/`Modal`, AlertDialog/`ConfirmModal`, DropdownMenu (includes radio-item helpers).
 2. **Composites** — DataGrid, StatCard, Badge, Pill, Card, Toast, EmptyState,
    ErrorState, AsyncState, Skeleton/SkeletonStack, ChartShell, ChartDataTable,
    DateTimePicker, DateTimeRangeField, ReferenceTooltip.
@@ -260,7 +260,7 @@ Three layers. Higher layers compose lower ones; never re-implement a lower layer
 
 ### Target / not yet exported as shared primitives
 
-RadioGroup, Popover, ScrollArea, FormField (label+control+error), SidebarNav, and
+RadioGroup, ScrollArea, FormField (label+control+error), SidebarNav, and
 PageHeader/Breadcrumbs remain design targets — prefer composing existing primitives
 until those land in `components/ui/`. Admin breadcrumbs and sidebar patterns exist as
 page-local markup today; do not invent a second shared nav kit outside this inventory.

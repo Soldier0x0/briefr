@@ -9,7 +9,7 @@ Wave 2 PR 5: display preferences + timezone via GET/PATCH /api/me/preferences.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 
 from database import get_db
 from dependencies import require_user
@@ -32,6 +32,7 @@ class PreferencesPatch(BaseModel):
     utc_time: bool | None = None
     reduce_motion: bool | None = None
     notification_sound: bool | None = None
+    notification_mutes: dict[str, StrictBool] | None = None
     ui_variant: str | None = None
     typography_px: dict[str, int] | None = None
     timezone: str | None = Field(default=None, max_length=64)
