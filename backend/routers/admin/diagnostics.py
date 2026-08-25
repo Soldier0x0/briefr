@@ -291,6 +291,28 @@ async def export_support_pack(
     )
 
 
+@router.get("/diagnostics/ops-telemetry-pack")
+async def export_ops_telemetry_pack(
+    request: Request,
+    window: str = Query("1d"),
+):
+    from db.resource_metrics import VALID_RESOURCE_WINDOWS
+    from diagnostics.ops_telemetry_pack import build_ops_telemetry_pack
+
+    if window not in VALID_RESOURCE_WINDOWS:
+        raise HTTPException(status_code=422, detail="window must be 1d, 3d, 7d, or 30d")
+    payload = await build_ops_telemetry_pack(window=window)
+    await audit(request, "diagnostics.ops_telemetry_pack", window)
+    stamp = payload.get("generated_at", "unknown").replace(":", "").replace("-", "")
+    filename = f"briefr-ops-telemetry-{window}-{stamp}.json"
+    body = json.dumps(payload, indent=2, default=str, ensure_ascii=False)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 # ── Onboarding ─────────────────────────────────────────────────────────────
 
 

@@ -183,6 +183,7 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/diagnostics/integrity"),
     ("POST", "/api/admin/diagnostics/corpus-drift"),
     ("GET", "/api/admin/diagnostics/support-pack"),
+    ("GET", "/api/admin/diagnostics/ops-telemetry-pack"),
     ("GET", "/api/admin/onboarding"),
     ("POST", "/api/admin/onboarding/dismiss"),
     # Rate-limit admin page: appended after diagnostics routes.
