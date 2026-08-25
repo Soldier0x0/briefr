@@ -309,8 +309,8 @@ _CSV_HEADER = [
 ]
 
 
-def _clamp_hours(hours: int) -> int:
-    return max(1, min(int(hours), 168))
+def _clamp_hours(hours: int, *, max_hours: int = 168) -> int:
+    return max(1, min(int(hours), int(max_hours)))
 
 
 def _clamp_limit(limit: int) -> int:
@@ -326,9 +326,10 @@ def _build_events_filters(
     hours: int,
     source: str | None,
     actor_type: str | None,
+    max_hours: int = 168,
 ) -> tuple[str, list[Any]]:
     """Return WHERE clause (without leading WHERE) and bind params."""
-    hours = _clamp_hours(hours)
+    hours = _clamp_hours(hours, max_hours=max_hours)
     clauses: list[str] = []
     params: list[Any] = []
 
@@ -391,6 +392,88 @@ def _row_to_event_dict(row: Any) -> dict[str, Any]:
         "job_id": data.get("job_id"),
         "run_id": data.get("run_id"),
         "request_id": data.get("request_id"),
+    }
+
+
+OPS_TELEMETRY_MAX_HTTP_HOURS = 720
+OPS_TELEMETRY_RECENT_EVENTS = 200
+
+
+async def window_api_call_digest(
+    db: DbConnection,
+    *,
+    hours: int,
+    recent_limit: int = OPS_TELEMETRY_RECENT_EVENTS,
+) -> dict[str, Any]:
+    hours = _clamp_hours(hours, max_hours=OPS_TELEMETRY_MAX_HTTP_HOURS)
+    recent_limit = max(1, min(int(recent_limit), 500))
+    where_sql, params = _build_events_filters(
+        hours=hours,
+        source=None,
+        actor_type=None,
+        max_hours=OPS_TELEMETRY_MAX_HTTP_HOURS,
+    )
+    if is_postgres():
+        count_sql = f"SELECT COUNT(*)::int AS total FROM api_call_events WHERE {where_sql}"
+        source_sql = (
+            "SELECT source, COUNT(*)::int AS calls, "
+            "COUNT(*) FILTER (WHERE ok)::int AS ok_calls, MAX(ts) AS last_called_at "
+            f"FROM api_call_events WHERE {where_sql} GROUP BY source ORDER BY calls DESC LIMIT 50"
+        )
+        actor_sql = (
+            "SELECT COALESCE(actor_type, 'unknown') AS actor_type, COUNT(*)::int AS calls "
+            f"FROM api_call_events WHERE {where_sql} GROUP BY 1 ORDER BY calls DESC"
+        )
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC LIMIT ${len(params) + 1}"
+        )
+        list_params = [*params, recent_limit]
+    else:
+        count_sql = f"SELECT COUNT(*) AS total FROM api_call_events WHERE {where_sql}"
+        source_sql = (
+            "SELECT source, COUNT(*) AS calls, "
+            "SUM(CASE WHEN ok THEN 1 ELSE 0 END) AS ok_calls, MAX(ts) AS last_called_at "
+            f"FROM api_call_events WHERE {where_sql} GROUP BY source ORDER BY calls DESC LIMIT 50"
+        )
+        actor_sql = (
+            "SELECT COALESCE(actor_type, 'unknown') AS actor_type, COUNT(*) AS calls "
+            f"FROM api_call_events WHERE {where_sql} GROUP BY 1 ORDER BY calls DESC"
+        )
+        list_sql = (
+            f"SELECT {_EVENT_SELECT_COLUMNS} FROM api_call_events "
+            f"WHERE {where_sql} ORDER BY ts DESC LIMIT ?"
+        )
+        list_params = [*params, recent_limit]
+
+    count_rows = await db.execute_fetchall(count_sql, tuple(params))
+    total = int((count_rows[0]["total"] if count_rows else 0) or 0)
+    source_rows = await db.execute_fetchall(source_sql, tuple(params))
+    actor_rows = await db.execute_fetchall(actor_sql, tuple(params))
+    recent_rows = await db.execute_fetchall(list_sql, tuple(list_params))
+    by_source = []
+    for row in source_rows or []:
+        item = dict(row)
+        by_source.append({
+            "source": item.get("source"),
+            "calls": int(item.get("calls") or 0),
+            "ok_calls": int(item.get("ok_calls") or 0),
+            "last_called_at": item.get("last_called_at"),
+        })
+    by_actor = []
+    for row in actor_rows or []:
+        item = dict(row)
+        by_actor.append({
+            "actor_type": item.get("actor_type"),
+            "calls": int(item.get("calls") or 0),
+        })
+    return {
+        "hours": hours,
+        "total": total,
+        "by_source": by_source,
+        "by_actor": by_actor,
+        "recent_limit": recent_limit,
+        "recent": [_row_to_event_dict(row) for row in (recent_rows or [])],
     }
 
 
