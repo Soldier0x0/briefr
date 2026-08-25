@@ -674,6 +674,41 @@ async def upsert_kev_batch(db: DbConnection, entries: list[dict]) -> int:
     return len(valid)
 
 
+async def filter_cves_matching_assets(
+    db: DbConnection,
+    cve_ids: list[str],
+    assets: list[dict[str, str]],
+) -> list[dict]:
+    """Return CVE rows that match stack assets via CPE / affected_products (not description)."""
+    from matching.stack_assets import cve_matches_assets
+
+    normalized = [c.upper() for c in cve_ids if c]
+    if not normalized or not assets:
+        return []
+    pg = _is_postgres_connection(db)
+    in_placeholders = _in_placeholders(len(normalized), pg=pg, start=1)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT c.cve_id, c.description, c.severity, c.summary,
+               c.cpe_matches, c.affected_products,
+               (SELECT due_date FROM kev_deadlines k WHERE k.cve_id = c.cve_id) AS kev_due_date
+        FROM cves c
+        WHERE c.cve_id IN ({in_placeholders})
+        """,
+        tuple(normalized),
+    )
+    matched: list[dict] = []
+    for row in rows:
+        data = dict(row)
+        if cve_matches_assets(
+            data.get("cpe_matches"),
+            data.get("affected_products"),
+            assets,
+        ):
+            matched.append(data)
+    return matched
+
+
 async def filter_cves_matching_stack(
     db: DbConnection, cve_ids: list[str], stack: str
 ) -> list[dict]:

@@ -170,7 +170,7 @@ def test_effective_stack_terms_prefers_env(client, monkeypatch):
     assert run_db_test(run()) == "env-term"
 
 
-def test_effective_stack_terms_falls_back_to_user_prefs(tmp_path, monkeypatch, client):
+def test_effective_stack_terms_does_not_use_user_prefs(tmp_path, monkeypatch, client):
     from preferences.repo import get_effective_stack_terms
     from database import get_db
     from tests.conftest import run_db_test
@@ -186,4 +186,23 @@ def test_effective_stack_terms_falls_back_to_user_prefs(tmp_path, monkeypatch, c
         finally:
             await db.close()
 
-    assert run_db_test(run()) == "saved-stack"
+    assert run_db_test(run()) == ""
+
+
+def test_alert_stack_assets_from_admin_terms(client, monkeypatch):
+    from preferences.repo import get_alert_stack_assets
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
+    _login(client)
+    client.put("/api/me/stack", json={"stack_terms": "nginx", "profile": None})
+
+    async def run():
+        db = await get_db()
+        try:
+            return await get_alert_stack_assets(db)
+        finally:
+            await db.close()
+
+    assert run_db_test(run()) == [{"product": "nginx", "vendor": "", "version": ""}]

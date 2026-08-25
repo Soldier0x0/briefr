@@ -7,9 +7,7 @@ import {
   resumeStackBackfill,
 } from '../api.js'
 import { notifyExportError, notifyExportProgress, notifyExportSuccess } from './Toast.jsx'
-import { notifyApiError } from './Toast.jsx'
 import { toApiCveParams, filtersPatchChanged } from '../utils/cveFilters.js'
-import { saveUserStack } from '../utils/userStack.js'
 import { cvesToCsvRows, downloadCsv, exportFilename } from '../utils/exportCsv.js'
 import { formatSectionHeading } from '../utils/sectionHeading.js'
 import ControlTooltip from './ControlTooltip.jsx'
@@ -324,7 +322,6 @@ export default function FilterBar({
     if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
     stackDebounceRef.current = setTimeout(() => {
       const trimmed = val.trim()
-      saveUserStack(trimmed).catch((err) => notifyApiError(err))
       onFiltersChange({ stack: trimmed })
     }, STACK_DEBOUNCE_MS)
   }
@@ -337,7 +334,6 @@ export default function FilterBar({
   function handleStackClear() {
     setLocalStack('')
     if (stackDebounceRef.current) clearTimeout(stackDebounceRef.current)
-    saveUserStack('').catch((err) => notifyApiError(err))
     onFiltersChange({ stack: '' })
   }
 
@@ -523,7 +519,7 @@ export default function FilterBar({
                 value={localStack}
                 onChange={handleStackChange}
                 placeholder="nginx, python, linux kernel..."
-                aria-label="Enter stack terms to filter the CVE feed"
+                aria-label="Enter throwaway stack terms to filter the CVE feed"
                 autoComplete="off"
                 spellCheck="false"
               />
@@ -545,7 +541,7 @@ export default function FilterBar({
           <div className="stack-hint" role="note" aria-label="Stack filter tip">
             <span className="stack-hint-text">
               <span className="stack-hint-label mono">MY STACK FILTER</span> narrows the feed to CVEs that mention technologies in your stack filter.
-              Type products you run — e.g. <code>nginx, python, openssl</code> — or load My Stack from the header for version-aware matching.
+              Type products to narrow this feed view — e.g. <code>nginx, python, openssl</code>. This filter is throwaway and does not save My Stack. Use the header Asset wizard for alerts.
             </span>
             <button
               type="button"

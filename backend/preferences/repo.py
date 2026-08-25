@@ -204,24 +204,58 @@ async def upsert_user_stack(
 
 
 async def get_effective_stack_terms(db: Any) -> str:
-    """Operator stack for KEV alerts / wallboard: env override, else saved user stack."""
+    """Operator/wallboard stack keywords: env BRIEFR_STACK_TERMS only.
+
+    User My Stack is not a fallback. Alerts use ``get_alert_stack_assets``.
+    """
     from db.sync_state import get_stack_terms
 
-    env_stack = (get_stack_terms() or "").strip()
-    if env_stack:
-        return env_stack
+    return (get_stack_terms() or "").strip()
+
+
+async def get_alert_stack_assets(db: Any) -> list[dict[str, str]]:
+    """Admin My Stack as CPE assets (profile preferred, else keyword products)."""
+    from matching.stack_assets import profile_to_assets, terms_to_assets
+
     rows = await db.execute_fetchall(
         """
-        SELECT stack_terms
-        FROM user_preferences
-        WHERE TRIM(stack_terms) != ''
-        ORDER BY updated_at DESC
+        SELECT p.profile_json, p.stack_terms
+        FROM user_preferences p
+        INNER JOIN users u ON u.id = p.user_id
+        WHERE u.role = 'admin' AND u.is_active = 1
+        ORDER BY p.updated_at DESC
         LIMIT 1
         """
     )
     if not rows:
-        return ""
-    return (rows[0]["stack_terms"] or "").strip()
+        return []
+    raw_profile = rows[0]["profile_json"]
+    profile = None
+    if raw_profile:
+        try:
+            loaded = json.loads(raw_profile)
+        except json.JSONDecodeError:
+            loaded = None
+        if isinstance(loaded, dict):
+            profile = loaded
+    assets = profile_to_assets(profile)
+    if assets:
+        return assets
+    return terms_to_assets(rows[0]["stack_terms"] or "")
+
+
+async def get_operator_stack_assets(db: Any) -> list[dict[str, str]]:
+    """Admin My Stack first; else env BRIEFR_STACK_TERMS as keyword products.
+
+    Used by detection backlog / operator jobs. User alerts use
+    ``get_alert_stack_assets`` only (env is not a fallback).
+    """
+    from matching.stack_assets import terms_to_assets
+
+    assets = await get_alert_stack_assets(db)
+    if assets:
+        return assets
+    return terms_to_assets(await get_effective_stack_terms(db))
 
 
 async def get_user_preferences(db: Any, user_id: int) -> dict:

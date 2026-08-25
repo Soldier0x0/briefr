@@ -391,7 +391,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Omit `profile` to leave the saved inventory unchanged; send `null` to clear. Oversized payloads → `422`.
 
-**Notes:** `BRIEFR_STACK_TERMS` in admin config overrides the saved user stack for KEV-on-stack webhooks and the wallboard tile. When unset, the backend uses the most recently updated non-empty `user_preferences.stack_terms` row.
+**Notes:** KEV-on-stack webhooks (`kev_alert`) match the latest active **admin** My Stack (profile assets preferred, else `stack_terms` as product names) against CVE `cpe_matches` / structured `affected_products` — not description LIKE and not `BRIEFR_STACK_TERMS`. The FEED `stack` query param remains a throwaway keyword filter. `BRIEFR_STACK_TERMS` drives wallboard keyword tiles and, when admin My Stack is empty, detection-backlog CPE matching; it is not a fallback for `kev_alert`.
 
 ### GET /api/stack/catalog/suggest
 

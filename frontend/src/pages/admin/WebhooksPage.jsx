@@ -34,7 +34,8 @@ const EMPTY_CREATE = {
 export default function WebhooksPage({ toast }) {
   const [destinations, setDestinations] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [userStack, setUserStack] = useState('')
+  const [userStack, setUserStack] = useState(null)
+  const [stackError, setStackError] = useState(null)
   const [envStack, setEnvStack] = useState('')
   const [results, setResults] = useState({})
   const [testing, setTesting] = useState({})
@@ -55,6 +56,21 @@ export default function WebhooksPage({ toast }) {
   const [dedupeLogError, setDedupeLogError] = useState(null)
   const [dedupeLogOffset, setDedupeLogOffset] = useState(0)
   const logLimit = 50
+
+  const loadUserStack = useCallback(async () => {
+    setStackError(null)
+    setUserStack(null)
+    try {
+      const data = await fetchUserStack()
+      const terms = String(data?.stack_terms || '')
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean)
+      setUserStack(terms)
+    } catch (e) {
+      setStackError(e)
+    }
+  }, [])
 
   const loadDestinations = useCallback(async () => {
     try {
@@ -80,11 +96,11 @@ export default function WebhooksPage({ toast }) {
   useEffect(() => {
     loadDestinations()
     loadHealth()
+    loadUserStack()
     adminApi.get('/config').then(r => r.json()).then(c => {
       setEnvStack((c?.app?.BRIEFR_STACK_TERMS || '').trim())
     }).catch(() => {})
-    fetchUserStack().then(d => setUserStack(d?.stack_terms || '')).catch(() => {})
-  }, [loadDestinations, loadHealth])
+  }, [loadDestinations, loadHealth, loadUserStack])
 
   const loadDeliveryLog = useCallback(async (offset = 0, destinationId = deliveryLogFilter) => {
     try {
@@ -230,8 +246,6 @@ export default function WebhooksPage({ toast }) {
     }))
     setExpanded(e => ({ ...e, [`cfg-${dest.id}`]: true }))
   }
-
-  const stackTerms = envStack || userStack
 
   const healthById = useMemo(() => {
     const map = {}
@@ -476,22 +490,32 @@ export default function WebhooksPage({ toast }) {
       </AsyncSection>
 
       <div className="admin-card">
-        <div className="admin-card-title">Stack terms for KEV alerts</div>
+        <div className="admin-card-title">My Stack for KEV alerts</div>
         <div style={{ fontSize: '0.8125rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
-          {stackTerms ? (
+          {stackError ? (
+            <span style={{ color: 'var(--red)' }}>
+              Failed to load My Stack: {String(stackError.message || stackError)}{' '}
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={loadUserStack}>
+                Retry
+              </button>
+            </span>
+          ) : userStack == null ? (
+            <span role="status">Loading My Stack…</span>
+          ) : userStack.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-              {stackTerms.split(',').map(t => t.trim()).filter(Boolean).map(t => (
-                <span key={t} className="badge badge-muted">{t}</span>
+              {userStack.map((term) => (
+                <span key={term} className="badge badge-muted">{term}</span>
               ))}
             </div>
-          ) : <span style={{ color: 'var(--text3)' }}>No stack terms configured</span>}
+          ) : (
+            <span style={{ color: 'var(--text3)' }}>No My Stack saved — KEV-on-stack alerts will not fire</span>
+          )}
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+          Alerts match CPE / affected products from the header Asset wizard. FEED <code className="mono">STACK //</code> is a throwaway filter.
           {envStack ? (
-            <>Using operator override <code className="mono">BRIEFR_STACK_TERMS</code> from API keys &amp; config.</>
-          ) : (
-            <>Set stack in the Feed tab, or optional <code className="mono">BRIEFR_STACK_TERMS</code> on API keys &amp; config.</>
-          )}
+            <> <code className="mono">BRIEFR_STACK_TERMS</code> is set for wallboard tiles and detection-backlog fallback, not KEV alerts.</>
+          ) : null}
         </div>
       </div>
 

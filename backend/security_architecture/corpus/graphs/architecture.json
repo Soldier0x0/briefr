@@ -5496,6 +5496,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-tokens->table:users",
+      "source": "routers-admin-tokens",
+      "target": "table:users",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:audit_log",
       "source": "routers-admin-webhooks",
       "target": "table:audit_log",
@@ -6480,6 +6486,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-detection_backlog->table:users",
+      "source": "routers-detection_backlog",
+      "target": "table:users",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-forge->table:atlas_case_studies",
       "source": "routers-forge",
       "target": "table:atlas_case_studies",
@@ -6876,6 +6888,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-me->table:users",
+      "source": "routers-me",
+      "target": "table:users",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-meta->table:api_usage",
       "source": "routers-meta",
       "target": "table:api_usage",
@@ -7257,6 +7275,12 @@
       "id": "routers-stack_catalog->table:user_preferences",
       "source": "routers-stack_catalog",
       "target": "table:user_preferences",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-stack_catalog->table:users",
+      "source": "routers-stack_catalog",
+      "target": "table:users",
       "kind": "references_table"
     },
     {
