@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db.timeutil import utcnow_str
 from db.types import DbConnection
+
+NOTIFICATION_CLEARED_RETENTION_HOURS = 24
 
 _SCOPE_ANALYST = "analyst"
 _SCOPE_OPERATOR = "operator"
@@ -16,6 +19,17 @@ def _is_postgres_connection(db: DbConnection) -> bool:
 
 def _placeholder(pg: bool, index: int) -> str:
     return f"${index}" if pg else "?"
+
+
+def _cleared_retention_cutoff_str(retention_hours: int | None = None) -> str:
+    hours = (
+        NOTIFICATION_CLEARED_RETENTION_HOURS
+        if retention_hours is None
+        else max(1, int(retention_hours))
+    )
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
 
 _INSERT_SQLITE = """
@@ -82,6 +96,21 @@ WHERE user_id = $1
   AND dismissed_at IS NULL
 """
 
+_VIEW_ALIASES = {
+    "inbox": "active",
+    "active": "active",
+    "done": "cleared",
+    "cleared": "cleared",
+}
+
+
+def normalize_notification_view(view: str) -> str:
+    key = (view or "inbox").strip().lower()
+    mapped = _VIEW_ALIASES.get(key)
+    if mapped is None:
+        raise ValueError("view must be active, cleared, inbox, or done")
+    return mapped
+
 
 async def list_active_user_ids(db: DbConnection, *, scope: str) -> list[int]:
     if scope == _SCOPE_OPERATOR:
@@ -137,23 +166,34 @@ async def list_notifications(
     limit: int = 30,
     view: str = "inbox",
 ) -> list[dict[str, Any]]:
-    if view not in ("inbox", "done"):
-        raise ValueError("view must be inbox or done")
+    canonical = normalize_notification_view(view)
     pg = _is_postgres_connection(db)
-    if scope == "all":
-        scope_clause = ""
-        lim = _placeholder(pg, 2)
-        base_params: tuple[Any, ...] = (user_id, max(1, min(limit, 100)))
-    else:
-        scope_clause = f"AND scope = {_placeholder(pg, 2)}"
-        lim = _placeholder(pg, 3)
-        base_params = (user_id, scope, max(1, min(limit, 100)))
-    if view == "done":
-        dismissed_clause = "dismissed_at IS NOT NULL"
+    lim_n = max(1, min(limit, 100))
+    if canonical == "cleared":
+        cutoff = _cleared_retention_cutoff_str()
+        dismissed_clause_prefix = "dismissed_at IS NOT NULL AND dismissed_at >="
         order_by = "dismissed_at DESC"
+        if scope == "all":
+            scope_clause = ""
+            dismissed_clause = f"{dismissed_clause_prefix} {_placeholder(pg, 2)}"
+            lim = _placeholder(pg, 3)
+            base_params: tuple[Any, ...] = (user_id, cutoff, lim_n)
+        else:
+            scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+            dismissed_clause = f"{dismissed_clause_prefix} {_placeholder(pg, 3)}"
+            lim = _placeholder(pg, 4)
+            base_params = (user_id, scope, cutoff, lim_n)
     else:
         dismissed_clause = "dismissed_at IS NULL"
         order_by = "created_at DESC"
+        if scope == "all":
+            scope_clause = ""
+            lim = _placeholder(pg, 2)
+            base_params = (user_id, lim_n)
+        else:
+            scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+            lim = _placeholder(pg, 3)
+            base_params = (user_id, scope, lim_n)
     rows = await db.execute_fetchall(
         f"""
         SELECT id, scope, category, severity, title, body,
@@ -298,3 +338,19 @@ async def undo_dismiss_notification(
         (notification_id, user_id),
     )
     return int(getattr(result, "rowcount", 0) or 0) > 0
+
+
+async def purge_cleared_notifications(
+    db: DbConnection,
+    *,
+    retention_hours: int | None = None,
+) -> int:
+    cutoff = _cleared_retention_cutoff_str(retention_hours)
+    pg = _is_postgres_connection(db)
+    sql = (
+        "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < $1"
+        if pg
+        else "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < ?"
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return int(getattr(cursor, "rowcount", 0) or 0)

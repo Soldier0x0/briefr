@@ -1,5 +1,7 @@
 # Notification inbox 10/10 Implementation Plan
 
+> **Shipped on `main`.** Follow-on (Alerts/Cleared + 24h purge): `docs/superpowers/plans/2026-08-25-notification-alert-tray-plan.md`.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make BRIEFR’s in-app notifications a trustworthy GitHub-style inbox (read ≠ done, honest badge, four async states) with a Radix Popover UI that meets `docs/design/design-system.md` §4 / §18 / §23.

@@ -212,17 +212,20 @@ def _degraded_state(rows: list[dict[str, Any]], *, postgres_backend: bool) -> di
     return {"code": "ok", "message": ""}
 
 
-async def fetch_resources_response(db: DbConnection, window: str) -> dict[str, Any]:
-    from db.config import is_postgres
-
+async def fetch_resource_metrics_rows(db: DbConnection, window: str) -> list[dict[str, Any]]:
     if window not in VALID_RESOURCE_WINDOWS:
         raise ValueError(f"Invalid window {window!r}")
-
     hours = _WINDOW_HOURS[window]
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     sql = _FETCH_WINDOW_PG if _is_postgres_connection(db) else _FETCH_WINDOW_SQLITE
     raw_rows = await db.execute_fetchall(sql, (cutoff,))
-    rows = [_row_to_dict(r) for r in raw_rows]
+    return [_row_to_dict(r) for r in raw_rows]
+
+
+async def fetch_resources_response(db: DbConnection, window: str) -> dict[str, Any]:
+    from db.config import is_postgres
+
+    rows = await fetch_resource_metrics_rows(db, window)
     series = downsample_series(rows)
     summary = {metric: summarize_metric(rows, metric) for metric in _SUMMARY_METRICS}
     degraded = _degraded_state(rows, postgres_backend=is_postgres())

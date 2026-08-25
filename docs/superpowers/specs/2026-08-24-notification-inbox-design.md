@@ -1,7 +1,7 @@
 # In-app notification inbox — design spec
 
 **Date:** 2026-08-24  
-**Status:** Draft for implementation (plan: `docs/superpowers/plans/2026-08-24-notification-inbox-plan.md`)  
+**Status:** Shipped on `main` (Popover, read ≠ dismiss, honest badge). **Done-as-archive is superseded** by `docs/superpowers/specs/2026-08-25-notification-alert-tray-design.md` (Alerts / Cleared + 24h purge).  
 **Bar:** GitHub Inbox verbs + Linear popover quality + PagerDuty honesty, on BRIEFR’s dense dark console. Not Instagram, not Slack chat unread, not OS push.
 
 Related: `frontend/src/components/NotificationBell.jsx`, `backend/db/user_notifications.py`, `backend/routers/notifications_me.py`, `backend/notifications/emit.py`, `docs/design/design-system.md` §4 / §18 / §23, `docs/PRODUCT_STATUS.md` Notification center.

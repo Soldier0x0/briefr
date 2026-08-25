@@ -270,7 +270,7 @@ export default function DisplayPage() {
           ))}
         </div>
         <p className="admin-page-subtitle" style={{ margin: '0.4rem 0 0' }}>
-          Muted types are not added to the inbox. Discord and Telegram still follow Admin → Webhooks.
+          Muted types are not added to the alert tray. Discord and Telegram still follow Admin → Webhooks.
         </p>
         {status ? (
           <p className="display-typography-status mono">{status}</p>

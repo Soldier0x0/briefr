@@ -102,6 +102,9 @@ endpoints:
 - method: POST
   path: /api/admin/diagnostics/integrity
   component_id: routers-admin-diagnostics
+- method: GET
+  path: /api/admin/diagnostics/ops-telemetry-pack
+  component_id: routers-admin-diagnostics
 - method: POST
   path: /api/admin/diagnostics/smoke
   component_id: routers-admin-diagnostics

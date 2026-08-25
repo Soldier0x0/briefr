@@ -151,6 +151,31 @@ def test_list_view_done_excludes_inbox(client):
     assert done["unread_count"] == 0
 
 
+def test_list_view_aliases_active_cleared(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="alias1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications?scope=analyst").json()["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+
+    active = client.get("/api/me/notifications?scope=analyst&view=active").json()
+    inbox = client.get("/api/me/notifications?scope=analyst&view=inbox").json()
+    cleared = client.get("/api/me/notifications?scope=analyst&view=cleared").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+
+    assert active["notifications"] == []
+    assert inbox["notifications"] == []
+    assert len(cleared["notifications"]) == 1
+    assert len(done["notifications"]) == 1
+    assert cleared["unread_count"] == 0
+
+
+def test_list_view_rejects_unknown(client):
+    _login(client, "analyst1")
+    res = client.get("/api/me/notifications?scope=analyst&view=archive")
+    assert res.status_code == 422
+
+
 def test_dismiss_one_and_dismiss_all(client):
     uid = _user_id("analyst1")
     _insert(uid, "analyst", dedupe="d1")
@@ -268,6 +293,94 @@ def test_patch_notification_mutes_rejects_unknown_key(client):
         json={"notification_mutes": {"not_a_category": True}},
     )
     assert res.status_code == 422
+
+
+def test_cleared_view_excludes_rows_older_than_retention(client):
+    from datetime import datetime, timedelta, timezone
+
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="old-cleared")
+    _insert(uid, "analyst", dedupe="new-cleared")
+
+    fmt = "%Y-%m-%d %H:%M:%S"
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).strftime(fmt)
+    recent_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(fmt)
+
+    async def _stamp():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT id, dedupe_key FROM user_notifications WHERE user_id = ?",
+                (uid,),
+            )
+            by_key = {r["dedupe_key"]: r["id"] for r in rows}
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (old_ts, by_key["old-cleared"]),
+            )
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (recent_ts, by_key["new-cleared"]),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_stamp())
+    _login(client, "analyst1")
+    cleared = client.get("/api/me/notifications?scope=analyst&view=cleared").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+    titles = [n["title"] for n in cleared["notifications"]]
+    assert titles == ["Alert new-cleared"]
+    assert [n["title"] for n in done["notifications"]] == titles
+    remaining = client.get("/api/me/notifications?scope=analyst&view=active").json()
+    assert remaining["notifications"] == []
+
+
+def test_purge_cleared_keeps_active_and_recent(client):
+    from datetime import datetime, timedelta, timezone
+
+    from db.user_notifications import purge_cleared_notifications
+
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="keep-active")
+    _insert(uid, "analyst", dedupe="old-cleared")
+    _insert(uid, "analyst", dedupe="new-cleared")
+
+    fmt = "%Y-%m-%d %H:%M:%S"
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).strftime(fmt)
+    recent_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(fmt)
+
+    async def _stamp_and_purge():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT id, dedupe_key FROM user_notifications WHERE user_id = ?",
+                (uid,),
+            )
+            by_key = {r["dedupe_key"]: r["id"] for r in rows}
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (old_ts, by_key["old-cleared"]),
+            )
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (recent_ts, by_key["new-cleared"]),
+            )
+            await db.commit()
+            deleted = await purge_cleared_notifications(db)
+            await db.commit()
+            left = await db.execute_fetchall(
+                "SELECT dedupe_key FROM user_notifications WHERE user_id = ? ORDER BY dedupe_key",
+                (uid,),
+            )
+            return deleted, [r["dedupe_key"] for r in left]
+        finally:
+            await db.close()
+
+    deleted, keys = run_db_test(_stamp_and_purge())
+    assert deleted == 1
+    assert keys == ["keep-active", "new-cleared"]
 
 
 def test_muted_category_does_not_insert(client):

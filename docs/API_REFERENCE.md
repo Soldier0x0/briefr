@@ -466,15 +466,15 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### GET /api/me/notifications
 
-**Description:** Server-backed in-app notification inbox for the signed-in user.
+**Description:** Server-backed in-app notification alert tray for the signed-in user.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `scope` | str | `analyst` | `analyst` (watchlist/CVE/IOC alerts), `operator` (job errors, unhealthy API keys, webhook failures; admin role only), or `all` (both scopes; admin role only) |
-| `view` | str | `inbox` | `inbox` (undismissed rows) or `done` (dismissed rows) |
+| `view` | str | `inbox` | `inbox` \| `done` \| `active` \| `cleared` — `inbox`=`active` (undismissed rows) or `done`=`cleared` (dismissed rows with `dismissed_at` in the last 24 hours) |
 | `limit` | int | 30 | 1–100 |
 
-**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the inbox does not mark rows read.
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read.
 
 ### GET /api/me/notifications/unread-count
 
@@ -486,7 +486,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### POST /api/me/notifications/read-all
 
-**Body:** `{scope}` — `analyst`, `operator`, or `all` (operator/all require admin). Marks all undismissed rows in scope as read (`read_at` set); rows stay in the inbox.
+**Body:** `{scope}` — `analyst`, `operator`, or `all` (operator/all require admin). Marks all undismissed rows in scope as read (`read_at` set); rows stay in **Alerts**.
 
 **Response:** `{marked_read, unread_count}`
 
@@ -504,11 +504,11 @@ Mark one undismissed notification as read. **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/{id}/restore
 
-Undo dismiss — moves a Done notification back to the inbox (`dismissed_at` cleared). **Response:** `{ok: true}` or `404`.
+Undo dismiss — moves a **Cleared** notification back to **Alerts** (`dismissed_at` cleared). **Response:** `{ok: true}` or `404` (including when the row was already purged).
 
 ### POST /api/me/notifications/{id}/dismiss
 
-Dismiss one notification (moves to Done view). **Response:** `{ok: true}` or `404`.
+Dismiss one notification (moves to **Cleared**). Rows with `dismissed_at` older than 24 hours are deleted by the daily `cache_retention_cleanup` job. **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/dismiss-all
 
@@ -2338,6 +2338,14 @@ Admin-gated export of a redacted operator support pack (health + logs, no secret
 Params: `log_limit` (1–500, default 200) — number of ring-buffer log lines to include.
 
 Response: JSON attachment (`Content-Disposition: attachment`) with `{support_pack_version, generated_at, version, environment, health, database, security, correlation, diagnostics: {smoke, integrity}, scheduler, logs}`. Database URLs and log `extra` fields matching secret patterns are redacted. Audit: `diagnostics.support_pack`.
+
+### GET /api/admin/diagnostics/ops-telemetry-pack
+Admin-gated JSON attachment of host/DB time series plus outbound HTTP digest for RCA.
+Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`).
+Filename `briefr-ops-telemetry-{window}-{stamp}.json`.
+Body includes `ops_telemetry_pack_version`, `limitations`, raw `resource_metrics.samples` (not the 500-point chart downsample), `outbound_http`, `scheduler`, `efficiency`.
+Audit: `diagnostics.ops_telemetry_pack`.
+Does not attribute CPU peaks to a job. Does not invent samples from before the collector ran.
 
 ### GET /api/admin/onboarding
 First-hour operator checklist with live completion state. Response: `{items: [{id, title, detail, done, hint}], done_count, total_count, complete, dismissed, dismissed_at}`.

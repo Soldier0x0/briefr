@@ -21,7 +21,15 @@ describe('NotificationBell inbox gate', () => {
     assert.doesNotMatch(src, /Mark read/)
     assert.doesNotMatch(src, /Mark all read/)
     assert.match(src, /Mark all as read/)
-    assert.match(src, /Done/)
+    assert.match(src, /Clear all/)
+  })
+
+  it('labels the tray Alerts and Cleared, not Inbox or Done', () => {
+    assert.match(src, /Alerts/)
+    assert.match(src, /Cleared/)
+    assert.doesNotMatch(src, /<TabsTrigger value="inbox">Inbox<\/TabsTrigger>/)
+    assert.doesNotMatch(src, /<TabsTrigger value="done">Done<\/TabsTrigger>/)
+    assert.doesNotMatch(src, /Moved to Done/)
   })
 
   it('leaves Enter handling to nested interactive controls', () => {
@@ -32,13 +40,12 @@ describe('NotificationBell inbox gate', () => {
     assert.match(src, /nestedControl !== notificationRow/)
   })
 
-  it('moves only the loaded notification ids to Done', () => {
+  it('clears only the loaded notification ids', () => {
     assert.doesNotMatch(src, /dismissAllNotifications/)
     assert.match(src, /const ids = filteredItems\.map\(item => item\.id\)/)
     assert.match(
       src,
       /Promise\.allSettled\(ids\.map\(id => dismissNotification\(id\)\)\)/,
     )
-    assert.match(src, /view === 'inbox' && filteredItems\.length > 0/)
   })
 })

@@ -185,6 +185,37 @@ def test_summarize_metric_peak_timestamp():
     assert summary["low"] == 1.0
 
 
+def test_fetch_resource_metrics_rows_is_not_downsampled(tmp_path, monkeypatch):
+    from db.resource_metrics import fetch_resource_metrics_rows
+
+    if is_postgres():
+        return
+    db_path = tmp_path / "resource_raw.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    async def _run():
+        await init_db()
+        db = await get_db()
+        try:
+            from datetime import datetime, timezone
+
+            now = datetime.now(timezone.utc).isoformat()
+            await db.execute(
+                "INSERT INTO resource_metrics (ts, briefr_rss_bytes, req_count) VALUES (?, ?, ?)",
+                (now, 111, 2),
+            )
+            await db.commit()
+            rows = await fetch_resource_metrics_rows(db, "1d")
+            assert len(rows) == 1
+            assert rows[0]["briefr_rss_bytes"] == 111
+            assert rows[0]["req_count"] == 2
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
 def test_fetch_resources_response_empty_sqlite(tmp_path, monkeypatch):
     if is_postgres():
         return
