@@ -327,7 +327,9 @@ async def purge_cleared_notifications(
         if retention_hours is None
         else max(1, int(retention_hours))
     )
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
     pg = _is_postgres_connection(db)
     sql = (
         "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < $1"

@@ -298,7 +298,6 @@ def test_patch_notification_mutes_rejects_unknown_key(client):
 def test_purge_cleared_keeps_active_and_recent(client):
     from datetime import datetime, timedelta, timezone
 
-    from db.timeutil import utcnow_str
     from db.user_notifications import purge_cleared_notifications
 
     uid = _user_id("analyst1")
@@ -306,8 +305,9 @@ def test_purge_cleared_keeps_active_and_recent(client):
     _insert(uid, "analyst", dedupe="old-cleared")
     _insert(uid, "analyst", dedupe="new-cleared")
 
-    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
-    recent_ts = utcnow_str()
+    fmt = "%Y-%m-%d %H:%M:%S"
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).strftime(fmt)
+    recent_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(fmt)
 
     async def _stamp_and_purge():
         db = await get_db()
