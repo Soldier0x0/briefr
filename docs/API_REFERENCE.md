@@ -466,15 +466,15 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### GET /api/me/notifications
 
-**Description:** Server-backed in-app notification inbox for the signed-in user.
+**Description:** Server-backed in-app notification alert tray for the signed-in user.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
 | `scope` | str | `analyst` | `analyst` (watchlist/CVE/IOC alerts), `operator` (job errors, unhealthy API keys, webhook failures; admin role only), or `all` (both scopes; admin role only) |
-| `view` | str | `inbox` | `inbox` (undismissed rows) or `done` (dismissed rows) |
+| `view` | str | `inbox` | `inbox` \| `done` \| `active` \| `cleared` — `inbox`=`active` (undismissed rows) or `done`=`cleared` (dismissed rows) |
 | `limit` | int | 30 | 1–100 |
 
-**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the inbox does not mark rows read.
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read.
 
 ### GET /api/me/notifications/unread-count
 
@@ -486,7 +486,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 ### POST /api/me/notifications/read-all
 
-**Body:** `{scope}` — `analyst`, `operator`, or `all` (operator/all require admin). Marks all undismissed rows in scope as read (`read_at` set); rows stay in the inbox.
+**Body:** `{scope}` — `analyst`, `operator`, or `all` (operator/all require admin). Marks all undismissed rows in scope as read (`read_at` set); rows stay in **Alerts**.
 
 **Response:** `{marked_read, unread_count}`
 
@@ -504,11 +504,11 @@ Mark one undismissed notification as read. **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/{id}/restore
 
-Undo dismiss — moves a Done notification back to the inbox (`dismissed_at` cleared). **Response:** `{ok: true}` or `404`.
+Undo dismiss — moves a **Cleared** notification back to **Alerts** (`dismissed_at` cleared). **Response:** `{ok: true}` or `404` (including when the row was already purged).
 
 ### POST /api/me/notifications/{id}/dismiss
 
-Dismiss one notification (moves to Done view). **Response:** `{ok: true}` or `404`.
+Dismiss one notification (moves to **Cleared**). Rows with `dismissed_at` older than 24 hours are deleted by the daily `cache_retention_cleanup` job. **Response:** `{ok: true}` or `404`.
 
 ### POST /api/me/notifications/dismiss-all
 
