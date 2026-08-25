@@ -12,7 +12,7 @@ async function parseJson(res) {
 
 export async function fetchNotifications(
   scope = 'analyst',
-  { view = 'inbox', limit = 50 } = {},
+  { view = 'active', limit = 50 } = {},
 ) {
   const params = new URLSearchParams({
     scope,

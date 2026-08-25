@@ -103,7 +103,7 @@ function NotificationRow({
   const unread = groupIsUnread(group)
   const severity = severityDetails(item.severity)
   const SeverityIcon = severity.Icon
-  const actionLabel = view === 'done' ? 'Restore' : 'Done'
+  const actionLabel = view === 'cleared' ? 'Restore' : 'Clear'
   const category = CATEGORY_LABELS[item.category] || item.category || 'Notification'
 
   function activate(event) {
@@ -203,7 +203,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
   const navigate = useNavigate()
   const panelTitleId = useId()
   const [open, setOpen] = useState(false)
-  const [view, setView] = useState('inbox')
+  const [view, setView] = useState('active')
   const [items, setItems] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [error, setError] = useState(null)
@@ -327,21 +327,21 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
     }
   }
 
-  async function handleDone(item) {
+  async function handleClear(item) {
     try {
       const result = await dismissNotification(item.id)
       setItems(current => current.filter(row => row.id !== item.id))
       if (!item.read_at) {
         setUnreadCount(current => Math.max(0, result.unread_count ?? current - 1))
       }
-      beginUndo([item.id], 'Moved to Done')
+      beginUndo([item.id], 'Cleared')
       setError(null)
     } catch (dismissError) {
-      setError(dismissError instanceof Error ? dismissError : new Error('Notification could not be moved to Done.'))
+      setError(dismissError instanceof Error ? dismissError : new Error('Notification could not be cleared.'))
     }
   }
 
-  async function handleMoveAllDone() {
+  async function handleClearLoaded() {
     const ids = filteredItems.map(item => item.id)
     if (!ids.length) return
     const results = await Promise.allSettled(ids.map(id => dismissNotification(id)))
@@ -356,7 +356,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
       setUnreadCount(current => Math.max(0, current - dismissedUnread))
       beginUndo(
         dismissedIds,
-        `${dismissedIds.length} notification${dismissedIds.length === 1 ? '' : 's'} moved to Done`,
+        `${dismissedIds.length} notification${dismissedIds.length === 1 ? '' : 's'} cleared`,
       )
     }
 
@@ -365,8 +365,8 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
     } else {
       setError(new Error(
         dismissedIds.length
-          ? 'Some notifications could not be moved to Done.'
-          : 'Notifications could not be moved to Done.',
+          ? 'Some notifications could not be cleared.'
+          : 'Notifications could not be cleared.',
       ))
     }
   }
@@ -433,12 +433,12 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
       }
     } else if (event.key.toLowerCase() === 'e') {
       event.preventDefault()
-      if (view === 'done') void handleRestore(item)
-      else void handleDone(item)
+      if (view === 'cleared') void handleRestore(item)
+      else void handleClear(item)
     }
   }
 
-  const panelTitle = view === 'done' ? 'Done' : 'Inbox'
+  const panelTitle = view === 'cleared' ? 'Cleared' : 'Alerts'
 
   return (
     <div className={`notification-bell ${className}`.trim()}>
@@ -467,7 +467,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
           <div className="notification-inbox-head">
             <h2 id={panelTitleId} className="notification-inbox-title">{panelTitle}</h2>
             <div className="notification-inbox-head-actions">
-              {view === 'inbox' && unreadCount > 0 && (
+              {view === 'active' && unreadCount > 0 && (
                 <button
                   type="button"
                   className="notification-inbox-text-action"
@@ -476,7 +476,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
                   Mark all as read
                 </button>
               )}
-              {view === 'inbox' && filteredItems.length > 0 && (
+              {view === 'active' && filteredItems.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -488,8 +488,8 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => void handleMoveAllDone()}>
-                      Move all to Done
+                    <DropdownMenuItem onSelect={() => void handleClearLoaded()}>
+                      Clear all
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -499,8 +499,8 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
 
           <Tabs value={view} onValueChange={handleViewChange}>
             <TabsList className="notification-inbox-tabs" aria-label="Notification views">
-              <TabsTrigger value="inbox">Inbox</TabsTrigger>
-              <TabsTrigger value="done">Done</TabsTrigger>
+              <TabsTrigger value="active">Alerts</TabsTrigger>
+              <TabsTrigger value="cleared">Cleared</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -534,7 +534,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
               error={error}
               onRetry={() => void load()}
               empty={!loading && !error && rows.length === 0}
-              emptyTitle={view === 'done' ? 'Nothing in Done yet.' : 'Inbox is clear.'}
+              emptyTitle={view === 'cleared' ? 'Nothing cleared in the last 24 hours.' : 'No alerts.'}
               skeleton={<NotificationListSkeleton rows={3} />}
               data={rows}
               className="notification-inbox-state"
@@ -548,7 +548,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
                     view={view}
                     onOpen={(item, destination) => void handleOpen(item, destination)}
                     onAction={(item) => (
-                      view === 'done' ? void handleRestore(item) : void handleDone(item)
+                      view === 'cleared' ? void handleRestore(item) : void handleClear(item)
                     )}
                     rowRef={(node) => {
                       rowRefs.current[index] = node
