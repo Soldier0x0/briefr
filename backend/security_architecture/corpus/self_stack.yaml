@@ -309,7 +309,7 @@ terms:
   term: python-dotenv
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 1.2.2
+  version: 1.2.3
 - id: self-stack-python-multipart
   title: python-multipart
   summary: BRIEFR dependency term derived from backend/requirements.txt.
