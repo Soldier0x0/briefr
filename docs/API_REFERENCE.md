@@ -452,7 +452,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 
 **Description:** Lightweight badge count for one scope.
 
-**Params:** `scope` = `analyst` (default), `operator`, or `all`. Non-admin users requesting `operator` or `all` receive `403`; `operator` on the unread-count endpoint alone returns `{unread_count: 0}` for non-admins (legacy compat).
+**Params:** `scope` = `analyst` (default), `operator`, or `all`. Non-admins: `all` is `403`. On this unread-count endpoint only, `operator` returns `{unread_count: 0}` (legacy compat). Other notification endpoints return `403` for non-admin `operator` or `all`.
 
 **Response:** `{unread_count}`
 

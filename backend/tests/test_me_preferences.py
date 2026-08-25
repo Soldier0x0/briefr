@@ -180,3 +180,21 @@ def test_patch_preferences_rejects_invalid_font_scale(client):
     _login(client)
     res = client.patch("/api/me/preferences", json={"font_scale": "huge"})
     assert res.status_code == 422
+
+
+def test_patch_notification_mutes_rejects_string_false(client):
+    _login(client)
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": "false"}},
+    )
+    assert res.status_code == 422
+
+
+def test_patch_notification_mutes_rejects_integer_zero(client):
+    _login(client)
+    res = client.patch(
+        "/api/me/preferences",
+        json={"notification_mutes": {"watchlist": 0}},
+    )
+    assert res.status_code == 422

@@ -342,12 +342,12 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
   }
 
   async function handleMoveAllDone() {
-    const ids = items.map(item => item.id)
+    const ids = filteredItems.map(item => item.id)
     if (!ids.length) return
     const results = await Promise.allSettled(ids.map(id => dismissNotification(id)))
     const dismissedIds = ids.filter((_, index) => results[index].status === 'fulfilled')
     const dismissedIdSet = new Set(dismissedIds)
-    const dismissedUnread = items.filter(item => (
+    const dismissedUnread = filteredItems.filter(item => (
       dismissedIdSet.has(item.id) && !item.read_at
     )).length
 
@@ -395,6 +395,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
   }
 
   function handleViewChange(nextView) {
+    setLoading(true)
     setView(nextView)
     setItems([])
     setError(null)
@@ -475,7 +476,7 @@ export default function NotificationBell({ scope = 'analyst', className = '' }) 
                   Mark all as read
                 </button>
               )}
-              {view === 'inbox' && items.length > 0 && (
+              {view === 'inbox' && filteredItems.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

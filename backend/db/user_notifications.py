@@ -150,10 +150,10 @@ async def list_notifications(
         base_params = (user_id, scope, max(1, min(limit, 100)))
     if view == "done":
         dismissed_clause = "dismissed_at IS NOT NULL"
-        order_by = "datetime(dismissed_at) DESC"
+        order_by = "dismissed_at DESC"
     else:
         dismissed_clause = "dismissed_at IS NULL"
-        order_by = "datetime(created_at) DESC"
+        order_by = "created_at DESC"
     rows = await db.execute_fetchall(
         f"""
         SELECT id, scope, category, severity, title, body,

@@ -40,6 +40,15 @@ async def _emit_to_users(
     for user_id in user_ids:
         try:
             prefs = await get_user_preferences(db, user_id)
+        except Exception as exc:
+            logger.warning(
+                "Failed to load notification preferences for user %s (%s): %s",
+                user_id,
+                dedupe_key,
+                exc,
+            )
+            prefs = {}
+        try:
             mutes = prefs.get("notification_mutes") or {}
             if mutes.get(category):
                 continue

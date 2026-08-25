@@ -60,16 +60,31 @@ export default function DisplayPage() {
   function update(key, value) {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
-    void setDisplayPrefs(next).catch(() => setPrefs(getDisplayPrefs()))
+    void setDisplayPrefs(next).catch(() => {
+      setPrefs(getDisplayPrefs())
+      setStatus('Could not save display preferences.')
+    })
   }
 
   function updateNotificationMute(category, muted) {
+    const previous = prefs
     const merged = {
       ...DEFAULT_NOTIFICATION_MUTES,
       ...(prefs.notificationMutes || {}),
       [category]: muted,
     }
-    update('notificationMutes', merged)
+    const next = { ...prefs, notificationMutes: merged }
+    setPrefs(next)
+    setSaving(true)
+    void setDisplayPrefs(next)
+      .then(() => {
+        setStatus('')
+      })
+      .catch(() => {
+        setPrefs(previous)
+        setStatus('Could not save notification mutes.')
+      })
+      .finally(() => setSaving(false))
   }
 
   function updateTypographyRole(role, px) {
@@ -234,27 +249,32 @@ export default function DisplayPage() {
 
       <Card>
         <CardTitle>Notifications</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
-          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} />
+        <label className="display-typography-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} disabled={saving} />
           Play a short chime when new high-priority notifications arrive
         </label>
-        <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="display-typography-grid" style={{ marginTop: '0.75rem' }}>
           {NOTIFICATION_MUTE_CATEGORIES.map((category) => (
             <label
               key={category}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}
+              className="display-typography-row-label"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
             >
               <ToggleSwitch
                 on={!!prefs.notificationMutes?.[category]}
                 onChange={(v) => updateNotificationMute(category, v)}
+                disabled={saving}
               />
               Mute {NOTIFICATION_MUTE_LABELS[category]}
             </label>
           ))}
         </div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+        <p className="admin-page-subtitle" style={{ margin: '0.4rem 0 0' }}>
           Muted types are not added to the inbox. Discord and Telegram still follow Admin → Webhooks.
         </p>
+        {status ? (
+          <p className="display-typography-status mono">{status}</p>
+        ) : null}
       </Card>
 
       <Card>

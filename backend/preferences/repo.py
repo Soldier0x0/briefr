@@ -53,7 +53,11 @@ def _decode_display_prefs(
     try:
         prefs = sanitize_display_prefs(data)
     except ValueError:
-        prefs = dict(DEFAULT_DISPLAY_PREFS)
+        recovered = {k: v for k, v in data.items() if k != "notification_mutes"}
+        try:
+            prefs = sanitize_display_prefs(recovered)
+        except ValueError:
+            prefs = dict(DEFAULT_DISPLAY_PREFS)
         prefs["notification_mutes"] = dict(DEFAULT_NOTIFICATION_MUTES)
     if "typography_px" in data:
         try:
