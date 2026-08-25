@@ -8,6 +8,7 @@ import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
 import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 import { fmtAge, fmtIso } from './formatters.js'
 import ToggleSwitch from './shared/ToggleSwitch.jsx'
+import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
 
 const TRIGGER_LABELS = [
   ['kev', 'CISA KEV'],
@@ -29,13 +30,19 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [huntTechnique, setHuntTechnique] = useState('')
   const [policy, setPolicy] = useState(null)
   const [policySaving, setPolicySaving] = useState(false)
+  const [policyLoading, setPolicyLoading] = useState(false)
+  const [policyError, setPolicyError] = useState(null)
 
   async function loadPolicy() {
+    setPolicyError(null)
+    setPolicyLoading(true)
     try {
       const data = await adminApi.getJson('/watchlist/policy')
       setPolicy(data)
-    } catch {
-      setPolicy(null)
+    } catch (e) {
+      setPolicyError(e)
+    } finally {
+      setPolicyLoading(false)
     }
   }
 
@@ -163,29 +170,40 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
       {subtab === 'watchlist' && (
         <div>
-          {!isAnalyst && policy && (
-            <div className="admin-card" style={{ marginBottom: '1rem' }}>
-              <h2 className="admin-card-title" style={{ marginBottom: '0.35rem' }}>
+          {!isAnalyst && (
+            <div className="admin-card">
+              <h2 className="admin-card-title">
                 Alert triggers
                 <HelpTip text="One instance policy for watched CVEs. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
               </h2>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
-                {allTriggersOn
-                  ? 'All triggers on — delivery is digest (one combined alert per CVE per run).'
-                  : 'Per-change alerts for enabled triggers. Overrides per CVE are rare and stored in policy JSON.'}
-              </p>
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                {TRIGGER_LABELS.map(([id, label]) => (
-                  <div key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                    <span className="mono" style={{ fontSize: '0.8125rem' }}>{label}</span>
-                    <ToggleSwitch
-                      on={!!policy.triggers?.[id]}
-                      onChange={(v) => updateTrigger(id, v)}
-                      disabled={policySaving}
-                    />
+              {policyError ? (
+                <p className="admin-page-subtitle" style={{ color: 'var(--red)' }}>
+                  Failed to load policy: {String(policyError.message || policyError)}{' '}
+                  <button type="button" className="admin-btn admin-btn-ghost" onClick={loadPolicy}>Retry</button>
+                </p>
+              ) : policyLoading || !policy ? (
+                <p className="admin-page-subtitle" role="status">Loading alert policy…</p>
+              ) : (
+                <>
+                  <p className="admin-page-subtitle">
+                    {allTriggersOn
+                      ? 'All triggers on — delivery is digest (one combined alert per CVE per run).'
+                      : 'Per-change alerts for enabled triggers. Overrides per CVE are rare and stored in policy JSON.'}
+                  </p>
+                  <div className="admin-filter-bar">
+                    {TRIGGER_LABELS.map(([id, label]) => (
+                      <div key={id} className="admin-field" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%' }}>
+                        <span className="mono admin-field-label">{label}</span>
+                        <ToggleSwitch
+                          on={!!policy.triggers?.[id]}
+                          onChange={(v) => updateTrigger(id, v)}
+                          disabled={policySaving}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           )}
           <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
