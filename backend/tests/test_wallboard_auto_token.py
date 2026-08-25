@@ -44,7 +44,7 @@ def _disable_rate_limit(monkeypatch) -> None:
 
 
 @pytest.mark.no_auth
-def test_wallboard_auto_token_flow(tmp_path, monkeypatch, auth_token):
+def test_wallboard_auto_token_flow_uses_enabled_default(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "wb-auto.db"
     _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("WALLBOARD_TOKEN", "kiosk-secret-token")
@@ -54,7 +54,6 @@ def test_wallboard_auto_token_flow(tmp_path, monkeypatch, auth_token):
     from settings import settings as _settings
 
     monkeypatch.setattr(_settings, "wallboard_token", "kiosk-secret-token")
-    monkeypatch.setattr(_settings, "wallboard_auto_token", True)
     monkeypatch.setattr(_settings, "auth_cookie_secure", False)
     monkeypatch.setattr(_settings, "jwt_secret", "test-jwt-secret")
 

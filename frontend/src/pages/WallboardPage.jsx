@@ -354,6 +354,7 @@ export default function WallboardPage() {
   const [authError, setAuthError] = useState('')
   const [needsToken, setNeedsToken] = useState(false)
   const [autoTokenEnabled, setAutoTokenEnabled] = useState(false)
+  const [configReady, setConfigReady] = useState(false)
   const [pollSeconds, setPollSeconds] = useState(Math.round(POLL_MS / 1000))
   const [autoTokenHint, setAutoTokenHint] = useState('')
   const [activeTile, setActiveTile] = useState(0)
@@ -373,11 +374,14 @@ export default function WallboardPage() {
   useEffect(() => {
     let cancelled = false
     fetchWallboardConfig().then((cfg) => {
-      if (cancelled || !cfg) return
-      setAutoTokenEnabled(Boolean(cfg.auto_token_enabled))
-      if (cfg.poll_interval_seconds) {
-        setPollSeconds(cfg.poll_interval_seconds)
+      if (cancelled) return
+      if (cfg) {
+        setAutoTokenEnabled(Boolean(cfg.auto_token_enabled))
+        if (cfg.poll_interval_seconds) {
+          setPollSeconds(cfg.poll_interval_seconds)
+        }
       }
+      setConfigReady(true)
     })
     return () => {
       cancelled = true
@@ -401,6 +405,7 @@ export default function WallboardPage() {
   }, [autoTokenEnabled])
 
   const load = useCallback(async () => {
+    if (!configReady) return
     try {
       const data = await fetchWallboard()
       if (cancelledRef.current) return
@@ -441,17 +446,22 @@ export default function WallboardPage() {
       }
       setError(e?.message || 'Failed to load wallboard')
     }
-  }, [tryAutoToken])
+  }, [configReady, tryAutoToken])
 
   useEffect(() => {
+    if (!configReady) return undefined
     cancelledRef.current = false
     load()
     return () => {
       cancelledRef.current = true
     }
-  }, [load])
+  }, [configReady, load])
 
-  useVisibilityAwareInterval(load, POLL_MS)
+  useVisibilityAwareInterval(
+    load,
+    Number(pollSeconds) > 0 ? Number(pollSeconds) * 1000 : POLL_MS,
+    { enabled: configReady },
+  )
 
   useEffect(() => {
     const rotate = setInterval(() => {

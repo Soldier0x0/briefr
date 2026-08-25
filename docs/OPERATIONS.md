@@ -639,24 +639,28 @@ cloudflared requires **outbound** HTTPS only.
 Read-only TV / SOC display at `/wallboard`. **Do not** bookmark URLs with tokens.
 
 1. Set `WALLBOARD_TOKEN` under Admin → API keys & config (or `.env`).
-2. **Manual mode (default):** On the display, open `/wallboard` once and enter the token — the app stores a
+2. **Logged-in mode (default):** Log into BRIEFR, then open `/wallboard`. The UI waits for
+   kiosk config, calls `POST /api/wallboard/token`, and stores a 30-day **httpOnly**
+   session cookie (`briefr_wb`) without asking you to paste `WALLBOARD_TOKEN`.
+3. **Manual kiosk fallback:** In a browser profile without a BRIEFR login, open `/wallboard`
+   once and enter the token — the app stores a
    signed **httpOnly** session cookie (`briefr_wb`). Prefer header
    `X-BRIEFR-Wallboard-Token` only for scripted probes.
-3. **Auto-token mode (#843):** Set `WALLBOARD_AUTO_TOKEN=1` and keep `WALLBOARD_TOKEN` as the seed.
-   Log into BRIEFR in the kiosk browser profile, then open `/wallboard` — the UI calls
-   `POST /api/wallboard/token` and sets the session cookie without manual entry.
+4. **Auto-token mode (#843):** `WALLBOARD_AUTO_TOKEN=1` is the default; keep
+   `WALLBOARD_TOKEN` as the seed.
    The scheduler rotates the active kiosk token every `WALLBOARD_TOKEN_ROTATION_HOURS` (default 24).
    Admins can force rotation (`POST /api/wallboard/rotate`) or revoke all sessions
    (`POST /api/wallboard/revoke`) from the API or automation.
-4. Use a **dedicated browser profile** (kiosk mode). When auto-token is enabled, the profile
+5. Use a **dedicated browser profile** (kiosk mode). When auto-token is enabled, the profile
    needs a valid analyst login once; avoid using the same profile for admin work.
-5. If the display is shared or public, rotate or revoke wallboard tokens after use and add
+6. If the display is shared or public, rotate or revoke wallboard tokens after use and add
    Cloudflare Access / VPN on the hostname.
-6. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
-7. Optional: append `?density=compact` or use the **Compact** header control for denser 4K layouts.
+7. Optional: set user stack in the main app — wallboard KEV-on-stack tile reads it.
+8. Optional: append `?density=compact` or use the **Compact** header control for denser 4K layouts.
 
-**Migration:** Existing manual-token kiosks keep working when `WALLBOARD_AUTO_TOKEN=0` (default).
-Enable auto-token only after setting `WALLBOARD_TOKEN` and confirming analyst login on the display profile.
+**Migration:** Existing manual-token kiosks keep working. Set `WALLBOARD_AUTO_TOKEN=0` only
+when the deployment must require manual token entry; the paste flow remains available when
+auto issuance cannot authenticate the browser.
 
 Optional wallboard layout tails are tracked in the maintainer repo — see [`MAINTAINER_MIGRATION.md`](MAINTAINER_MIGRATION.md).
 
