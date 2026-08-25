@@ -295,6 +295,48 @@ def test_patch_notification_mutes_rejects_unknown_key(client):
     assert res.status_code == 422
 
 
+def test_cleared_view_excludes_rows_older_than_retention(client):
+    from datetime import datetime, timedelta, timezone
+
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="old-cleared")
+    _insert(uid, "analyst", dedupe="new-cleared")
+
+    fmt = "%Y-%m-%d %H:%M:%S"
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).strftime(fmt)
+    recent_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime(fmt)
+
+    async def _stamp():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT id, dedupe_key FROM user_notifications WHERE user_id = ?",
+                (uid,),
+            )
+            by_key = {r["dedupe_key"]: r["id"] for r in rows}
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (old_ts, by_key["old-cleared"]),
+            )
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (recent_ts, by_key["new-cleared"]),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_stamp())
+    _login(client, "analyst1")
+    cleared = client.get("/api/me/notifications?scope=analyst&view=cleared").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+    titles = [n["title"] for n in cleared["notifications"]]
+    assert titles == ["Alert new-cleared"]
+    assert [n["title"] for n in done["notifications"]] == titles
+    remaining = client.get("/api/me/notifications?scope=analyst&view=active").json()
+    assert remaining["notifications"] == []
+
+
 def test_purge_cleared_keeps_active_and_recent(client):
     from datetime import datetime, timedelta, timezone
 

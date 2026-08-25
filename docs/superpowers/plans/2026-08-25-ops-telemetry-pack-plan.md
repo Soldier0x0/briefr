@@ -663,9 +663,9 @@ Does not attribute CPU peaks to a job. Does not invent samples from before the c
 
 Add next to the Support pack sentence: **Ops telemetry pack** download on System health (1d) and Resources (selected window). Bump last-updated.
 
-- [ ] **Step 3: verify-local**
+- [ ] **Step 3: Optional Graphify, then verify-local**
 
-Run: `./scripts/verify-local.sh`
+Run from the repository root after implementation edits: `graphify update .` (keep `graphify-out/` uncommitted). Then: `./scripts/verify-local.sh`
 
 Expected: green.
 

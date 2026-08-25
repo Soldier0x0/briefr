@@ -21,6 +21,17 @@ def _placeholder(pg: bool, index: int) -> str:
     return f"${index}" if pg else "?"
 
 
+def _cleared_retention_cutoff_str(retention_hours: int | None = None) -> str:
+    hours = (
+        NOTIFICATION_CLEARED_RETENTION_HOURS
+        if retention_hours is None
+        else max(1, int(retention_hours))
+    )
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
 _INSERT_SQLITE = """
 INSERT OR IGNORE INTO user_notifications (
     user_id, scope, category, severity, title, body,
@@ -157,20 +168,32 @@ async def list_notifications(
 ) -> list[dict[str, Any]]:
     canonical = normalize_notification_view(view)
     pg = _is_postgres_connection(db)
-    if scope == "all":
-        scope_clause = ""
-        lim = _placeholder(pg, 2)
-        base_params: tuple[Any, ...] = (user_id, max(1, min(limit, 100)))
-    else:
-        scope_clause = f"AND scope = {_placeholder(pg, 2)}"
-        lim = _placeholder(pg, 3)
-        base_params = (user_id, scope, max(1, min(limit, 100)))
+    lim_n = max(1, min(limit, 100))
     if canonical == "cleared":
-        dismissed_clause = "dismissed_at IS NOT NULL"
+        cutoff = _cleared_retention_cutoff_str()
+        dismissed_clause_prefix = "dismissed_at IS NOT NULL AND dismissed_at >="
         order_by = "dismissed_at DESC"
+        if scope == "all":
+            scope_clause = ""
+            dismissed_clause = f"{dismissed_clause_prefix} {_placeholder(pg, 2)}"
+            lim = _placeholder(pg, 3)
+            base_params: tuple[Any, ...] = (user_id, cutoff, lim_n)
+        else:
+            scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+            dismissed_clause = f"{dismissed_clause_prefix} {_placeholder(pg, 3)}"
+            lim = _placeholder(pg, 4)
+            base_params = (user_id, scope, cutoff, lim_n)
     else:
         dismissed_clause = "dismissed_at IS NULL"
         order_by = "created_at DESC"
+        if scope == "all":
+            scope_clause = ""
+            lim = _placeholder(pg, 2)
+            base_params = (user_id, lim_n)
+        else:
+            scope_clause = f"AND scope = {_placeholder(pg, 2)}"
+            lim = _placeholder(pg, 3)
+            base_params = (user_id, scope, lim_n)
     rows = await db.execute_fetchall(
         f"""
         SELECT id, scope, category, severity, title, body,
@@ -322,14 +345,7 @@ async def purge_cleared_notifications(
     *,
     retention_hours: int | None = None,
 ) -> int:
-    hours = (
-        NOTIFICATION_CLEARED_RETENTION_HOURS
-        if retention_hours is None
-        else max(1, int(retention_hours))
-    )
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+    cutoff = _cleared_retention_cutoff_str(retention_hours)
     pg = _is_postgres_connection(db)
     sql = (
         "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < $1"

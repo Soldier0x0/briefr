@@ -375,9 +375,9 @@ Change the notifications section so it states:
 
 Replace Inbox/Done wording in the Notification center bullet with Alerts/Cleared and 24h purge. Bump **Last updated** date if that line exists.
 
-- [ ] **Step 3: Run verify-local**
+- [ ] **Step 3: Optional Graphify, then verify-local**
 
-Run: `./scripts/verify-local.sh`
+Run from the repository root after implementation edits: `graphify update .` (keep `graphify-out/` uncommitted). Then: `./scripts/verify-local.sh`
 
 Expected: green (or documented SQLite-only skips).
 
