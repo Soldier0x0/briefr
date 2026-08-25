@@ -295,6 +295,52 @@ def test_patch_notification_mutes_rejects_unknown_key(client):
     assert res.status_code == 422
 
 
+def test_purge_cleared_keeps_active_and_recent(client):
+    from datetime import datetime, timedelta, timezone
+
+    from db.timeutil import utcnow_str
+    from db.user_notifications import purge_cleared_notifications
+
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="keep-active")
+    _insert(uid, "analyst", dedupe="old-cleared")
+    _insert(uid, "analyst", dedupe="new-cleared")
+
+    old_ts = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    recent_ts = utcnow_str()
+
+    async def _stamp_and_purge():
+        db = await get_db()
+        try:
+            rows = await db.execute_fetchall(
+                "SELECT id, dedupe_key FROM user_notifications WHERE user_id = ?",
+                (uid,),
+            )
+            by_key = {r["dedupe_key"]: r["id"] for r in rows}
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (old_ts, by_key["old-cleared"]),
+            )
+            await db.execute(
+                "UPDATE user_notifications SET dismissed_at = ? WHERE id = ?",
+                (recent_ts, by_key["new-cleared"]),
+            )
+            await db.commit()
+            deleted = await purge_cleared_notifications(db)
+            await db.commit()
+            left = await db.execute_fetchall(
+                "SELECT dedupe_key FROM user_notifications WHERE user_id = ? ORDER BY dedupe_key",
+                (uid,),
+            )
+            return deleted, [r["dedupe_key"] for r in left]
+        finally:
+            await db.close()
+
+    deleted, keys = run_db_test(_stamp_and_purge())
+    assert deleted == 1
+    assert keys == ["keep-active", "new-cleared"]
+
+
 def test_muted_category_does_not_insert(client):
     from notifications.emit import emit_watchlist_notification
 

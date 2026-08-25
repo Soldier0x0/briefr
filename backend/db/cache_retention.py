@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 
 from db.resource_metrics import get_resource_metrics_retention_days, purge_old_resource_metrics
 from db.types import DbConnection
+from db.user_notifications import purge_cleared_notifications
 
 # Physical retention >= read TTL for each key family (hours).
 IOC_CACHE_RETENTION_HOURS = 24
@@ -461,6 +462,7 @@ async def run_retention_cleanup(db: DbConnection) -> dict[str, int]:
         "resource_metrics": await purge_old_resource_metrics(
             db, retention_days=get_resource_metrics_retention_days()
         ),
+        "user_notifications": await purge_cleared_notifications(db),
         **otx,
     }
     await _maybe_vacuum_after_retention(db)

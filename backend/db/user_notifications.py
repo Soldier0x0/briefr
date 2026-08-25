@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db.timeutil import utcnow_str
 from db.types import DbConnection
+
+NOTIFICATION_CLEARED_RETENTION_HOURS = 24
 
 _SCOPE_ANALYST = "analyst"
 _SCOPE_OPERATOR = "operator"
@@ -312,3 +315,24 @@ async def undo_dismiss_notification(
         (notification_id, user_id),
     )
     return int(getattr(result, "rowcount", 0) or 0) > 0
+
+
+async def purge_cleared_notifications(
+    db: DbConnection,
+    *,
+    retention_hours: int | None = None,
+) -> int:
+    hours = (
+        NOTIFICATION_CLEARED_RETENTION_HOURS
+        if retention_hours is None
+        else max(1, int(retention_hours))
+    )
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    pg = _is_postgres_connection(db)
+    sql = (
+        "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < $1"
+        if pg
+        else "DELETE FROM user_notifications WHERE dismissed_at IS NOT NULL AND dismissed_at < ?"
+    )
+    cursor = await db.execute(sql, (cutoff,))
+    return int(getattr(cursor, "rowcount", 0) or 0)
