@@ -605,13 +605,13 @@ async def _run_kev_sync() -> None:
                 if watchlist_kev:
                     logger.info("Watchlist KEV alerts sent: %d", watchlist_kev)
                 from detection.backlog import process_new_kev_backlog
-                from webhooks.alerts import process_kev_backlog_webhooks
 
                 backlog_items = await process_new_kev_backlog(newly_kev)
                 if backlog_items:
-                    backlog_alerts = await process_kev_backlog_webhooks(backlog_items)
-                    if backlog_alerts:
-                        logger.info("KEV backlog webhooks sent: %d", backlog_alerts)
+                    logger.info(
+                        "KEV detection backlog: %d new Forge gap row(s) (not notified)",
+                        len(backlog_items),
+                    )
             except Exception as exc:
                 logger.error("KEV-on-stack alert processing failed: %s", exc)
 

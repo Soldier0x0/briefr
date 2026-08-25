@@ -327,7 +327,7 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
    rules against pasted log lines — file-based, no live SIEM. **V1.5 KEV detection
    backlog** (`GET /api/detection-backlog`, Forge Backlog tab) surfaces stack-matched
    KEV CVEs whose ATT&CK techniques are coverage gaps; rows are created on KEV sync
-   and weekly reconcile; optional `kev_backlog` webhook. **V1.5 IOC watchlist**
+   and weekly reconcile (Forge Backlog only — no bell, no webhook). **V1.5 IOC watchlist**
    (`GET/POST/DELETE /api/ioc/watchlist`, IOC tab panel) persists per-user IOCs;
    nightly retro-match vs OTX + ThreatFox mirrors; optional `ioc_watchlist_hit`
    webhook. **VulnCheck exploited tier** (`vulncheck_kev_sync` when
@@ -388,14 +388,12 @@ Flowchart: [`docs/diagrams/startup.mermaid`](diagrams/startup.mermaid) (schedule
      gains `case_study_count` per technique (Coverage map chip); `GET
      /api/hunt-packs/{technique_id}` gains a `case_studies` array (Hunt Pack
      rail section) — both additive, no schema change.
-   - **KEV backlog notifications:** `detection/backlog.py`'s
-     `process_new_kev_backlog` / `reconcile_kev_backlog` (both scheduler-only
-     — contributor rules danger zone 6, never on the request path) call
-     `notifications/emit.py::emit_kev_backlog_notification` for each newly
-     created backlog row, one `user_notifications` insert per active analyst
-     (`entity_type="kev_backlog"`, `dedupe_key=f"kev_backlog:{cve_id}:
-     {technique_id}"`). `NotificationBell.jsx` deep-links `kev_backlog`
-     clicks to `/?tab=forge&view=backlog` (legacy `?view=backlog` still works).
+   - **KEV backlog:** `detection/backlog.py`'s
+     `process_new_kev_backlog` / `reconcile_kev_backlog` (scheduler-only)
+     insert Forge Backlog rows only. They do **not** write `user_notifications`
+     or dispatch `kev_backlog` webhooks — hunt-pack gaps are not CVE triage.
+     Existing bell rows with `entity_type="kev_backlog"` still deep-link to
+     `/?tab=forge&view=backlog` if any remain.
    - **CWE/EPSS:** `list_hunt_packs` (Library) and `get_hunt_pack` (rail)
      extend their existing `cves` join/query to also select `cwe_ids`,
      `cvss_score`, `epss_score` — no new query, same columns the
@@ -504,7 +502,7 @@ All outbound modules are migrated: scheduler feeds (NVD, KEV, EPSS, MITRE, ATLAS
 
 ### Push notifications (V1.3 Theme 8 → V1.4 engine)
 
-- **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden via admin API.
+- **Engine:** `webhooks/engine.py` dispatches events (`kev_alert`, `backup_failure`, `health`, `watchlist_alert`, `ioc_watchlist_hit`) to one or more **destinations** loaded from env vars and the `webhook_destinations` table. `kev_backlog` remains a valid destination event id for stored configs but is never dispatched. Env seeds are upserted on startup (`sync_env_destinations_to_db`); per-destination `enabled` and `event_types` can be overridden via admin API.
 - **Built-in destinations:** Discord (`DISCORD_WEBHOOK_URL`), Telegram (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`), optional generic HTTPS POST (`WEBHOOK_GENERIC_URL`). Each channel can be independently enabled/disabled (`*_WEBHOOK_ENABLED`) and subscribed to event types (`*_WEBHOOK_EVENTS`).
 - **Transport:** outbound webhook HTTP uses `webhooks/ssrf.py` — **https only**, DNS resolve + block private/reserved ranges (RFC1918, RFC 6598 CGNAT `100.64.0.0/10`, 127.0.0.0/8, ::1, 169.254.0.0/16, 0.0.0.0, unique-local IPv6), connect to resolved IP with original `Host` header (DNS-rebinding safe), **no redirect following**, 10s timeout, no internal API keys on outbound headers. Failures recorded via `resilient_client` health (`webhook.{destination_id}`).
 - **Dedupe:** `webhook_alert_log` stores one row per `(event_type, target)`; `webhook_delivery_log` records every delivery attempt (destination, status, error).
