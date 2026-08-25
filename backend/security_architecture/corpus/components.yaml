@@ -42,11 +42,11 @@ components:
     ref: backend/routers/admin/config.py
 - id: routers-admin-data_ops
   title: routers.admin.data_ops
-  summary: FastAPI router module with 7 endpoint(s).
+  summary: FastAPI router module with 9 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 7
+  endpoint_count: 9
   source_refs:
   - type: file
     ref: backend/routers/admin/data_ops.py

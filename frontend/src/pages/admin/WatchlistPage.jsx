@@ -7,7 +7,16 @@ import HelpTip from './shared/HelpTip.jsx'
 import { DOMAIN_TERM_TIPS } from '../../utils/domainTermTips.js'
 import { toggleChipSelection } from '../../utils/toggleChipSelection.js'
 import { fmtAge, fmtIso } from './formatters.js'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
 import { AdminTableBodySkeletonRows } from './shared/AdminSkeletons.jsx'
+
+const TRIGGER_LABELS = [
+  ['kev', 'CISA KEV'],
+  ['epss', 'EPSS jump'],
+  ['poc', 'Public PoC'],
+  ['patch', 'Patch available'],
+  ['withdrawn', 'Withdrawn / rejected'],
+]
 
 export default function WatchlistPage({ toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
@@ -19,6 +28,23 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
+  const [policy, setPolicy] = useState(null)
+  const [policySaving, setPolicySaving] = useState(false)
+  const [policyLoading, setPolicyLoading] = useState(false)
+  const [policyError, setPolicyError] = useState(null)
+
+  async function loadPolicy() {
+    setPolicyError(null)
+    setPolicyLoading(true)
+    try {
+      const data = await adminApi.getJson('/watchlist/policy')
+      setPolicy(data)
+    } catch (e) {
+      setPolicyError(e)
+    } finally {
+      setPolicyLoading(false)
+    }
+  }
 
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
@@ -49,11 +75,31 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   }
 
   useEffect(() => { if (subtab === 'watchlist') loadWatchlist() }, [subtab, watchlistState])
+  useEffect(() => { if (subtab === 'watchlist' && !isAnalyst) loadPolicy() }, [subtab, isAnalyst])
   useEffect(() => { if (subtab === 'ioc') loadIoc() }, [subtab, iocType, iocSearch])
   useEffect(() => { if (subtab === 'hunt') loadHunts() }, [subtab, huntTechnique])
 
   const pinCount = watchlistRows?.filter(r => r.state === 'pin').length ?? 0
   const snoozeCount = watchlistRows?.filter(r => r.state === 'snooze').length ?? 0
+  const allTriggersOn = policy && TRIGGER_LABELS.every(([id]) => policy.triggers?.[id])
+
+  async function updateTrigger(id, on) {
+    if (!policy || policySaving) return
+    const next = {
+      ...policy,
+      triggers: { ...policy.triggers, [id]: on },
+    }
+    setPolicySaving(true)
+    try {
+      const saved = await adminApi.putJson('/watchlist/policy', next)
+      setPolicy(saved)
+      toast('Watchlist alert policy saved', true)
+    } catch (e) {
+      toast(String(e.message), false)
+    } finally {
+      setPolicySaving(false)
+    }
+  }
 
   async function removeWatchlist(cveId) {
     try {
@@ -124,8 +170,44 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
       {subtab === 'watchlist' && (
         <div>
+          {!isAnalyst && (
+            <div className="admin-card">
+              <h2 className="admin-card-title">
+                Alert triggers
+                <HelpTip text="One instance policy for watched CVEs. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
+              </h2>
+              {policyError ? (
+                <p className="admin-page-subtitle" style={{ color: 'var(--red)' }}>
+                  Failed to load policy: {String(policyError.message || policyError)}{' '}
+                  <button type="button" className="admin-btn admin-btn-ghost" onClick={loadPolicy}>Retry</button>
+                </p>
+              ) : policyLoading || !policy ? (
+                <p className="admin-page-subtitle" role="status">Loading alert policy…</p>
+              ) : (
+                <>
+                  <p className="admin-page-subtitle">
+                    {allTriggersOn
+                      ? 'All triggers on — delivery is digest (one combined alert per CVE per run).'
+                      : 'Per-change alerts for enabled triggers. Overrides per CVE are rare and stored in policy JSON.'}
+                  </p>
+                  <div className="admin-filter-bar">
+                    {TRIGGER_LABELS.map(([id, label]) => (
+                      <div key={id} className="admin-field" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%' }}>
+                        <span className="mono admin-field-label">{label}</span>
+                        <ToggleSwitch
+                          on={!!policy.triggers?.[id]}
+                          onChange={(v) => updateTrigger(id, v)}
+                          disabled={policySaving}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
-            {pinCount} pinned CVEs · {snoozeCount} snoozed CVEs
+            {pinCount} watched CVEs · {snoozeCount} snoozed CVEs
           </div>
           <div className="admin-action-bar">
             <div className="admin-filter-chips">

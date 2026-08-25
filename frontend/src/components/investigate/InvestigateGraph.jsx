@@ -1274,7 +1274,7 @@ export default function InvestigateGraph({
                     className="investigate-ghost-btn mono"
                     onClick={() => onWatchlistChange(selected.entity_id, 'pin')}
                   >
-                    {watchlist?.getState(selected.entity_id) === 'pin' ? 'UNPIN WATCHLIST' : 'PIN WATCHLIST'}
+                    {watchlist?.getState(selected.entity_id) === 'pin' ? 'UNWATCH' : 'WATCH'}
                   </button>
                 )}
                 {investigation && (

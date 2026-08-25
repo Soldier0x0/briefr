@@ -264,6 +264,12 @@ endpoints:
 - method: POST
   path: /api/admin/watchlist/clear-snoozes
   component_id: routers-admin-data_ops
+- method: GET
+  path: /api/admin/watchlist/policy
+  component_id: routers-admin-data_ops
+- method: PUT
+  path: /api/admin/watchlist/policy
+  component_id: routers-admin-data_ops
 - method: DELETE
   path: /api/admin/watchlist/{cve_id}
   component_id: routers-admin-data_ops

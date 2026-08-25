@@ -12,14 +12,22 @@ from __future__ import annotations
 import urllib.parse
 
 from fastapi import HTTPException, Query, Request
+from pydantic import BaseModel
 
 from database import delete_all_snooze_entries, get_db
 from dependencies import audit
 from destructive_actions import require_confirm
+from watchlist.policy import load_policy, save_policy
 
 from .router import router
 
 # ── Watchlist ──────────────────────────────────────────────────────────────
+
+
+class WatchlistPolicyBody(BaseModel):
+    triggers: dict[str, bool] | None = None
+    delivery: str | None = None
+    overrides: dict | None = None
 
 
 @router.get("/watchlist")
@@ -61,6 +69,27 @@ async def get_admin_watchlist(
         await db.close()
 
     return [dict(row) for row in rows]
+
+
+@router.get("/watchlist/policy")
+async def get_watchlist_policy():
+    db = await get_db()
+    try:
+        return await load_policy(db)
+    finally:
+        await db.close()
+
+
+@router.put("/watchlist/policy")
+async def put_watchlist_policy(body: WatchlistPolicyBody, request: Request):
+    db = await get_db()
+    try:
+        policy = await save_policy(db, body.model_dump())
+        await db.commit()
+    finally:
+        await db.close()
+    await audit(request, "watchlist.policy.update", "watchlist.policy")
+    return policy
 
 
 @router.delete("/watchlist/{cve_id}")

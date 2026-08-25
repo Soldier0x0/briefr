@@ -698,9 +698,9 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                   className={`drawer-inv-btn mono${isPinned ? ' drawer-inv-btn-active' : ''}`}
                   onClick={() => onWatchlistChange(cve.cve_id, 'pin')}
                   aria-pressed={isPinned}
-                  aria-label={isPinned ? `Unpin ${cve.cve_id}` : `Pin ${cve.cve_id}`}
+                  aria-label={isPinned ? `Remove ${cve.cve_id} from watchlist` : `Watch ${cve.cve_id}`}
                 >
-                  {isPinned ? 'Unpin' : 'Pin'}
+                  {isPinned ? 'Watching' : 'Watch'}
                 </button>
               )}
               <div className="drawer-header-actions-inline">
