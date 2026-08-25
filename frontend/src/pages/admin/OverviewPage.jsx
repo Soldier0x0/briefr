@@ -319,7 +319,9 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
       URL.revokeObjectURL(a.href)
       toast('Support pack downloaded', true)
     } catch (e) { toast(String(e.message), false) }
-    setRunning(r => ({ ...r, supportPack: false }))
+    finally {
+      setRunning(r => ({ ...r, supportPack: false }))
+    }
   }
 
   async function exportOpsTelemetryPack() {
@@ -340,7 +342,9 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
       URL.revokeObjectURL(a.href)
       toast('Ops telemetry pack downloaded', true)
     } catch (e) { toast(String(e.message), false) }
-    setRunning(r => ({ ...r, opsTelemetry: false }))
+    finally {
+      setRunning(r => ({ ...r, opsTelemetry: false }))
+    }
   }
 
   const { db_integrity, scheduler_jobs, active_locks } = system

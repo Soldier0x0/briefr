@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -55,8 +56,10 @@ async def _scheduler_last_runs(db) -> list[dict[str, Any]]:
             "job_id": job_id,
             "last_run_utc": latest.get("last_run_utc") or latest.get("started_at"),
             "duration_seconds": latest.get("duration_seconds"),
+            "records_upserted": latest.get("records_upserted"),
             "had_error": latest.get("had_error"),
             "error_message": latest.get("error_message", ""),
+            "run_history": history,
         })
     result.sort(key=lambda item: item.get("last_run_utc") or "", reverse=True)
     return result
@@ -89,7 +92,7 @@ async def build_ops_telemetry_pack(*, window: str = "1d") -> dict[str, Any]:
         "window": window,
         "window_hours": hours,
         "retention_days": get_resource_metrics_retention_days(),
-        "sample_interval_seconds": 60,
+        "sample_interval_seconds": int(os.environ.get("RESOURCE_SAMPLE_INTERVAL_SECONDS", "60")),
         "postgres_backend": is_postgres(),
         "limitations": list(LIMITATIONS),
         "degraded": degraded,

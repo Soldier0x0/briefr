@@ -63,6 +63,15 @@ def test_ops_telemetry_pack_schema_and_filename(admin_client):
     assert "outbound_http" in data
     assert "scheduler" in data
     assert "efficiency" in data
+    assert isinstance(data["sample_interval_seconds"], int)
     joined = " ".join(data["limitations"]).lower()
     assert "job" in joined
     assert "downsample" in joined or "500" in joined
+
+
+def test_ops_telemetry_pack_sample_interval_from_env(admin_client, monkeypatch):
+    monkeypatch.setenv("RESOURCE_SAMPLE_INTERVAL_SECONDS", "90")
+    resp = admin_client.get("/api/admin/diagnostics/ops-telemetry-pack?window=1d")
+    assert resp.status_code == 200
+    data = json.loads(resp.text)
+    assert data["sample_interval_seconds"] == 90
