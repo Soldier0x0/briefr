@@ -2339,6 +2339,14 @@ Params: `log_limit` (1–500, default 200) — number of ring-buffer log lines t
 
 Response: JSON attachment (`Content-Disposition: attachment`) with `{support_pack_version, generated_at, version, environment, health, database, security, correlation, diagnostics: {smoke, integrity}, scheduler, logs}`. Database URLs and log `extra` fields matching secret patterns are redacted. Audit: `diagnostics.support_pack`.
 
+### GET /api/admin/diagnostics/ops-telemetry-pack
+Admin-gated JSON attachment of host/DB time series plus outbound HTTP digest for RCA.
+Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`).
+Filename `briefr-ops-telemetry-{window}-{stamp}.json`.
+Body includes `ops_telemetry_pack_version`, `limitations`, raw `resource_metrics.samples` (not the 500-point chart downsample), `outbound_http`, `scheduler`, `efficiency`.
+Audit: `diagnostics.ops_telemetry_pack`.
+Does not attribute CPU peaks to a job. Does not invent samples from before the collector ran.
+
 ### GET /api/admin/onboarding
 First-hour operator checklist with live completion state. Response: `{items: [{id, title, detail, done, hint}], done_count, total_count, complete, dismissed, dismissed_at}`.
 
