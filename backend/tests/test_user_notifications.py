@@ -151,6 +151,31 @@ def test_list_view_done_excludes_inbox(client):
     assert done["unread_count"] == 0
 
 
+def test_list_view_aliases_active_cleared(client):
+    uid = _user_id("analyst1")
+    _insert(uid, "analyst", dedupe="alias1")
+    _login(client, "analyst1")
+    nid = client.get("/api/me/notifications?scope=analyst").json()["notifications"][0]["id"]
+    client.post(f"/api/me/notifications/{nid}/dismiss")
+
+    active = client.get("/api/me/notifications?scope=analyst&view=active").json()
+    inbox = client.get("/api/me/notifications?scope=analyst&view=inbox").json()
+    cleared = client.get("/api/me/notifications?scope=analyst&view=cleared").json()
+    done = client.get("/api/me/notifications?scope=analyst&view=done").json()
+
+    assert active["notifications"] == []
+    assert inbox["notifications"] == []
+    assert len(cleared["notifications"]) == 1
+    assert len(done["notifications"]) == 1
+    assert cleared["unread_count"] == 0
+
+
+def test_list_view_rejects_unknown(client):
+    _login(client, "analyst1")
+    res = client.get("/api/me/notifications?scope=analyst&view=archive")
+    assert res.status_code == 422
+
+
 def test_dismiss_one_and_dismiss_all(client):
     uid = _user_id("analyst1")
     _insert(uid, "analyst", dedupe="d1")

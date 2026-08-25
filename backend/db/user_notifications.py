@@ -82,6 +82,21 @@ WHERE user_id = $1
   AND dismissed_at IS NULL
 """
 
+_VIEW_ALIASES = {
+    "inbox": "active",
+    "active": "active",
+    "done": "cleared",
+    "cleared": "cleared",
+}
+
+
+def normalize_notification_view(view: str) -> str:
+    key = (view or "inbox").strip().lower()
+    mapped = _VIEW_ALIASES.get(key)
+    if mapped is None:
+        raise ValueError("view must be active, cleared, inbox, or done")
+    return mapped
+
 
 async def list_active_user_ids(db: DbConnection, *, scope: str) -> list[int]:
     if scope == _SCOPE_OPERATOR:
@@ -137,8 +152,7 @@ async def list_notifications(
     limit: int = 30,
     view: str = "inbox",
 ) -> list[dict[str, Any]]:
-    if view not in ("inbox", "done"):
-        raise ValueError("view must be inbox or done")
+    canonical = normalize_notification_view(view)
     pg = _is_postgres_connection(db)
     if scope == "all":
         scope_clause = ""
@@ -148,7 +162,7 @@ async def list_notifications(
         scope_clause = f"AND scope = {_placeholder(pg, 2)}"
         lim = _placeholder(pg, 3)
         base_params = (user_id, scope, max(1, min(limit, 100)))
-    if view == "done":
+    if canonical == "cleared":
         dismissed_clause = "dismissed_at IS NOT NULL"
         order_by = "dismissed_at DESC"
     else:
