@@ -315,6 +315,7 @@ export default function ResourcesPage({ toast, active = true }) {
   const [loadError, setLoadError] = useState(null)
   const [pendingConfig, setPendingConfig] = useState(null)
   const [applyingConfig, setApplyingConfig] = useState(false)
+  const [exportingOpsTelemetry, setExportingOpsTelemetry] = useState(false)
 
   const setWindow = useCallback((next) => {
     const params = new URLSearchParams(searchParams)
@@ -380,6 +381,30 @@ export default function ResourcesPage({ toast, active = true }) {
       toast?.(e?.message || 'Apply failed', false)
     } finally {
       setApplyingConfig(false)
+    }
+  }
+
+  async function exportOpsTelemetryPack() {
+    setExportingOpsTelemetry(true)
+    try {
+      const res = await adminApi.get(`/diagnostics/ops-telemetry-pack?window=${windowKey}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast?.(data.detail || `Export failed (${res.status})`, false)
+        return
+      }
+      const blob = await res.blob()
+      const stamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `briefr-ops-telemetry-${windowKey}-${stamp}.json`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      toast?.('Ops telemetry pack downloaded', true)
+    } catch (e) {
+      toast?.(String(e.message), false)
+    } finally {
+      setExportingOpsTelemetry(false)
     }
   }
 
@@ -476,6 +501,16 @@ export default function ResourcesPage({ toast, active = true }) {
             {w.toUpperCase()}
           </button>
         ))}
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost"
+          style={{ fontSize: '0.75rem' }}
+          onClick={exportOpsTelemetryPack}
+          disabled={exportingOpsTelemetry}
+          title="Download host/DB samples, outbound HTTP digest, and job last-runs (no secrets)"
+        >
+          {exportingOpsTelemetry ? <><span className="admin-spinner" /> Exporting…</> : 'Export ops telemetry pack'}
+        </button>
       </div>
 
       <AsyncSection data={payload} error={loadError} onRetry={load} skeletonVariant="chart">

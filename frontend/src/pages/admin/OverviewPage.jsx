@@ -322,6 +322,27 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
     setRunning(r => ({ ...r, supportPack: false }))
   }
 
+  async function exportOpsTelemetryPack() {
+    setRunning(r => ({ ...r, opsTelemetry: true }))
+    try {
+      const res = await adminApi.get('/diagnostics/ops-telemetry-pack?window=1d')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast(data.detail || `Export failed (${res.status})`, false)
+        return
+      }
+      const blob = await res.blob()
+      const stamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `briefr-ops-telemetry-1d-${stamp}.json`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      toast('Ops telemetry pack downloaded', true)
+    } catch (e) { toast(String(e.message), false) }
+    setRunning(r => ({ ...r, opsTelemetry: false }))
+  }
+
   const { db_integrity, scheduler_jobs, active_locks } = system
   const nvdAgeColorClass = ageColor(system.last_nvd_sync_age_seconds, 7200, 14400)
   const backupAgeColorClass = ageColor(system.last_backup_age_seconds, 28800, 43200)
@@ -402,6 +423,15 @@ function OperatorOverview({ system, toast, setPage, ingestErrorCount, unackJobEr
             title="Download redacted health + logs bundle for support (no secrets)"
           >
             {running.supportPack ? <><span className="admin-spinner" /> Exporting…</> : 'Export support pack'}
+          </button>
+          <button
+            className="admin-btn admin-btn-ghost"
+            style={{ fontSize: '0.75rem' }}
+            onClick={exportOpsTelemetryPack}
+            disabled={running.opsTelemetry}
+            title="Download host/DB samples, outbound HTTP digest, and job last-runs (no secrets)"
+          >
+            {running.opsTelemetry ? <><span className="admin-spinner" /> Exporting…</> : 'Export ops telemetry pack'}
           </button>
           {showDiag && <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => setShowDiag(false)}>Hide</button>}
         </div>
