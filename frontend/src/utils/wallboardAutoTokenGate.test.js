@@ -10,9 +10,8 @@ describe('Wallboard auto-token bootstrap gate', () => {
     assert.match(source, /setConfigReady\(true\)/)
     assert.match(source, /if \(!configReady\) return/)
     assert.match(source, /\[configReady, tryAutoToken\]/)
-    assert.match(
-      source,
-      /useVisibilityAwareInterval\(load,\s*POLL_MS,\s*\{\s*enabled:\s*configReady\s*\}\)/,
-    )
+    assert.match(source, /useVisibilityAwareInterval\(\s*load,/)
+    assert.match(source, /Number\(pollSeconds\) > 0 \? Number\(pollSeconds\) \* 1000 : POLL_MS/)
+    assert.match(source, /enabled:\s*configReady/)
   })
 })
