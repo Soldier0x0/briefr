@@ -457,7 +457,11 @@ export default function WallboardPage() {
     }
   }, [configReady, load])
 
-  useVisibilityAwareInterval(load, POLL_MS, { enabled: configReady })
+  useVisibilityAwareInterval(
+    load,
+    Number(pollSeconds) > 0 ? Number(pollSeconds) * 1000 : POLL_MS,
+    { enabled: configReady },
+  )
 
   useEffect(() => {
     const rotate = setInterval(() => {

@@ -353,8 +353,8 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
                 display_label="Wallboard auto-token",
                 help_text="Enabled by default. Authenticated analysts can bootstrap kiosk sessions "
                 "via POST /api/wallboard/token without typing WALLBOARD_TOKEN. "
-                "Disable only to require manual kiosk-token entry. "
-                "The backend rotates the active kiosk token on a schedule."),
+                "Set WALLBOARD_TOKEN before disabling auto-token; a blank token still leaves "
+                "the wallboard open. Scheduled rotation applies only when auto-token is enabled."),
     ConfigField("WALLBOARD_TOKEN_ROTATION_HOURS", "security", "int", min=1, max=168,
                 restart_required=True,
                 display_label="Wallboard token rotation (hours)",
