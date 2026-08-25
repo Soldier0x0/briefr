@@ -152,7 +152,7 @@ Width `min(420px, calc(100vw - 24px))`. Max height `min(480px, 70vh)`. Flex colu
 
 **Row:**
 
-```
+```text
 [unread dot] [severity icon]  Title (semibold if unread)
                               Body one line, ellipsis
                               {category label} · {relative time} · {Open {destination}}
@@ -162,7 +162,7 @@ Width `min(420px, calc(100vw - 24px))`. Max height `min(480px, 70vh)`. Flex colu
 - Unread: 6px `--accent-primary` dot **and** semibold title (not color alone).
 - Severity: Lucide `OctagonAlert` / `TriangleAlert` / `Info` + `Badge` with `explain` tooltip (required by Badge primitive).
 - Time: relative (`fmtAge` or shared `formatTimeAgo`) + `title`/`Tooltip` with absolute `fmtIso`.
-- Whole row is a button; Done is a nested button with `stopPropagation`.
+- Row is a non-button container; a sibling row-activation button opens the destination, and a sibling Done button marks Done (`stopPropagation` not required if they are not nested).
 - Destination helper (pure): CVE → “Open CVE”; IOC → “Open IOC”; job → “Open scheduler”; api_key → “Open API keys”; webhook → “Open webhooks”; kev_backlog leftover → “Open Forge backlog”; unknown → no navigation, no fake control.
 
 **Empty Inbox:** `EmptyState` title “Inbox is clear.” No action required.

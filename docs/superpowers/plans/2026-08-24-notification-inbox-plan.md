@@ -547,13 +547,13 @@ Bell behavior (must match spec):
 - `error` is a real Error; `AsyncState` with `emptyTitle={view==='done' ? 'Nothing in Done yet.' : 'Inbox is clear.'}`.
 - Trigger: `aria-label={notificationTriggerLabel(unreadCount)}`; visible badge if unreadCount > 0 (not aria-hidden without a name).
 - Hidden `aria-live="polite"` text when unread increases and panel closed.
-- Chime: same as now **and** `!open`.
+- Chime: same as now **and** `!open` **and** `!reduceMotion`. Add a unit test that reduced motion skips the chime.
 - Row: `notificationDestination` + `navigate({ pathname, search })` then `readNotification`.
 - Done button: `dismissNotification` then undo bar; Undo → `restoreNotification`.
 - Mark all as read → `readAllNotifications(scope)`.
 - Head `DropdownMenu`: Move all to Done → existing dismiss-all.
 - Done view: Restore button per row.
-- `j`/`k`/`Enter`/`e` when open (onContent).
+- `j`/`k`/`Enter`/`e` when open (onContent). `Shift+E` restores in Done view only (focus in the list, not a text field).
 - CSS: unread dot, no trigger scale, `--focus-ring`, `--type-*` tokens, `--hit-target-min` on icon buttons.
 - Group via `groupNotificationRows`; show `+N more` in meta.
 
@@ -665,6 +665,10 @@ Expected: pass (`test_repeated_identical_failure_notifies_once` still valid — 
 Run: `./scripts/verify-local.sh`
 
 Expected: green, or only documented unrelated SQLite schema failures. Do not ship if notification tests fail.
+
+- [ ] **Step 3b: Graphify**
+
+Run: `graphify update .` from the repository root after implementation edits and before the merge gate. Keep `graphify-out/` uncommitted.
 
 - [ ] **Step 4: Browser (required for UI)**
 
