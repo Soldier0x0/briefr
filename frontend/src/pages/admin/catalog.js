@@ -234,6 +234,20 @@ export const JOB_CATALOG = {
     analystDescription: 'Evaluates watchlist rules and sends configured webhook alerts.',
     refreshButton: 'Run watchlist monitor',
   },
+  daily_brief_eod: {
+    label: 'End-of-day daily brief',
+    short: 'Daily brief EOD',
+    operatorName: 'End-of-Day Daily Brief Webhook',
+    analystDescription: 'Rolls up the last 24 hours and sends the daily brief to subscribed webhooks.',
+    refreshButton: 'Send EOD daily brief',
+  },
+  daily_brief_standup: {
+    label: 'Morning standup daily brief',
+    short: 'Daily brief standup',
+    operatorName: 'Morning Standup Daily Brief Webhook',
+    analystDescription: 'Rolls up overnight activity since the last EOD brief and sends to subscribed webhooks.',
+    refreshButton: 'Send standup daily brief',
+  },
   session_cleanup: {
     label: 'Session cleanup',
     short: 'Sessions',
