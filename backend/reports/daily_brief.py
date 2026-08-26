@@ -326,10 +326,17 @@ async def _fetch_notifications(
     if category is not None:
         p_cat = _placeholder(pg, 3)
         sql = f"""
-            SELECT title, body, entity_type, entity_id, created_at
-            FROM user_notifications
-            WHERE created_at >= {p_start} AND created_at < {p_end}
-              AND category = {p_cat}
+            WITH matching AS (
+                SELECT category, title, body, entity_type, entity_id,
+                       dedupe_key, created_at,
+                       ROW_NUMBER() OVER (PARTITION BY dedupe_key ORDER BY id) AS event_row
+                FROM user_notifications
+                WHERE created_at >= {p_start} AND created_at < {p_end}
+                  AND category = {p_cat}
+            )
+            SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
+            FROM matching
+            WHERE event_row = 1
             ORDER BY created_at DESC
         """
         params: tuple[Any, ...] = (start_bound, end_bound, category)
@@ -337,10 +344,17 @@ async def _fetch_notifications(
         cats = categories or ()
         placeholders = ", ".join(_placeholder(pg, i + 3) for i in range(len(cats)))
         sql = f"""
-            SELECT title, body, entity_type, entity_id, created_at
-            FROM user_notifications
-            WHERE created_at >= {p_start} AND created_at < {p_end}
-              AND category IN ({placeholders})
+            WITH matching AS (
+                SELECT category, title, body, entity_type, entity_id,
+                       dedupe_key, created_at,
+                       ROW_NUMBER() OVER (PARTITION BY dedupe_key ORDER BY id) AS event_row
+                FROM user_notifications
+                WHERE created_at >= {p_start} AND created_at < {p_end}
+                  AND category IN ({placeholders})
+            )
+            SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
+            FROM matching
+            WHERE event_row = 1
             ORDER BY created_at DESC
         """
         params = (start_bound, end_bound, *cats)
