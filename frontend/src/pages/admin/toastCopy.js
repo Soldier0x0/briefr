@@ -29,3 +29,25 @@ export function schedulerJobResumed(jobId, mode = 'operator') {
 export function schedulerJobRetry(jobId, mode = 'operator') {
   return `Retry started — ${displayName(jobId, mode)}`
 }
+
+export function dailyBriefTestToast(result = {}) {
+  const status = String(result.status || '').trim().toLowerCase()
+  if (status === 'skipped') {
+    const reason = String(result.reason || 'unknown reason').replaceAll('_', ' ')
+    return {
+      message: `Daily brief test skipped — ${reason}`,
+      variant: 'warning',
+    }
+  }
+  if (status === 'failed') {
+    return {
+      message: 'Daily brief test failed',
+      variant: 'error',
+    }
+  }
+  const statusNote = status ? ` (${status})` : ''
+  return {
+    message: `Daily brief test sent${statusNote}`,
+    variant: 'success',
+  }
+}

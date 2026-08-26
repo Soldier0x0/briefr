@@ -7,6 +7,7 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import WebhookDestinationCard from './WebhookDestinationCard.jsx'
+import { dailyBriefTestToast } from './toastCopy.js'
 import './WebhooksPage.css'
 
 const EVENT_OPTIONS = [
@@ -260,8 +261,7 @@ export default function WebhooksPage({ toast }) {
         slot: dailyBriefSlot,
       })
       if (data?.text) setDailyBriefPreview(data.text)
-      const refNote = data?.status ? ` (${data.status})` : ''
-      toast(`Daily brief test sent${refNote}`, data?.status !== 'failed')
+      toast(dailyBriefTestToast(data))
       try {
         await loadHealth()
         await loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)

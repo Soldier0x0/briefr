@@ -73,7 +73,7 @@ When the assembled body exceeds the destination cap:
 3. If still over, replace remaining list bodies with `+{hidden} more in BRIEFR.`
 4. Last resort: truncate with a Unicode ellipsis `…` (existing `_truncate` in `webhooks/engine.py`).
 
-Generic HTTPS receives the **untruncated** text in `text` and a structured `brief` object (see spec) so machines are not Discord-capped.
+The `text` field is capped at Discord's **2000-character** limit for every destination kind, including Generic HTTPS. Machine consumers should read the structured `brief` object for the bounded item lists and untruncated window totals.
 
 ## 4. Worked examples
 

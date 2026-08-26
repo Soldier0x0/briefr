@@ -2288,7 +2288,7 @@ Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_
 | `health` | Health-check pings | — |
 | `daily_brief` | Scheduler `daily_brief_eod` / `daily_brief_standup` (when slot enabled) | `{slot}:{local_date}` (`eod` or `standup`) |
 
-Env bootstrap destinations with unset `DISCORD_WEBHOOK_EVENTS` / `TELEGRAM_WEBHOOK_EVENTS` / `WEBHOOK_GENERIC_EVENTS` (empty or missing) subscribe to **all** types in the table, including `daily_brief`. Database destinations with an explicit `event_types` list do **not** auto-gain new types — operators check the box on Admin → Webhooks. **Both cron slots default off** (`DAILY_BRIEF_EOD_ENABLED=0`, `DAILY_BRIEF_STANDUP_ENABLED=0`); no scheduled brief is sent until enabled in Admin config (jobs are registered but no-op while disabled).
+Fresh env bootstrap destinations with unset `DISCORD_WEBHOOK_EVENTS` / `TELEGRAM_WEBHOOK_EVENTS` / `WEBHOOK_GENERIC_EVENTS` (empty or missing and no synced DB row yet) subscribe to **all** types in the table, including `daily_brief`. Existing synced env destinations retain their stored `event_types` list and must have **Daily brief (EOD / standup)** ticked on Admin → Webhooks; database destinations with an explicit list likewise do not auto-gain new types. **Both cron slots default off** (`DAILY_BRIEF_EOD_ENABLED=0`, `DAILY_BRIEF_STANDUP_ENABLED=0`); no scheduled brief is sent until enabled in Admin config (jobs are registered but no-op while disabled).
 
 **Daily brief config keys** (Admin → API keys & config; see `GET /api/admin/config/schema`):
 
@@ -2302,7 +2302,7 @@ Env bootstrap destinations with unset `DISCORD_WEBHOOK_EVENTS` / `TELEGRAM_WEBHO
 | `DAILY_BRIEF_STANDUP_MINUTE` | int (0–59) | `0` | `scheduler_reschedule` |
 | `DAILY_BRIEF_LLM_ENABLED` | bool | `0` | `immediate` (`ml` section) |
 
-Scheduled jobs: `daily_brief_eod` (cron at EOD hour/minute, instance timezone) and `daily_brief_standup` (cron at standup hour/minute). EOD window = prior 24h; standup window starts at `sync_state` `daily_brief:last_eod_end` (written after successful EOD dispatch) or `window_end − 12h`. Standup skips when the computed window is shorter than 15 minutes (overlap guard after EOD). Message layout: [`docs/design/daily-brief-format.md`](design/daily-brief-format.md). Optional LLM rewrites only the headline when `DAILY_BRIEF_LLM_ENABLED=1` and a provider is configured; template headline otherwise.
+Scheduled jobs: `daily_brief_eod` (cron at EOD hour/minute, instance timezone) and `daily_brief_standup` (cron at standup hour/minute). EOD window = prior 24h. Standup uses `sync_state` `daily_brief:last_eod_end` only while EOD is enabled; otherwise it uses the prior 12h. A watermark older than 24h is clamped to `window_end − 24h`. Standup skips when the computed window is shorter than 15 minutes (overlap guard after EOD). SQL timestamp bounds are UTC and half-open; date-only KEV rows use `date_added > start_local_date AND date_added <= end_local_date`. Message layout: [`docs/design/daily-brief-format.md`](design/daily-brief-format.md). Optional LLM rewrites only the headline when `DAILY_BRIEF_LLM_ENABLED=1` and a provider is configured; template headline otherwise.
 
 ### GET /api/admin/webhooks/daily-brief/preview
 Params: `slot` — required; `eod` or `standup` (else `422`).
