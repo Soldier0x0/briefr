@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
-from database import get_db, init_db, set_sync_state_value
+from database import get_db, get_sync_state_value, init_db, set_sync_state_value
 from reports.daily_brief import (
     COUNT_KEYS,
     DailyBrief,
@@ -16,6 +16,7 @@ from reports.daily_brief import (
     apply_headline,
     collect_daily_brief,
     format_daily_brief_text,
+    run_daily_brief_slot,
 )
 from tests.conftest import run_db_test
 
@@ -588,6 +589,12 @@ def test_stack_matches_admin_cpe_not_description(db_env):
                     "2026-08-20 00:00:00",
                     "2026-08-26",
                 ),
+                (
+                    "CVE-2026-STACK4",
+                    '["apache:httpd"]',
+                    "2026-08-26 12:00:00",
+                    None,
+                ),
             ):
                 await db.execute(
                     """
@@ -597,7 +604,11 @@ def test_stack_matches_admin_cpe_not_description(db_env):
                     """,
                     (
                         cve_id,
-                        "nginx reverse proxy RCE" if "STACK1" in cve_id else "other",
+                        (
+                            "nginx reverse proxy RCE"
+                            if cve_id in {"CVE-2026-STACK1", "CVE-2026-STACK4"}
+                            else "other"
+                        ),
                         affected,
                         "",
                         "CRITICAL",
@@ -624,11 +635,12 @@ def test_stack_matches_admin_cpe_not_description(db_env):
 
     brief = run_db_test(_seed())
     stack_ids = {row["cve_id"] for row in brief.stack}
-    assert brief.counts["critical_high_new"] == 2
+    assert brief.counts["critical_high_new"] == 3
     assert brief.counts["kev_new"] == 1
     assert brief.counts["stack_matches"] == 2
     assert stack_ids == {"CVE-2026-STACK1", "CVE-2026-STACK3"}
     assert "CVE-2026-STACK2" not in stack_ids
+    assert "CVE-2026-STACK4" not in stack_ids
 
 
 def test_llm_lede_rejects_unknown_cve(db_env, monkeypatch):
@@ -862,6 +874,7 @@ def test_run_daily_brief_standup_skips_overlapping(monkeypatch, db_env):
     from database import set_sync_state_value
     from reports.daily_brief import run_daily_brief_slot
 
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "1")
     monkeypatch.setenv("DAILY_BRIEF_STANDUP_ENABLED", "1")
     monkeypatch.setenv("SCHEDULER_TIMEZONE", "UTC")
     called = {"n": 0}
@@ -921,3 +934,32 @@ def test_run_daily_brief_eod_writes_watermark(monkeypatch, db_env):
     watermark = run_db_test(check())
     assert watermark is not None
     assert watermark.endswith("Z")
+
+
+def test_run_daily_brief_failed_eod_does_not_write_watermark(monkeypatch, db_env):
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "1")
+    monkeypatch.setenv("SCHEDULER_TIMEZONE", "UTC")
+    monkeypatch.setenv("DAILY_BRIEF_LLM_ENABLED", "0")
+
+    async def fake_dispatch(*_a, **_k):
+        return {
+            "status": "failed",
+            "sent": [],
+            "errors": {"discord": "delivery failed"},
+            "event_type": "daily_brief",
+        }
+
+    monkeypatch.setattr("reports.daily_brief.dispatch_event", fake_dispatch)
+
+    result = run_db_test(run_daily_brief_slot("eod"))
+    assert result["status"] == "failed"
+    assert result["slot"] == "eod"
+
+    async def check():
+        db = await get_db()
+        try:
+            return await get_sync_state_value(db, "daily_brief:last_eod_end")
+        finally:
+            await db.close()
+
+    assert run_db_test(check()) is None
