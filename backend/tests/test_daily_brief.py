@@ -142,3 +142,89 @@ def test_overflow_drops_ops_before_kev():
     assert len(text) <= 500
     assert "// COUNTS" in text
     assert "// OPS" not in text or "more in BRIEFR" in text
+
+
+def test_overflow_notes_before_footer():
+    from reports.daily_brief import DailyBrief, format_daily_brief_text
+
+    items = [f"CVE-2026-{i:04d}" for i in range(40)]
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="Busy.",
+        lede_source="template",
+        counts={
+            "kev_new": 40,
+            "stack_matches": 0,
+            "watchlist": 0,
+            "ioc_hits": 0,
+            "critical_high_new": 0,
+            "ops_issues": 20,
+        },
+        kev=[{"cve_id": c, "reason": "added to KEV", "severity": "HIGH"} for c in items],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[{"id": f"job-{i}", "reason": "boom " * 40} for i in range(20)],
+    )
+    text = format_daily_brief_text(brief, limit=500)
+    footer_idx = text.index("BRIEFR — generated")
+    overflow_idx = text.index("more in BRIEFR")
+    assert overflow_idx < footer_idx
+    assert text[overflow_idx:footer_idx].strip().endswith("more in BRIEFR.")
+
+
+def test_kev_date_added_uses_calendar_dates(db_env):
+    from reports.daily_brief import collect_daily_brief
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            for cve_id, date_added in (
+                ("CVE-2026-1111", "2026-08-25"),
+                ("CVE-2026-2222", "2026-08-26"),
+                ("CVE-2026-3333", "2026-08-27"),
+            ):
+                await db.execute(
+                    """
+                    INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                      severity, cvss_score, epss_score, is_kev, published)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        cve_id,
+                        "demo",
+                        "",
+                        "",
+                        "CRITICAL",
+                        0,
+                        0,
+                        1,
+                        f"{date_added} 00:00:00",
+                    ),
+                )
+                await db.execute(
+                    """
+                    INSERT INTO kev_deadlines (cve_id, product, short_description, date_added)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (cve_id, "demo", f"kev {cve_id}", date_added),
+                )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db, slot="eod", window_start_utc=start, window_end_utc=end, tz_name="UTC"
+            )
+            return brief
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    kev_ids = {row["cve_id"] for row in brief.kev}
+    assert brief.counts["kev_new"] == 2
+    assert kev_ids == {"CVE-2026-1111", "CVE-2026-2222"}

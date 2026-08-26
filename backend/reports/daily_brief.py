@@ -53,6 +53,11 @@ def _fmt_local(dt: datetime, tz_name: str) -> str:
     return dt.astimezone(tz).strftime("%Y-%m-%d %H:%M")
 
 
+def _date_local(dt: datetime, tz_name: str) -> str:
+    tz = ZoneInfo(tz_name)
+    return dt.astimezone(tz).strftime("%Y-%m-%d")
+
+
 def _bound_local(dt: datetime, tz_name: str) -> str:
     tz = ZoneInfo(tz_name)
     return dt.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
@@ -149,7 +154,6 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
             "watchlist",
             "ioc",
             "ops",
-            "footer",
         ):
             if name in drop:
                 continue
@@ -159,6 +163,10 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
             chunks.append("\n".join(body))
         if overflow_notes:
             chunks.append("\n".join(overflow_notes))
+        if "footer" not in drop:
+            footer = sections["footer"]
+            if footer:
+                chunks.append("\n".join(footer))
         return "\n\n".join(chunks)
 
     headline = brief.headline or "Quiet window."
@@ -207,8 +215,8 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
 
 async def _fetch_kev(
     db: DbConnection,
-    start_bound: str,
-    end_bound: str,
+    start_date: str,
+    end_date: str,
 ) -> list[dict[str, str]]:
     pg = _is_postgres_connection(db)
     p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
@@ -216,10 +224,10 @@ async def _fetch_kev(
         SELECT k.cve_id, c.severity, k.short_description
         FROM kev_deadlines k
         LEFT JOIN cves c ON c.cve_id = k.cve_id
-        WHERE k.date_added >= {p1} AND k.date_added < {p2}
+        WHERE k.date_added >= {p1} AND k.date_added <= {p2}
         ORDER BY k.date_added DESC, k.cve_id
     """
-    rows = await db.execute_fetchall(sql, (start_bound, end_bound))
+    rows = await db.execute_fetchall(sql, (start_date, end_date))
     return [
         {
             "cve_id": row["cve_id"],
@@ -336,9 +344,11 @@ async def collect_daily_brief(
 ) -> DailyBrief:
     start_bound = _bound_local(window_start_utc, tz_name)
     end_bound = _bound_local(window_end_utc, tz_name)
+    kev_start_date = _date_local(window_start_utc, tz_name)
+    kev_end_date = _date_local(window_end_utc, tz_name)
     generated_local = _fmt_local(datetime.now(timezone.utc), tz_name)
 
-    kev_rows = await _fetch_kev(db, start_bound, end_bound)
+    kev_rows = await _fetch_kev(db, kev_start_date, kev_end_date)
     crit_rows = await _fetch_critical_high(db, start_bound, end_bound)
     watch_rows = await _fetch_notifications(
         db,
