@@ -6,6 +6,8 @@ from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from db.types import DbConnection
+from db.enrichment import filter_cves_matching_assets
+from preferences.repo import get_alert_stack_assets
 
 DailyBriefSlot = Literal["eod", "standup"]
 
@@ -376,12 +378,29 @@ async def collect_daily_brief(
     ioc = _map_ioc(ioc_rows)
     ops = _map_ops(ops_rows)
 
-    # stack_matches filled in Task 2
+    assets = await get_alert_stack_assets(db)
     stack: list[dict[str, str]] = []
+    if assets:
+        candidate_ids = list(
+            dict.fromkeys([r["cve_id"] for r in kev_rows] + [r["cve_id"] for r in crit_rows])
+        )
+        matched = await filter_cves_matching_assets(db, candidate_ids, assets)
+        matched_ids = {row["cve_id"] for row in matched}
+        seen: set[str] = set()
+        for row in kev_rows:
+            cve_id = row["cve_id"]
+            if cve_id in matched_ids and cve_id not in seen:
+                stack.append(row)
+                seen.add(cve_id)
+        for row in crit_rows:
+            cve_id = row["cve_id"]
+            if cve_id in matched_ids and cve_id not in seen:
+                stack.append(row)
+                seen.add(cve_id)
 
     counts = {
         "kev_new": len(kev_rows),
-        "stack_matches": 0,
+        "stack_matches": len(stack),
         "watchlist": len(watchlist),
         "ioc_hits": len(ioc),
         "critical_high_new": len(crit_rows),

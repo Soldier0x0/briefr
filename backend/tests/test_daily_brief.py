@@ -228,3 +228,78 @@ def test_kev_date_added_uses_calendar_dates(db_env):
     kev_ids = {row["cve_id"] for row in brief.kev}
     assert brief.counts["kev_new"] == 2
     assert kev_ids == {"CVE-2026-1111", "CVE-2026-2222"}
+
+
+def test_stack_matches_admin_cpe_not_description(db_env):
+    from auth.repo import create_user
+    from preferences.repo import upsert_user_stack
+    from reports.daily_brief import collect_daily_brief
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+            await upsert_user_stack(db, user["id"], "nginx")
+            for cve_id, affected, published, kev_date in (
+                (
+                    "CVE-2026-STACK1",
+                    '["f5:nginx"]',
+                    "2026-08-26 10:00:00",
+                    None,
+                ),
+                (
+                    "CVE-2026-STACK2",
+                    '["apache:httpd"]',
+                    "2026-08-26 11:00:00",
+                    None,
+                ),
+                (
+                    "CVE-2026-STACK3",
+                    '["f5:nginx"]',
+                    "2026-08-20 00:00:00",
+                    "2026-08-26",
+                ),
+            ):
+                await db.execute(
+                    """
+                    INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                      severity, cvss_score, epss_score, is_kev, published)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        cve_id,
+                        "nginx reverse proxy RCE" if "STACK1" in cve_id else "other",
+                        affected,
+                        "",
+                        "CRITICAL",
+                        0,
+                        0,
+                        1 if kev_date else 0,
+                        published,
+                    ),
+                )
+                if kev_date:
+                    await db.execute(
+                        """
+                        INSERT INTO kev_deadlines (cve_id, product, short_description, date_added)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (cve_id, "nginx", "kev on stack", kev_date),
+                    )
+            await db.commit()
+            return await collect_daily_brief(
+                db, slot="eod", window_start_utc=start, window_end_utc=end, tz_name="UTC"
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    stack_ids = {row["cve_id"] for row in brief.stack}
+    assert brief.counts["critical_high_new"] == 2
+    assert brief.counts["kev_new"] == 1
+    assert brief.counts["stack_matches"] == 2
+    assert stack_ids == {"CVE-2026-STACK1", "CVE-2026-STACK3"}
+    assert "CVE-2026-STACK2" not in stack_ids
