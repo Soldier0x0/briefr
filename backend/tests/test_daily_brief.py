@@ -112,6 +112,177 @@ def test_kev_in_window_listed(db_env):
     assert "// KEV" in text
 
 
+def test_notification_sections_collect_on_sqlite(db_env):
+    from reports.daily_brief import collect_daily_brief, format_daily_brief_text
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-operator", "hash", "admin", 1),
+            )
+            rows = (
+                (
+                    1,
+                    "analyst",
+                    "watchlist",
+                    "high",
+                    "CVE-2026-1111 — EPSS jump",
+                    "EPSS crossed the watch threshold",
+                    "cve",
+                    "CVE-2026-1111",
+                    "watch:CVE-2026-1111:epss",
+                    "2026-08-26 10:00:00",
+                ),
+                (
+                    1,
+                    "analyst",
+                    "ioc_watchlist",
+                    "high",
+                    "IOC watchlist hit (threatfox)",
+                    "IOC watchlist hit (THREATFOX): DOMAIN evil.example",
+                    "ioc",
+                    "evil.example",
+                    "ioc:1:evil.example:threatfox",
+                    "2026-08-26 10:01:00",
+                ),
+                (
+                    1,
+                    "operator",
+                    "job_error",
+                    "critical",
+                    "Job failed: nvd_incremental_sync",
+                    "TimeoutError",
+                    "job",
+                    "nvd_incremental_sync",
+                    "job:nvd_incremental_sync:timeout",
+                    "2026-08-26 10:02:00",
+                ),
+            )
+            await db.executemany(
+                """
+                INSERT INTO user_notifications (
+                    user_id, scope, category, severity, title, body,
+                    entity_type, entity_id, dedupe_key, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                list(rows),
+            )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+            return brief, format_daily_brief_text(brief, limit=2000)
+        finally:
+            await db.close()
+
+    brief, text = run_db_test(_seed())
+    assert brief.counts["watchlist"] == 1
+    assert brief.counts["ioc_hits"] == 1
+    assert brief.counts["ops_issues"] == 1
+    assert "// WATCHLIST" in text
+    assert "// IOC" in text
+    assert "// OPS" in text
+
+
+def test_collector_uses_utc_bounds_with_non_utc_display(db_env):
+    from reports.daily_brief import collect_daily_brief
+
+    end = datetime(2026, 8, 26, 12, 30, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2026-UTCBOUND",
+                    "inside the UTC window",
+                    "",
+                    "",
+                    "CRITICAL",
+                    0,
+                    0,
+                    0,
+                    "2026-08-25 14:00:00",
+                ),
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="Asia/Kolkata",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.window_start_local == "2026-08-25 18:00"
+    assert brief.window_end_local == "2026-08-26 18:00"
+    assert brief.counts["critical_high_new"] == 1
+
+
+def test_collector_accepts_nvd_published_timestamp(db_env):
+    from reports.daily_brief import collect_daily_brief
+
+    end = datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2026-NVDFMT",
+                    "NVD timestamp format",
+                    "",
+                    "",
+                    "HIGH",
+                    0,
+                    0,
+                    0,
+                    "2026-08-26T10:00:00.000",
+                ),
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.counts["critical_high_new"] == 1
+    assert [row["cve_id"] for row in brief.stack] == []
+
+
 def test_overflow_drops_ops_before_kev():
     from reports.daily_brief import DailyBrief, format_daily_brief_text
 
