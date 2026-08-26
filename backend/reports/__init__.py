@@ -1,5 +1,7 @@
 from reports.daily_brief import (
     DailyBrief,
+    build_daily_brief_now,
+    brief_to_payload,
     collect_daily_brief,
     format_daily_brief_text,
     run_daily_brief_slot,
@@ -8,6 +10,8 @@ from reports.daily_brief import (
 
 __all__ = [
     "DailyBrief",
+    "build_daily_brief_now",
+    "brief_to_payload",
     "collect_daily_brief",
     "format_daily_brief_text",
     "run_daily_brief_slot",

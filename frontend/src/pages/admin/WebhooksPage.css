@@ -104,3 +104,19 @@
   align-items: center;
   margin-bottom: 0.65rem;
 }
+
+.webhook-daily-brief-preview {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+  max-height: 24rem;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+}

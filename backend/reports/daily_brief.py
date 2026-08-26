@@ -493,6 +493,70 @@ def _parse_watermark_utc(raw: str | None) -> datetime | None:
         return None
 
 
+def brief_to_payload(brief: DailyBrief) -> dict[str, Any]:
+    """Structured brief dict attached to webhook payloads / admin preview."""
+    return {
+        "slot": brief.slot,
+        "counts": brief.counts,
+        "headline": brief.headline,
+        "lede_source": brief.lede_source,
+        "kev": brief.kev,
+        "stack": brief.stack,
+        "watchlist": brief.watchlist,
+        "ioc": brief.ioc,
+        "ops": brief.ops,
+        "window_start_local": brief.window_start_local,
+        "window_end_local": brief.window_end_local,
+        "tz": brief.tz_name,
+    }
+
+
+async def _window_for_slot(
+    db: DbConnection,
+    slot: DailyBriefSlot,
+    *,
+    window_end_utc: datetime,
+) -> tuple[datetime, datetime]:
+    if slot == "eod":
+        return window_end_utc - timedelta(hours=24), window_end_utc
+    watermark = _parse_watermark_utc(
+        await get_sync_state_value(db, _DAILY_BRIEF_WATERMARK_KEY)
+    )
+    window_start_utc = watermark or (window_end_utc - timedelta(hours=12))
+    return window_start_utc, window_end_utc
+
+
+async def build_daily_brief_now(slot: DailyBriefSlot) -> tuple[str, DailyBrief]:
+    """Collect + headline + format for *now*, ignoring cron enablement flags.
+
+    Used by admin preview / test send so operators can inspect copy while
+    ``DAILY_BRIEF_*_ENABLED`` is off. Standup overlapping-window skip is also
+    bypassed (preview/test always builds).
+    """
+    tz_name = _brief_timezone()
+    window_end_utc = datetime.now(timezone.utc)
+    db = await get_db()
+    try:
+        window_start_utc, window_end_utc = await _window_for_slot(
+            db, slot, window_end_utc=window_end_utc
+        )
+        brief = await collect_daily_brief(
+            db,
+            slot=slot,
+            window_start_utc=window_start_utc,
+            window_end_utc=window_end_utc,
+            tz_name=tz_name,
+        )
+        brief = await apply_headline(
+            brief,
+            llm_enabled=_env_flag_on("DAILY_BRIEF_LLM_ENABLED", "0"),
+        )
+        text = format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT)
+        return text, brief
+    finally:
+        await db.close()
+
+
 async def run_daily_brief_slot(slot: DailyBriefSlot) -> dict[str, Any]:
     flag = "DAILY_BRIEF_EOD_ENABLED" if slot == "eod" else "DAILY_BRIEF_STANDUP_ENABLED"
     if not _env_flag_on(flag, "0"):
@@ -502,21 +566,17 @@ async def run_daily_brief_slot(slot: DailyBriefSlot) -> dict[str, Any]:
     window_end_utc = datetime.now(timezone.utc)
     db = await get_db()
     try:
-        if slot == "eod":
-            window_start_utc = window_end_utc - timedelta(hours=24)
-        else:
-            watermark = _parse_watermark_utc(
-                await get_sync_state_value(db, _DAILY_BRIEF_WATERMARK_KEY)
+        window_start_utc, window_end_utc = await _window_for_slot(
+            db, slot, window_end_utc=window_end_utc
+        )
+        if slot == "standup" and window_end_utc - window_start_utc < _MIN_STANDUP_WINDOW:
+            logger.info(
+                "Daily brief standup skipped — window shorter than 15 minutes "
+                "(start=%s end=%s)",
+                window_start_utc.isoformat(),
+                window_end_utc.isoformat(),
             )
-            window_start_utc = watermark or (window_end_utc - timedelta(hours=12))
-            if window_end_utc - window_start_utc < _MIN_STANDUP_WINDOW:
-                logger.info(
-                    "Daily brief standup skipped — window shorter than 15 minutes "
-                    "(start=%s end=%s)",
-                    window_start_utc.isoformat(),
-                    window_end_utc.isoformat(),
-                )
-                return {"status": "skipped", "reason": "overlapping", "slot": slot}
+            return {"status": "skipped", "reason": "overlapping", "slot": slot}
 
         brief = await collect_daily_brief(
             db,
@@ -530,22 +590,7 @@ async def run_daily_brief_slot(slot: DailyBriefSlot) -> dict[str, Any]:
             llm_enabled=_env_flag_on("DAILY_BRIEF_LLM_ENABLED", "0"),
         )
         text = format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT)
-        extra = {
-            "brief": {
-                "slot": brief.slot,
-                "counts": brief.counts,
-                "headline": brief.headline,
-                "lede_source": brief.lede_source,
-                "kev": brief.kev,
-                "stack": brief.stack,
-                "watchlist": brief.watchlist,
-                "ioc": brief.ioc,
-                "ops": brief.ops,
-                "window_start_local": brief.window_start_local,
-                "window_end_local": brief.window_end_local,
-                "tz": brief.tz_name,
-            }
-        }
+        extra = {"brief": brief_to_payload(brief)}
         local_date = brief.window_end_local[:10]
         result = await dispatch_event(
             EVENT_DAILY_BRIEF,

@@ -277,6 +277,12 @@ endpoints:
   path: /api/admin/watchlist/{cve_id}
   component_id: routers-admin-data_ops
 - method: GET
+  path: /api/admin/webhooks/daily-brief/preview
+  component_id: routers-admin-webhooks
+- method: POST
+  path: /api/admin/webhooks/daily-brief/test
+  component_id: routers-admin-webhooks
+- method: GET
   path: /api/admin/webhooks/delivery-log
   component_id: routers-admin-webhooks_logs
 - method: GET
