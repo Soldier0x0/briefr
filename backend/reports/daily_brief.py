@@ -14,6 +14,7 @@ from db.enrichment import filter_cves_matching_assets
 from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
+from redact import mask_webhook_delivery_error
 from webhooks.destinations import EVENT_DAILY_BRIEF
 from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
 
@@ -460,6 +461,7 @@ def _map_ops(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     for row in rows:
         ident = (row["entity_id"] or row["title"] or "").strip() or "ops"
         reason = (row["body"] or row["title"] or "").strip() or "ops issue"
+        reason = mask_webhook_delivery_error(reason) or "ops issue"
         if len(reason) > _OPS_REASON_LIMIT:
             reason = reason[: _OPS_REASON_LIMIT - 1].rstrip() + "…"
         error_class = (row.get("category") or "ops_issue").strip() or "ops_issue"
