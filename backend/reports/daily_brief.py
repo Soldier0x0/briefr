@@ -1,17 +1,29 @@
 from __future__ import annotations
 
+import logging
+import os
 import re
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
-from db.types import DbConnection
+from database import get_db
 from db.enrichment import filter_cves_matching_assets
+from db.sync_state import get_sync_state_value, set_sync_state_value
+from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
+from webhooks.destinations import EVENT_DAILY_BRIEF
+from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
+
+logger = logging.getLogger(__name__)
 
 DailyBriefSlot = Literal["eod", "standup"]
+
+_DAILY_BRIEF_WATERMARK_KEY = "daily_brief:last_eod_end"
+_DISABLED_FLAG_VALUES = frozenset({"0", "false", "no", "off", ""})
+_MIN_STANDUP_WINDOW = timedelta(minutes=15)
 
 COUNT_KEYS = (
     "kev_new",
@@ -457,3 +469,97 @@ async def collect_daily_brief(
         ioc=ioc,
         ops=ops,
     )
+
+
+def _env_flag_on(name: str, default: str = "0") -> bool:
+    return os.environ.get(name, default).strip().lower() not in _DISABLED_FLAG_VALUES
+
+
+def _brief_timezone() -> str:
+    return (
+        os.environ.get("SCHEDULER_TIMEZONE")
+        or os.environ.get("DEFAULT_TIMEZONE")
+        or "UTC"
+    ).strip() or "UTC"
+
+
+def _parse_watermark_utc(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        logger.warning("Invalid daily brief watermark %r — ignoring", raw)
+        return None
+
+
+async def run_daily_brief_slot(slot: DailyBriefSlot) -> dict[str, Any]:
+    flag = "DAILY_BRIEF_EOD_ENABLED" if slot == "eod" else "DAILY_BRIEF_STANDUP_ENABLED"
+    if not _env_flag_on(flag, "0"):
+        return {"status": "skipped", "reason": "disabled", "slot": slot}
+
+    tz_name = _brief_timezone()
+    window_end_utc = datetime.now(timezone.utc)
+    db = await get_db()
+    try:
+        if slot == "eod":
+            window_start_utc = window_end_utc - timedelta(hours=24)
+        else:
+            watermark = _parse_watermark_utc(
+                await get_sync_state_value(db, _DAILY_BRIEF_WATERMARK_KEY)
+            )
+            window_start_utc = watermark or (window_end_utc - timedelta(hours=12))
+            if window_end_utc - window_start_utc < _MIN_STANDUP_WINDOW:
+                logger.info(
+                    "Daily brief standup skipped — window shorter than 15 minutes "
+                    "(start=%s end=%s)",
+                    window_start_utc.isoformat(),
+                    window_end_utc.isoformat(),
+                )
+                return {"status": "skipped", "reason": "overlapping", "slot": slot}
+
+        brief = await collect_daily_brief(
+            db,
+            slot=slot,
+            window_start_utc=window_start_utc,
+            window_end_utc=window_end_utc,
+            tz_name=tz_name,
+        )
+        brief = await apply_headline(
+            brief,
+            llm_enabled=_env_flag_on("DAILY_BRIEF_LLM_ENABLED", "0"),
+        )
+        text = format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT)
+        extra = {
+            "brief": {
+                "slot": brief.slot,
+                "counts": brief.counts,
+                "headline": brief.headline,
+                "lede_source": brief.lede_source,
+                "kev": brief.kev,
+                "stack": brief.stack,
+                "watchlist": brief.watchlist,
+                "ioc": brief.ioc,
+                "ops": brief.ops,
+                "window_start_local": brief.window_start_local,
+                "window_end_local": brief.window_end_local,
+                "tz": brief.tz_name,
+            }
+        }
+        local_date = brief.window_end_local[:10]
+        result = await dispatch_event(
+            EVENT_DAILY_BRIEF,
+            text,
+            dedupe_key=f"{slot}:{local_date}",
+            payload_extra=extra,
+        )
+        if slot == "eod" and result.get("status") in {"ok", "partial"}:
+            await set_sync_state_value(
+                db,
+                _DAILY_BRIEF_WATERMARK_KEY,
+                window_end_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
+            await db.commit()
+        return {**result, "slot": slot}
+    finally:
+        await db.close()

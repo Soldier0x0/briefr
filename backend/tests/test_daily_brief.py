@@ -378,3 +378,85 @@ def test_llm_disabled_never_calls(monkeypatch):
     out = run_db_test(_go())
     assert called["n"] == 0
     assert out.headline == template_headline(brief)
+
+
+def test_run_daily_brief_slot_disabled_skips(monkeypatch, db_env):
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "0")
+    from reports.daily_brief import run_daily_brief_slot
+
+    called = {"n": 0}
+
+    async def fake_dispatch(*_a, **_k):
+        called["n"] += 1
+        return {"status": "ok", "sent": [], "errors": {}}
+
+    monkeypatch.setattr("reports.daily_brief.dispatch_event", fake_dispatch)
+
+    result = run_db_test(run_daily_brief_slot("eod"))
+    assert result == {"status": "skipped", "reason": "disabled", "slot": "eod"}
+    assert called["n"] == 0
+
+
+def test_run_daily_brief_standup_skips_overlapping(monkeypatch, db_env):
+    from database import set_sync_state_value
+    from reports.daily_brief import run_daily_brief_slot
+
+    monkeypatch.setenv("DAILY_BRIEF_STANDUP_ENABLED", "1")
+    monkeypatch.setenv("SCHEDULER_TIMEZONE", "UTC")
+    called = {"n": 0}
+
+    async def fake_dispatch(*_a, **_k):
+        called["n"] += 1
+        return {"status": "ok", "sent": ["discord"], "errors": {}}
+
+    monkeypatch.setattr("reports.daily_brief.dispatch_event", fake_dispatch)
+
+    async def seed():
+        db = await get_db()
+        try:
+            now = datetime.now(timezone.utc)
+            await set_sync_state_value(
+                db,
+                "daily_brief:last_eod_end",
+                (now - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+
+    result = run_db_test(run_daily_brief_slot("standup"))
+    assert result["status"] == "skipped"
+    assert result["reason"] == "overlapping"
+    assert result["slot"] == "standup"
+    assert called["n"] == 0
+
+
+def test_run_daily_brief_eod_writes_watermark(monkeypatch, db_env):
+    from database import get_sync_state_value
+    from reports.daily_brief import run_daily_brief_slot
+
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "1")
+    monkeypatch.setenv("SCHEDULER_TIMEZONE", "UTC")
+    monkeypatch.setenv("DAILY_BRIEF_LLM_ENABLED", "0")
+
+    async def fake_dispatch(*_a, **_k):
+        return {"status": "ok", "sent": ["discord"], "errors": {}, "event_type": "daily_brief"}
+
+    monkeypatch.setattr("reports.daily_brief.dispatch_event", fake_dispatch)
+
+    result = run_db_test(run_daily_brief_slot("eod"))
+    assert result["status"] == "ok"
+    assert result["slot"] == "eod"
+
+    async def check():
+        db = await get_db()
+        try:
+            return await get_sync_state_value(db, "daily_brief:last_eod_end")
+        finally:
+            await db.close()
+
+    watermark = run_db_test(check())
+    assert watermark is not None
+    assert watermark.endswith("Z")

@@ -1123,6 +1123,46 @@ async def run_ioc_retro_match() -> bool:
     return True
 
 
+async def run_daily_brief_eod() -> dict:
+    """Scheduler hook: end-of-day daily brief webhook (no-op when disabled)."""
+    from reports.daily_brief import run_daily_brief_slot
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        return await run_daily_brief_slot("eod")
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        logger.error("Daily brief EOD failed: %s", _exc)
+        raise
+    finally:
+        await _write_job_last_run(
+            "daily_brief_eod", _start, had_error=_had_error, error_message=_error_msg
+        )
+
+
+async def run_daily_brief_standup() -> dict:
+    """Scheduler hook: standup daily brief webhook (no-op when disabled)."""
+    from reports.daily_brief import run_daily_brief_slot
+
+    _start = datetime.now(timezone.utc)
+    _had_error = False
+    _error_msg = ""
+    try:
+        return await run_daily_brief_slot("standup")
+    except Exception as _exc:
+        _had_error = True
+        _error_msg = str(_exc)[:500]
+        logger.error("Daily brief standup failed: %s", _exc)
+        raise
+    finally:
+        await _write_job_last_run(
+            "daily_brief_standup", _start, had_error=_had_error, error_message=_error_msg
+        )
+
+
 async def run_full_ingest_sync() -> bool:
     """Run NVD, KEV, and EPSS pipelines sequentially (manual / bootstrap)."""
     if ingest_in_progress():
@@ -2531,6 +2571,38 @@ def start_scheduler() -> AsyncIOScheduler:
         coalesce=True,
     )
 
+    daily_brief_eod_hour = int(os.environ.get("DAILY_BRIEF_EOD_HOUR", "18"))
+    daily_brief_eod_minute = int(os.environ.get("DAILY_BRIEF_EOD_MINUTE", "0"))
+    scheduler.add_job(
+        run_daily_brief_eod,
+        trigger=CronTrigger(
+            hour=daily_brief_eod_hour,
+            minute=daily_brief_eod_minute,
+            timezone=sched_tz,
+        ),
+        id="daily_brief_eod",
+        name="Daily Brief (EOD)",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    daily_brief_standup_hour = int(os.environ.get("DAILY_BRIEF_STANDUP_HOUR", "7"))
+    daily_brief_standup_minute = int(os.environ.get("DAILY_BRIEF_STANDUP_MINUTE", "0"))
+    scheduler.add_job(
+        run_daily_brief_standup,
+        trigger=CronTrigger(
+            hour=daily_brief_standup_hour,
+            minute=daily_brief_standup_minute,
+            timezone=sched_tz,
+        ),
+        id="daily_brief_standup",
+        name="Daily Brief (Standup)",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
     scheduler.add_job(
         run_atlas_version_check,
         trigger=IntervalTrigger(hours=24, timezone=sched_tz),
@@ -2905,6 +2977,10 @@ _CONFIG_KEY_TO_JOBS: dict[str, tuple[str, ...]] = {
     "SIGMAHQ_INDEX_SYNC_INTERVAL_HOURS": ("sigmahq_index_sync",),
     "BACKUP_INTERVAL_HOURS": ("scheduled_backup", "backup_deadman_check"),
     "RESOURCE_SAMPLE_INTERVAL_SECONDS": ("resource_metrics_sample",),
+    "DAILY_BRIEF_EOD_HOUR": ("daily_brief_eod",),
+    "DAILY_BRIEF_EOD_MINUTE": ("daily_brief_eod",),
+    "DAILY_BRIEF_STANDUP_HOUR": ("daily_brief_standup",),
+    "DAILY_BRIEF_STANDUP_MINUTE": ("daily_brief_standup",),
 }
 
 
@@ -2984,6 +3060,14 @@ def _trigger_for_job(job_id: str) -> IntervalTrigger | CronTrigger | None:
             int(os.environ.get("RESOURCE_SAMPLE_INTERVAL_SECONDS", "60")),
         )
         return IntervalTrigger(seconds=seconds, timezone=sched_tz)
+    if job_id == "daily_brief_eod":
+        hour = int(os.environ.get("DAILY_BRIEF_EOD_HOUR", "18"))
+        minute = int(os.environ.get("DAILY_BRIEF_EOD_MINUTE", "0"))
+        return CronTrigger(hour=hour, minute=minute, timezone=sched_tz)
+    if job_id == "daily_brief_standup":
+        hour = int(os.environ.get("DAILY_BRIEF_STANDUP_HOUR", "7"))
+        minute = int(os.environ.get("DAILY_BRIEF_STANDUP_MINUTE", "0"))
+        return CronTrigger(hour=hour, minute=minute, timezone=sched_tz)
     return None
 
 

@@ -349,6 +349,8 @@ _JOB_RUN_MAP: dict[str, str] = {
     "tranco_infra_sync": "run_tranco_infra_sync",
     "vulncheck_kev_sync": "run_vulncheck_kev_sync",
     "ioc_retro_match": "run_ioc_retro_match",
+    "daily_brief_eod": "run_daily_brief_eod",
+    "daily_brief_standup": "run_daily_brief_standup",
     "epss_score_sync": "run_epss_sync",
     "weekly_mitre_refresh": "run_weekly_mitre_refresh",
     "atlas_version_check": "run_atlas_version_check",
