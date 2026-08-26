@@ -303,3 +303,78 @@ def test_stack_matches_admin_cpe_not_description(db_env):
     assert brief.counts["stack_matches"] == 2
     assert stack_ids == {"CVE-2026-STACK1", "CVE-2026-STACK3"}
     assert "CVE-2026-STACK2" not in stack_ids
+
+
+def test_llm_lede_rejects_unknown_cve(db_env, monkeypatch):
+    from reports.daily_brief import DailyBrief, apply_headline, COUNT_KEYS
+
+    counts = {k: 0 for k in COUNT_KEYS}
+    counts["kev_new"] = 1
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="a",
+        window_end_local="b",
+        generated_local="c",
+        headline="",
+        lede_source="template",
+        counts=counts,
+        kev=[{"cve_id": "CVE-2026-1111", "reason": "added to KEV", "severity": "HIGH"}],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+    )
+
+    class Fake:
+        content = "Also see CVE-1999-0001 which is critical."
+        provider = "groq"
+        model = "x"
+
+    async def _fake(*args, **kwargs):
+        return Fake()
+
+    monkeypatch.setattr("reports.daily_brief.chat_completion_task", _fake)
+    monkeypatch.setattr("reports.daily_brief.any_llm_provider_configured", lambda: True)
+
+    async def _go():
+        return await apply_headline(brief, llm_enabled=True)
+
+    out = run_db_test(_go())
+    assert "CVE-1999-0001" not in out.headline
+    assert out.lede_source == "template"
+
+
+def test_llm_disabled_never_calls(monkeypatch):
+    called = {"n": 0}
+
+    async def _fake(*args, **kwargs):
+        called["n"] += 1
+        raise AssertionError("should not call")
+
+    monkeypatch.setattr("reports.daily_brief.chat_completion_task", _fake)
+    from reports.daily_brief import DailyBrief, apply_headline, template_headline, COUNT_KEYS
+
+    zeros = {k: 0 for k in COUNT_KEYS}
+    brief = DailyBrief(
+        slot="standup",
+        tz_name="UTC",
+        window_start_local="a",
+        window_end_local="b",
+        generated_local="c",
+        headline="",
+        lede_source="template",
+        counts=zeros,
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+    )
+
+    async def _go():
+        return await apply_headline(brief, llm_enabled=False)
+
+    out = run_db_test(_go())
+    assert called["n"] == 0
+    assert out.headline == template_headline(brief)

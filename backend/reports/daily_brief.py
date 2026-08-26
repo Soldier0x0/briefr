@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+from ai.llm_router import any_llm_provider_configured, chat_completion_task
 from db.types import DbConnection
 from db.enrichment import filter_cves_matching_assets
 from preferences.repo import get_alert_stack_assets
@@ -83,6 +85,39 @@ def template_headline(brief: DailyBrief) -> str:
     if c["ops_issues"]:
         parts.append(f"{c['ops_issues']} ops issue(s).")
     return " ".join(parts) or "Quiet window."
+
+
+async def apply_headline(brief: DailyBrief, *, llm_enabled: bool) -> DailyBrief:
+    templated = replace(brief, headline=template_headline(brief), lede_source="template")
+    if not llm_enabled or not any_llm_provider_configured():
+        return templated
+    allowed = {row["cve_id"] for row in brief.kev + brief.stack + brief.watchlist}
+    fact_block = format_daily_brief_text(templated, limit=1500)
+    completion = await chat_completion_task(
+        "pdf_summary",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Write 1-3 short sentences for a SOC morning brief. "
+                    "Use only CVE IDs present in the user message. No markdown."
+                ),
+            },
+            {"role": "user", "content": fact_block},
+        ],
+        max_tokens=120,
+        context_type="daily_brief",
+        context_id=f"{brief.slot}:{brief.window_end_local[:10]}",
+    )
+    if completion is None or not (completion.content or "").strip():
+        return templated
+    text = completion.content.strip().split("\n")[0:3]
+    lede = " ".join(line.strip() for line in text if line.strip())
+    cited = set(re.findall(r"CVE-\d{4}-\d+", lede, flags=re.I))
+    cited_norm = {c.upper() for c in cited}
+    if cited_norm - {a.upper() for a in allowed} and cited_norm:
+        return templated
+    return replace(templated, headline=lede[:400], lede_source=completion.provider)
 
 
 def _line_cve(row: dict[str, str]) -> str:
