@@ -5724,9 +5724,45 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-webhooks->table:sync_state",
+      "source": "routers-admin-webhooks",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:ti_mirror_iocs",
       "source": "routers-admin-webhooks",
       "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:user_notifications",
+      "source": "routers-admin-webhooks",
+      "target": "table:user_notifications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_alert_log",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_alert_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_delivery_log",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_delivery_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_destination_dedupe",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_destination_dedupe",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_destinations",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_destinations",
       "kind": "references_table"
     },
     {
