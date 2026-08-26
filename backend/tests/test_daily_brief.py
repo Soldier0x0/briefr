@@ -207,6 +207,62 @@ def test_notification_sections_collect_on_sqlite(db_env):
     assert "• nvd_incremental_sync — TimeoutError" in text
 
 
+def test_job_error_dsn_is_redacted_from_formatted_text(db_env):
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+    error = (
+        "ConnectionError: could not connect to "
+        "postgresql://briefr:hunter2@127.0.0.1:5432/briefr"
+    )
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-operator", "hash", "admin", 1),
+            )
+            await db.execute(
+                """
+                INSERT INTO user_notifications (
+                    user_id, scope, category, severity, title, body,
+                    entity_type, entity_id, dedupe_key, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    1,
+                    "operator",
+                    "job_error",
+                    "critical",
+                    "Job failed: nvd_incremental_sync",
+                    error,
+                    "job",
+                    "nvd_incremental_sync",
+                    "job:nvd_incremental_sync:dsn",
+                    "2026-08-26 10:02:00",
+                ),
+            )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+            return format_daily_brief_text(brief, limit=2000)
+        finally:
+            await db.close()
+
+    text = run_db_test(_seed())
+    assert "• nvd_incremental_sync — " in text
+    assert "hunter2" not in text
+    assert "postgresql://" not in text
+
+
 def test_notification_fanout_counts_one_event_per_dedupe_key(db_env):
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
