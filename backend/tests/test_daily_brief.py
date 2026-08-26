@@ -8,7 +8,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
-from database import get_db, init_db
+from database import get_db, init_db, set_sync_state_value
+from reports.daily_brief import (
+    COUNT_KEYS,
+    DailyBrief,
+    _window_for_slot,
+    apply_headline,
+    collect_daily_brief,
+    format_daily_brief_text,
+)
 from tests.conftest import run_db_test
 
 pytestmark = pytest.mark.no_auth
@@ -113,8 +121,6 @@ def test_kev_in_window_listed(db_env):
 
 
 def test_notification_sections_collect_on_sqlite(db_env):
-    from reports.daily_brief import collect_daily_brief, format_daily_brief_text
-
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
 
@@ -194,11 +200,13 @@ def test_notification_sections_collect_on_sqlite(db_env):
     assert "// WATCHLIST" in text
     assert "// IOC" in text
     assert "// OPS" in text
+    assert "• CVE-2026-1111 — EPSS jump" in text
+    assert "• CVE-2026-1111 — CVE-2026-1111" not in text
+    assert "• DOMAIN evil.example — THREATFOX" in text
+    assert "• nvd_incremental_sync — TimeoutError" in text
 
 
 def test_notification_fanout_counts_one_event_per_dedupe_key(db_env):
-    from reports.daily_brief import collect_daily_brief
-
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
 
@@ -258,8 +266,6 @@ def test_notification_fanout_counts_one_event_per_dedupe_key(db_env):
 
 
 def test_collector_uses_utc_bounds_with_non_utc_display(db_env):
-    from reports.daily_brief import collect_daily_brief
-
     end = datetime(2026, 8, 26, 12, 30, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
 
@@ -302,8 +308,6 @@ def test_collector_uses_utc_bounds_with_non_utc_display(db_env):
 
 
 def test_collector_accepts_nvd_published_timestamp(db_env):
-    from reports.daily_brief import collect_daily_brief
-
     end = datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
 
@@ -458,8 +462,98 @@ def test_kev_date_added_uses_calendar_dates(db_env):
 
     brief = run_db_test(_seed())
     kev_ids = {row["cve_id"] for row in brief.kev}
-    assert brief.counts["kev_new"] == 2
-    assert kev_ids == {"CVE-2026-1111", "CVE-2026-2222"}
+    assert brief.counts["kev_new"] == 1
+    assert kev_ids == {"CVE-2026-2222"}
+
+
+def test_collector_caps_lists_but_keeps_untruncated_counts(db_env):
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-cap-operator", "hash", "admin", 1),
+            )
+            await db.execute(
+                """
+                INSERT INTO user_preferences (user_id, stack_terms, updated_at)
+                VALUES (?, ?, ?)
+                """,
+                (1, "nginx", "2026-08-26 09:00:00"),
+            )
+            cves = [
+                (
+                    f"CVE-2026-CAP{i:03d}",
+                    "count/list cap",
+                    '["acme:nginx"]',
+                    "",
+                    "HIGH",
+                    0,
+                    0,
+                    0,
+                    f"2026-08-26T10:{i % 60:02d}:00.000",
+                )
+                for i in range(55)
+            ]
+            await db.executemany(
+                """
+                INSERT INTO cves (
+                    cve_id, description, affected_products, mitre_technique,
+                    severity, cvss_score, epss_score, is_kev, published
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                cves,
+            )
+            notifications = [
+                (
+                    1,
+                    "analyst",
+                    "watchlist",
+                    "high",
+                    f"CVE-2026-CAP{i:03d} — EPSS jump",
+                    "EPSS crossed the watch threshold",
+                    "cve",
+                    f"CVE-2026-CAP{i:03d}",
+                    f"watch:CVE-2026-CAP{i:03d}:epss",
+                    f"2026-08-26 11:{i % 60:02d}:00",
+                )
+                for i in range(55)
+            ]
+            await db.executemany(
+                """
+                INSERT INTO user_notifications (
+                    user_id, scope, category, severity, title, body,
+                    entity_type, entity_id, dedupe_key, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                notifications,
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.counts["critical_high_new"] == 55
+    assert brief.counts["stack_matches"] == 55
+    assert brief.counts["watchlist"] == 55
+    assert len(brief.stack) == 50
+    assert len(brief.watchlist) == 50
+    assert len(brief.kev) <= 50
+    assert len(brief.ioc) <= 50
+    assert len(brief.ops) <= 50
 
 
 def test_stack_matches_admin_cpe_not_description(db_env):
@@ -610,6 +704,141 @@ def test_llm_disabled_never_calls(monkeypatch):
     out = run_db_test(_go())
     assert called["n"] == 0
     assert out.headline == template_headline(brief)
+
+
+def test_llm_fact_block_redacts_ops_error_strings(monkeypatch):
+    counts = {key: 0 for key in COUNT_KEYS}
+    counts["ops_issues"] = 1
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="",
+        lede_source="template",
+        counts=counts,
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[
+            {
+                "id": "nvd_incremental_sync",
+                "reason": "ConnectionError at /srv/briefr/private/provider-token",
+                "error_class": "job_error",
+            }
+        ],
+    )
+    captured = {"fact_block": ""}
+
+    class Fake:
+        content = "One ops issue needs attention."
+        provider = "groq"
+        model = "x"
+
+    async def _fake(*args, **kwargs):
+        captured["fact_block"] = kwargs["messages"][1]["content"]
+        return Fake()
+
+    monkeypatch.setattr("reports.daily_brief.chat_completion_task", _fake)
+    monkeypatch.setattr("reports.daily_brief.any_llm_provider_configured", lambda: True)
+
+    out = run_db_test(apply_headline(brief, llm_enabled=True))
+    assert out.lede_source == "groq"
+    assert "/srv/briefr/private/provider-token" not in captured["fact_block"]
+    assert "ConnectionError" not in captured["fact_block"]
+    assert "nvd_incremental_sync — job_error" in captured["fact_block"]
+
+
+def test_llm_exception_falls_back_to_template(monkeypatch):
+    counts = {key: 0 for key in COUNT_KEYS}
+    counts["ops_issues"] = 1
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="",
+        lede_source="template",
+        counts=counts,
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+    )
+
+    async def _raise(*args, **kwargs):
+        raise RuntimeError("metering unavailable")
+
+    monkeypatch.setattr("reports.daily_brief.chat_completion_task", _raise)
+    monkeypatch.setattr("reports.daily_brief.any_llm_provider_configured", lambda: True)
+
+    out = run_db_test(apply_headline(brief, llm_enabled=True))
+    assert out.lede_source == "template"
+    assert out.headline == "1 ops issue(s)."
+
+
+def test_standup_without_watermark_uses_twelve_hours(db_env, monkeypatch):
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "1")
+    end = datetime(2026, 8, 26, 7, 0, tzinfo=timezone.utc)
+
+    async def _go():
+        db = await get_db()
+        try:
+            return await _window_for_slot(db, "standup", window_end_utc=end)
+        finally:
+            await db.close()
+
+    start, returned_end = run_db_test(_go())
+    assert returned_end == end
+    assert start == end - timedelta(hours=12)
+
+
+def test_standup_ignores_watermark_when_eod_disabled(db_env, monkeypatch):
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "0")
+    end = datetime(2026, 8, 26, 7, 0, tzinfo=timezone.utc)
+
+    async def _go():
+        db = await get_db()
+        try:
+            await set_sync_state_value(
+                db,
+                "daily_brief:last_eod_end",
+                "2026-08-25T18:00:00Z",
+            )
+            await db.commit()
+            return await _window_for_slot(db, "standup", window_end_utc=end)
+        finally:
+            await db.close()
+
+    start, returned_end = run_db_test(_go())
+    assert returned_end == end
+    assert start == end - timedelta(hours=12)
+
+
+def test_standup_clamps_stale_watermark_to_twenty_four_hours(db_env, monkeypatch):
+    monkeypatch.setenv("DAILY_BRIEF_EOD_ENABLED", "1")
+    end = datetime(2026, 8, 26, 7, 0, tzinfo=timezone.utc)
+
+    async def _go():
+        db = await get_db()
+        try:
+            await set_sync_state_value(
+                db,
+                "daily_brief:last_eod_end",
+                "2026-08-20T18:00:00Z",
+            )
+            await db.commit()
+            return await _window_for_slot(db, "standup", window_end_utc=end)
+        finally:
+            await db.close()
+
+    start, returned_end = run_db_test(_go())
+    assert returned_end == end
+    assert start == end - timedelta(hours=24)
 
 
 def test_run_daily_brief_slot_disabled_skips(monkeypatch, db_env):
