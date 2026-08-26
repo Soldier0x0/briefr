@@ -24,6 +24,13 @@ DailyBriefSlot = Literal["eod", "standup"]
 _DAILY_BRIEF_WATERMARK_KEY = "daily_brief:last_eod_end"
 _DISABLED_FLAG_VALUES = frozenset({"0", "false", "no", "off", ""})
 _MIN_STANDUP_WINDOW = timedelta(minutes=15)
+_LIST_QUERY_LIMIT = 50
+_OPS_REASON_LIMIT = 120
+_IOC_SUMMARY_RE = re.compile(
+    r"^IOC watchlist hit\s*\((?P<source>[^)]+)\):\s*(?P<type>[A-Za-z0-9_-]+)\s+",
+    flags=re.I,
+)
+_IOC_TITLE_RE = re.compile(r"^IOC watchlist hit\s*\((?P<source>[^)]+)\)", flags=re.I)
 
 COUNT_KEYS = (
     "kev_new",
@@ -103,23 +110,35 @@ async def apply_headline(brief: DailyBrief, *, llm_enabled: bool) -> DailyBrief:
     if not llm_enabled or not any_llm_provider_configured():
         return templated
     allowed = {row["cve_id"] for row in brief.kev + brief.stack + brief.watchlist}
-    fact_block = format_daily_brief_text(templated, limit=1500)
-    completion = await chat_completion_task(
-        "pdf_summary",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Write 1-3 short sentences for a SOC morning brief. "
-                    "Use only CVE IDs present in the user message. No markdown."
-                ),
-            },
-            {"role": "user", "content": fact_block},
-        ],
-        max_tokens=120,
-        context_type="daily_brief",
-        context_id=f"{brief.slot}:{brief.window_end_local[:10]}",
-    )
+    llm_ops = [
+        {
+            "id": row["id"],
+            "reason": row.get("error_class") or "ops_issue",
+        }
+        for row in brief.ops
+    ]
+    llm_brief = replace(templated, ops=llm_ops)
+    fact_block = format_daily_brief_text(llm_brief, limit=1500)
+    try:
+        completion = await chat_completion_task(
+            "pdf_summary",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Write 1-3 short sentences for a SOC morning brief. "
+                        "Use only CVE IDs present in the user message. No markdown."
+                    ),
+                },
+                {"role": "user", "content": fact_block},
+            ],
+            max_tokens=120,
+            context_type="daily_brief",
+            context_id=f"{brief.slot}:{brief.window_end_local[:10]}",
+        )
+    except Exception:
+        logger.warning("Daily brief LLM headline failed; using template")
+        return templated
     if completion is None or not (completion.content or "").strip():
         return templated
     text = completion.content.strip().split("\n")[0:3]
@@ -265,18 +284,26 @@ async def _fetch_kev(
     db: DbConnection,
     start_date: str,
     end_date: str,
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], int]:
     pg = _is_postgres_connection(db)
     p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
-    sql = f"""
+    predicate = f"k.date_added > {p1} AND k.date_added <= {p2}"
+    rows = await db.execute_fetchall(
+        f"""
         SELECT k.cve_id, c.severity, k.short_description
         FROM kev_deadlines k
         LEFT JOIN cves c ON c.cve_id = k.cve_id
-        WHERE k.date_added >= {p1} AND k.date_added <= {p2}
+        WHERE {predicate}
         ORDER BY k.date_added DESC, k.cve_id
-    """
-    rows = await db.execute_fetchall(sql, (start_date, end_date))
-    return [
+        LIMIT {_LIST_QUERY_LIMIT}
+        """,
+        (start_date, end_date),
+    )
+    count_rows = await db.execute_fetchall(
+        f"SELECT COUNT(*) AS cnt FROM kev_deadlines k WHERE {predicate}",
+        (start_date, end_date),
+    )
+    items = [
         {
             "cve_id": row["cve_id"],
             "reason": (row["short_description"] or "").strip() or "added to KEV",
@@ -284,25 +311,37 @@ async def _fetch_kev(
         }
         for row in rows
     ]
+    total = int(count_rows[0]["cnt"]) if count_rows else 0
+    return items, total
 
 
 async def _fetch_critical_high(
     db: DbConnection,
     start_bound: str,
     end_bound: str,
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], int]:
     pg = _is_postgres_connection(db)
     p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
-    sql = f"""
+    predicate = f"""
+        REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
+        AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
+        AND UPPER(severity) IN ('CRITICAL', 'HIGH')
+    """
+    rows = await db.execute_fetchall(
+        f"""
         SELECT cve_id, severity
         FROM cves
-        WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
-          AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
-          AND UPPER(severity) IN ('CRITICAL', 'HIGH')
+        WHERE {predicate}
         ORDER BY published DESC, cve_id
-    """
-    rows = await db.execute_fetchall(sql, (start_bound, end_bound))
-    return [
+        LIMIT {_LIST_QUERY_LIMIT}
+        """,
+        (start_bound, end_bound),
+    )
+    count_rows = await db.execute_fetchall(
+        f"SELECT COUNT(*) AS cnt FROM cves WHERE {predicate}",
+        (start_bound, end_bound),
+    )
+    items = [
         {
             "cve_id": row["cve_id"],
             "reason": "new Critical/High",
@@ -310,6 +349,8 @@ async def _fetch_critical_high(
         }
         for row in rows
     ]
+    total = int(count_rows[0]["cnt"]) if count_rows else 0
+    return items, total
 
 
 async def _fetch_notifications(
@@ -319,55 +360,66 @@ async def _fetch_notifications(
     categories: tuple[str, ...] | None,
     start_bound: str,
     end_bound: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], int]:
     pg = _is_postgres_connection(db)
     p_start = _placeholder(pg, 1)
     p_end = _placeholder(pg, 2)
     if category is not None:
         p_cat = _placeholder(pg, 3)
-        sql = f"""
-            WITH matching AS (
-                SELECT category, title, body, entity_type, entity_id,
-                       dedupe_key, created_at,
-                       ROW_NUMBER() OVER (PARTITION BY dedupe_key ORDER BY id) AS event_row
-                FROM user_notifications
-                WHERE created_at >= {p_start} AND created_at < {p_end}
-                  AND category = {p_cat}
-            )
-            SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
-            FROM matching
-            WHERE event_row = 1
-            ORDER BY created_at DESC
-        """
+        category_predicate = f"category = {p_cat}"
         params: tuple[Any, ...] = (start_bound, end_bound, category)
     else:
         cats = categories or ()
+        if not cats:
+            return [], 0
         placeholders = ", ".join(_placeholder(pg, i + 3) for i in range(len(cats)))
-        sql = f"""
-            WITH matching AS (
-                SELECT category, title, body, entity_type, entity_id,
-                       dedupe_key, created_at,
-                       ROW_NUMBER() OVER (PARTITION BY dedupe_key ORDER BY id) AS event_row
-                FROM user_notifications
-                WHERE created_at >= {p_start} AND created_at < {p_end}
-                  AND category IN ({placeholders})
-            )
-            SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
-            FROM matching
-            WHERE event_row = 1
-            ORDER BY created_at DESC
-        """
+        category_predicate = f"category IN ({placeholders})"
         params = (start_bound, end_bound, *cats)
-    return await db.execute_fetchall(sql, params)
+    predicate = (
+        f"created_at >= {p_start} AND created_at < {p_end} "
+        f"AND {category_predicate}"
+    )
+    rows = await db.execute_fetchall(
+        f"""
+        WITH matching AS (
+            SELECT category, title, body, entity_type, entity_id,
+                   dedupe_key, created_at,
+                   ROW_NUMBER() OVER (PARTITION BY dedupe_key ORDER BY id) AS event_row
+            FROM user_notifications
+            WHERE {predicate}
+        )
+        SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
+        FROM matching
+        WHERE event_row = 1
+        ORDER BY created_at DESC
+        LIMIT {_LIST_QUERY_LIMIT}
+        """,
+        params,
+    )
+    count_rows = await db.execute_fetchall(
+        f"""
+        SELECT COUNT(DISTINCT dedupe_key) AS cnt
+        FROM user_notifications
+        WHERE {predicate}
+        """,
+        params,
+    )
+    total = int(count_rows[0]["cnt"]) if count_rows else 0
+    return [dict(row) for row in rows], total
 
 
 def _map_watchlist(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for row in rows:
-        reason = (row["title"] or row["body"] or "").strip() or "watchlist alert"
+        cve_id = (row["entity_id"] or "").strip() or "unknown"
+        title = (row["title"] or "").strip()
+        prefix = f"{cve_id} — "
+        if title.casefold().startswith(prefix.casefold()):
+            title = title[len(prefix) :].strip()
+        reason = title or (row["body"] or "").strip() or "watchlist alert"
         out.append(
             {
-                "cve_id": (row["entity_id"] or "").strip() or "unknown",
+                "cve_id": cve_id,
                 "reason": reason,
                 "severity": "",
             }
@@ -378,11 +430,26 @@ def _map_watchlist(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
 def _map_ioc(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for row in rows:
+        body = (row["body"] or "").strip()
+        title = (row["title"] or "").strip()
+        summary_match = _IOC_SUMMARY_RE.match(body)
+        title_match = _IOC_TITLE_RE.match(title)
+        stored_type = (row["entity_type"] or "").strip()
+        ioc_type = (
+            summary_match.group("type")
+            if summary_match
+            else (stored_type if stored_type.lower() != "ioc" else "unknown")
+        )
+        source = (
+            summary_match.group("source")
+            if summary_match
+            else (title_match.group("source") if title_match else "unknown")
+        )
         out.append(
             {
-                "type": (row["entity_type"] or "").strip(),
+                "type": ioc_type.upper(),
                 "value": (row["entity_id"] or "").strip(),
-                "reason": (row["title"] or row["body"] or "").strip(),
+                "reason": source.upper(),
             }
         )
     return out
@@ -393,8 +460,113 @@ def _map_ops(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     for row in rows:
         ident = (row["entity_id"] or row["title"] or "").strip() or "ops"
         reason = (row["body"] or row["title"] or "").strip() or "ops issue"
-        out.append({"id": ident, "reason": reason})
+        if len(reason) > _OPS_REASON_LIMIT:
+            reason = reason[: _OPS_REASON_LIMIT - 1].rstrip() + "…"
+        error_class = (row.get("category") or "ops_issue").strip() or "ops_issue"
+        out.append({"id": ident, "reason": reason, "error_class": error_class})
     return out
+
+
+async def _fetch_stack_candidate_page(
+    db: DbConnection,
+    *,
+    kev_start_date: str,
+    kev_end_date: str,
+    start_bound: str,
+    end_bound: str,
+    offset: int,
+) -> list[dict[str, str]]:
+    pg = _is_postgres_connection(db)
+    p1 = _placeholder(pg, 1)
+    p2 = _placeholder(pg, 2)
+    p3 = _placeholder(pg, 3)
+    p4 = _placeholder(pg, 4)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, severity, reason, source_order, sort_value
+        FROM (
+            SELECT k.cve_id,
+                   COALESCE(c.severity, '') AS severity,
+                   COALESCE(NULLIF(k.short_description, ''), 'added to KEV') AS reason,
+                   0 AS source_order,
+                   k.date_added AS sort_value
+            FROM kev_deadlines k
+            LEFT JOIN cves c ON c.cve_id = k.cve_id
+            WHERE k.date_added > {p1} AND k.date_added <= {p2}
+
+            UNION ALL
+
+            SELECT cve_id,
+                   COALESCE(severity, '') AS severity,
+                   'new Critical/High' AS reason,
+                   1 AS source_order,
+                   REPLACE(SUBSTR(published, 1, 19), 'T', ' ') AS sort_value
+            FROM cves
+            WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p3}
+              AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p4}
+              AND UPPER(severity) IN ('CRITICAL', 'HIGH')
+        ) candidates
+        ORDER BY source_order, sort_value DESC, cve_id
+        LIMIT {_LIST_QUERY_LIMIT} OFFSET {max(0, int(offset))}
+        """,
+        (kev_start_date, kev_end_date, start_bound, end_bound),
+    )
+    return [dict(row) for row in rows]
+
+
+async def _collect_stack(
+    db: DbConnection,
+    *,
+    assets: list[dict[str, str]],
+    kev_start_date: str,
+    kev_end_date: str,
+    start_bound: str,
+    end_bound: str,
+) -> tuple[list[dict[str, str]], int]:
+    if not assets:
+        return [], 0
+    stack: list[dict[str, str]] = []
+    matched_total = 0
+    seen_candidates: set[str] = set()
+    offset = 0
+    while True:
+        page = await _fetch_stack_candidate_page(
+            db,
+            kev_start_date=kev_start_date,
+            kev_end_date=kev_end_date,
+            start_bound=start_bound,
+            end_bound=end_bound,
+            offset=offset,
+        )
+        candidates = [
+            row
+            for row in page
+            if row["cve_id"] and row["cve_id"] not in seen_candidates
+        ]
+        for row in candidates:
+            seen_candidates.add(row["cve_id"])
+        matched = await filter_cves_matching_assets(
+            db,
+            [row["cve_id"] for row in candidates],
+            assets,
+        )
+        matched_ids = {row["cve_id"] for row in matched}
+        for row in candidates:
+            if row["cve_id"] not in matched_ids:
+                continue
+            matched_total += 1
+            if len(stack) < _LIST_QUERY_LIMIT:
+                stack.append(
+                    {
+                        "cve_id": row["cve_id"],
+                        "reason": row["reason"],
+                        "severity": row["severity"],
+                    }
+                )
+        if len(page) < _LIST_QUERY_LIMIT:
+            break
+        offset += len(page)
+    return stack, matched_total
 
 
 async def collect_daily_brief(
@@ -411,23 +583,23 @@ async def collect_daily_brief(
     kev_end_date = _date_local(window_end_utc, tz_name)
     generated_local = _fmt_local(datetime.now(timezone.utc), tz_name)
 
-    kev_rows = await _fetch_kev(db, kev_start_date, kev_end_date)
-    crit_rows = await _fetch_critical_high(db, start_bound, end_bound)
-    watch_rows = await _fetch_notifications(
+    kev_rows, kev_total = await _fetch_kev(db, kev_start_date, kev_end_date)
+    crit_rows, crit_total = await _fetch_critical_high(db, start_bound, end_bound)
+    watch_rows, watch_total = await _fetch_notifications(
         db,
         category="watchlist",
         categories=None,
         start_bound=start_bound,
         end_bound=end_bound,
     )
-    ioc_rows = await _fetch_notifications(
+    ioc_rows, ioc_total = await _fetch_notifications(
         db,
         category="ioc_watchlist",
         categories=None,
         start_bound=start_bound,
         end_bound=end_bound,
     )
-    ops_rows = await _fetch_notifications(
+    ops_rows, ops_total = await _fetch_notifications(
         db,
         category=None,
         categories=_OPS_CATEGORIES,
@@ -440,32 +612,22 @@ async def collect_daily_brief(
     ops = _map_ops(ops_rows)
 
     assets = await get_alert_stack_assets(db)
-    stack: list[dict[str, str]] = []
-    if assets:
-        candidate_ids = list(
-            dict.fromkeys([r["cve_id"] for r in kev_rows] + [r["cve_id"] for r in crit_rows])
-        )
-        matched = await filter_cves_matching_assets(db, candidate_ids, assets)
-        matched_ids = {row["cve_id"] for row in matched}
-        seen: set[str] = set()
-        for row in kev_rows:
-            cve_id = row["cve_id"]
-            if cve_id in matched_ids and cve_id not in seen:
-                stack.append(row)
-                seen.add(cve_id)
-        for row in crit_rows:
-            cve_id = row["cve_id"]
-            if cve_id in matched_ids and cve_id not in seen:
-                stack.append(row)
-                seen.add(cve_id)
+    stack, stack_total = await _collect_stack(
+        db,
+        assets=assets,
+        kev_start_date=kev_start_date,
+        kev_end_date=kev_end_date,
+        start_bound=start_bound,
+        end_bound=end_bound,
+    )
 
     counts = {
-        "kev_new": len(kev_rows),
-        "stack_matches": len(stack),
-        "watchlist": len(watchlist),
-        "ioc_hits": len(ioc),
-        "critical_high_new": len(crit_rows),
-        "ops_issues": len(ops),
+        "kev_new": kev_total,
+        "stack_matches": stack_total,
+        "watchlist": watch_total,
+        "ioc_hits": ioc_total,
+        "critical_high_new": crit_total,
+        "ops_issues": ops_total,
     }
 
     return DailyBrief(
@@ -533,10 +695,15 @@ async def _window_for_slot(
 ) -> tuple[datetime, datetime]:
     if slot == "eod":
         return window_end_utc - timedelta(hours=24), window_end_utc
+    fallback_start = window_end_utc - timedelta(hours=12)
+    if not _env_flag_on("DAILY_BRIEF_EOD_ENABLED", "0"):
+        return fallback_start, window_end_utc
     watermark = _parse_watermark_utc(
         await get_sync_state_value(db, _DAILY_BRIEF_WATERMARK_KEY)
     )
-    window_start_utc = watermark or (window_end_utc - timedelta(hours=12))
+    if watermark is None:
+        return fallback_start, window_end_utc
+    window_start_utc = max(watermark, window_end_utc - timedelta(hours=24))
     return window_start_utc, window_end_utc
 
 
