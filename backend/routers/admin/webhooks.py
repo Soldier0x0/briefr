@@ -14,6 +14,9 @@ from fastapi import HTTPException, Query, Request
 from database import get_db
 from dependencies import audit
 from destructive_actions import require_confirm
+from reports.daily_brief import brief_to_payload, build_daily_brief_now
+from webhooks.destinations import EVENT_DAILY_BRIEF, load_destinations
+from webhooks.engine import dispatch_event
 
 from .router import router
 
@@ -285,8 +288,6 @@ async def preview_daily_brief(
     slot: str = Query(...),
 ):
     """Build daily-brief copy for a slot without dispatching or writing delivery logs."""
-    from reports.daily_brief import brief_to_payload, build_daily_brief_now
-
     parsed = _parse_daily_brief_slot(slot)
     text, brief = await build_daily_brief_now(parsed)  # type: ignore[arg-type]
     return {"text": text, "brief": brief_to_payload(brief)}
@@ -295,10 +296,6 @@ async def preview_daily_brief(
 @router.post("/webhooks/daily-brief/test")
 async def test_daily_brief(request: Request, body: dict):
     """Dispatch a daily_brief event with skip_dedupe (works even when cron flags are off)."""
-    from reports.daily_brief import brief_to_payload, build_daily_brief_now
-    from webhooks.destinations import EVENT_DAILY_BRIEF, load_destinations
-    from webhooks.engine import dispatch_event
-
     if not isinstance(body, dict):
         raise HTTPException(400, "JSON body required")
     parsed = _parse_daily_brief_slot(body.get("slot") if isinstance(body.get("slot"), str) else None)

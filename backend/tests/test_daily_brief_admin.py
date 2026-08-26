@@ -92,7 +92,7 @@ def test_daily_brief_test_send_skip_dedupe(admin_client, monkeypatch):
             "event_type": event_type,
         }
 
-    monkeypatch.setattr("webhooks.engine.dispatch_event", fake_dispatch)
+    monkeypatch.setattr("routers.admin.webhooks.dispatch_event", fake_dispatch)
 
     resp = admin_client.post(
         "/api/admin/webhooks/daily-brief/test",
