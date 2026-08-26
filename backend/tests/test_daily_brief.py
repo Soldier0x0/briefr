@@ -196,6 +196,67 @@ def test_notification_sections_collect_on_sqlite(db_env):
     assert "// OPS" in text
 
 
+def test_notification_fanout_counts_one_event_per_dedupe_key(db_env):
+    from reports.daily_brief import collect_daily_brief
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            users = [
+                (user_id, f"daily-brief-user-{user_id}", "hash", "analyst", 1)
+                for user_id in range(1, 4)
+            ]
+            await db.executemany(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                users,
+            )
+            notifications = [
+                (
+                    user_id,
+                    "analyst",
+                    "watchlist",
+                    "high",
+                    "CVE-2026-1111 — EPSS jump",
+                    "EPSS crossed the watch threshold",
+                    "cve",
+                    "CVE-2026-1111",
+                    "watch:CVE-2026-1111:epss",
+                    "2026-08-26 10:00:00",
+                )
+                for user_id in range(1, 4)
+            ]
+            await db.executemany(
+                """
+                INSERT INTO user_notifications (
+                    user_id, scope, category, severity, title, body,
+                    entity_type, entity_id, dedupe_key, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                notifications,
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.counts["watchlist"] == 1
+    assert len(brief.watchlist) == 1
+    assert brief.watchlist[0]["cve_id"] == "CVE-2026-1111"
+
+
 def test_collector_uses_utc_bounds_with_non_utc_display(db_env):
     from reports.daily_brief import collect_daily_brief
 
