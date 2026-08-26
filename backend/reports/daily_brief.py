@@ -74,9 +74,8 @@ def _date_local(dt: datetime, tz_name: str) -> str:
     return dt.astimezone(tz).strftime("%Y-%m-%d")
 
 
-def _bound_local(dt: datetime, tz_name: str) -> str:
-    tz = ZoneInfo(tz_name)
-    return dt.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
+def _bound_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def template_headline(brief: DailyBrief) -> str:
@@ -297,7 +296,8 @@ async def _fetch_critical_high(
     sql = f"""
         SELECT cve_id, severity
         FROM cves
-        WHERE published >= {p1} AND published < {p2}
+        WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
+          AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
           AND UPPER(severity) IN ('CRITICAL', 'HIGH')
         ORDER BY published DESC, cve_id
     """
@@ -328,8 +328,8 @@ async def _fetch_notifications(
         sql = f"""
             SELECT title, body, entity_type, entity_id, created_at
             FROM user_notifications
-            WHERE category = {p_cat}
-              AND created_at >= {p_start} AND created_at < {p_end}
+            WHERE created_at >= {p_start} AND created_at < {p_end}
+              AND category = {p_cat}
             ORDER BY created_at DESC
         """
         params: tuple[Any, ...] = (start_bound, end_bound, category)
@@ -339,8 +339,8 @@ async def _fetch_notifications(
         sql = f"""
             SELECT title, body, entity_type, entity_id, created_at
             FROM user_notifications
-            WHERE category IN ({placeholders})
-              AND created_at >= {p_start} AND created_at < {p_end}
+            WHERE created_at >= {p_start} AND created_at < {p_end}
+              AND category IN ({placeholders})
             ORDER BY created_at DESC
         """
         params = (start_bound, end_bound, *cats)
@@ -391,8 +391,8 @@ async def collect_daily_brief(
     window_end_utc: datetime,
     tz_name: str,
 ) -> DailyBrief:
-    start_bound = _bound_local(window_start_utc, tz_name)
-    end_bound = _bound_local(window_end_utc, tz_name)
+    start_bound = _bound_utc(window_start_utc)
+    end_bound = _bound_utc(window_end_utc)
     kev_start_date = _date_local(window_start_utc, tz_name)
     kev_end_date = _date_local(window_end_utc, tz_name)
     generated_local = _fmt_local(datetime.now(timezone.utc), tz_name)
