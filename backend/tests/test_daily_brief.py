@@ -20,6 +20,7 @@ from reports.daily_brief import (
     run_daily_brief_slot,
     template_headline,
 )
+from reports.market_clusters import cluster_published
 from tests.conftest import run_db_test
 
 pytestmark = pytest.mark.no_auth
@@ -467,6 +468,178 @@ def test_market_clusters_all_published_not_just_critical(db_env):
     assert "Published: 3" in text
     assert "CVE-2026-OLD" not in text
     assert brief_to_payload(brief)["market"]["published"] == 3
+
+
+def test_headline_skips_unanalyzed_market_leader():
+    rows = [
+        {"severity": "MEDIUM", "cpe_matches": "", "affected_products": ""}
+        for _ in range(200)
+    ]
+    rows.append(
+        {
+            "severity": "CRITICAL",
+            "cpe_matches": '[{"product":"nginx"}]',
+            "affected_products": "",
+        }
+    )
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS},
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+        market=cluster_published(rows),
+    )
+
+    headline = template_headline(brief)
+
+    assert "nginx led volume." in headline
+    assert "unanalyzed led volume." not in headline
+    assert "unanalyzed" in format_daily_brief_text(brief, limit=2000)
+
+
+def test_headline_with_only_medium_published_cves_is_not_quiet():
+    market = cluster_published(
+        [
+            {
+                "severity": "MEDIUM",
+                "cpe_matches": '[{"product":"nginx"}]',
+                "affected_products": "",
+            }
+        ]
+    )
+    brief = DailyBrief(
+        slot="standup",
+        tz_name="UTC",
+        window_start_local="2026-08-26 06:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS},
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+        market=market,
+    )
+
+    headline = template_headline(brief)
+
+    assert headline != "Quiet window."
+    assert "published" in headline
+
+
+def test_market_header_totals_are_untruncated_when_clustering_is_capped(db_env):
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            cves = []
+            for index in range(5001):
+                severity = "CRITICAL"
+                if index == 4998:
+                    severity = "HIGH"
+                elif index == 4999:
+                    severity = "LOW"
+                elif index == 5000:
+                    severity = "UNKNOWN"
+                cves.append(
+                    (
+                        f"CVE-2026-MARKET{index:04d}",
+                        "market cap",
+                        '["f5:nginx"]',
+                        "",
+                        severity,
+                        0,
+                        0,
+                        0,
+                        "2026-08-26T10:00:00.000",
+                    )
+                )
+            await db.executemany(
+                """
+                INSERT INTO cves (
+                    cve_id, description, affected_products, mitre_technique,
+                    severity, cvss_score, epss_score, is_kev, published
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                cves,
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.market["published"] == 5001
+    assert brief.market["critical"] == 4998
+    assert brief.market["high"] == 1
+    assert brief.market["medium"] == 1
+    assert brief.market["low"] == 1
+    assert sum(product["total"] for product in brief.market["products"]) == 5000
+
+
+def test_overflow_never_drops_populated_market():
+    items = [f"CVE-2026-{i:04d}" for i in range(40)]
+    market = cluster_published(
+        [
+            {
+                "severity": "HIGH",
+                "cpe_matches": f'[{{"product":"product-{i}"}}]',
+                "affected_products": "",
+            }
+            for i in range(6)
+        ]
+    )
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="Busy.",
+        lede_source="template",
+        counts={
+            "kev_new": 40,
+            "stack_matches": 0,
+            "watchlist": 0,
+            "ioc_hits": 0,
+            "critical_high_new": 6,
+            "ops_issues": 20,
+        },
+        kev=[{"cve_id": c, "reason": "added to KEV", "severity": "HIGH"} for c in items],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[{"id": f"job-{i}", "reason": "boom " * 40} for i in range(20)],
+        market=market,
+    )
+
+    text = format_daily_brief_text(brief, limit=700)
+
+    assert len(text) <= 700
+    assert "// MARKET" in text
+    assert "Published: 6" in text
+    assert "// OPS" not in text
+    assert "// KEV" not in text
 
 
 def test_overflow_drops_ops_before_kev():
