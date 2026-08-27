@@ -14,9 +14,11 @@ from reports.daily_brief import (
     DailyBrief,
     _window_for_slot,
     apply_headline,
+    brief_to_payload,
     collect_daily_brief,
     format_daily_brief_text,
     run_daily_brief_slot,
+    template_headline,
 )
 from tests.conftest import run_db_test
 
@@ -403,6 +405,68 @@ def test_collector_accepts_nvd_published_timestamp(db_env):
     brief = run_db_test(_seed())
     assert brief.counts["critical_high_new"] == 1
     assert [row["cve_id"] for row in brief.stack] == []
+
+
+def test_market_clusters_all_published_not_just_critical(db_env):
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            for cve_id, sev, cpe, pub in (
+                (
+                    "CVE-2026-M1",
+                    "MEDIUM",
+                    '[{"product":"nginx"}]',
+                    "2026-08-26T10:00:00.000",
+                ),
+                (
+                    "CVE-2026-M2",
+                    "CRITICAL",
+                    '[{"product":"openssl"}]',
+                    "2026-08-26T11:00:00.000",
+                ),
+                ("CVE-2026-M3", "LOW", "", "2026-08-26T12:00:00.000"),
+                (
+                    "CVE-2026-OLD",
+                    "HIGH",
+                    '[{"product":"nginx"}]',
+                    "2026-08-20T10:00:00.000",
+                ),
+            ):
+                await db.execute(
+                    """
+                    INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                      severity, cvss_score, epss_score, is_kev, published, cpe_matches)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (cve_id, "demo", "[]", "", sev, 0, 0, 0, pub, cpe),
+                )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.market["published"] == 3
+    labels = [product["label"] for product in brief.market["products"]]
+    assert "openssl" in labels
+    assert "nginx" in labels
+    assert "unanalyzed" in labels
+    assert "Quiet window." not in template_headline(brief)
+    text = format_daily_brief_text(brief, limit=2000)
+    assert "// MARKET" in text
+    assert text.index("// MARKET") > text.index("// COUNTS")
+    assert "Published: 3" in text
+    assert "CVE-2026-OLD" not in text
+    assert brief_to_payload(brief)["market"]["published"] == 3
 
 
 def test_overflow_drops_ops_before_kev():
