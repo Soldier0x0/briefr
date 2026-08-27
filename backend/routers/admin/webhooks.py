@@ -14,6 +14,9 @@ from fastapi import HTTPException, Query, Request
 from database import get_db
 from dependencies import audit
 from destructive_actions import require_confirm
+from reports.daily_brief import brief_to_payload, build_daily_brief_now
+from webhooks.destinations import EVENT_DAILY_BRIEF, load_destinations
+from webhooks.engine import dispatch_event
 
 from .router import router
 
@@ -264,4 +267,63 @@ async def patch_webhook_destination(request: Request, destination_id: str, body:
     if dest is None:
         raise HTTPException(404, f"Destination '{destination_id}' not found")
     return {"ok": True, "destination": destination_to_api_dict(dest)}
+
+
+_VALID_DAILY_BRIEF_SLOTS = frozenset({"eod", "standup"})
+
+
+def _parse_daily_brief_slot(raw: str | None) -> str:
+    slot = (raw or "").strip().lower()
+    if slot not in _VALID_DAILY_BRIEF_SLOTS:
+        raise HTTPException(
+            status_code=422,
+            detail="slot must be 'eod' or 'standup'",
+        )
+    return slot
+
+
+@router.get("/webhooks/daily-brief/preview")
+async def preview_daily_brief(
+    request: Request,
+    slot: str = Query(...),
+):
+    """Build daily-brief copy for a slot without dispatching or writing delivery logs."""
+    parsed = _parse_daily_brief_slot(slot)
+    text, brief = await build_daily_brief_now(parsed)  # type: ignore[arg-type]
+    return {"text": text, "brief": brief_to_payload(brief)}
+
+
+@router.post("/webhooks/daily-brief/test")
+async def test_daily_brief(request: Request, body: dict):
+    """Dispatch a daily_brief event with skip_dedupe (works even when cron flags are off)."""
+    if not isinstance(body, dict):
+        raise HTTPException(400, "JSON body required")
+    parsed = _parse_daily_brief_slot(body.get("slot") if isinstance(body.get("slot"), str) else None)
+    destination_id = body.get("destination_id")
+    if destination_id is not None and not isinstance(destination_id, str):
+        raise HTTPException(400, "destination_id must be a string")
+
+    text, brief = await build_daily_brief_now(parsed)  # type: ignore[arg-type]
+    destinations = None
+    if destination_id:
+        destination_id = destination_id.strip()
+        all_dest = await load_destinations()
+        match = next((d for d in all_dest if d.id == destination_id), None)
+        if match is None:
+            raise HTTPException(404, f"Destination '{destination_id}' not found")
+        destinations = [match]
+
+    result = await dispatch_event(
+        EVENT_DAILY_BRIEF,
+        text,
+        skip_dedupe=True,
+        destinations=destinations,
+        payload_extra={"brief": brief_to_payload(brief)},
+    )
+    await audit(
+        request,
+        f"webhook.daily_brief.test.{parsed}",
+        destination_id or "all",
+    )
+    return {**result, "slot": parsed, "text": text, "brief": brief_to_payload(brief)}
 

@@ -7,6 +7,7 @@ import ConfirmModal from './shared/ConfirmModal.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import WebhookDestinationCard from './WebhookDestinationCard.jsx'
+import { dailyBriefTestToast } from './toastCopy.js'
 import './WebhooksPage.css'
 
 const EVENT_OPTIONS = [
@@ -16,9 +17,14 @@ const EVENT_OPTIONS = [
   { id: 'ioc_watchlist_hit', label: 'IOC watchlist hit' },
   { id: 'backup_failure', label: 'Backup failure' },
   { id: 'health', label: 'Health / test' },
+  { id: 'daily_brief', label: 'Daily brief (EOD / standup)' },
 ]
 
 const KIND_OPTIONS = ['discord', 'telegram', 'generic']
+const DAILY_BRIEF_SLOT_OPTIONS = [
+  { value: 'eod', label: 'EOD' },
+  { value: 'standup', label: 'Standup' },
+]
 
 const EMPTY_CREATE = {
   kind: 'discord',
@@ -55,6 +61,9 @@ export default function WebhooksPage({ toast }) {
   const [dedupeLog, setDedupeLog] = useState(null)
   const [dedupeLogError, setDedupeLogError] = useState(null)
   const [dedupeLogOffset, setDedupeLogOffset] = useState(0)
+  const [dailyBriefSlot, setDailyBriefSlot] = useState('eod')
+  const [dailyBriefPreview, setDailyBriefPreview] = useState(null)
+  const [dailyBriefBusy, setDailyBriefBusy] = useState(null)
   const logLimit = 50
 
   const loadUserStack = useCallback(async () => {
@@ -227,6 +236,42 @@ export default function WebhooksPage({ toast }) {
       toast('Destination deleted', true)
     } catch (e) {
       toast(`Delete failed: ${e.message}`, false)
+    }
+  }
+
+  async function previewDailyBrief() {
+    setDailyBriefBusy('preview')
+    try {
+      const { data } = await adminApi.getJson(
+        `/webhooks/daily-brief/preview?slot=${encodeURIComponent(dailyBriefSlot)}`,
+      )
+      setDailyBriefPreview(data?.text || '')
+      toast('Preview ready', true)
+    } catch (e) {
+      toast(`Preview failed: ${e.message}`, false)
+    } finally {
+      setDailyBriefBusy(null)
+    }
+  }
+
+  async function sendDailyBriefTest() {
+    setDailyBriefBusy('test')
+    try {
+      const { data } = await adminApi.postJson('/webhooks/daily-brief/test', {
+        slot: dailyBriefSlot,
+      })
+      if (data?.text) setDailyBriefPreview(data.text)
+      toast(dailyBriefTestToast(data))
+      try {
+        await loadHealth()
+        await loadDeliveryLog(deliveryLogOffset, deliveryLogFilter)
+      } catch {
+        /* refresh failure must not mask test result toast */
+      }
+    } catch (e) {
+      toast(`Test send failed: ${e.message}`, false)
+    } finally {
+      setDailyBriefBusy(null)
     }
   }
 
@@ -412,6 +457,43 @@ export default function WebhooksPage({ toast }) {
           </div>
         </div>
       )}
+
+      <div className="admin-card">
+        <div className="admin-card-title webhook-daily-brief-card-title">
+          Daily brief
+          <HelpTip text="Scheduled rollup; enable slots under Config. Does not replace real-time KEV/watchlist alerts." />
+        </div>
+        <div className="admin-filter-bar admin-filter-bar--fields webhook-daily-brief-actions">
+          <label className="admin-field">
+            <span className="admin-field-label">Slot</span>
+            <Select
+              className="admin-select"
+              value={dailyBriefSlot}
+              onChange={setDailyBriefSlot}
+              options={DAILY_BRIEF_SLOT_OPTIONS}
+            />
+          </label>
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost"
+            disabled={!!dailyBriefBusy}
+            onClick={previewDailyBrief}
+          >
+            {dailyBriefBusy === 'preview' ? 'Previewing…' : 'Preview'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            disabled={!!dailyBriefBusy}
+            onClick={sendDailyBriefTest}
+          >
+            {dailyBriefBusy === 'test' ? 'Sending…' : 'Send test'}
+          </button>
+        </div>
+        {dailyBriefPreview != null && (
+          <pre className="webhook-daily-brief-preview">{dailyBriefPreview}</pre>
+        )}
+      </div>
 
       <AsyncSection data={destinations} error={loadError} onRetry={() => { loadDestinations(); loadHealth() }} emptyMessage="No webhook destinations">
         {(rows) => (

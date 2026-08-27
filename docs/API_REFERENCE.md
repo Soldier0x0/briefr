@@ -2255,7 +2255,7 @@ Response: `{ok, task, queueing_lock, already_enqueued, message}`. Audit: `jobs.o
 Params: `hours` (1–168, default 24). Returns outbound call metering from `api_call_events` (Q2): `{ok, hours, by_source: [{source, calls, ok_calls, last_called_at}], by_actor: [{actor_type, calls}], usage_rollups}`. Every `resilient_request` **attempt** is counted (retries included). Disable with `API_CALL_EVENTS_ENABLED=0`. Events retained 30 days via `cache_retention_cleanup`.
 
 ### POST /api/admin/scheduler/run
-Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown. For `job_id="llm_product_extraction"`, `PROCRASTINATE_ENABLED=1` defers `jobs:llm_product_extraction` with `trigger="manual"` and elevated priority; disabled/unavailable durable queue falls back to the existing scheduler path.
+Body `{job_id}`. Triggers a scheduler job immediately. Returns `409` if job lock is held, `400` if job_id unknown. For `job_id="llm_product_extraction"`, `PROCRASTINATE_ENABLED=1` defers `jobs:llm_product_extraction` with `trigger="manual"` and elevated priority; disabled/unavailable durable queue falls back to the existing scheduler path. Daily brief jobs: `daily_brief_eod`, `daily_brief_standup` — production send path with normal dedupe and enable-flag checks (see daily-brief preview/test routes above).
 Audit: `scheduler.run.{job_id}`.
 
 ### GET /api/admin/config/schema
@@ -2271,10 +2271,56 @@ Body `{key, value}`. Writes one key to `.env` and `os.environ`. For `scheduler_r
 Body `[{key, value}, ...]`. Writes all keys to `.env`, reschedules scheduler interval/cron jobs when applicable, and triggers a graceful backend restart when any changed key has `apply_strategy: restart` (includes `ALLOWED_ORIGINS` / CORS). Returns `400` if any key is not in the allowlist. Response: `{ok, changed_keys, restart_required, rescheduled_jobs, message}`. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
-Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`) and legacy aliases.
+Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`, `daily_brief`) and legacy aliases.
 
 ### GET /api/admin/webhooks/destinations
 Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_source, config}]}` — merged env + DB config. `config` is **masked** (URLs/tokens never returned in full).
+
+**Webhook event types:** Destinations subscribe via `event_types`. Canonical ids (legacy aliases in parentheses):
+
+| Event type | Trigger | Dedupe key |
+|---|---|---|
+| `kev_alert` | KEV-on-stack match during ingest | CVE id |
+| `watchlist_alert` | CVE monitor (pin/watchlist policy) | CVE id + reason |
+| `ioc_watchlist_hit` | Scheduler `ioc_retro_match` | `{user_id}:{ioc_value}:{source}` |
+| `kev_backlog` | *(reserved — not dispatched)* | — |
+| `backup_failure` | Backup job failure | run id |
+| `health` | Health-check pings | — |
+| `daily_brief` | Scheduler `daily_brief_eod` / `daily_brief_standup` (when slot enabled) | `{slot}:{local_date}` (`eod` or `standup`) |
+
+Fresh env bootstrap destinations with unset `DISCORD_WEBHOOK_EVENTS` / `TELEGRAM_WEBHOOK_EVENTS` / `WEBHOOK_GENERIC_EVENTS` (empty or missing and no synced DB row yet) subscribe to **all** types in the table, including `daily_brief`. Existing synced env destinations retain their stored `event_types` list and must have **Daily brief (EOD / standup)** ticked on Admin → Webhooks; database destinations with an explicit list likewise do not auto-gain new types. **Both cron slots default off** (`DAILY_BRIEF_EOD_ENABLED=0`, `DAILY_BRIEF_STANDUP_ENABLED=0`); no scheduled brief is sent until enabled in Admin config (jobs are registered but no-op while disabled).
+
+**Daily brief config keys** (Admin → API keys & config; see `GET /api/admin/config/schema`):
+
+| Key | Type | Default | Apply strategy |
+|---|---|---|---|
+| `DAILY_BRIEF_EOD_ENABLED` | bool | `0` | `scheduler_reschedule` |
+| `DAILY_BRIEF_STANDUP_ENABLED` | bool | `0` | `scheduler_reschedule` |
+| `DAILY_BRIEF_EOD_HOUR` | int (0–23) | `18` | `scheduler_reschedule` |
+| `DAILY_BRIEF_EOD_MINUTE` | int (0–59) | `0` | `scheduler_reschedule` |
+| `DAILY_BRIEF_STANDUP_HOUR` | int (0–23) | `7` | `scheduler_reschedule` |
+| `DAILY_BRIEF_STANDUP_MINUTE` | int (0–59) | `0` | `scheduler_reschedule` |
+| `DAILY_BRIEF_LLM_ENABLED` | bool | `0` | `immediate` (`ml` section) |
+
+Scheduled jobs: `daily_brief_eod` (cron at EOD hour/minute, instance timezone) and `daily_brief_standup` (cron at standup hour/minute). EOD window = prior 24h. Standup uses `sync_state` `daily_brief:last_eod_end` only while EOD is enabled; otherwise it uses the prior 12h. A watermark older than 24h is clamped to `window_end − 24h`. Standup skips when the computed window is shorter than 15 minutes (overlap guard after EOD). SQL timestamp bounds are UTC and half-open; date-only KEV rows use `date_added > start_local_date AND date_added <= end_local_date`. The structured `brief.market` field and `// MARKET` text section summarize every CVE published in the window as deterministic top-product clusters with untruncated severity totals and no additional LLM call. Message layout: [`docs/design/daily-brief-format.md`](design/daily-brief-format.md). Optional LLM rewrites only the headline when `DAILY_BRIEF_LLM_ENABLED=1` and a provider is configured; template headline otherwise.
+
+### GET /api/admin/webhooks/daily-brief/preview
+Params: `slot` — required; `eod` or `standup` (else `422`).
+
+Builds daily-brief copy for the slot **without dispatching** (no delivery log, no dedupe claim). Response: `{text, brief}` — `text` is the formatted channel body; `brief` is the structured fact object (`slot`, window bounds, counts, list rows, `lede_source`). Works while `DAILY_BRIEF_*_ENABLED` cron flags are off; bypasses standup overlapping-window skip so operators can inspect copy anytime.
+
+### POST /api/admin/webhooks/daily-brief/test
+Body `{slot, destination_id?}`. `slot` required (`eod` | `standup`). Optional `destination_id` limits delivery to one destination (must exist — else `404`); omit to fan out to all enabled subscribers for `daily_brief`.
+
+Dispatches a real `daily_brief` webhook event with **`skip_dedupe=True`** (repeatable operator test). Works while cron slot flags are off. Response merges dispatch result (`status`, `sent`, `errors`, …) with `{slot, text, brief}`. Generic HTTPS payloads include structured `brief` in `payload_extra`. Audit: `webhook.daily_brief.test.{slot}`.
+
+**Preview vs Send test vs Scheduler Run now:**
+
+| Action | Dedupe | Respects slot enable flags | Overlap skip | Writes EOD watermark |
+|---|---|---|---|---|
+| **Preview** (`GET …/preview`) | — (no send) | No | No | No |
+| **Send test** (`POST …/test`) | Skipped (`skip_dedupe`) | No | No | No |
+| **Run now** (`POST /api/admin/scheduler/run` `{job_id: "daily_brief_eod" \| "daily_brief_standup"}`) | Normal (`{slot}:{local_date}`) | Yes (skipped when disabled) | Yes (standup) | Yes (EOD on success) |
 
 ### POST /api/admin/webhooks/destinations
 Body `{kind, config, id?, label?, enabled?, event_types?}`. Creates a **database-backed** destination (`source: db`). `kind` is `discord`, `telegram`, or `generic`. `id` optional — generated as `{kind}-{uuid}` when omitted; custom ids must match `^[a-z0-9-]{3,64}$` and cannot use reserved env ids (`discord`, `telegram`, `generic`). Config URLs validated with SSRF checks on write. Cap: 20 destinations per kind. Audit: `webhook.destination.create.{id}`.

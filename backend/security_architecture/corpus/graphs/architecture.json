@@ -209,6 +209,30 @@
       ]
     },
     {
+      "id": "job:daily_brief_eod",
+      "label": "Daily Brief (EOD)",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "daily_brief_eod"
+        }
+      ]
+    },
+    {
+      "id": "job:daily_brief_standup",
+      "label": "Daily Brief (Standup)",
+      "kind": "job",
+      "cluster": "scheduler",
+      "source_refs": [
+        {
+          "type": "job",
+          "ref": "daily_brief_standup"
+        }
+      ]
+    },
+    {
       "id": "job:detection_context_llm",
       "label": "DetectionContext LLM Artifact Extract",
       "kind": "job",
@@ -742,7 +766,7 @@
       "label": "routers.admin.webhooks",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 5,
+      "endpoint_count": 7,
       "source_refs": [
         {
           "type": "file",
@@ -2469,6 +2493,150 @@
       "id": "job:cvelistv5_incremental_sync->table:watchlist",
       "source": "job:cvelistv5_incremental_sync",
       "target": "table:watchlist",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:atlas_case_studies",
+      "source": "job:daily_brief_eod",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:atlas_techniques",
+      "source": "job:daily_brief_eod",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:cve_atlas_map",
+      "source": "job:daily_brief_eod",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:cve_exploits",
+      "source": "job:daily_brief_eod",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:cve_technique_map",
+      "source": "job:daily_brief_eod",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:cves",
+      "source": "job:daily_brief_eod",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:group_technique_map",
+      "source": "job:daily_brief_eod",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:mitre_groups",
+      "source": "job:daily_brief_eod",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:mitre_techniques",
+      "source": "job:daily_brief_eod",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:otx_pulse_iocs",
+      "source": "job:daily_brief_eod",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:sync_state",
+      "source": "job:daily_brief_eod",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_eod->table:ti_mirror_iocs",
+      "source": "job:daily_brief_eod",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:atlas_case_studies",
+      "source": "job:daily_brief_standup",
+      "target": "table:atlas_case_studies",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:atlas_techniques",
+      "source": "job:daily_brief_standup",
+      "target": "table:atlas_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:cve_atlas_map",
+      "source": "job:daily_brief_standup",
+      "target": "table:cve_atlas_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:cve_exploits",
+      "source": "job:daily_brief_standup",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:cve_technique_map",
+      "source": "job:daily_brief_standup",
+      "target": "table:cve_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:cves",
+      "source": "job:daily_brief_standup",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:group_technique_map",
+      "source": "job:daily_brief_standup",
+      "target": "table:group_technique_map",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:mitre_groups",
+      "source": "job:daily_brief_standup",
+      "target": "table:mitre_groups",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:mitre_techniques",
+      "source": "job:daily_brief_standup",
+      "target": "table:mitre_techniques",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:otx_pulse_iocs",
+      "source": "job:daily_brief_standup",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:sync_state",
+      "source": "job:daily_brief_standup",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
+      "id": "job:daily_brief_standup->table:ti_mirror_iocs",
+      "source": "job:daily_brief_standup",
+      "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },
     {
@@ -5556,9 +5724,45 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-webhooks->table:sync_state",
+      "source": "routers-admin-webhooks",
+      "target": "table:sync_state",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:ti_mirror_iocs",
       "source": "routers-admin-webhooks",
       "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:user_notifications",
+      "source": "routers-admin-webhooks",
+      "target": "table:user_notifications",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_alert_log",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_alert_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_delivery_log",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_delivery_log",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_destination_dedupe",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_destination_dedupe",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-admin-webhooks->table:webhook_destinations",
+      "source": "routers-admin-webhooks",
+      "target": "table:webhook_destinations",
       "kind": "references_table"
     },
     {

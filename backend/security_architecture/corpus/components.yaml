@@ -132,11 +132,11 @@ components:
     ref: backend/routers/admin/tokens.py
 - id: routers-admin-webhooks
   title: routers.admin.webhooks
-  summary: FastAPI router module with 5 endpoint(s).
+  summary: FastAPI router module with 7 endpoint(s).
   owner: platform
   status: active
   origin: generated
-  endpoint_count: 5
+  endpoint_count: 7
   source_refs:
   - type: file
     ref: backend/routers/admin/webhooks.py

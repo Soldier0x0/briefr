@@ -16,6 +16,7 @@ from database import get_db, init_db, was_webhook_destination_sent
 from resilient_client import reset_feed_health
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
+    EVENT_DAILY_BRIEF,
     EVENT_HEALTH,
     EVENT_KEV_ALERT,
     load_destinations,
@@ -314,3 +315,61 @@ def test_delivery_failure_emits_operator_notification(monkeypatch, tmp_path):
     )
     notes_again = run_db_test(check_notifications())
     assert len(notes_again) == 1
+
+
+def test_daily_brief_skipped_without_subscription(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "kev_alert")
+    run_db_test(sync_env_destinations_to_db())
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        return httpx.Response(204)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    skipped = run_db_test(
+        dispatch_event(EVENT_DAILY_BRIEF, "daily brief body", skip_dedupe=True)
+    )
+    assert skipped["status"] == "skipped"
+    assert skipped["reason"] == "no_subscribers"
+    assert calls["n"] == 0
+
+
+def test_daily_brief_generic_payload_extra(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("WEBHOOK_GENERIC_URL", "https://hooks.example.com/briefr")
+    monkeypatch.setenv("WEBHOOK_GENERIC_EVENTS", "daily_brief")
+    run_db_test(sync_env_destinations_to_db())
+    calls = []
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        calls.append(json.loads(request.content))
+        return httpx.Response(200)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(
+            EVENT_DAILY_BRIEF,
+            "brief text",
+            dedupe_key="eod:2026-08-26",
+            skip_dedupe=True,
+            payload_extra={"brief": {"slot": "eod", "counts": {"kev_new": 1}}},
+        )
+    )
+    assert result["status"] == "ok"
+    assert calls[0]["event_type"] == EVENT_DAILY_BRIEF
+    assert calls[0]["brief"]["slot"] == "eod"
+    assert calls[0]["brief"]["counts"]["kev_new"] == 1

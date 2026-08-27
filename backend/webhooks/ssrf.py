@@ -252,7 +252,13 @@ async def safe_webhook_request(
             release_api_slot(source, slot_id)
 
 
-def webhook_json_payload(message: str, *, event_type: str, dedupe_key: str | None = None) -> dict[str, Any]:
+def webhook_json_payload(
+    message: str,
+    *,
+    event_type: str,
+    dedupe_key: str | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     body: dict[str, Any] = {
         "text": message,
         "event_type": event_type,
@@ -260,4 +266,6 @@ def webhook_json_payload(message: str, *, event_type: str, dedupe_key: str | Non
     }
     if dedupe_key:
         body["dedupe_key"] = dedupe_key
+    if extra:
+        body.update(extra)
     return body

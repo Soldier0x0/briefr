@@ -63,6 +63,24 @@ jobs:
   source_refs:
   - type: job
     ref: cvelistv5_incremental_sync
+- id: daily_brief_eod
+  title: Daily Brief (EOD)
+  summary: Scheduled job registered in scheduler.py (id=daily_brief_eod).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: daily_brief_eod
+- id: daily_brief_standup
+  title: Daily Brief (Standup)
+  summary: Scheduled job registered in scheduler.py (id=daily_brief_standup).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: job
+    ref: daily_brief_standup
 - id: detection_context_llm
   title: DetectionContext LLM Artifact Extract
   summary: Scheduled job registered in scheduler.py (id=detection_context_llm).

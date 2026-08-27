@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  dailyBriefTestToast,
   schedulerJobManualRun,
   schedulerJobPaused,
   schedulerJobRetry,
@@ -31,5 +32,15 @@ describe('toastCopy', () => {
 
   it('pause copy uses human name', () => {
     assert.match(schedulerJobPaused('epss_score_sync'), /paused$/)
+  })
+
+  it('uses a warning with the reason when a daily brief test is skipped', () => {
+    assert.deepEqual(
+      dailyBriefTestToast({ status: 'skipped', reason: 'no_subscribers' }),
+      {
+        message: 'Daily brief test skipped — no subscribers',
+        variant: 'warning',
+      },
+    )
   })
 })

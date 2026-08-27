@@ -14,6 +14,7 @@ from database import (
 )
 from webhooks.destinations import (
     EVENT_BACKUP_FAILURE,
+    EVENT_DAILY_BRIEF,
     EVENT_HEALTH,
     EVENT_KEV_ALERT,
     EVENT_KEV_BACKLOG,
@@ -82,9 +83,15 @@ async def _deliver_generic(
     *,
     event_type: str,
     dedupe_key: str | None,
+    payload_extra: dict[str, Any] | None = None,
 ) -> None:
     url = dest.config.get("url", "")
-    payload = webhook_json_payload(message, event_type=event_type, dedupe_key=dedupe_key)
+    payload = webhook_json_payload(
+        message,
+        event_type=event_type,
+        dedupe_key=dedupe_key,
+        extra=payload_extra,
+    )
     response = await safe_webhook_request(
         dest.health_source,
         "POST",
@@ -101,6 +108,7 @@ async def deliver_to_destination(
     *,
     event_type: str,
     dedupe_key: str | None = None,
+    payload_extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     try:
         if dest.kind == "discord":
@@ -108,7 +116,13 @@ async def deliver_to_destination(
         elif dest.kind == "telegram":
             await _deliver_telegram(dest, message)
         elif dest.kind == "generic":
-            await _deliver_generic(dest, message, event_type=event_type, dedupe_key=dedupe_key)
+            await _deliver_generic(
+                dest,
+                message,
+                event_type=event_type,
+                dedupe_key=dedupe_key,
+                payload_extra=payload_extra,
+            )
         else:
             raise ValueError(f"unknown destination kind: {dest.kind}")
         return {"destination_id": dest.id, "ok": True, "error": None}
@@ -123,6 +137,7 @@ async def dispatch_event(
     dedupe_key: str | None = None,
     destinations: list[WebhookDestination] | None = None,
     skip_dedupe: bool = False,
+    payload_extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Send an event to every enabled destination subscribed to event_type."""
     normalized = normalize_event_type(event_type)
@@ -133,6 +148,7 @@ async def dispatch_event(
         EVENT_BACKUP_FAILURE,
         EVENT_HEALTH,
         EVENT_WATCHLIST_ALERT,
+        EVENT_DAILY_BRIEF,
     }:
         return {
             "status": "failed",
@@ -188,6 +204,7 @@ async def dispatch_event(
             message,
             event_type=normalized,
             dedupe_key=dedupe_key,
+            payload_extra=payload_extra,
         )
         db = await get_db()
         try:
