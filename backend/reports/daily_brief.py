@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
@@ -15,6 +15,7 @@ from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
 from redact import mask_webhook_delivery_error
+from reports.market_clusters import cluster_published, format_market_section
 from webhooks.destinations import EVENT_DAILY_BRIEF
 from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
 
@@ -70,6 +71,7 @@ class DailyBrief:
     watchlist: list[dict[str, str]]
     ioc: list[dict[str, str]]
     ops: list[dict[str, str]]
+    market: dict = field(default_factory=lambda: cluster_published([]))
 
 
 def _fmt_local(dt: datetime, tz_name: str) -> str:
@@ -94,9 +96,15 @@ def _kev_date_predicate(start_date: str, end_date: str, p1: str, p2: str) -> str
 
 def template_headline(brief: DailyBrief) -> str:
     c = brief.counts
-    if all(c[k] == 0 for k in COUNT_KEYS):
+    published = int(brief.market.get("published", 0))
+    if published == 0 and all(c[k] == 0 for k in COUNT_KEYS):
         return "Quiet window."
     parts = []
+    if published:
+        parts.append(f"{published} published.")
+        products = brief.market.get("products") or []
+        if products:
+            parts.append(f"{products[0]['label']} led volume.")
     if c["kev_new"]:
         parts.append(f"{c['kev_new']} new KEV.")
     if c["stack_matches"]:
@@ -165,6 +173,7 @@ def _line_cve(row: dict[str, str]) -> str:
 
 def _section_counts(brief: DailyBrief) -> dict[str, int]:
     return {
+        "market": int(brief.market.get("published", 0)),
         "kev": brief.counts["kev_new"],
         "stack": brief.counts["stack_matches"],
         "watchlist": brief.counts["watchlist"],
@@ -196,6 +205,7 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
                 f"Critical/High new: {brief.counts['critical_high_new']}",
                 f"Ops issues: {brief.counts['ops_issues']}",
             ],
+            "market": format_market_section(brief.market),
             "kev": ["// KEV"] + [_line_cve(r) for r in brief.kev[:8]],
             "stack": ["// STACK"] + [_line_cve(r) for r in brief.stack[:8]],
             "watchlist": ["// WATCHLIST"] + [_line_cve(r) for r in brief.watchlist[:8]],
@@ -223,6 +233,7 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
             "masthead",
             "headline",
             "counts",
+            "market",
             "kev",
             "stack",
             "watchlist",
@@ -358,6 +369,26 @@ async def _fetch_critical_high(
     ]
     total = int(count_rows[0]["cnt"]) if count_rows else 0
     return items, total
+
+
+async def _fetch_published_market_rows(
+    db: DbConnection,
+    start_bound: str,
+    end_bound: str,
+) -> list[dict[str, Any]]:
+    pg = _is_postgres_connection(db)
+    p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT cve_id, severity, cpe_matches, affected_products
+        FROM cves
+        WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
+          AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
+        ORDER BY published DESC, cve_id
+        """,
+        (start_bound, end_bound),
+    )
+    return [dict(row) for row in rows]
 
 
 async def _fetch_notifications(
@@ -593,6 +624,7 @@ async def collect_daily_brief(
 
     kev_rows, kev_total = await _fetch_kev(db, kev_start_date, kev_end_date)
     crit_rows, crit_total = await _fetch_critical_high(db, start_bound, end_bound)
+    market_rows = await _fetch_published_market_rows(db, start_bound, end_bound)
     watch_rows, watch_total = await _fetch_notifications(
         db,
         category="watchlist",
@@ -652,6 +684,7 @@ async def collect_daily_brief(
         watchlist=watchlist,
         ioc=ioc,
         ops=ops,
+        market=cluster_published(market_rows),
     )
 
 
@@ -689,6 +722,7 @@ def brief_to_payload(brief: DailyBrief) -> dict[str, Any]:
         "watchlist": brief.watchlist,
         "ioc": brief.ioc,
         "ops": brief.ops,
+        "market": brief.market,
         "window_start_local": brief.window_start_local,
         "window_end_local": brief.window_end_local,
         "tz": brief.tz_name,

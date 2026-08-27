@@ -15,19 +15,20 @@ The brief must be **scannable in 10 seconds**: headline, counts, then ranked lis
 
 ## 2. Canonical sections (order is fixed)
 
-Render only sections that have rows, except **HEADLINE** and **COUNTS**, which always render. Quiet windows still send COUNTS of zeros plus HEADLINE `Quiet window.` so a missing ping means the job failed, not “nothing happened.”
+Render only sections that have rows, except **HEADLINE** and **COUNTS**, which always render. **MARKET** renders when at least one CVE was published in the window. Quiet windows still send COUNTS of zeros plus HEADLINE `Quiet window.` so a missing ping means the job failed, not “nothing happened.”
 
 | Order | Section id | Title line | Body |
 |-------|------------|------------|------|
 | 0 | `masthead` | `BRIEFR {SLOT}` | One line: window start → end, IANA tz |
 | 1 | `headline` | `// HEADLINE` | 1–3 short sentences. Template or optional LLM (see spec). Never invent CVEs. |
 | 2 | `counts` | `// COUNTS` | Fixed keys, one per line, integer values |
-| 3 | `kev` | `// KEV` | New KEV in window (max 8 lines) |
-| 4 | `stack` | `// STACK` | KEV or Critical/High matching admin My Stack CPE (max 8) |
-| 5 | `watchlist` | `// WATCHLIST` | Pinned-CVE monitor reasons in window (max 8) |
-| 6 | `ioc` | `// IOC` | IOC watchlist hits in window (max 5) |
-| 7 | `ops` | `// OPS` | Job errors, unhealthy API keys, webhook delivery failures (max 5) |
-| 8 | `footer` | (no `//` title) | Generator line |
+| 3 | `market` | `// MARKET` | All published CVEs clustered by primary product (top 8 products) |
+| 4 | `kev` | `// KEV` | New KEV in window (max 8 lines) |
+| 5 | `stack` | `// STACK` | KEV or Critical/High matching admin My Stack CPE (max 8) |
+| 6 | `watchlist` | `// WATCHLIST` | Pinned-CVE monitor reasons in window (max 8) |
+| 7 | `ioc` | `// IOC` | IOC watchlist hits in window (max 5) |
+| 8 | `ops` | `// OPS` | Job errors, unhealthy API keys, webhook delivery failures (max 5) |
+| 9 | `footer` | (no `//` title) | Generator line |
 
 Section titles use the PDF convention: **`// TITLE` in ASCII**, not emoji, not Markdown headings. Discord markdown (`**bold**`) is allowed only on the masthead first line.
 
@@ -43,6 +44,17 @@ Ops issues: {n}
 ```
 
 `n` is the **untruncated** total for the window, even when the list below is capped.
+
+### MARKET grammar
+
+```
+// MARKET
+Published: {n}  ·  C {c} · H {h} · M {m} · L {l}
+• {product}  {total}  (C {c} · H {h} · M {m} · L {l})
++{omitted} products in BRIEFR.
+```
+
+MARKET clusters every CVE published in the UTC window into one primary CPE product. It shows at most eight product lines; the published and severity totals remain untruncated. Empty or unanalyzed product data uses the `unanalyzed` bucket. The final `+{omitted}` line is omitted when no product clusters were hidden.
 
 ### List line grammar
 
@@ -68,7 +80,7 @@ No nested bullets. No tables. No JSON inside Discord/Telegram text.
 
 The body is always assembled against a single **2000-character** budget (Discord's cap) for every destination kind, including Telegram and Generic HTTPS. Telegram's 4096-character engine limit is a later safety truncate only; it does not change the brief assembly budget. When the assembled body exceeds 2000 characters:
 
-1. Drop lowest-priority list sections first: `ops` → `ioc` → `watchlist` → `stack` → `kev`. Never drop `masthead`, `headline`, `counts`, `footer`.
+1. Drop lowest-priority list sections first: `ops` → `ioc` → `watchlist` → `stack` → `kev`. Never drop `masthead`, `headline`, `counts`, `market`, or `footer`.
 2. If still over, shorten HEADLINE to its first sentence.
 3. If still over, replace remaining list bodies with `+{hidden} more in BRIEFR.`
 4. Last resort: truncate with a Unicode ellipsis `…` (existing `_truncate` in `webhooks/engine.py`).
