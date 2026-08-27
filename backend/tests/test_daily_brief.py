@@ -505,6 +505,11 @@ def test_headline_skips_unanalyzed_market_leader():
     assert "unanalyzed led volume." not in headline
     assert "unanalyzed" in format_daily_brief_text(brief, limit=2000)
 
+    unanalyzed_only = replace(brief, market=cluster_published(rows[:-1]))
+    unanalyzed_headline = template_headline(unanalyzed_only)
+    assert "200 published." in unanalyzed_headline
+    assert "led volume." not in unanalyzed_headline
+
 
 def test_headline_with_only_medium_published_cves_is_not_quiet():
     market = cluster_published(

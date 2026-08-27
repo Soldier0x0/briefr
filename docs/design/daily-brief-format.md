@@ -126,6 +126,12 @@ IOC hits: 0
 Critical/High new: 4
 Ops issues: 0
 
+// MARKET
+Published: 6  ·  C 2 · H 2 · M 2 · L 0
+• nginx  3  (C 1 · H 1 · M 1 · L 0)
+• openssl  2  (C 1 · H 1 · M 0 · L 0)
+• unanalyzed  1  (C 0 · H 0 · M 1 · L 0)
+
 // KEV
 • CVE-2026-1111 — added to KEV · CRITICAL
 • CVE-2026-2222 — added to KEV · HIGH

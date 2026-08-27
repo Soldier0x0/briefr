@@ -15,7 +15,7 @@ from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
 from redact import mask_webhook_delivery_error
-from reports.market_clusters import cluster_published, format_market_section
+from reports.market_clusters import UNANALYZED_LABEL, cluster_published, format_market_section
 from webhooks.destinations import EVENT_DAILY_BRIEF
 from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
 
@@ -27,6 +27,7 @@ _DAILY_BRIEF_WATERMARK_KEY = "daily_brief:last_eod_end"
 _DISABLED_FLAG_VALUES = frozenset({"0", "false", "no", "off", ""})
 _MIN_STANDUP_WINDOW = timedelta(minutes=15)
 _LIST_QUERY_LIMIT = 50
+_MARKET_QUERY_LIMIT = 5000
 _OPS_REASON_LIMIT = 120
 _IOC_SUMMARY_RE = re.compile(
     r"^IOC watchlist hit\s*\((?P<source>[^)]+)\):\s*(?P<type>[A-Za-z0-9_-]+)\s+",
@@ -103,8 +104,16 @@ def template_headline(brief: DailyBrief) -> str:
     if published:
         parts.append(f"{published} published.")
         products = brief.market.get("products") or []
-        if products:
-            parts.append(f"{products[0]['label']} led volume.")
+        analyzed_leader = next(
+            (
+                product
+                for product in products
+                if product.get("label") != UNANALYZED_LABEL
+            ),
+            None,
+        )
+        if analyzed_leader:
+            parts.append(f"{analyzed_leader['label']} led volume.")
     if c["kev_new"]:
         parts.append(f"{c['kev_new']} new KEV.")
     if c["stack_matches"]:
@@ -173,7 +182,6 @@ def _line_cve(row: dict[str, str]) -> str:
 
 def _section_counts(brief: DailyBrief) -> dict[str, int]:
     return {
-        "market": int(brief.market.get("published", 0)),
         "kev": brief.counts["kev_new"],
         "stack": brief.counts["stack_matches"],
         "watchlist": brief.counts["watchlist"],
@@ -384,11 +392,45 @@ async def _fetch_published_market_rows(
         FROM cves
         WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
           AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
-        ORDER BY published DESC, cve_id
+        LIMIT {_MARKET_QUERY_LIMIT}
         """,
         (start_bound, end_bound),
     )
     return [dict(row) for row in rows]
+
+
+async def _fetch_published_market_totals(
+    db: DbConnection,
+    start_bound: str,
+    end_bound: str,
+) -> dict[str, int]:
+    pg = _is_postgres_connection(db)
+    p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
+    severity_group = """
+        CASE UPPER(COALESCE(severity, ''))
+            WHEN 'CRITICAL' THEN 'critical'
+            WHEN 'HIGH' THEN 'high'
+            WHEN 'LOW' THEN 'low'
+            ELSE 'medium'
+        END
+    """
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT {severity_group} AS severity_group, COUNT(*) AS cnt
+        FROM cves
+        WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
+          AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
+        GROUP BY {severity_group}
+        """,
+        (start_bound, end_bound),
+    )
+    totals = {"published": 0, "critical": 0, "high": 0, "medium": 0, "low": 0}
+    for row in rows:
+        severity = str(row["severity_group"])
+        count = int(row["cnt"])
+        totals[severity] = count
+        totals["published"] += count
+    return totals
 
 
 async def _fetch_notifications(
@@ -625,6 +667,7 @@ async def collect_daily_brief(
     kev_rows, kev_total = await _fetch_kev(db, kev_start_date, kev_end_date)
     crit_rows, crit_total = await _fetch_critical_high(db, start_bound, end_bound)
     market_rows = await _fetch_published_market_rows(db, start_bound, end_bound)
+    market_totals = await _fetch_published_market_totals(db, start_bound, end_bound)
     watch_rows, watch_total = await _fetch_notifications(
         db,
         category="watchlist",
@@ -669,6 +712,8 @@ async def collect_daily_brief(
         "critical_high_new": crit_total,
         "ops_issues": ops_total,
     }
+    market = cluster_published(market_rows)
+    market.update(market_totals)
 
     return DailyBrief(
         slot=slot,
@@ -684,7 +729,7 @@ async def collect_daily_brief(
         watchlist=watchlist,
         ioc=ioc,
         ops=ops,
-        market=cluster_published(market_rows),
+        market=market,
     )
 
 
