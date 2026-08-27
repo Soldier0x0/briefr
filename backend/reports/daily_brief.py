@@ -117,7 +117,8 @@ def template_headline(brief: DailyBrief) -> str:
     if c["kev_new"]:
         parts.append(f"{c['kev_new']} new KEV.")
     if c["stack_matches"]:
-        parts.append(f"{c['stack_matches']} stack match(es).")
+        stack_noun = "stack match" if c["stack_matches"] == 1 else "stack matches"
+        parts.append(f"{c['stack_matches']} {stack_noun}.")
     if c["watchlist"]:
         parts.append(f"Watchlist: {c['watchlist']}.")
     if c["ioc_hits"]:
@@ -392,6 +393,7 @@ async def _fetch_published_market_rows(
         FROM cves
         WHERE REPLACE(SUBSTR(published, 1, 19), 'T', ' ') >= {p1}
           AND REPLACE(SUBSTR(published, 1, 19), 'T', ' ') < {p2}
+        ORDER BY published DESC, cve_id
         LIMIT {_MARKET_QUERY_LIMIT}
         """,
         (start_bound, end_bound),

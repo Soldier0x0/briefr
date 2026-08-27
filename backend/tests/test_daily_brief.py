@@ -544,6 +544,85 @@ def test_headline_with_only_medium_published_cves_is_not_quiet():
     assert "published" in headline
 
 
+def test_template_headline_uses_singular_stack_match():
+    counts = {key: 0 for key in COUNT_KEYS}
+    counts["kev_new"] = 2
+    counts["stack_matches"] = 1
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-25 18:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="",
+        lede_source="template",
+        counts=counts,
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+    )
+
+    headline = template_headline(brief)
+
+    assert "1 stack match." in headline
+    assert "1 stack matches." not in headline
+    assert "1 matches My Stack" not in headline
+
+
+def test_market_cluster_fetch_prefers_newest_when_capped(db_env, monkeypatch):
+    monkeypatch.setattr("reports.daily_brief._MARKET_QUERY_LIMIT", 2)
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            for cve_id, product, published in (
+                ("CVE-2026-OLD1", "nginx", "2026-08-26T10:00:00.000"),
+                ("CVE-2026-MID1", "openssl", "2026-08-26T11:00:00.000"),
+                ("CVE-2026-NEW1", "python", "2026-08-26T12:00:00.000"),
+            ):
+                await db.execute(
+                    """
+                    INSERT INTO cves (
+                        cve_id, description, affected_products, mitre_technique,
+                        severity, cvss_score, epss_score, is_kev, published, cpe_matches
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        cve_id,
+                        "market order",
+                        "[]",
+                        "",
+                        "MEDIUM",
+                        0,
+                        0,
+                        0,
+                        published,
+                        f'[{{"product":"{product}"}}]',
+                    ),
+                )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    labels = [product["label"] for product in brief.market["products"]]
+    assert brief.market["published"] == 3
+    assert "python" in labels
+    assert "openssl" in labels
+    assert "nginx" not in labels
+
+
 def test_market_header_totals_are_untruncated_when_clustering_is_capped(db_env):
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)

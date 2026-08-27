@@ -9,13 +9,13 @@ When this file and a webhook payload disagree, **this file wins** for layout. Wh
 
 ## 1. Why a standard
 
-Webhook channels are not the BRIEFR UI. Discord caps **2000** characters (`DISCORD_MAX_CONTENT`). Telegram caps **4096** (`TELEGRAM_MAX_TEXT`). Generic HTTPS gets the same body as Discord plus `event_type`. Without a grammar, each destination will drift into a dump of CVE IDs.
+Webhook channels are not the BRIEFR UI. Discord caps **2000** characters (`DISCORD_MAX_CONTENT`). Telegram caps **4096** (`TELEGRAM_MAX_TEXT`). Generic HTTPS POSTs the Discord-budget body as `text` plus the structured envelope from `webhook_json_payload()`: `event_type`, `source` (`briefr`), optional `dedupe_key`, and daily-brief `payload_extra` which adds `brief`. Machine consumers should read `brief` for counts and lists; `text` is the rendered channel copy. Without a grammar, each destination will drift into a dump of CVE IDs.
 
 The brief must be **scannable in 10 seconds**: headline, counts, then ranked lists, then a footer that says how the facts were built.
 
 ## 2. Canonical sections (order is fixed)
 
-Render only sections that have rows, except **HEADLINE** and **COUNTS**, which always render. **MARKET** renders when at least one CVE was published in the window. Quiet windows still send COUNTS of zeros plus HEADLINE `Quiet window.` so a missing ping means the job failed, not “nothing happened.”
+**Masthead** and **footer** always render (framing, not row sections). **HEADLINE** and **COUNTS** always render. **MARKET** renders when at least one CVE was published in the window. Other list sections (`KEV`, `STACK`, `WATCHLIST`, `IOC`, `OPS`) render only when they have rows. Quiet windows still send COUNTS of zeros plus HEADLINE `Quiet window.` so a missing ping means the job failed, not “nothing happened.”
 
 | Order | Section id | Title line | Body |
 |-------|------------|------------|------|
@@ -34,7 +34,7 @@ Section titles use the PDF convention: **`// TITLE` in ASCII**, not emoji, not M
 
 ### COUNTS keys (always all six, in this order)
 
-```
+```text
 KEV new: {n}
 Stack matches: {n}
 Watchlist: {n}
@@ -47,7 +47,7 @@ Ops issues: {n}
 
 ### MARKET grammar
 
-```
+```text
 // MARKET
 Published: {n}  ·  C {c} · H {h} · M {m} · L {l}
 • {product}  {total}  (C {c} · H {h} · M {m} · L {l})
@@ -58,19 +58,19 @@ MARKET clusters every CVE published in the UTC window into one primary CPE produ
 
 ### List line grammar
 
-```
+```text
 • {CVE-YYYY-N} — {one-line reason} · {severity-or-blank}
 ```
 
 IOC lines:
 
-```
+```text
 • {type} {value} — {source}
 ```
 
 Ops lines:
 
-```
+```text
 • {job_id or destination_id} — {short error}
 ```
 
@@ -91,7 +91,7 @@ Machine consumers should read the structured `brief` object for the bounded item
 
 ### Quiet standup
 
-```
+```text
 BRIEFR STANDUP
 2026-08-25 18:00 → 2026-08-26 07:00 (Asia/Kolkata)
 
@@ -111,12 +111,12 @@ BRIEFR — generated 2026-08-26 07:00 Asia/Kolkata | slot=standup | facts=local 
 
 ### Busy end-of-day (abridged)
 
-```
+```text
 BRIEFR EOD
 2026-08-25 18:00 → 2026-08-26 18:00 (Asia/Kolkata)
 
 // HEADLINE
-2 new KEV entries. 1 matches My Stack. Watchlist: EPSS jump on CVE-2026-1234.
+6 published. nginx led volume. 2 new KEV. 1 stack match. Watchlist: 1.
 
 // COUNTS
 KEV new: 2

@@ -50,7 +50,7 @@ Published: {n}  ·  C {c} · H {h} · M {m} · L {l}
 +{omitted} products in BRIEFR.
 ```
 
-Omit the `+N` line when omitted is 0. `{n}` is the untruncated published count. Header C/H/M/L are untruncated severity totals for the window (unknown/blank severity counts as **M**).
+Omit the `+N` line when omitted is 0. `{n}` is the untruncated published count. Header C/H/M/L are untruncated severity totals for the window (unknown/blank severity counts as **M**). Clustering fetch is capped at `_MARKET_QUERY_LIMIT` (5000) rows ordered `published DESC, cve_id`; totals come from a separate unbounded `GROUP BY`/`COUNT(*)` so the header does not shrink with the cap.
 
 Section order: after `// COUNTS`, before `// KEV`.
 

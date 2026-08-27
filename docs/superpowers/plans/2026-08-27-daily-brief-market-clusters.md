@@ -173,7 +173,7 @@ git commit -m "feat(reports): cluster daily-brief published CVEs by product"
 
 **Interfaces:**
 - Consumes: `cluster_published`, `format_market_section` from Task 1
-- Produces: `DailyBrief.market: dict`; `collect_daily_brief` fills it from all published-in-window rows (same `REPLACE(SUBSTR(published,1,19),'T',' ')` bounds as Critical/High, **no LIMIT** on this query); `format_daily_brief_text` inserts MARKET after COUNTS; `brief_to_payload` includes `market`; `template_headline` not quiet when `market["published"] > 0`; `LIST_DROP_ORDER` does **not** include `market`
+- Produces: `DailyBrief.market: dict`; `collect_daily_brief` fills it from published-in-window rows (same `REPLACE(SUBSTR(published,1,19),'T',' ')` bounds as Critical/High). Clustering fetch `_fetch_published_market_rows` uses `_MARKET_QUERY_LIMIT` (5000) with `ORDER BY published DESC, cve_id` so the cap is newest-first and deterministic; header totals stay untruncated via a separate `GROUP BY`/`COUNT(*)` query. `format_daily_brief_text` inserts MARKET after COUNTS; `brief_to_payload` includes `market`; `template_headline` not quiet when `market["published"] > 0`; `LIST_DROP_ORDER` does **not** include `market`
 
 - [ ] **Step 1: Write failing tests** in `backend/tests/test_daily_brief.py`:
 
@@ -228,7 +228,7 @@ Also assert `brief_to_payload(brief)["market"]["published"] == 3`.
 
 Run: `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 .venv/bin/python -m pytest tests/test_daily_brief.py::test_market_clusters_all_published_not_just_critical -q`
 
-- [ ] **Step 3: Implement** `_fetch_published_market_rows` (columns `cve_id, severity, cpe_matches, affected_products`, no LIMIT), wire `cluster_published`, extend dataclass + `format_daily_brief_text` + `_section_counts` (do not add market to drop order) + `template_headline` + `brief_to_payload`. Update format doc section table (MARKET order 3, shift KEV+). One sentence in API_REFERENCE daily brief paragraph and PRODUCT_STATUS snapshot.
+- [ ] **Step 3: Implement** `_fetch_published_market_rows` (columns `cve_id, severity, cpe_matches, affected_products`, `_MARKET_QUERY_LIMIT` 5000, `ORDER BY published DESC, cve_id`) plus untruncated `_fetch_published_market_totals`, wire `cluster_published`, extend dataclass + `format_daily_brief_text` + `_section_counts` (do not add market to drop order) + `template_headline` + `brief_to_payload`. Update format doc section table (MARKET order 3, shift KEV+). One sentence in API_REFERENCE daily brief paragraph and PRODUCT_STATUS snapshot.
 
 - [ ] **Step 4: Run** `pytest tests/test_daily_brief.py tests/test_market_clusters.py -q` — all pass.
 
