@@ -14,7 +14,7 @@
 
 - No email, no per-user webhook URLs, no `last_login_at`, no description LIKE for product assignment.
 - Facts are local SQL / local JSON parse. MARKET does **not** call `chat_completion_task`.
-- One CVE → one product cluster. Weight: `critical*10 + high*3 + medium*1 + low*0`.
+- One CVE → one product cluster. Weight: `critical*100 + high*3 + medium*1 + low*0`.
 - Top 8 product lines; `+N products in BRIEFR.` for the rest.
 - Discord 2000 assembly cap unchanged. Never drop `market` in overflow.
 - No inline imports. Empty CPE → `unanalyzed`.

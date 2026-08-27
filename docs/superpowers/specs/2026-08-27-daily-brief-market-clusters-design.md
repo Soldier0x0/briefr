@@ -21,7 +21,7 @@ NVD can publish hundreds to ~2000 CVEs in a window. Listing them on Discord (200
 - Cluster **every CVE published** in the brief window (not Critical/High-only).
 - Grain is **CPE product** (nginx, python, oracle_database), not company vendor.
 - **One CVE → one cluster** (primary product). Sum of cluster totals + tail = `published`.
-- Rank by `critical×10 + high×3 + medium×1 + low×0`. Tie-break: total desc, then label asc.
+- Rank by `critical×100 + high×3 + medium×1 + low×0` (Critical must outrank a Medium-only volume flood; `3 Critical > 40 Medium`). Tie-break: total desc, then label asc.
 - Show top **8** product lines + `+{n} products in BRIEFR.`
 - Empty CPE / empty `affected_products` → bucket label `unanalyzed` (never description LIKE).
 - **No AI API call** to build MARKET. Optional `DAILY_BRIEF_LLM_ENABLED` lede may mention MARKET numbers already in the formatted facts; it still must not invent CVE IDs or author COUNTS.
