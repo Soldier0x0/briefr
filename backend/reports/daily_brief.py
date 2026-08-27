@@ -86,6 +86,12 @@ def _bound_utc(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _kev_date_predicate(start_date: str, end_date: str, p1: str, p2: str) -> str:
+    # Same-day windows would otherwise become `> D AND <= D` and match nothing.
+    lower_op = ">=" if start_date == end_date else ">"
+    return f"k.date_added {lower_op} {p1} AND k.date_added <= {p2}"
+
+
 def template_headline(brief: DailyBrief) -> str:
     c = brief.counts
     if all(c[k] == 0 for k in COUNT_KEYS):
@@ -288,7 +294,7 @@ async def _fetch_kev(
 ) -> tuple[list[dict[str, str]], int]:
     pg = _is_postgres_connection(db)
     p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
-    predicate = f"k.date_added > {p1} AND k.date_added <= {p2}"
+    predicate = _kev_date_predicate(start_date, end_date, p1, p2)
     rows = await db.execute_fetchall(
         f"""
         SELECT k.cve_id, c.severity, k.short_description
@@ -494,7 +500,7 @@ async def _fetch_stack_candidate_page(
                    k.date_added AS sort_value
             FROM kev_deadlines k
             LEFT JOIN cves c ON c.cve_id = k.cve_id
-            WHERE k.date_added > {p1} AND k.date_added <= {p2}
+            WHERE {_kev_date_predicate(kev_start_date, kev_end_date, p1, p2)}
 
             UNION ALL
 

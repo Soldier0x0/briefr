@@ -66,14 +66,14 @@ No nested bullets. No tables. No JSON inside Discord/Telegram text.
 
 ## 3. Overflow (same job as PDF page breaks)
 
-When the assembled body exceeds the destination cap:
+The body is always assembled against a single **2000-character** budget (Discord's cap) for every destination kind, including Telegram and Generic HTTPS. Telegram's 4096-character engine limit is a later safety truncate only; it does not change the brief assembly budget. When the assembled body exceeds 2000 characters:
 
 1. Drop lowest-priority list sections first: `ops` → `ioc` → `watchlist` → `stack` → `kev`. Never drop `masthead`, `headline`, `counts`, `footer`.
 2. If still over, shorten HEADLINE to its first sentence.
 3. If still over, replace remaining list bodies with `+{hidden} more in BRIEFR.`
 4. Last resort: truncate with a Unicode ellipsis `…` (existing `_truncate` in `webhooks/engine.py`).
 
-The `text` field is capped at Discord's **2000-character** limit for every destination kind, including Generic HTTPS. Machine consumers should read the structured `brief` object for the bounded item lists and untruncated window totals.
+Machine consumers should read the structured `brief` object for the bounded item lists and untruncated window totals.
 
 ## 4. Worked examples
 

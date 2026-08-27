@@ -105,18 +105,28 @@
   margin-bottom: 0.65rem;
 }
 
+.webhook-daily-brief-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.webhook-daily-brief-actions .admin-btn {
+  font-size: var(--font-size-secondary);
+}
+
 .webhook-daily-brief-preview {
-  margin: 0.75rem 0 0;
-  padding: 0.75rem;
-  max-height: 24rem;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  max-height: calc(var(--space-8) * 6);
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-base);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   color: var(--text);
   background: var(--surface-1);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-sm);
 }

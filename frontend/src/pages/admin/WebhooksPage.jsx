@@ -459,11 +459,11 @@ export default function WebhooksPage({ toast }) {
       )}
 
       <div className="admin-card">
-        <div className="admin-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div className="admin-card-title webhook-daily-brief-card-title">
           Daily brief
           <HelpTip text="Scheduled rollup; enable slots under Config. Does not replace real-time KEV/watchlist alerts." />
         </div>
-        <div className="admin-filter-bar admin-filter-bar--fields">
+        <div className="admin-filter-bar admin-filter-bar--fields webhook-daily-brief-actions">
           <label className="admin-field">
             <span className="admin-field-label">Slot</span>
             <Select
@@ -476,7 +476,6 @@ export default function WebhooksPage({ toast }) {
           <button
             type="button"
             className="admin-btn admin-btn-ghost"
-            style={{ fontSize: '0.8125rem' }}
             disabled={!!dailyBriefBusy}
             onClick={previewDailyBrief}
           >
@@ -485,7 +484,6 @@ export default function WebhooksPage({ toast }) {
           <button
             type="button"
             className="admin-btn admin-btn-primary"
-            style={{ fontSize: '0.8125rem' }}
             disabled={!!dailyBriefBusy}
             onClick={sendDailyBriefTest}
           >

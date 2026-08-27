@@ -245,7 +245,7 @@ export const JOB_CATALOG = {
     label: 'Morning standup daily brief',
     short: 'Daily brief standup',
     operatorName: 'Morning Standup Daily Brief Webhook',
-    analystDescription: 'Rolls up overnight activity since the last EOD brief and sends to subscribed webhooks.',
+    analystDescription: 'Rolls up overnight activity since the last EOD brief (or the prior 12 hours when EOD is disabled) and sends to subscribed webhooks.',
     refreshButton: 'Send standup daily brief',
   },
   session_cleanup: {
