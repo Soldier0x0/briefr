@@ -523,6 +523,52 @@ def test_kev_date_added_uses_calendar_dates(db_env):
     assert kev_ids == {"CVE-2026-2222"}
 
 
+def test_same_day_window_includes_kev_added_that_date(db_env):
+    from reports.daily_brief import collect_daily_brief
+
+    start = datetime(2026, 8, 26, 8, 0, tzinfo=timezone.utc)
+    end = datetime(2026, 8, 26, 10, 0, tzinfo=timezone.utc)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO cves (cve_id, description, affected_products, mitre_technique,
+                                  severity, cvss_score, epss_score, is_kev, published)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2026-SAMEDAY",
+                    "demo",
+                    "",
+                    "",
+                    "HIGH",
+                    0,
+                    0,
+                    1,
+                    "2026-08-26 09:00:00",
+                ),
+            )
+            await db.execute(
+                """
+                INSERT INTO kev_deadlines (cve_id, product, short_description, date_added)
+                VALUES (?, ?, ?, ?)
+                """,
+                ("CVE-2026-SAMEDAY", "demo", "added today", "2026-08-26"),
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db, slot="standup", window_start_utc=start, window_end_utc=end, tz_name="UTC"
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.counts["kev_new"] == 1
+    assert {row["cve_id"] for row in brief.kev} == {"CVE-2026-SAMEDAY"}
+
+
 def test_collector_caps_lists_but_keeps_untruncated_counts(db_env):
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)
