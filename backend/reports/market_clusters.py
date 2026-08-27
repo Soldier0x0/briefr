@@ -44,7 +44,7 @@ def primary_product(cpe_matches, affected_products) -> str:
 
 
 def cluster_weight(c, h, m, l) -> int:
-    return c * 10 + h * 3 + m + l * 0
+    return c * 100 + h * 3 + m + l * 0
 
 
 def cluster_published(rows: list[dict]) -> dict:
