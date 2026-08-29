@@ -381,8 +381,8 @@
   padding: 8px 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  font-size: 0.78rem;
+  border-left: 3px solid var(--border-active);
+  font-size: var(--font-size-secondary);
   color: var(--text2);
   line-height: 1.5;
 }
@@ -394,14 +394,14 @@
 .stack-hint-label {
   color: var(--accent);
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.08em;
 }
 
 .stack-hint-text code {
   font-family: var(--font-mono);
   color: var(--red);
-  font-size: 0.75rem;
+  font-size: var(--font-size-micro);
 }
 
 .stack-hint-dismiss {
@@ -514,8 +514,47 @@
   border-radius: var(--radius-sm);
 }
 .stack-gap-banner-text {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-secondary);
   color: var(--text-secondary);
   flex: 1;
   min-width: 12rem;
+}
+
+.stack-backfill-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 12rem;
+}
+
+.stack-backfill-track {
+  height: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.stack-backfill-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+
+.stack-backfill-fill--indeterminate {
+  width: 40%;
+  animation: stack-backfill-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes stack-backfill-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(280%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack-backfill-fill--indeterminate {
+    animation: none;
+    width: 100%;
+    opacity: 0.45;
+  }
 }

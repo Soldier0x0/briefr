@@ -160,7 +160,7 @@
 
 .api-queue-request-dot {
   flex-shrink: 0;
-  font-size: 0.5rem;
+  font-size: var(--font-size-micro);
   line-height: 1;
 }
 

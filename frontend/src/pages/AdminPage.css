@@ -208,7 +208,7 @@
 }
 
 .admin-status-metric-label {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -351,7 +351,7 @@
 
 .admin-sidebar-section-label {
   padding: 0 8px 6px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -404,7 +404,7 @@
 .admin-nav-badge {
   margin-left: auto;
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   font-family: var(--admin-mono);
   border-radius: 999px;
@@ -460,7 +460,7 @@
   align-items: center;
   gap: 5px;
   margin-bottom: 8px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -485,7 +485,7 @@
   flex-shrink: 0;
   min-width: 52px;
   padding: 1px 5px;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   font-family: var(--admin-mono);
   text-align: center;
@@ -959,7 +959,7 @@
   align-items: center;
   gap: 5px;
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   font-family: var(--admin-mono);
   letter-spacing: 0.04em;
@@ -1050,7 +1050,7 @@
 
 .admin-config-category summary::before {
   content: '▸';
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--admin-text-dim);
   transition: transform 0.15s;
 }
@@ -1065,7 +1065,7 @@
 
 .admin-config-category-count {
   margin-left: auto;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 500;
   color: var(--admin-text-dim);
   font-family: var(--admin-mono);
@@ -1102,7 +1102,7 @@
 }
 
 .admin-config-field-key {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-family: var(--admin-mono);
   color: var(--admin-text-dim);
 }
@@ -1781,7 +1781,7 @@
 /* Legacy nav → new sidebar mapping */
 .admin-sidebar .nav-section-label {
   padding: 12px 10px 6px 18px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1835,7 +1835,7 @@
 .admin-sidebar .nav-badge {
   margin-left: auto;
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   font-family: var(--admin-mono);
   border-radius: 999px;
@@ -1885,7 +1885,7 @@
 }
 
 .nav-status-legend-summary {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--text3);
   cursor: pointer;

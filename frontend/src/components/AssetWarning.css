@@ -46,7 +46,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   line-height: 1.4;
   color: var(--text2);
   margin-bottom: 10px;
@@ -56,12 +56,12 @@
   display: block;
   margin-top: 0.25rem;
   color: var(--text3);
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   line-height: 1.4;
 }
 
 .asset-btn {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   padding: 10px 14px;
   cursor: pointer;

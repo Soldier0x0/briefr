@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 import rate_limit
 from main import app, request_context
+from settings import settings
 from structured_logging import JsonFormatter, request_id_var
 
 # ----------------------------------------------------------- formatter tests
@@ -206,12 +207,18 @@ def test_unhandled_exception_returns_request_id_in_body():
     assert response.headers["X-Request-ID"] == "req-body-1"
 
 
-def test_429_responses_also_carry_request_id():
-    with TestClient(app) as client:
-        rate_limit.ioc_bucket._buckets["testclient"] = (0.0, time.monotonic())
-        try:
+def test_429_responses_also_carry_request_id(monkeypatch):
+    monkeypatch.setattr(settings, "rate_limit_enabled", True)
+    monkeypatch.setattr("rate_limit_store.shared_store_enabled", lambda: False)
+    now = time.monotonic()
+    keys = ("testclient", "127.0.0.1", "::1", "localhost")
+    for key in keys:
+        rate_limit.ioc_bucket._buckets[key] = (0.0, now)
+    try:
+        with TestClient(app) as client:
             resp = client.post("/api/ioc/lookup", json={"value": "1.2.3.4", "type": "ip"})
             assert resp.status_code == 429
             assert resp.headers.get("X-Request-ID")
-        finally:
-            rate_limit.ioc_bucket._buckets.pop("testclient", None)
+    finally:
+        for key in keys:
+            rate_limit.ioc_bucket._buckets.pop(key, None)

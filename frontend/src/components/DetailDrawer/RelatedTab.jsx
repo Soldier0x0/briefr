@@ -35,6 +35,8 @@ export default function TabRelated({
   relatedMethod,
   relatedNews = [],
   loading,
+  error = false,
+  onRetry,
   onSelectRelated,
 }) {
   const semantic = relatedMethod === 'embeddings'
@@ -46,6 +48,21 @@ export default function TabRelated({
             <li key={i} className="drawer-related-skeleton" aria-hidden="true" />
           ))}
         </ul>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="drawer-section drawer-related-empty-wrap">
+        <p className="drawer-related-empty mono" role="alert">
+          Could not load related CVEs or news for this CVE.
+        </p>
+        {onRetry && (
+          <button type="button" className="drawer-risk-profile-cta-btn mono" onClick={onRetry}>
+            Retry
+          </button>
+        )}
       </section>
     )
   }

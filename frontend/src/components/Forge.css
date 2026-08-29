@@ -9,7 +9,7 @@
 }
 
 .fg-hero-kicker {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.14em;
   color: var(--accent);
   margin-bottom: 10px;

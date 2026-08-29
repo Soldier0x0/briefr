@@ -47,7 +47,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   letter-spacing: 0.06em;
   font-weight: 400;

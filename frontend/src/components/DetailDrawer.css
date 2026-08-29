@@ -734,8 +734,10 @@
 
 .drawer-related-empty-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
   min-height: 120px;
   text-align: center;
 }
@@ -1389,7 +1391,7 @@ a.drawer-related-news-title:focus-visible {
 
 /* MITRE ATLAS (Intel tab) */
 .drawer-atlas-label {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1406,7 +1408,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-atlas-badge {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   letter-spacing: 0.04em;
   text-decoration: none;
@@ -1427,7 +1429,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-atlas-subhead {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   margin: 16px 0 8px;
   letter-spacing: 0.06em;
@@ -1460,7 +1462,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .atlas-tactic-badge {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   border: 1px solid var(--border2);
   padding: 2px 6px;
@@ -1555,7 +1557,7 @@ a.drawer-related-news-title:focus-visible {
 
 .mitre-tactic-badge {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--text2);
   background: var(--bg3);
@@ -1622,22 +1624,22 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .refs-link:hover {
-  color: #9ecbff;
+  color: var(--text-heading);
   text-decoration-color: currentColor;
 }
 
 /* MITRE ATLAS (Intel tab) */
-.drawer-atlas-label { font-size: 9px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+.drawer-atlas-label { font-size: var(--font-size-micro); color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
 .drawer-atlas-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.drawer-atlas-badge { font-size: 9px; color: var(--text3); letter-spacing: 0.04em; text-decoration: none; border: 1px solid var(--border2); padding: 3px 8px; }
+.drawer-atlas-badge { font-size: var(--font-size-micro); color: var(--text3); letter-spacing: 0.04em; text-decoration: none; border: 1px solid var(--border2); padding: 3px 8px; }
 .drawer-atlas-badge:hover { color: var(--accent); border-color: var(--accent); }
 .drawer-atlas-profile-warn { font-size: 0.75rem; color: var(--amber); margin: 0 0 12px; letter-spacing: 0.02em; }
-.drawer-atlas-subhead { font-size: 9px; color: var(--text3); margin: 16px 0 8px; letter-spacing: 0.06em; }
+.drawer-atlas-subhead { font-size: var(--font-size-micro); color: var(--text3); margin: 16px 0 8px; letter-spacing: 0.06em; }
 .atlas-techniques { display: flex; flex-direction: column; gap: 10px; }
 .atlas-technique-card { background: var(--bg3); border: 1px solid var(--border2); padding: 12px 14px; }
 .atlas-technique-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 .atlas-technique-id { font-size: 0.8125rem; color: var(--red); letter-spacing: 0.04em; }
-.atlas-tactic-badge { font-size: 9px; color: var(--text3); border: 1px solid var(--border2); padding: 2px 6px; }
+.atlas-tactic-badge { font-size: var(--font-size-micro); color: var(--text3); border: 1px solid var(--border2); padding: 2px 6px; }
 .atlas-technique-name { font-size: 0.875rem; font-weight: 500; margin: 0 0 4px; }
 .atlas-technique-desc { font-size: 0.8125rem; color: var(--text2); margin: 0 0 8px; line-height: 1.45; }
 .atlas-technique-link,
@@ -1693,7 +1695,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .corr-group-label {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--text3);
   margin: 0 0 6px;
@@ -1753,7 +1755,7 @@ a.drawer-related-news-title:focus-visible {
 
 /* Confidence badge */
 .corr-confidence-badge {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   font-weight: 600;
   padding: 2px 6px;
@@ -1978,7 +1980,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-section-label {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--text3);
   margin: 0;
@@ -2022,7 +2024,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-op-ssvc-chip {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   padding: 4px 8px;
   border: 1px solid var(--border2);
@@ -2054,7 +2056,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-op-env-chip {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   padding: 4px 8px;
   border: 1px solid var(--border2);
@@ -2062,7 +2064,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-op-env-detail {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text2);
   margin: 0;
   line-height: 1.45;
@@ -2078,7 +2080,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-summary {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   color: var(--text2);
   margin: 0;
@@ -2096,7 +2098,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-profile-cta-text {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text2);
   margin: 0;
 }
@@ -2335,7 +2337,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-comp-label {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--text2);
   white-space: nowrap;
@@ -2359,7 +2361,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-comp-points {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   color: var(--text2);
   text-align: right;
@@ -2368,7 +2370,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-weights {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   color: var(--text3);
   margin: 0;
@@ -2419,7 +2421,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-asset-exposure-label {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--text3);
   margin: 0 0 8px;
@@ -2435,7 +2437,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-asset-exposure-tier {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.08em;
   padding: 2px 6px;
@@ -2457,14 +2459,14 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-asset-exposure-reason {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   line-height: 1.45;
   color: var(--text2);
   margin: 0 0 4px;
 }
 
 .drawer-asset-exposure-formula {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.03em;
   color: var(--text3);
   margin: 4px 0 0;
@@ -2494,7 +2496,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-asset-exposure-kev-note {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   margin: 8px 0 0;
   line-height: 1.4;
@@ -2527,7 +2529,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .drawer-risk-comp-unknown {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
   border: 1px dashed var(--border2);
@@ -2541,7 +2543,7 @@ a.drawer-related-news-title:focus-visible {
 /* ── Detection Rule Engine (Detect tab) ──────────────── */
 
 .det-status-badge {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.1em;
   padding: 2px 6px;
@@ -2590,7 +2592,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .det-rule-source {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--text3);
 }
@@ -2637,7 +2639,7 @@ a.drawer-related-news-title:focus-visible {
 
 .det-rule-link,
 .det-rule-download {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--accent);
   text-decoration: none;
@@ -2713,7 +2715,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .det-confidence-badge {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--amber);
@@ -2723,7 +2725,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .det-confidence-low {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text3);
@@ -2735,7 +2737,7 @@ a.drawer-related-news-title:focus-visible {
 .det-basis-badge,
 .det-class-badge,
 .det-compose-basis-badge {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text2);
@@ -2791,7 +2793,7 @@ a.drawer-related-news-title:focus-visible {
 .det-siem-technique-label {
   font-weight: 400;
   color: var(--text3);
-  font-size: 9px;
+  font-size: var(--font-size-micro);
 }
 
 .det-siem-block {
@@ -2826,7 +2828,7 @@ a.drawer-related-news-title:focus-visible {
 }
 
 .det-siem-chevron {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   flex-shrink: 0;
 }

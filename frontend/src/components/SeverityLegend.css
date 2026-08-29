@@ -64,7 +64,7 @@
 
 .severity-legend-feed-summary::before {
   content: '▶';
-  font-size: 0.5rem;
+  font-size: var(--font-size-micro);
   transition: transform 0.1s ease;
 }
 

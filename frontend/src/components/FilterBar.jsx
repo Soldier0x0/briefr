@@ -76,6 +76,17 @@ export function hasActiveFilters(filters) {
   )
 }
 
+function backfillProgressPct(run) {
+  if (!run) return null
+  if (run.status === 'completed') return 100
+  const total = Number(run.total_results)
+  const start = Number(run.start_index)
+  if (Number.isFinite(total) && total > 0 && Number.isFinite(start) && start >= 0) {
+    return Math.min(100, Math.max(0, Math.round((start / total) * 100)))
+  }
+  return null
+}
+
 export default function FilterBar({
   filters,
   onFiltersChange,
@@ -417,6 +428,8 @@ export default function FilterBar({
     }
   }
 
+  const backfillPct = backfillProgressPct(backfillRun)
+
   return (
     <div className="feed-controls">
       <div className="filter-toolbar-anchor">
@@ -583,9 +596,24 @@ export default function FilterBar({
         )}
         {backfillRun && (
           <div className="stack-gap-banner" role="status" aria-label="Backfill progress">
-            <div className="stack-gap-banner-text mono">
-              Historical backfill [{backfillRun.status}] — {backfillRun.progress_message || 'Running…'}
-              {backfillRun.cves_upserted != null ? ` · ${backfillRun.cves_upserted} CVEs` : ''}
+            <div className="stack-backfill-progress">
+              <div className="stack-gap-banner-text mono">
+                Historical backfill [{backfillRun.status}] — {backfillRun.progress_message || 'Running…'}
+                {backfillRun.cves_upserted != null ? ` · ${backfillRun.cves_upserted} CVEs` : ''}
+              </div>
+              <div
+                className="stack-backfill-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={backfillPct == null ? undefined : backfillPct}
+                aria-label="Historical backfill progress"
+              >
+                <div
+                  className={backfillPct == null ? 'stack-backfill-fill stack-backfill-fill--indeterminate' : 'stack-backfill-fill'}
+                  style={backfillPct == null ? undefined : { width: `${backfillPct}%` }}
+                />
+              </div>
             </div>
             {['deferred', 'on_hold', 'partial'].includes(backfillRun.status) && (
               <button
