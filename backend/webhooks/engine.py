@@ -43,9 +43,31 @@ def _truncate(text: str, limit: int) -> str:
     return text[: limit - 1] + "…"
 
 
-async def _deliver_discord(dest: WebhookDestination, message: str) -> None:
+async def _deliver_discord(
+    dest: WebhookDestination,
+    message: str,
+    *,
+    embeds: list[dict[str, Any]] | None = None,
+    fallback_content: str | None = None,
+) -> None:
     url = dest.config.get("url", "")
-    payload = {"content": _truncate(message, DISCORD_MAX_CONTENT)}
+    if embeds:
+        try:
+            response = await safe_webhook_request(
+                dest.health_source,
+                "POST",
+                url,
+                json={"embeds": embeds},
+                retries=WEBHOOK_RETRIES,
+            )
+            response.raise_for_status()
+            return
+        except Exception:
+            logger.warning(
+                "Discord embed delivery failed for %s; retrying with content",
+                dest.id,
+            )
+    payload = {"content": _truncate(fallback_content or message, DISCORD_MAX_CONTENT)}
     response = await safe_webhook_request(
         dest.health_source,
         "POST",
@@ -56,17 +78,24 @@ async def _deliver_discord(dest: WebhookDestination, message: str) -> None:
     response.raise_for_status()
 
 
-async def _deliver_telegram(dest: WebhookDestination, message: str) -> None:
+async def _deliver_telegram(
+    dest: WebhookDestination,
+    message: str,
+    *,
+    parse_mode: str | None = None,
+) -> None:
     token = dest.config.get("token", "")
     chat_id = dest.config.get("chat_id", "")
     if not token or not chat_id:
         raise ValueError("telegram destination missing token or chat_id")
     url = TELEGRAM_API.format(token=token)
-    payload = {
+    payload: dict[str, Any] = {
         "chat_id": chat_id,
         "text": _truncate(message, TELEGRAM_MAX_TEXT),
         "disable_web_page_preview": True,
     }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     response = await safe_webhook_request(
         dest.health_source,
         "POST",
@@ -109,12 +138,24 @@ async def deliver_to_destination(
     event_type: str,
     dedupe_key: str | None = None,
     payload_extra: dict[str, Any] | None = None,
+    discord_embeds: list[dict[str, Any]] | None = None,
+    telegram_parse_mode: str | None = None,
+    discord_fallback: str | None = None,
 ) -> dict[str, Any]:
     try:
         if dest.kind == "discord":
-            await _deliver_discord(dest, message)
+            await _deliver_discord(
+                dest,
+                message,
+                embeds=discord_embeds,
+                fallback_content=discord_fallback,
+            )
         elif dest.kind == "telegram":
-            await _deliver_telegram(dest, message)
+            await _deliver_telegram(
+                dest,
+                message,
+                parse_mode=telegram_parse_mode,
+            )
         elif dest.kind == "generic":
             await _deliver_generic(
                 dest,
@@ -138,6 +179,9 @@ async def dispatch_event(
     destinations: list[WebhookDestination] | None = None,
     skip_dedupe: bool = False,
     payload_extra: dict[str, Any] | None = None,
+    discord_embeds: list[dict[str, Any]] | None = None,
+    telegram_parse_mode: str | None = None,
+    discord_fallback: str | None = None,
 ) -> dict[str, Any]:
     """Send an event to every enabled destination subscribed to event_type."""
     normalized = normalize_event_type(event_type)
@@ -205,6 +249,9 @@ async def dispatch_event(
             event_type=normalized,
             dedupe_key=dedupe_key,
             payload_extra=payload_extra,
+            discord_embeds=discord_embeds,
+            telegram_parse_mode=telegram_parse_mode,
+            discord_fallback=discord_fallback,
         )
         db = await get_db()
         try:

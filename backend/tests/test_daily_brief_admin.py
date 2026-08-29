@@ -64,7 +64,9 @@ def test_daily_brief_preview_returns_text_without_delivery(admin_client):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert "text" in body
-    assert "// COUNTS" in body["text"]
+    assert "// COUNTS" not in body["text"]
+    assert "At a glance" in body["text"]
+    assert body.get("discord_embeds")
     assert body.get("brief") is not None
     assert body["brief"]["slot"] == "eod"
 
@@ -102,7 +104,9 @@ def test_daily_brief_test_send_skip_dedupe(admin_client, monkeypatch):
     assert calls, "expected dispatch_event to be called"
     assert calls[0]["event_type"] == "daily_brief"
     assert calls[0].get("skip_dedupe") is True
-    assert "// COUNTS" in calls[0]["message"]
+    assert calls[0].get("telegram_parse_mode") == "HTML"
+    assert calls[0].get("discord_embeds")
+    assert "At a glance" in (calls[0].get("discord_fallback") or calls[0]["message"])
 
 
 def test_daily_brief_test_invalid_slot_422(admin_client):

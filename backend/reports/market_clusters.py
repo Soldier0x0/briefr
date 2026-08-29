@@ -1,4 +1,4 @@
-"""Product clustering and formatting for the daily brief MARKET section."""
+"""Product clustering and formatting for the daily brief products section."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 UNANALYZED_LABEL = "unanalyzed"
+UNMAPPED_DISPLAY = "Unmapped"
 _SEVERITIES = ("critical", "high", "medium", "low")
 _PRODUCT_LIMIT = 8
 
@@ -47,6 +48,28 @@ def cluster_weight(c, h, m, l) -> int:
     return c * 100 + h * 3 + m + l * 0
 
 
+def _display_label_for_key(key: str) -> str:
+    if key == UNANALYZED_LABEL:
+        return UNMAPPED_DISPLAY
+    return key.replace("_", " ")
+
+
+def is_unmapped_product(product: dict) -> bool:
+    label = str(product.get("label") or "")
+    return label in {UNMAPPED_DISPLAY, UNANALYZED_LABEL}
+
+
+def unmapped_coverage(market: dict) -> dict[str, int]:
+    published = int(market.get("published") or 0)
+    unmapped = int(market.get("unmapped") or 0)
+    if unmapped == 0:
+        for product in market.get("products") or []:
+            if is_unmapped_product(product):
+                unmapped += int(product.get("total") or 0)
+    named = max(0, published - unmapped)
+    return {"published": published, "unmapped": unmapped, "named": named}
+
+
 def cluster_published(rows: list[dict]) -> dict:
     severity_totals = {severity: 0 for severity in _SEVERITIES}
     clusters: dict[str, dict[str, int]] = {}
@@ -65,7 +88,7 @@ def cluster_published(rows: list[dict]) -> dict:
         cluster["total"] += 1
         cluster[severity] += 1
 
-    display_labels = {key: key.replace("_", " ") for key in clusters}
+    display_labels = {key: _display_label_for_key(key) for key in clusters}
     label_counts: dict[str, int] = {}
     for label in display_labels.values():
         label_counts[label] = label_counts.get(label, 0) + 1
@@ -73,7 +96,10 @@ def cluster_published(rows: list[dict]) -> dict:
     products = []
     for key, counts in clusters.items():
         display_label = display_labels[key]
-        label = key if label_counts[display_label] > 1 else display_label
+        if key == UNANALYZED_LABEL:
+            label = UNMAPPED_DISPLAY
+        else:
+            label = key if label_counts[display_label] > 1 else display_label
         products.append({"label": label, **counts})
 
     products.sort(
@@ -89,9 +115,11 @@ def cluster_published(rows: list[dict]) -> dict:
         )
     )
 
+    unmapped_total = int(clusters.get(UNANALYZED_LABEL, {}).get("total") or 0)
     return {
         "published": len(rows),
         **severity_totals,
+        "unmapped": unmapped_total,
         "products": products[:_PRODUCT_LIMIT],
         "omitted_products": max(0, len(products) - _PRODUCT_LIMIT),
     }
@@ -102,18 +130,18 @@ def format_market_section(market: dict) -> list[str]:
         return []
 
     lines = [
-        "// MARKET",
+        "Products",
         (
             f"Published: {market['published']}  ·  "
-            f"C {market['critical']} · H {market['high']} · "
-            f"M {market['medium']} · L {market['low']}"
+            f"Critical: {market['critical']} · High: {market['high']} · "
+            f"Medium: {market['medium']} · Low: {market['low']}"
         ),
     ]
     for product in market["products"]:
         lines.append(
             f"• {product['label']}  {product['total']}  "
-            f"(C {product['critical']} · H {product['high']} · "
-            f"M {product['medium']} · L {product['low']})"
+            f"(Critical {product['critical']} · High {product['high']} · "
+            f"Medium {product['medium']} · Low {product['low']})"
         )
     if market["omitted_products"]:
         lines.append(f"+{market['omitted_products']} products in BRIEFR.")

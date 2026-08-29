@@ -7,6 +7,7 @@ export const NAV = [
     { id: 'database', label: 'Database', icon: 'Database' },
     { id: 'watchlist', label: 'Watchlist & cache', icon: 'Bookmark' },
   ]},
+  { section: 'REPORTS', items: [{ id: 'dailybrief', label: 'Daily brief', icon: 'ScrollText' }] },
   { section: 'CONFIGURATION', items: [
     { id: 'apikeys', label: 'API keys & config', icon: 'KeyRound' },
     { id: 'scheduler', label: 'Scheduler', icon: 'Clock' },

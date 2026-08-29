@@ -21,6 +21,7 @@ import WatchlistPage from './WatchlistPage.jsx'
 import ApiKeysPage from './ApiKeysPage.jsx'
 import SchedulerPage from './SchedulerPage.jsx'
 import WebhooksPage from './WebhooksPage.jsx'
+import DailyBriefPage from './DailyBriefPage.jsx'
 import AlertsPage from './AlertsPage.jsx'
 import SecurityPage from './SecurityPage.jsx'
 import FeedHealthPage from './FeedHealthPage.jsx'
@@ -46,7 +47,7 @@ import '../AdminPage.css'
 const ANALYST_PAGE_IDS = new Set(ANALYST_NAV.flatMap(section => section.items.map(i => i.id)))
 const VALID_ADMIN_PAGES = new Set([
   'overview', 'backups', 'storage', 'resources', 'database', 'watchlist', 'apikeys', 'scheduler',
-  'webhooks', 'aiops', 'threatintel', 'alerts', 'security', 'securityposture', 'feedhealth', 'ingestlog', 'auditlog', 'display',
+  'webhooks', 'dailybrief', 'aiops', 'threatintel', 'alerts', 'security', 'securityposture', 'feedhealth', 'ingestlog', 'auditlog', 'display',
   'sessions', 'ratelimit',
 ])
 
@@ -240,6 +241,7 @@ function AdminPageBody({ toast }) {
     apikeys: <ApiKeysPage toast={toast} />,
     scheduler: <SchedulerPage toast={toast} system={system} active={page === 'scheduler'} onRunIngest={handleRunIngest} onRestart={handleRestart} onDrainRestart={handleDrainRestart} onRefreshSystem={loadSystem} />,
     webhooks: <WebhooksPage toast={toast} />,
+    dailybrief: <DailyBriefPage toast={toast} />,
     aiops: <AiOperationsPage toast={toast} setPage={setPage} />,
     threatintel: <ThreatIntelPage toast={toast} />,
     alerts: <AlertsPage toast={toast} />,

@@ -373,3 +373,37 @@ def test_daily_brief_generic_payload_extra(monkeypatch, tmp_path):
     assert calls[0]["event_type"] == EVENT_DAILY_BRIEF
     assert calls[0]["brief"]["slot"] == "eod"
     assert calls[0]["brief"]["counts"]["kev_new"] == 1
+
+
+def test_discord_daily_brief_sends_embeds(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "daily_brief")
+    run_db_test(sync_env_destinations_to_db())
+    captured = {}
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(204)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(
+            EVENT_DAILY_BRIEF,
+            "<b>Morning briefing</b>",
+            skip_dedupe=True,
+            discord_embeds=[{"title": "End of day", "color": 15230259}],
+            telegram_parse_mode="HTML",
+            discord_fallback="plain brief",
+        )
+    )
+    assert result["status"] == "ok"
+    assert "embeds" in captured["json"]
+    assert captured["json"]["embeds"][0]["color"] == 15230259
+    assert not captured["json"].get("content")
+

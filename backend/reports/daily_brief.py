@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import logging
 import os
 import re
@@ -9,15 +10,21 @@ from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
-from database import get_db
+from database import get_db, get_feed_cache
 from db.enrichment import filter_cves_matching_assets
 from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
 from redact import mask_webhook_delivery_error
-from reports.market_clusters import UNANALYZED_LABEL, cluster_published, format_market_section
+from reports.market_clusters import (
+    UNANALYZED_LABEL,
+    cluster_published,
+    format_market_section,
+    is_unmapped_product,
+    unmapped_coverage,
+)
 from webhooks.destinations import EVENT_DAILY_BRIEF
-from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
+from webhooks.engine import DISCORD_MAX_CONTENT, TELEGRAM_MAX_TEXT, dispatch_event
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +51,37 @@ COUNT_KEYS = (
     "ops_issues",
 )
 
-LIST_DROP_ORDER = ("ops", "ioc", "watchlist", "stack", "kev")
+LIST_DROP_ORDER = ("ops", "ioc", "watchlist", "stack", "kev", "advisories", "headlines")
+EMBED_DROP_ORDER = ("ioc", "watchlist", "stack", "kev", "advisories", "headlines")
+DISCORD_EMBED_COLOR = 0xE85533
+TELEGRAM_HTML_TARGET = 3500
+_HEADLINE_LIMIT = 3
+_ADVISORY_LIMIT = 2
+_TITLE_SLICE = 120
+_SNAPSHOT_CACHE_KEY = "incident_feed:snapshot"
+_SNAPSHOT_MAX_AGE_HOURS = 14 * 24
+_COVERAGE_BLURB = (
+    "Unmapped means NVD has not given these CVEs a product (CPE) yet. "
+    "BRIEFR does not guess from the description. KEV and other prioritized "
+    "CVEs are often named within about one business day. Most others can stay "
+    "Unmapped for days, weeks, or never. This briefing is a snapshot; later "
+    "CPE does not rewrite this message."
+)
+_JOB_DISPLAY = {
+    "nvd_incremental_sync": "NVD Incremental Sync",
+    "kev_metadata_sync": "KEV Metadata Sync",
+    "cpe_catalog_sync": "NVD CPE Software Catalog Sync",
+    "epss_score_sync": "EPSS Score Sync",
+    "weekly_mitre_refresh": "Weekly MITRE ATT&CK + ATLAS Refresh",
+    "incident_feed_refresh": "Incident Feed Snapshot Refresh",
+    "publication_source_sync": "Publication Source Sync",
+    "nightly_correlation": "BRIEFR Nightly Correlation Engine",
+    "llm_product_extraction": "LLM Product Extraction",
+    "api_key_health_check": "API Key Health Check",
+    "watchlist_monitor": "Watchlist Monitor Alerts",
+    "daily_brief_eod": "End-of-Day Daily Brief Webhook",
+    "daily_brief_standup": "Morning Standup Daily Brief Webhook",
+}
 
 _OPS_CATEGORIES = ("job_error", "api_key_unhealthy", "webhook_failure")
 
@@ -73,6 +110,8 @@ class DailyBrief:
     ioc: list[dict[str, str]]
     ops: list[dict[str, str]]
     market: dict = field(default_factory=lambda: cluster_published([]))
+    headlines: list[dict[str, str]] = field(default_factory=list)
+    advisories: list[dict[str, str]] = field(default_factory=list)
 
 
 def _fmt_local(dt: datetime, tz_name: str) -> str:
@@ -95,6 +134,66 @@ def _kev_date_predicate(start_date: str, end_date: str, p1: str, p2: str) -> str
     return f"k.date_added {lower_op} {p1} AND k.date_added <= {p2}"
 
 
+def slot_title(slot: DailyBriefSlot) -> str:
+    return "End of day" if slot == "eod" else "Morning briefing"
+
+
+def _job_display_name(job_id: str) -> str:
+    ident = (job_id or "").strip()
+    if ident in _JOB_DISPLAY:
+        return _JOB_DISPLAY[ident]
+    cleaned = ident.replace("_", " ").strip()
+    return cleaned or ident or "job"
+
+
+def _ops_headline_phrase(brief: DailyBrief) -> str:
+    n = int(brief.counts.get("ops_issues") or 0)
+    if n <= 0:
+        return ""
+    classes = {(row.get("error_class") or "").strip() for row in (brief.ops or [])}
+    classes.discard("")
+    if classes == {"job_error"}:
+        noun = "scheduler problem" if n == 1 else "scheduler problems"
+        return f"{n} {noun}."
+    noun = "instance problem" if n == 1 else "instance problems"
+    return f"{n} {noun}."
+
+
+def format_ops_lines(row: dict[str, str]) -> list[str]:
+    error_class = (row.get("error_class") or "").strip()
+    ident = (row.get("id") or "").strip() or "ops"
+    reason = (row.get("reason") or "").strip()
+    if error_class == "job_error":
+        name = _job_display_name(ident)
+        lines = [f"Scheduler job failed: {name}"]
+        if ident == "kev_metadata_sync":
+            lines.append("CISA KEV list may be stale until this job succeeds.")
+        if reason:
+            lines.append(f"Detail: {reason}")
+        return lines
+    if error_class == "api_key_unhealthy":
+        lines = [f"API key unhealthy: {_job_display_name(ident)}"]
+        if reason:
+            lines.append(f"Detail: {reason}")
+        return lines
+    if error_class == "webhook_failure":
+        lines = [f"Webhook delivery failed: {ident}"]
+        if reason:
+            lines.append(f"Detail: {reason}")
+        return lines
+    if reason:
+        return [f"{ident} — {reason}"]
+    return [ident]
+
+
+def coverage_lines(market: dict) -> list[str]:
+    cov = unmapped_coverage(market)
+    return [
+        f"Named products {cov['named']} of {cov['published']} · Unmapped {cov['unmapped']}",
+        _COVERAGE_BLURB,
+    ]
+
+
 def template_headline(brief: DailyBrief) -> str:
     c = brief.counts
     published = int(brief.market.get("published", 0))
@@ -108,12 +207,19 @@ def template_headline(brief: DailyBrief) -> str:
             (
                 product
                 for product in products
-                if product.get("label") != UNANALYZED_LABEL
+                if not is_unmapped_product(product)
+                and product.get("label") != UNANALYZED_LABEL
             ),
             None,
         )
         if analyzed_leader:
             parts.append(f"{analyzed_leader['label']} led volume.")
+        cov = unmapped_coverage(brief.market)
+        if cov["published"] and cov["unmapped"] / cov["published"] >= 0.5:
+            parts.append(
+                f"{cov['unmapped']} of {cov['published']} published CVEs have "
+                "no product mapped yet (Unmapped)."
+            )
     if c["kev_new"]:
         parts.append(f"{c['kev_new']} new KEV.")
     if c["stack_matches"]:
@@ -125,8 +231,9 @@ def template_headline(brief: DailyBrief) -> str:
         parts.append(f"{c['ioc_hits']} IOC hit(s).")
     if c["critical_high_new"] and not c["kev_new"]:
         parts.append(f"{c['critical_high_new']} new Critical/High.")
-    if c["ops_issues"]:
-        parts.append(f"{c['ops_issues']} ops issue(s).")
+    ops_phrase = _ops_headline_phrase(brief)
+    if ops_phrase:
+        parts.append(ops_phrase)
     return " ".join(parts) or "Quiet window."
 
 
@@ -188,45 +295,59 @@ def _section_counts(brief: DailyBrief) -> dict[str, int]:
         "watchlist": brief.counts["watchlist"],
         "ioc": brief.counts["ioc_hits"],
         "ops": brief.counts["ops_issues"],
+        "headlines": len(brief.headlines or []),
+        "advisories": len(brief.advisories or []),
     }
 
 
+def _link_line(row: dict[str, str]) -> str:
+    source = (row.get("source") or "").strip()
+    title = (row.get("title") or "").strip()
+    if source and title:
+        return f"• {source} — {title}"
+    return f"• {title or source}"
+
+
 def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
-    slot_label = "EOD" if brief.slot == "eod" else "STANDUP"
     footer_line = (
         f"BRIEFR — generated {brief.generated_local} {brief.tz_name} | "
         f"slot={brief.slot} | facts=local | lede={brief.lede_source}"
     )
 
     def build_sections(headline_text: str) -> dict[str, list[str]]:
+        ops_body: list[str] = []
+        for row in brief.ops[:5]:
+            ops_body.extend(f"• {line}" if i == 0 else f"  {line}" for i, line in enumerate(format_ops_lines(row)))
         sections: dict[str, list[str]] = {
             "masthead": [
-                f"BRIEFR {slot_label}",
+                f"BRIEFR {slot_title(brief.slot)}",
                 f"{brief.window_start_local} → {brief.window_end_local} ({brief.tz_name})",
             ],
-            "headline": ["// HEADLINE", headline_text or "Quiet window."],
-            "counts": ["// COUNTS"]
+            "headline": ["Summary", headline_text or "Quiet window."],
+            "counts": ["At a glance"]
             + [
-                f"KEV new: {brief.counts['kev_new']}",
-                f"Stack matches: {brief.counts['stack_matches']}",
-                f"Watchlist: {brief.counts['watchlist']}",
-                f"IOC hits: {brief.counts['ioc_hits']}",
-                f"Critical/High new: {brief.counts['critical_high_new']}",
-                f"Ops issues: {brief.counts['ops_issues']}",
+                f"New on CISA KEV: {brief.counts['kev_new']}",
+                f"Matches My Stack: {brief.counts['stack_matches']}",
+                f"Pinned-CVE alerts: {brief.counts['watchlist']}",
+                f"IOC watch hits: {brief.counts['ioc_hits']}",
+                f"New Critical or High: {brief.counts['critical_high_new']}",
+                f"Instance problems: {brief.counts['ops_issues']}",
             ],
             "market": format_market_section(brief.market),
-            "kev": ["// KEV"] + [_line_cve(r) for r in brief.kev[:8]],
-            "stack": ["// STACK"] + [_line_cve(r) for r in brief.stack[:8]],
-            "watchlist": ["// WATCHLIST"] + [_line_cve(r) for r in brief.watchlist[:8]],
-            "ioc": ["// IOC"]
+            "headlines": ["Headlines"] + [_link_line(r) for r in brief.headlines[:_HEADLINE_LIMIT]],
+            "advisories": ["Advisories"] + [_link_line(r) for r in brief.advisories[:_ADVISORY_LIMIT]],
+            "kev": ["CISA KEV"] + [_line_cve(r) for r in brief.kev[:8]],
+            "stack": ["My Stack"] + [_line_cve(r) for r in brief.stack[:8]],
+            "watchlist": ["Pinned CVEs"] + [_line_cve(r) for r in brief.watchlist[:8]],
+            "ioc": ["IOC watch"]
             + [
                 f"• {r.get('type', '')} {r.get('value', '')} — {r.get('reason', '')}".strip()
                 for r in brief.ioc[:5]
             ],
-            "ops": ["// OPS"] + [f"• {r['id']} — {r['reason']}" for r in brief.ops[:5]],
+            "ops": ["Instance problems"] + ops_body,
             "footer": [footer_line],
         }
-        for key in ("kev", "stack", "watchlist", "ioc", "ops"):
+        for key in ("kev", "stack", "watchlist", "ioc", "ops", "headlines", "advisories"):
             if len(sections[key]) == 1:
                 sections[key] = []
         return sections
@@ -243,6 +364,8 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
             "headline",
             "counts",
             "market",
+            "headlines",
+            "advisories",
             "kev",
             "stack",
             "watchlist",
@@ -291,7 +414,7 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
 
     remaining = [
         name
-        for name in ("kev", "stack", "watchlist", "ioc", "ops")
+        for name in ("kev", "stack", "watchlist", "ioc", "ops", "advisories", "headlines")
         if name not in dropped and _section_counts(brief)[name] > 0
     ]
     if remaining:
@@ -305,6 +428,359 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
     if len(text) > limit:
         return text[: limit - 1] + "…"
     return text
+
+
+def _parse_aware_utc(raw: str | None) -> datetime | None:
+    if not raw or not str(raw).strip():
+        return None
+    text = str(raw).strip().replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        try:
+            parsed = datetime.strptime(text[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _slice_title(title: str) -> str:
+    cleaned = " ".join((title or "").split())
+    if len(cleaned) <= _TITLE_SLICE:
+        return cleaned
+    return cleaned[: _TITLE_SLICE - 1].rstrip() + "…"
+
+
+def _normalize_url(url: str) -> str:
+    return (url or "").strip().rstrip("/").lower()
+
+
+async def _fetch_headlines(
+    db: DbConnection,
+    window_start_utc: datetime,
+    window_end_utc: datetime,
+) -> list[dict[str, str]]:
+    snapshot = await get_feed_cache(db, _SNAPSHOT_CACHE_KEY, _SNAPSHOT_MAX_AGE_HOURS)
+    if not snapshot:
+        return []
+    cards = snapshot.get("cards") if isinstance(snapshot, dict) else None
+    if not isinstance(cards, list):
+        return []
+    scored: list[tuple[datetime, dict[str, str]]] = []
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+        if str(card.get("kind") or "").strip().lower() == "atlas":
+            continue
+        published = _parse_aware_utc(card.get("publishedAt") or card.get("published_at"))
+        if published is None:
+            continue
+        if published < window_start_utc or published >= window_end_utc:
+            continue
+        title = _slice_title(str(card.get("title") or ""))
+        url = str(card.get("url") or "").strip()
+        source = str(card.get("source") or card.get("sourceId") or "").strip()
+        if not title:
+            continue
+        scored.append(
+            (
+                published,
+                {"source": source or "News", "title": title, "url": url},
+            )
+        )
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [item[1] for item in scored[:_HEADLINE_LIMIT]]
+
+
+async def _fetch_advisories(
+    db: DbConnection,
+    start_bound: str,
+    end_bound: str,
+) -> list[dict[str, str]]:
+    pg = _is_postgres_connection(db)
+    p1, p2 = _placeholder(pg, 1), _placeholder(pg, 2)
+    published_norm = "REPLACE(SUBSTR(published_at, 1, 19), 'T', ' ')"
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT title, canonical_url, source_key, published_at
+        FROM publications
+        WHERE {published_norm} >= {p1}
+          AND {published_norm} < {p2}
+        ORDER BY published_at DESC
+        LIMIT 20
+        """,
+        (start_bound, end_bound),
+    )
+    items = [dict(row) for row in rows]
+    preferred = [row for row in items if (row.get("source_key") or "") == "cisa-news"]
+    chosen = (preferred or items)[:_ADVISORY_LIMIT]
+    out: list[dict[str, str]] = []
+    for row in chosen:
+        source_key = (row.get("source_key") or "").strip()
+        source = "CISA" if source_key in {"cisa-news", "cisa"} else (source_key or "Advisory")
+        out.append(
+            {
+                "source": source,
+                "title": _slice_title(str(row.get("title") or "")),
+                "url": str(row.get("canonical_url") or "").strip(),
+            }
+        )
+    return [row for row in out if row["title"]]
+
+
+def _dedupe_headlines(
+    headlines: list[dict[str, str]],
+    advisories: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    advisory_urls = {_normalize_url(row.get("url") or "") for row in advisories}
+    advisory_urls.discard("")
+    kept: list[dict[str, str]] = []
+    for row in headlines:
+        url = _normalize_url(row.get("url") or "")
+        if url and url in advisory_urls:
+            continue
+        kept.append(row)
+    return kept[:_HEADLINE_LIMIT]
+
+
+def _field(name: str, value: str, *, inline: bool = False) -> dict[str, Any]:
+    clipped = value if len(value) <= 1024 else value[:1023] + "…"
+    return {"name": name[:256], "value": clipped or "—", "inline": inline}
+
+
+def _products_for_display(market: dict, *, limit: int | None = None) -> list[dict]:
+    products = list(market.get("products") or [])
+    unmapped = [p for p in products if is_unmapped_product(p)]
+    rest = [p for p in products if not is_unmapped_product(p)]
+    ordered = unmapped + rest
+    if limit is None:
+        return ordered
+    return ordered[:limit]
+
+
+def _product_line(product: dict) -> str:
+    return (
+        f"{product['label']}  {product['total']}  "
+        f"(Critical {product['critical']} · High {product['high']} · "
+        f"Medium {product['medium']} · Low {product['low']})"
+    )
+
+
+def _window_end_iso(brief: DailyBrief) -> str | None:
+    try:
+        naive = datetime.strptime(brief.window_end_local, "%Y-%m-%d %H:%M")
+        tz = ZoneInfo(brief.tz_name)
+        return naive.replace(tzinfo=tz).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    except Exception:
+        return None
+
+
+def _embed_char_count(embed: dict[str, Any]) -> int:
+    total = len(embed.get("title") or "") + len(embed.get("description") or "")
+    author = embed.get("author") or {}
+    total += len(author.get("name") or "")
+    footer = embed.get("footer") or {}
+    total += len(footer.get("text") or "")
+    for item in embed.get("fields") or []:
+        total += len(item.get("name") or "") + len(item.get("value") or "")
+    return total
+
+
+def _glance_text(brief: DailyBrief) -> str:
+    return "\n".join(
+        [
+            f"New on CISA KEV: {brief.counts['kev_new']}",
+            f"Matches My Stack: {brief.counts['stack_matches']}",
+            f"Pinned-CVE alerts: {brief.counts['watchlist']}",
+            f"IOC watch hits: {brief.counts['ioc_hits']}",
+            f"New Critical or High: {brief.counts['critical_high_new']}",
+            f"Instance problems: {brief.counts['ops_issues']}",
+        ]
+    )
+
+
+def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
+    summary = brief.headline or "Quiet window."
+    description = (
+        f"{brief.window_start_local} → {brief.window_end_local} ({brief.tz_name})\n\n"
+        f"{summary}"
+    )
+    if len(description) > 4096:
+        description = description[:4095] + "…"
+
+    published = int(brief.market.get("published") or 0)
+    fields: list[dict[str, Any]] = []
+    field_ids: list[str] = []
+
+    def add(fid: str, field: dict[str, Any]) -> None:
+        fields.append(field)
+        field_ids.append(fid)
+
+    if published > 0:
+        add("critical", _field("Critical", str(brief.market.get("critical") or 0), inline=True))
+        add("high", _field("High", str(brief.market.get("high") or 0), inline=True))
+        add("medium", _field("Medium", str(brief.market.get("medium") or 0), inline=True))
+        add("low", _field("Low", str(brief.market.get("low") or 0), inline=True))
+        add("coverage", _field("Coverage", "\n".join(coverage_lines(brief.market))))
+    add("glance", _field("At a glance", _glance_text(brief)))
+    if published > 0:
+        product_lines = [_product_line(p) for p in _products_for_display(brief.market)]
+        add("products", _field("Published by product", "\n".join(product_lines)))
+    if brief.headlines:
+        add("headlines", _field("Headlines", "\n".join(_link_line(r) for r in brief.headlines)))
+    if brief.advisories:
+        add("advisories", _field("Advisories", "\n".join(_link_line(r) for r in brief.advisories)))
+    if brief.kev:
+        add("kev", _field("CISA KEV", "\n".join(_line_cve(r) for r in brief.kev[:8])))
+    if brief.stack:
+        add("stack", _field("My Stack", "\n".join(_line_cve(r) for r in brief.stack[:8])))
+    if brief.watchlist:
+        add("watchlist", _field("Pinned CVEs", "\n".join(_line_cve(r) for r in brief.watchlist[:8])))
+    if brief.ioc:
+        add(
+            "ioc",
+            _field(
+                "IOC watch",
+                "\n".join(
+                    f"• {r.get('type', '')} {r.get('value', '')} — {r.get('reason', '')}".strip()
+                    for r in brief.ioc[:5]
+                ),
+            ),
+        )
+    if brief.ops:
+        ops_lines: list[str] = []
+        for row in brief.ops[:5]:
+            ops_lines.extend(format_ops_lines(row))
+        add("ops", _field("Instance problems", "\n".join(ops_lines)))
+
+    embed: dict[str, Any] = {
+        "author": {"name": "BRIEFR"},
+        "title": slot_title(brief.slot),
+        "color": DISCORD_EMBED_COLOR,
+        "description": description,
+        "fields": fields,
+        "footer": {
+            "text": (
+                f"Generated {brief.generated_local} {brief.tz_name} · "
+                f"local facts · {brief.lede_source}"
+            )
+        },
+    }
+    stamp = _window_end_iso(brief)
+    if stamp:
+        embed["timestamp"] = stamp
+
+    def over_limit() -> bool:
+        return len(embed["fields"]) > 25 or _embed_char_count(embed) > 6000
+
+    for drop_id in EMBED_DROP_ORDER:
+        if not over_limit():
+            break
+        kept_fields = []
+        kept_ids = []
+        for fid, field in zip(field_ids, embed["fields"]):
+            if fid == drop_id:
+                continue
+            kept_fields.append(field)
+            kept_ids.append(fid)
+        embed["fields"] = kept_fields
+        field_ids = kept_ids
+
+    if over_limit() and "products" in field_ids:
+        trimmed = [_product_line(p) for p in _products_for_display(brief.market, limit=5)]
+        idx = field_ids.index("products")
+        embed["fields"][idx] = _field("Published by product", "\n".join(trimmed))
+
+    return [embed]
+
+
+def format_daily_brief_html(brief: DailyBrief) -> str:
+    def esc(value: str) -> str:
+        return html.escape(value or "", quote=False)
+
+    chunks: list[str] = [
+        "<b>BRIEFR</b>",
+        f"<b>{esc(slot_title(brief.slot))}</b>",
+        esc(f"{brief.window_start_local} → {brief.window_end_local} ({brief.tz_name})"),
+        "",
+        "<b>Summary</b>",
+        esc(brief.headline or "Quiet window."),
+        "",
+        "<b>At a glance</b>",
+        esc(_glance_text(brief)),
+    ]
+    if int(brief.market.get("published") or 0) > 0:
+        chunks.extend(
+            [
+                "",
+                "<b>Coverage</b>",
+                esc("\n".join(coverage_lines(brief.market))),
+                "",
+                "<b>Severity mix</b>",
+                esc(
+                    f"Critical {brief.market.get('critical') or 0} · "
+                    f"High {brief.market.get('high') or 0} · "
+                    f"Medium {brief.market.get('medium') or 0} · "
+                    f"Low {brief.market.get('low') or 0}"
+                ),
+                "",
+                "<b>Published by product</b>",
+                esc("\n".join(_product_line(p) for p in _products_for_display(brief.market))),
+            ]
+        )
+    if brief.headlines:
+        chunks.extend(["", "<b>Headlines</b>", esc("\n".join(_link_line(r) for r in brief.headlines))])
+    if brief.advisories:
+        chunks.extend(["", "<b>Advisories</b>", esc("\n".join(_link_line(r) for r in brief.advisories))])
+    if brief.kev:
+        chunks.extend(["", "<b>CISA KEV</b>", esc("\n".join(_line_cve(r) for r in brief.kev[:8]))])
+    if brief.stack:
+        chunks.extend(["", "<b>My Stack</b>", esc("\n".join(_line_cve(r) for r in brief.stack[:8]))])
+    if brief.watchlist:
+        chunks.extend(["", "<b>Pinned CVEs</b>", esc("\n".join(_line_cve(r) for r in brief.watchlist[:8]))])
+    if brief.ioc:
+        chunks.extend(
+            [
+                "",
+                "<b>IOC watch</b>",
+                esc(
+                    "\n".join(
+                        f"• {r.get('type', '')} {r.get('value', '')} — {r.get('reason', '')}".strip()
+                        for r in brief.ioc[:5]
+                    )
+                ),
+            ]
+        )
+    if brief.ops:
+        ops_lines: list[str] = []
+        for row in brief.ops[:5]:
+            ops_lines.extend(format_ops_lines(row))
+        chunks.extend(["", "<b>Instance problems</b>", esc("\n".join(ops_lines))])
+    chunks.extend(
+        [
+            "",
+            esc(
+                f"Generated {brief.generated_local} {brief.tz_name} · "
+                f"local facts · {brief.lede_source}"
+            ),
+        ]
+    )
+    body = "\n".join(chunks)
+    if len(body) > TELEGRAM_HTML_TARGET:
+        body = body[: TELEGRAM_HTML_TARGET - 1] + "…"
+    if len(body) > TELEGRAM_MAX_TEXT:
+        body = body[: TELEGRAM_MAX_TEXT - 1] + "…"
+    return body
+
+
+def daily_brief_channel_payloads(brief: DailyBrief) -> dict[str, Any]:
+    return {
+        "text": format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT),
+        "html": format_daily_brief_html(brief),
+        "discord_embeds": format_daily_brief_embed(brief),
+    }
 
 
 async def _fetch_kev(
@@ -716,6 +1192,9 @@ async def collect_daily_brief(
     }
     market = cluster_published(market_rows)
     market.update(market_totals)
+    headlines = await _fetch_headlines(db, window_start_utc, window_end_utc)
+    advisories = await _fetch_advisories(db, start_bound, end_bound)
+    headlines = _dedupe_headlines(headlines, advisories)
 
     return DailyBrief(
         slot=slot,
@@ -732,6 +1211,8 @@ async def collect_daily_brief(
         ioc=ioc,
         ops=ops,
         market=market,
+        headlines=headlines,
+        advisories=advisories,
     )
 
 
@@ -770,6 +1251,8 @@ def brief_to_payload(brief: DailyBrief) -> dict[str, Any]:
         "ioc": brief.ioc,
         "ops": brief.ops,
         "market": brief.market,
+        "headlines": brief.headlines,
+        "advisories": brief.advisories,
         "window_start_local": brief.window_start_local,
         "window_end_local": brief.window_end_local,
         "tz": brief.tz_name,
@@ -821,8 +1304,8 @@ async def build_daily_brief_now(slot: DailyBriefSlot) -> tuple[str, DailyBrief]:
             brief,
             llm_enabled=_env_flag_on("DAILY_BRIEF_LLM_ENABLED", "0"),
         )
-        text = format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT)
-        return text, brief
+        channels = daily_brief_channel_payloads(brief)
+        return channels["text"], brief
     finally:
         await db.close()
 
@@ -859,14 +1342,17 @@ async def run_daily_brief_slot(slot: DailyBriefSlot) -> dict[str, Any]:
             brief,
             llm_enabled=_env_flag_on("DAILY_BRIEF_LLM_ENABLED", "0"),
         )
-        text = format_daily_brief_text(brief, limit=DISCORD_MAX_CONTENT)
-        extra = {"brief": brief_to_payload(brief)}
+        channels = daily_brief_channel_payloads(brief)
+        extra = {"brief": brief_to_payload(brief), "discord_embeds": channels["discord_embeds"]}
         local_date = brief.window_end_local[:10]
         result = await dispatch_event(
             EVENT_DAILY_BRIEF,
-            text,
+            channels["html"],
             dedupe_key=f"{slot}:{local_date}",
             payload_extra=extra,
+            discord_embeds=channels["discord_embeds"],
+            telegram_parse_mode="HTML",
+            discord_fallback=channels["text"],
         )
         if slot == "eod" and result.get("status") in {"ok", "partial"}:
             await set_sync_state_value(
