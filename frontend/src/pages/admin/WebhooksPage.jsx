@@ -375,7 +375,6 @@ export default function WebhooksPage({ toast }) {
             ) : (
               <input
                 className="admin-input"
-                style={{ width: '100%', maxWidth: '32rem' }}
                 placeholder="https://… webhook URL"
                 value={createForm.url}
                 onChange={e => setCreateForm(f => ({ ...f, url: e.target.value }))}
@@ -415,16 +414,11 @@ export default function WebhooksPage({ toast }) {
         </div>
       )}
 
-      <div className="admin-card">
-        <div className="admin-card-title webhook-daily-brief-card-title">
-          Daily brief
-          <HelpTip text="Scheduled rollup; enable slots under Config. Does not replace real-time KEV/watchlist alerts." />
-        </div>
-        <p className="admin-page-subtitle">
-          Configure schedule and preview on{' '}
-          <Link to="/admin?p=dailybrief">Daily brief</Link>. Subscribe this destination to Daily brief (EOD / standup) below.
-        </p>
-      </div>
+      <p className="admin-page-subtitle">
+        Daily brief schedule and preview live on{' '}
+        <Link to="/admin?p=dailybrief">Daily brief</Link>
+        . Subscribe destinations to Daily brief below. That does not replace real-time KEV or watchlist alerts.
+      </p>
 
       <AsyncSection data={destinations} error={loadError} onRetry={() => { loadDestinations(); loadHealth() }} emptyMessage="No webhook destinations">
         {(rows) => (

@@ -147,7 +147,7 @@ export default function BackupsPage({ toast, system }) {
               </button>
             </>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxWidth: 420 }}>
+            <div className="admin-pref-grid">
               <div className="admin-pref-row">
                 <label className="admin-pref-label" htmlFor="backup-schedule-enabled">Scheduled backups enabled</label>
                 <ToggleSwitch

@@ -17,6 +17,7 @@ import TimeWindowPicker, {
   defaultPresetWindow,
   hoursFromWindow,
 } from './TimeWindowPicker.jsx'
+import { formatSectionHeading } from '../utils/sectionHeading.js'
 import ControlTooltip from './ControlTooltip.jsx'
 import ExplainTip from './ExplainTip.jsx'
 import SeverityLegend from './SeverityLegend.jsx'
@@ -328,7 +329,7 @@ export default function BriefCharts({ onSelectCVE, pollEnabled = true }) {
             ▾
           </span>
         </button>
-        <h2 className="brief-charts-title mono">// ANALYST CHARTS</h2>
+        <h2 className="brief-charts-title mono">{formatSectionHeading('// ANALYST CHARTS')}</h2>
       </div>
 
       {!collapsed && (

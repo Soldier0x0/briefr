@@ -510,7 +510,7 @@ export default function FilterBar({
 
         <div className="filter-bar-stack control-toolbar--fields">
           <label className="control-field filter-stack-field" htmlFor="feed-stack-input">
-            <span className="control-field-label filter-stack-label">STACK //</span>
+            <span className="control-field-label filter-stack-label">{formatSectionHeading('STACK //')}</span>
             <span className="filter-stack-control">
               <input
                 id="feed-stack-input"
