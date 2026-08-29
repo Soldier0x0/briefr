@@ -18,6 +18,38 @@ const TRIGGER_LABELS = [
   ['withdrawn', 'Withdrawn / rejected'],
 ]
 
+function adminErrText(e) {
+  const msg = String(e?.message || e)
+  return e?.requestId ? `${msg} (ref: ${e.requestId})` : msg
+}
+
+function TableLoadError({ colSpan, error, onRetry, compact = false }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className={compact ? 'admin-empty admin-empty--compact' : 'admin-empty'}>
+        <span className="admin-inline-error" role="alert">{adminErrText(error)}</span>
+        {' '}
+        <button type="button" className="admin-btn admin-btn-ghost" onClick={onRetry}>Retry</button>
+      </td>
+    </tr>
+  )
+}
+
+function TriggerRow({ id, label, on, onChange, disabled }) {
+  const switchId = `watchlist-trigger-${id}`
+  return (
+    <div className="admin-pref-row">
+      <label className="admin-pref-label mono" htmlFor={switchId}>{label}</label>
+      <ToggleSwitch
+        id={switchId}
+        on={on}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    </div>
+  )
+}
+
 export default function WatchlistPage({ toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
   const [subtab, setSubtab] = useState('watchlist')
@@ -53,11 +85,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
   async function loadWatchlist() {
     setWatchlistError(null)
+    setWatchlistRows(null)
     try {
-      const res = await adminApi.get(`/watchlist?state=${watchlistState}&limit=200`)
-      setWatchlistRows(await res.json())
+      const { data } = await adminApi.getJson(`/watchlist?state=${watchlistState}&limit=200`)
+      setWatchlistRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setWatchlistError(e)
+      setWatchlistRows([])
     }
   }
 
@@ -66,11 +100,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (iocType) params.set('ioc_type', iocType)
     if (iocSearch) params.set('search', iocSearch)
     setIocError(null)
+    setIocRows(null)
     try {
-      const res = await adminApi.get(`/ioc-cache?${params}`)
-      setIocRows(await res.json())
+      const { data } = await adminApi.getJson(`/ioc-cache?${params}`)
+      setIocRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setIocError(e)
+      setIocRows([])
     }
   }
 
@@ -78,11 +114,13 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     const params = new URLSearchParams({ limit: 100 })
     if (huntTechnique) params.set('technique_id', huntTechnique)
     setHuntError(null)
+    setHuntRows(null)
     try {
-      const res = await adminApi.get(`/hunt-packs?${params}`)
-      setHuntRows(await res.json())
+      const { data } = await adminApi.getJson(`/hunt-packs?${params}`)
+      setHuntRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setHuntError(e)
+      setHuntRows([])
     }
   }
 
@@ -204,15 +242,14 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                   </p>
                   <div className="admin-watchlist-triggers">
                     {TRIGGER_LABELS.map(([id, label]) => (
-                      <div key={id} className="admin-pref-row">
-                        <span className="admin-pref-label mono">{label}</span>
-                        <ToggleSwitch
-                          on={!!policy.triggers?.[id]}
-                          onChange={(v) => updateTrigger(id, v)}
-                          disabled={policySaving}
-                          label={label}
-                        />
-                      </div>
+                      <TriggerRow
+                        key={id}
+                        id={id}
+                        label={label}
+                        on={!!policy.triggers?.[id]}
+                        onChange={(v) => updateTrigger(id, v)}
+                        disabled={policySaving}
+                      />
                     ))}
                   </div>
                 </>
@@ -265,13 +302,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </thead>
               <tbody>
                 {watchlistError && (
-                  <tr>
-                    <td colSpan={7} className="admin-empty admin-empty--compact">
-                      <span className="admin-inline-error" role="alert">{String(watchlistError.message || watchlistError)}</span>
-                      {' '}
-                      <button type="button" className="admin-btn admin-btn-ghost" onClick={loadWatchlist}>Retry</button>
-                    </td>
-                  </tr>
+                  <TableLoadError colSpan={7} error={watchlistError} onRetry={loadWatchlist} compact />
                 )}
                 {watchlistRows === null && !watchlistError && (
                   <AdminTableBodySkeletonRows rows={5} cols={7} />
@@ -329,13 +360,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
                 {iocError && (
-                  <tr>
-                    <td colSpan={5} className="admin-empty admin-empty--compact">
-                      <span className="admin-inline-error" role="alert">{String(iocError.message || iocError)}</span>
-                      {' '}
-                      <button type="button" className="admin-btn admin-btn-ghost" onClick={loadIoc}>Retry</button>
-                    </td>
-                  </tr>
+                  <TableLoadError colSpan={5} error={iocError} onRetry={loadIoc} compact />
                 )}
                 {iocRows === null && !iocError && <AdminTableBodySkeletonRows rows={5} cols={5} />}
                 {!iocError && iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
@@ -392,13 +417,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
               </thead>
               <tbody>
                 {huntError && (
-                  <tr>
-                    <td colSpan={6} className="admin-empty">
-                      <span className="admin-inline-error" role="alert">{String(huntError.message || huntError)}</span>
-                      {' '}
-                      <button type="button" className="admin-btn admin-btn-ghost" onClick={loadHunts}>Retry</button>
-                    </td>
-                  </tr>
+                  <TableLoadError colSpan={6} error={huntError} onRetry={loadHunts} />
                 )}
                 {huntRows === null && !huntError && <AdminTableBodySkeletonRows rows={5} cols={6} />}
                 {!huntError && huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}

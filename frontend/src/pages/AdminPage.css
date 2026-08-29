@@ -2537,6 +2537,10 @@
   color: var(--text2);
 }
 
+.display-typography-lede {
+  margin: 0 0 var(--space-3);
+}
+
 .display-typography-select {
   width: 100%;
 }
@@ -3857,6 +3861,10 @@
 
 .admin-watchlist-triggers .admin-pref-row {
   padding: var(--space-2) 0;
+}
+
+.admin-watchlist-triggers .admin-pref-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .admin-subtab-item {
