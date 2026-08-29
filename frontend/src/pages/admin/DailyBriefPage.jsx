@@ -152,12 +152,18 @@ export default function DailyBriefPage({ toast }) {
       </div>
 
       {error && (
-        <p className="admin-page-subtitle" style={{ color: 'var(--red)' }} role="alert">
+        <p className="daily-brief-error" role="alert">
           {error}
         </p>
       )}
 
-      {!brief && !error && (
+      {busy === 'preview' && !brief && (
+        <p className="admin-page-subtitle" role="status">
+          Loading preview…
+        </p>
+      )}
+
+      {!brief && !error && busy !== 'preview' && (
         <p className="admin-page-subtitle" role="status">
           Preview a slot to load the current window.
         </p>

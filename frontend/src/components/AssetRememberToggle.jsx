@@ -7,7 +7,7 @@ export default function AssetRememberToggle({
 }) {
   return (
     <label className="asset-remember-toggle mono">
-      <ToggleSwitch on={!!enabled} onChange={onChange} disabled={disabled} />
+      <ToggleSwitch on={!!enabled} onChange={onChange} disabled={disabled} label="Remember My Stack on this server" />
       <span>
         Remember My Stack on this server
         <span className="asset-remember-hint">

@@ -148,9 +148,9 @@ export default function BackupsPage({ toast, system }) {
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxWidth: 420 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem' }}>
-                <ToggleSwitch on={scheduleForm.BACKUP_ENABLED} onChange={v => setScheduleForm(f => ({ ...f, BACKUP_ENABLED: v }))} />
-                Scheduled backups enabled
+              <label className="admin-pref-row">
+                <span className="admin-pref-label">Scheduled backups enabled</span>
+                <ToggleSwitch on={scheduleForm.BACKUP_ENABLED} onChange={v => setScheduleForm(f => ({ ...f, BACKUP_ENABLED: v }))} label="Scheduled backups enabled" />
               </label>
               <div className="control-toolbar--fields">
                 <label className="control-field" style={{ width: '8rem' }}>

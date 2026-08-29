@@ -177,7 +177,7 @@ export default function DisplayPage() {
 
       <Card>
         <CardTitle>Typography (px)</CardTitle>
-        <p style={{ fontSize: 'var(--type-meta)', color: 'var(--text3)', margin: '0 0 0.75rem' }}>
+        <p className="admin-pref-hint" style={{ margin: '0 0 var(--space-3)' }}>
           Set pixel sizes per text role. Changes preview live in this browser session; Save stores your profile; admins can also set the instance default for users who have not customized typography.
         </p>
         <div className="display-typography-grid">
@@ -217,7 +217,7 @@ export default function DisplayPage() {
           </button>
         </div>
         {status ? (
-          <p className="display-typography-status mono">{status}</p>
+          <p className={`display-typography-status mono${/could not/i.test(status) ? ' display-typography-status--error' : ''}`}>{status}</p>
         ) : null}
       </Card>
 
@@ -234,63 +234,35 @@ export default function DisplayPage() {
             </Pill>
           ))}
         </PillGroup>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
+        <p className="admin-pref-hint">
           How often the status bar polls the backend for live system stats.
         </p>
       </Card>
 
       <Card>
-        <CardTitle>Timestamps</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
-          <ToggleSwitch on={!!prefs.utcTime} onChange={v => update('utcTime', v)} />
-          Show times in UTC instead of your browser's local time
-        </label>
-      </Card>
-
-      <Card>
-        <CardTitle>Notifications</CardTitle>
-        <label className="display-typography-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} disabled={saving} />
-          Play a short chime when new high-priority notifications arrive
-        </label>
-        <div className="display-typography-grid" style={{ marginTop: '0.75rem' }}>
-          {NOTIFICATION_MUTE_CATEGORIES.map((category) => (
-            <label
-              key={category}
-              className="display-typography-row-label"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              <ToggleSwitch
-                on={!!prefs.notificationMutes?.[category]}
-                onChange={(v) => updateNotificationMute(category, v)}
-                disabled={saving}
-              />
-              Mute {NOTIFICATION_MUTE_LABELS[category]}
-            </label>
-          ))}
+        <CardTitle>Preferences</CardTitle>
+        <div className="admin-pref-row">
+          <div className="admin-pref-copy">
+            <div className="admin-pref-label">UTC timestamps</div>
+            <p className="admin-pref-hint">Show times in UTC instead of your browser's local time.</p>
+          </div>
+          <ToggleSwitch on={!!prefs.utcTime} onChange={v => update('utcTime', v)} label="UTC timestamps" />
         </div>
-        <p className="admin-page-subtitle" style={{ margin: '0.4rem 0 0' }}>
-          Muted types are not added to the alert tray. Discord and Telegram still follow Admin → Webhooks.
-        </p>
-        {status ? (
-          <p className="display-typography-status mono">{status}</p>
-        ) : null}
-      </Card>
-
-      <Card>
-        <CardTitle>Visual style</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
+        <div className="admin-pref-row">
+          <div className="admin-pref-copy">
+            <div className="admin-pref-label">Newspaper style</div>
+            <p className="admin-pref-hint">
+              Showcase card style is the default. Newspaper restores the dense terminal layout across BRIEF, FEED, admin, and wallboard.
+            </p>
+          </div>
           <ToggleSwitch
             on={prefs.uiVariant === 'default'}
             onChange={(v) => update('uiVariant', v ? 'default' : 'pitch')}
+            label="Newspaper style"
           />
-          Newspaper Style — dense terminal layout, original BRIEFR
-        </label>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
-          Showcase card style is the default (rounded cards, calmer spacing). Turn on Newspaper Style to restore the classic analyst layout across BRIEF, FEED, admin, and wallboard.
-        </p>
+        </div>
         {isAdmin ? (
-          <div className="display-typography-actions" style={{ marginTop: '0.75rem' }}>
+          <div className="display-typography-actions">
             <button
               type="button"
               className="admin-btn admin-btn-ghost"
@@ -303,32 +275,57 @@ export default function DisplayPage() {
           </div>
         ) : null}
         {prefs.instanceUiVariantDefault ? (
-          <p className="display-typography-status mono" style={{ marginTop: '0.5rem' }}>
+          <p className="display-typography-status mono">
             Instance default: {prefs.instanceUiVariantDefault === 'default' ? 'newspaper' : 'showcase'}
           </p>
         ) : null}
+        <div className="admin-pref-row">
+          <div className="admin-pref-copy">
+            <div className="admin-pref-label">Reduce motion</div>
+            <p className="admin-pref-hint">Disables toast, modal, and button animations.</p>
+          </div>
+          <ToggleSwitch on={!!prefs.reduceMotion} onChange={v => update('reduceMotion', v)} label="Reduce motion" />
+        </div>
+        <div className="admin-pref-row">
+          <div className="admin-pref-copy">
+            <div className="admin-pref-label">Technical job IDs</div>
+            <p className="admin-pref-hint">Show technical job IDs in scheduler tables. Remembered across pages and sessions.</p>
+          </div>
+          <ToggleSwitch on={!!prefs.showTechnicalIds} onChange={v => update('showTechnicalIds', v)} label="Technical job IDs" />
+        </div>
       </Card>
 
       <Card>
-        <CardTitle>Motion</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
-          <ToggleSwitch on={!!prefs.reduceMotion} onChange={v => update('reduceMotion', v)} />
-          Reduce interface motion (disables toast, modal, and button animations)
-        </label>
-      </Card>
-
-      <Card>
-        <CardTitle>Tables</CardTitle>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8125rem', color: 'var(--text2)' }}>
-          <ToggleSwitch on={!!prefs.showTechnicalIds} onChange={v => update('showTechnicalIds', v)} />
-          Show technical job IDs in scheduler tables
-        </label>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text3)', margin: '0.4rem 0 0' }}>
-          Remembered across pages and sessions, instead of resetting every time you leave the Scheduler page.
+        <CardTitle>Notifications</CardTitle>
+        <div className="admin-pref-row">
+          <div className="admin-pref-copy">
+            <div className="admin-pref-label">Notification chime</div>
+            <p className="admin-pref-hint">Play a short chime when new high-priority notifications arrive.</p>
+          </div>
+          <ToggleSwitch on={!!prefs.notificationSound} onChange={v => update('notificationSound', v)} disabled={saving} label="Notification chime" />
+        </div>
+        {NOTIFICATION_MUTE_CATEGORIES.map((category) => (
+          <div className="admin-pref-row" key={category}>
+            <div className="admin-pref-copy">
+              <div className="admin-pref-label">Mute {NOTIFICATION_MUTE_LABELS[category]}</div>
+            </div>
+            <ToggleSwitch
+              on={!!prefs.notificationMutes?.[category]}
+              onChange={(v) => updateNotificationMute(category, v)}
+              disabled={saving}
+              label={`Mute ${NOTIFICATION_MUTE_LABELS[category]}`}
+            />
+          </div>
+        ))}
+        <p className="admin-pref-hint">
+          Muted types are not added to the alert tray. Discord and Telegram still follow Admin → Webhooks.
         </p>
+        {status ? (
+          <p className={`display-typography-status mono${/could not/i.test(status) ? ' display-typography-status--error' : ''}`}>{status}</p>
+        ) : null}
       </Card>
 
-      <button className="admin-btn admin-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={reset}>
+      <button className="admin-btn admin-btn-ghost admin-btn-compact" onClick={reset}>
         <RotateCcw size={13} strokeWidth={2} /> Reset to defaults
       </button>
     </div>

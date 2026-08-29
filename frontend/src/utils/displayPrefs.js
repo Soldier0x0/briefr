@@ -13,6 +13,7 @@ import {
   loadUserPreferences,
   saveUserPreferences,
 } from './userPreferences.js'
+import { clearTypographyPreview } from './typographyPrefs.js'
 
 export {
   applyDisplayPrefs,
@@ -36,7 +37,6 @@ export async function setDisplayPrefs(next) {
 }
 
 export async function resetDisplayPrefs() {
-  const { clearTypographyPreview } = await import('./typographyPrefs.js')
   clearTypographyPreview()
   await saveUserPreferences({ ...DISPLAY_DEFAULTS })
   applyDisplayPrefs(getDisplayPrefs())

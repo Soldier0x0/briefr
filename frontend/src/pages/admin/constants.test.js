@@ -14,11 +14,15 @@ describe('admin reports nav', () => {
     assert.equal(reports.items.some(i => i.id === 'dailybrief'), true)
   })
 
-    it('keeps watchlist trigger density class', () => {
+  it('keeps watchlist trigger density class', () => {
     const src = readFileSync(join(here, 'WatchlistPage.jsx'), 'utf8')
     const css = readFileSync(join(here, '../AdminPage.css'), 'utf8')
+    const prefs = readFileSync(join(here, '../../utils/displayPrefs.js'), 'utf8')
     assert.match(src, /admin-watchlist-triggers/)
+    assert.match(src, /admin-pref-row/)
     assert.match(src, /not the daily brief/)
     assert.doesNotMatch(css, /\.admin-watchlist-triggers[^{]*\{[^}]*max-width/)
+    assert.doesNotMatch(css, /\.admin-watchlist-triggers[^{]*\{[^}]*max-content/)
+    assert.doesNotMatch(prefs, /import\('\.\/typographyPrefs/)
   })
 })
