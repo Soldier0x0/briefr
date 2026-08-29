@@ -24,7 +24,7 @@ from reports.market_clusters import (
     unmapped_coverage,
 )
 from webhooks.destinations import EVENT_DAILY_BRIEF
-from webhooks.engine import DISCORD_MAX_CONTENT, TELEGRAM_MAX_TEXT, dispatch_event
+from webhooks.engine import DISCORD_MAX_CONTENT, dispatch_event
 
 logger = logging.getLogger(__name__)
 
@@ -700,7 +700,8 @@ def format_daily_brief_html(brief: DailyBrief) -> str:
     def esc(value: str) -> str:
         return html.escape(value or "", quote=False)
 
-    chunks: list[str] = [
+    published = int(brief.market.get("published") or 0)
+    head = [
         "<b>BRIEFR</b>",
         f"<b>{esc(slot_title(brief.slot))}</b>",
         esc(f"{brief.window_start_local} → {brief.window_end_local} ({brief.tz_name})"),
@@ -711,68 +712,114 @@ def format_daily_brief_html(brief: DailyBrief) -> str:
         "<b>At a glance</b>",
         esc(_glance_text(brief)),
     ]
-    if int(brief.market.get("published") or 0) > 0:
-        chunks.extend(
-            [
-                "",
-                "<b>Coverage</b>",
-                esc("\n".join(coverage_lines(brief.market))),
-                "",
-                "<b>Severity mix</b>",
-                esc(
-                    f"Critical {brief.market.get('critical') or 0} · "
-                    f"High {brief.market.get('high') or 0} · "
-                    f"Medium {brief.market.get('medium') or 0} · "
-                    f"Low {brief.market.get('low') or 0}"
-                ),
-                "",
-                "<b>Published by product</b>",
-                esc("\n".join(_product_line(p) for p in _products_for_display(brief.market))),
-            ]
+    optional: list[tuple[str, list[str]]] = []
+    if published > 0:
+        optional.append(
+            ("coverage", ["", "<b>Coverage</b>", esc("\n".join(coverage_lines(brief.market)))])
         )
+        optional.append(
+            (
+                "severity",
+                [
+                    "",
+                    "<b>Severity mix</b>",
+                    esc(
+                        f"Critical {brief.market.get('critical') or 0} · "
+                        f"High {brief.market.get('high') or 0} · "
+                        f"Medium {brief.market.get('medium') or 0} · "
+                        f"Low {brief.market.get('low') or 0}"
+                    ),
+                ],
+            )
+        )
+        optional.append(("products", []))
     if brief.headlines:
-        chunks.extend(["", "<b>Headlines</b>", esc("\n".join(_link_line(r) for r in brief.headlines))])
+        optional.append(
+            ("headlines", ["", "<b>Headlines</b>", esc("\n".join(_link_line(r) for r in brief.headlines))])
+        )
     if brief.advisories:
-        chunks.extend(["", "<b>Advisories</b>", esc("\n".join(_link_line(r) for r in brief.advisories))])
+        optional.append(
+            ("advisories", ["", "<b>Advisories</b>", esc("\n".join(_link_line(r) for r in brief.advisories))])
+        )
     if brief.kev:
-        chunks.extend(["", "<b>CISA KEV</b>", esc("\n".join(_line_cve(r) for r in brief.kev[:8]))])
+        optional.append(
+            ("kev", ["", "<b>CISA KEV</b>", esc("\n".join(_line_cve(r) for r in brief.kev[:8]))])
+        )
     if brief.stack:
-        chunks.extend(["", "<b>My Stack</b>", esc("\n".join(_line_cve(r) for r in brief.stack[:8]))])
+        optional.append(
+            ("stack", ["", "<b>My Stack</b>", esc("\n".join(_line_cve(r) for r in brief.stack[:8]))])
+        )
     if brief.watchlist:
-        chunks.extend(["", "<b>Pinned CVEs</b>", esc("\n".join(_line_cve(r) for r in brief.watchlist[:8]))])
+        optional.append(
+            (
+                "watchlist",
+                ["", "<b>Pinned CVEs</b>", esc("\n".join(_line_cve(r) for r in brief.watchlist[:8]))],
+            )
+        )
     if brief.ioc:
-        chunks.extend(
-            [
-                "",
-                "<b>IOC watch</b>",
-                esc(
-                    "\n".join(
-                        f"• {r.get('type', '')} {r.get('value', '')} — {r.get('reason', '')}".strip()
-                        for r in brief.ioc[:5]
-                    )
-                ),
-            ]
+        optional.append(
+            (
+                "ioc",
+                [
+                    "",
+                    "<b>IOC watch</b>",
+                    esc(
+                        "\n".join(
+                            f"• {r.get('type', '')} {r.get('value', '')} — {r.get('reason', '')}".strip()
+                            for r in brief.ioc[:5]
+                        )
+                    ),
+                ],
+            )
         )
     if brief.ops:
         ops_lines: list[str] = []
         for row in brief.ops[:5]:
             ops_lines.extend(format_ops_lines(row))
-        chunks.extend(["", "<b>Instance problems</b>", esc("\n".join(ops_lines))])
-    chunks.extend(
-        [
-            "",
-            esc(
-                f"Generated {brief.generated_local} {brief.tz_name} · "
-                f"local facts · {brief.lede_source}"
-            ),
-        ]
-    )
-    body = "\n".join(chunks)
-    if len(body) > TELEGRAM_HTML_TARGET:
-        body = body[: TELEGRAM_HTML_TARGET - 1] + "…"
-    if len(body) > TELEGRAM_MAX_TEXT:
-        body = body[: TELEGRAM_MAX_TEXT - 1] + "…"
-    return body
+        optional.append(("ops", ["", "<b>Instance problems</b>", esc("\n".join(ops_lines))]))
+    footer = [
+        "",
+        esc(
+            f"Generated {brief.generated_local} {brief.tz_name} · "
+            f"local facts · {brief.lede_source}"
+        ),
+    ]
+    dropped: set[str] = set()
+    product_limit: int | None = None
+
+    def assemble() -> str:
+        parts = list(head)
+        for name, lines in optional:
+            if name in dropped:
+                continue
+            if name == "products":
+                parts.extend(
+                    [
+                        "",
+                        "<b>Published by product</b>",
+                        esc(
+                            "\n".join(
+                                _product_line(p)
+                                for p in _products_for_display(brief.market, limit=product_limit)
+                            )
+                        ),
+                    ]
+                )
+                continue
+            parts.extend(lines)
+        parts.extend(footer)
+        return "\n".join(parts)
+
+    text = assemble()
+    for name in (*EMBED_DROP_ORDER, "ops"):
+        if len(text) <= TELEGRAM_HTML_TARGET:
+            break
+        dropped.add(name)
+        text = assemble()
+    if len(text) > TELEGRAM_HTML_TARGET and "products" not in dropped:
+        product_limit = 5
+        text = assemble()
+    return text
 
 
 def daily_brief_channel_payloads(brief: DailyBrief) -> dict[str, Any]:

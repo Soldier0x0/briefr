@@ -1545,3 +1545,53 @@ def test_html_escapes_headline_title():
     assert "&lt;script&gt;" in html
     assert "Morning briefing" in html
 
+
+def test_html_overflow_drops_sections_without_slicing_entities():
+    from reports.daily_brief import format_daily_brief_html
+
+    long_reason = "failed & retry <limit> " * 40
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-26 18:00",
+        window_end_local="2026-08-27 18:00",
+        generated_local="2026-08-27 18:00",
+        headline="Quiet window.",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS} | {"kev_new": 8, "ops_issues": 5},
+        kev=[
+            {"cve_id": f"CVE-2026-{i:04d}", "reason": long_reason, "severity": "HIGH"}
+            for i in range(8)
+        ],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[
+            {
+                "id": f"job-{i}",
+                "reason": long_reason,
+                "error_class": "job_error",
+            }
+            for i in range(5)
+        ],
+        headlines=[
+            {
+                "source": "THN",
+                "title": "Ampersand & angle <tag> " * 30,
+                "url": "https://x.example",
+            }
+        ],
+        advisories=[],
+    )
+    html = format_daily_brief_html(brief)
+    assert html.count("<b>") == html.count("</b>")
+    assert "Generated 2026-08-27 18:00 UTC" in html
+    assert "…" not in html
+    assert "&am;" not in html
+    leftover = html
+    while "&" in leftover:
+        idx = leftover.index("&")
+        chunk = leftover[idx : idx + 5]
+        assert chunk.startswith("&amp;") or chunk.startswith("&lt;") or chunk.startswith("&gt;")
+        leftover = leftover[idx + 1 :]
+

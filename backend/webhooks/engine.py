@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import httpx
+
 from database import (
     clear_webhook_destination_dedupe,
     get_db,
@@ -62,9 +64,12 @@ async def _deliver_discord(
             )
             response.raise_for_status()
             return
-        except Exception:
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status != 400:
+                raise
             logger.warning(
-                "Discord embed delivery failed for %s; retrying with content",
+                "Discord rejected embed payload for %s (HTTP 400); retrying with content",
                 dest.id,
             )
     payload = {"content": _truncate(fallback_content or message, DISCORD_MAX_CONTENT)}

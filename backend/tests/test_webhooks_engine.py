@@ -405,5 +405,103 @@ def test_discord_daily_brief_sends_embeds(monkeypatch, tmp_path):
     assert result["status"] == "ok"
     assert "embeds" in captured["json"]
     assert captured["json"]["embeds"][0]["color"] == 15230259
-    assert not captured["json"].get("content")
+    assert "content" not in captured["json"]
+
+
+def test_discord_embed_falls_back_on_http_400(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "daily_brief")
+    run_db_test(sync_env_destinations_to_db())
+    calls = []
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        payload = json.loads(request.content)
+        calls.append(payload)
+        if "embeds" in payload:
+            return httpx.Response(400, json={"message": "Invalid Form Body"})
+        return httpx.Response(204)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(
+            EVENT_DAILY_BRIEF,
+            "<b>Morning briefing</b>",
+            skip_dedupe=True,
+            discord_embeds=[{"title": "End of day", "color": 15230259}],
+            discord_fallback="plain brief",
+        )
+    )
+    assert result["status"] == "ok"
+    assert calls[0]["embeds"][0]["color"] == 15230259
+    assert calls[1]["content"] == "plain brief"
+
+
+def test_discord_embed_does_not_fallback_on_http_500(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "daily_brief")
+    run_db_test(sync_env_destinations_to_db())
+    calls = []
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        calls.append(json.loads(request.content))
+        return httpx.Response(500)
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(
+            EVENT_DAILY_BRIEF,
+            "<b>Morning briefing</b>",
+            skip_dedupe=True,
+            discord_embeds=[{"title": "End of day", "color": 15230259}],
+            discord_fallback="plain brief",
+        )
+    )
+    assert result["status"] == "failed"
+    assert calls
+    assert all("embeds" in payload for payload in calls)
+    assert all("content" not in payload for payload in calls)
+
+
+def test_discord_embed_does_not_fallback_on_timeout(monkeypatch, tmp_path):
+    _setup_db(tmp_path, monkeypatch)
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    monkeypatch.setenv("DISCORD_WEBHOOK_EVENTS", "daily_brief")
+    run_db_test(sync_env_destinations_to_db())
+    calls = []
+
+    async def fake_resolve(_host):
+        return ["93.184.216.34"]
+
+    def handler(request):
+        calls.append(json.loads(request.content))
+        raise httpx.TimeoutException("timed out")
+
+    _install_transport(monkeypatch, handler)
+    monkeypatch.setattr("webhooks.ssrf.async_resolve_hostname", fake_resolve)
+
+    result = run_db_test(
+        dispatch_event(
+            EVENT_DAILY_BRIEF,
+            "<b>Morning briefing</b>",
+            skip_dedupe=True,
+            discord_embeds=[{"title": "End of day", "color": 15230259}],
+            discord_fallback="plain brief",
+        )
+    )
+    assert result["status"] == "failed"
+    assert len(calls) == 1
+    assert "embeds" in calls[0]
+    assert "content" not in calls[0]
 

@@ -38,13 +38,20 @@ export default function DailyBriefPage({ toast }) {
   const [error, setError] = useState(null)
   const [preview, setPreview] = useState(null)
   const [destinations, setDestinations] = useState([])
+  const [destinationsLoading, setDestinationsLoading] = useState(true)
+  const [destinationsError, setDestinationsError] = useState(null)
 
   const loadDestinations = useCallback(async () => {
+    setDestinationsLoading(true)
+    setDestinationsError(null)
     try {
       const { data } = await adminApi.getJson('/webhooks/destinations')
       setDestinations(data?.destinations || [])
-    } catch {
+    } catch (e) {
       setDestinations([])
+      setDestinationsError(e)
+    } finally {
+      setDestinationsLoading(false)
     }
   }, [])
 
@@ -126,9 +133,20 @@ export default function DailyBriefPage({ toast }) {
           </button>
         </div>
         <p className="daily-brief-delivery">
-          {deliveryLabels.length
-            ? `Sends to ${deliveryLabels.join(', ')} (Daily brief subscribed)`
-            : 'No destinations subscribe to Daily brief yet.'}{' '}
+          {destinationsLoading
+            ? 'Loading destinations…'
+            : destinationsError
+              ? (
+                <>
+                  Could not load destinations.{' '}
+                  <button type="button" className="admin-btn admin-btn-ghost" onClick={loadDestinations}>
+                    Retry
+                  </button>
+                </>
+              )
+              : deliveryLabels.length
+                ? `Sends to ${deliveryLabels.join(', ')} (Daily brief subscribed)`
+                : 'No destinations subscribe to Daily brief yet.'}{' '}
           <Link to="/admin?p=webhooks">Configure events on Webhooks</Link>
         </p>
       </div>
