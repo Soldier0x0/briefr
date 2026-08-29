@@ -14,7 +14,11 @@ from fastapi import HTTPException, Query, Request
 from database import get_db
 from dependencies import audit
 from destructive_actions import require_confirm
-from reports.daily_brief import brief_to_payload, build_daily_brief_now
+from reports.daily_brief import (
+    brief_to_payload,
+    build_daily_brief_now,
+    daily_brief_channel_payloads,
+)
 from webhooks.destinations import EVENT_DAILY_BRIEF, load_destinations
 from webhooks.engine import dispatch_event
 
@@ -290,7 +294,13 @@ async def preview_daily_brief(
     """Build daily-brief copy for a slot without dispatching or writing delivery logs."""
     parsed = _parse_daily_brief_slot(slot)
     text, brief = await build_daily_brief_now(parsed)  # type: ignore[arg-type]
-    return {"text": text, "brief": brief_to_payload(brief)}
+    channels = daily_brief_channel_payloads(brief)
+    return {
+        "text": text,
+        "html": channels["html"],
+        "discord_embeds": channels["discord_embeds"],
+        "brief": brief_to_payload(brief),
+    }
 
 
 @router.post("/webhooks/daily-brief/test")
@@ -304,6 +314,7 @@ async def test_daily_brief(request: Request, body: dict):
         raise HTTPException(400, "destination_id must be a string")
 
     text, brief = await build_daily_brief_now(parsed)  # type: ignore[arg-type]
+    channels = daily_brief_channel_payloads(brief)
     destinations = None
     if destination_id:
         destination_id = destination_id.strip()
@@ -315,15 +326,25 @@ async def test_daily_brief(request: Request, body: dict):
 
     result = await dispatch_event(
         EVENT_DAILY_BRIEF,
-        text,
+        channels["html"],
         skip_dedupe=True,
         destinations=destinations,
-        payload_extra={"brief": brief_to_payload(brief)},
+        payload_extra={"brief": brief_to_payload(brief), "discord_embeds": channels["discord_embeds"]},
+        discord_embeds=channels["discord_embeds"],
+        telegram_parse_mode="HTML",
+        discord_fallback=text,
     )
     await audit(
         request,
         f"webhook.daily_brief.test.{parsed}",
         destination_id or "all",
     )
-    return {**result, "slot": parsed, "text": text, "brief": brief_to_payload(brief)}
+    return {
+        **result,
+        "slot": parsed,
+        "text": text,
+        "html": channels["html"],
+        "discord_embeds": channels["discord_embeds"],
+        "brief": brief_to_payload(brief),
+    }
 

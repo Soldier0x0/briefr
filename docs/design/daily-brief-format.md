@@ -9,52 +9,48 @@ When this file and a webhook payload disagree, **this file wins** for layout. Wh
 
 ## 1. Why a standard
 
-Webhook channels are not the BRIEFR UI. Discord caps **2000** characters (`DISCORD_MAX_CONTENT`). Telegram caps **4096** (`TELEGRAM_MAX_TEXT`). Generic HTTPS POSTs the Discord-budget body as `text` plus the structured envelope from `webhook_json_payload()`: `event_type`, `source` (`briefr`), optional `dedupe_key`, and daily-brief `payload_extra` which adds `brief`. Machine consumers should read `brief` for counts and lists; `text` is the rendered channel copy. Without a grammar, each destination will drift into a dump of CVE IDs.
-
-The brief must be **scannable in 10 seconds**: headline, counts, then ranked lists, then a footer that says how the facts were built.
+Webhook channels are not the BRIEFR UI. **Discord `daily_brief` uses one classic embed** (`embeds: […]`, color `0xE85533` / 15230259). The 2000-character `content` cap does **not** apply to that embed (Discord embed limits: 6000 combined characters, 25 fields, 1024 per field). Telegram uses HTML (`parse_mode=HTML`, 4096 cap; assembly target 3500). Generic HTTPS POSTs the HTML body as `text` plus `webhook_json_payload()` (`event_type`, `source`, optional `dedupe_key`, `brief`, `discord_embeds`). Machine consumers should read `brief`.
 
 ## 2. Canonical sections (order is fixed)
 
-**Masthead** and **footer** always render (framing, not row sections). **HEADLINE** and **COUNTS** always render. **MARKET** renders when at least one CVE was published in the window. Other list sections (`KEV`, `STACK`, `WATCHLIST`, `IOC`, `OPS`) render only when they have rows. Quiet windows still send COUNTS of zeros plus HEADLINE `Quiet window.` so a missing ping means the job failed, not “nothing happened.”
+**Masthead** and **footer** always render. **Summary** and **At a glance** always render. Coverage / severity mix / products render when at least one CVE was published. Headlines (RSS snapshot, max 3) and Advisories (publications, max 2) render only when rows exist. Other lists render only when they have rows. Quiet windows still send At a glance zeros plus Summary `Quiet window.`
 
-| Order | Section id | Title line | Body |
-|-------|------------|------------|------|
-| 0 | `masthead` | `BRIEFR {SLOT}` | One line: window start → end, IANA tz |
-| 1 | `headline` | `// HEADLINE` | 1–3 short sentences. Template or optional LLM (see spec). Never invent CVEs. |
-| 2 | `counts` | `// COUNTS` | Fixed keys, one per line, integer values |
-| 3 | `market` | `// MARKET` | All published CVEs clustered by primary product (top 8 products) |
-| 4 | `kev` | `// KEV` | New KEV in window (max 8 lines) |
-| 5 | `stack` | `// STACK` | KEV or Critical/High matching admin My Stack CPE (max 8) |
-| 6 | `watchlist` | `// WATCHLIST` | Pinned-CVE monitor reasons in window (max 8) |
-| 7 | `ioc` | `// IOC` | IOC watchlist hits in window (max 5) |
-| 8 | `ops` | `// OPS` | Job errors, unhealthy API keys, webhook delivery failures (max 5) |
-| 9 | `footer` | (no `//` title) | Generator line |
+Morning vs end of day: same sections; title is **Morning briefing** or **End of day**. Author/product word remains **BRIEFR**. Discord does not use `//` PDF titles.
 
-Section titles use the PDF convention: **`// TITLE` in ASCII**, not emoji, not Markdown headings. Discord markdown (`**bold**`) is allowed only on the masthead first line.
+| Order | Section id | Title | Body |
+|-------|------------|-------|------|
+| 0 | `masthead` | `BRIEFR` + slot title | Window start → end, IANA tz |
+| 1 | `headline` | **Summary** | 1–3 short sentences. Template or optional LLM. Never invent CVEs. |
+| 2 | `counts` | **At a glance** | Fixed keys, one per line, integer values |
+| 3 | `coverage` | **Coverage** | Named vs Unmapped counts + CPE snapshot copy (when published > 0) |
+| 4 | `products` | **Published by product** | Top 8 primary-product clusters |
+| 5 | `headlines` | **Headlines** | RSS snapshot cards in the window (max 3; `kind != atlas`) |
+| 6 | `advisories` | **Advisories** | Publications in the window (max 2; prefer `cisa-news`) |
+| 7 | `kev` | **CISA KEV** | New KEV in window (max 8 lines) |
+| 8 | `stack` | **My Stack** | KEV or Critical/High matching admin My Stack CPE (max 8) |
+| 9 | `watchlist` | **Pinned CVEs** | Pinned-CVE monitor reasons in window (max 8) |
+| 10 | `ioc` | **IOC watch** | IOC watchlist hits in window (max 5) |
+| 11 | `ops` | **Instance problems** | Job errors, unhealthy API keys, webhook delivery failures (max 5) |
+| 12 | `footer` | (no title) | Generator line |
 
-### COUNTS keys (always all six, in this order)
+### At a glance keys (always all six, in this order)
 
 ```text
-KEV new: {n}
-Stack matches: {n}
-Watchlist: {n}
-IOC hits: {n}
-Critical/High new: {n}
-Ops issues: {n}
+New on CISA KEV: {n}
+Matches My Stack: {n}
+Pinned-CVE alerts: {n}
+IOC watch hits: {n}
+New Critical or High: {n}
+Instance problems: {n}
 ```
 
 `n` is the **untruncated** total for the window, even when the list below is capped.
 
-### MARKET grammar
+### Products / Unmapped
 
-```text
-// MARKET
-Published: {n}  ·  C {c} · H {h} · M {m} · L {l}
-• {product}  {total}  (C {c} · H {h} · M {m} · L {l})
-+{omitted} products in BRIEFR.
-```
+Internal cluster key remains `unanalyzed`. Display label is **Unmapped**. Empty CPE and empty `affected_products` land in that bucket. Unmapped must not be the Summary “led volume” product. If Unmapped ≥ 50% of published, Summary includes `{unmapped} of {published} published CVEs have no product mapped yet (Unmapped).`
 
-MARKET clusters every CVE published in the UTC window into one primary CPE product. It shows at most eight product lines; the published and severity totals remain untruncated. Empty or unanalyzed product data uses the `unanalyzed` bucket. The final `+{omitted}` line is omitted when no product clusters were hidden.
+Severity mix is spelled out (Critical / High / Medium / Low), not `C · H · M · L`.
 
 ### List line grammar
 
@@ -71,19 +67,18 @@ IOC lines:
 Ops lines:
 
 ```text
-• {job_id or destination_id} — {short error}
+Scheduler job failed: {catalog name}
+CISA KEV list may be stale until this job succeeds.   # kev_metadata_sync only
+Detail: {short error}
 ```
 
-No nested bullets. No tables. No JSON inside Discord/Telegram text.
+No nested bullets. No tables. No JSON inside Discord/Telegram text. Telegram HTML must escape `&`, `<`, `>` in interpolated titles.
 
-## 3. Overflow (same job as PDF page breaks)
+## 3. Overflow
 
-The body is always assembled against a single **2000-character** budget (Discord's cap) for every destination kind, including Telegram and Generic HTTPS. Telegram's 4096-character engine limit is a later safety truncate only; it does not change the brief assembly budget. When the assembled body exceeds 2000 characters:
+**Discord embeds:** if over 6000 characters or 25 fields, drop fields in order `ioc` → `watchlist` → `stack` → `kev` → `advisories` → `headlines`, then trim product lines to 5. Never drop coverage, severity mix, at a glance, or footer. Do not apply the 2000 `content` budget to Discord `daily_brief` embeds. If Discord rejects the embed (HTTP 400), retry once with plain `content` truncated to 2000.
 
-1. Drop lowest-priority list sections first: `ops` → `ioc` → `watchlist` → `stack` → `kev`. Never drop `masthead`, `headline`, `counts`, `market`, or `footer`.
-2. If still over, shorten HEADLINE to its first sentence.
-3. If still over, replace remaining list bodies with `+{hidden} more in BRIEFR.`
-4. Last resort: truncate with a Unicode ellipsis `…` (existing `_truncate` in `webhooks/engine.py`).
+**Telegram / generic / fallback text:** assemble against 2000 (plain) or ~3500 (HTML) then engine-truncate. Drop list sections `ops` → `ioc` → `watchlist` → `stack` → `kev` → `advisories` → `headlines`. Never drop masthead, summary, at a glance, products, or footer.
 
 Machine consumers should read the structured `brief` object for the bounded item lists and untruncated window totals.
 
@@ -92,19 +87,19 @@ Machine consumers should read the structured `brief` object for the bounded item
 ### Quiet standup
 
 ```text
-BRIEFR STANDUP
+BRIEFR Morning briefing
 2026-08-25 18:00 → 2026-08-26 07:00 (Asia/Kolkata)
 
-// HEADLINE
+Summary
 Quiet window.
 
-// COUNTS
-KEV new: 0
-Stack matches: 0
-Watchlist: 0
-IOC hits: 0
-Critical/High new: 0
-Ops issues: 0
+At a glance
+New on CISA KEV: 0
+Matches My Stack: 0
+Pinned-CVE alerts: 0
+IOC watch hits: 0
+New Critical or High: 0
+Instance problems: 0
 
 BRIEFR — generated 2026-08-26 07:00 Asia/Kolkata | slot=standup | facts=local | lede=template
 ```
@@ -112,34 +107,34 @@ BRIEFR — generated 2026-08-26 07:00 Asia/Kolkata | slot=standup | facts=local 
 ### Busy end-of-day (abridged)
 
 ```text
-BRIEFR EOD
+BRIEFR End of day
 2026-08-25 18:00 → 2026-08-26 18:00 (Asia/Kolkata)
 
-// HEADLINE
+Summary
 6 published. nginx led volume. 2 new KEV. 1 stack match. Watchlist: 1.
 
-// COUNTS
-KEV new: 2
-Stack matches: 1
-Watchlist: 1
-IOC hits: 0
-Critical/High new: 4
-Ops issues: 0
+At a glance
+New on CISA KEV: 2
+Matches My Stack: 1
+Pinned-CVE alerts: 1
+IOC watch hits: 0
+New Critical or High: 4
+Instance problems: 0
 
-// MARKET
-Published: 6  ·  C 2 · H 2 · M 2 · L 0
-• nginx  3  (C 1 · H 1 · M 1 · L 0)
-• openssl  2  (C 1 · H 1 · M 0 · L 0)
-• unanalyzed  1  (C 0 · H 0 · M 1 · L 0)
+Products
+Published: 6  ·  Critical: 2 · High: 2 · Medium: 2 · Low: 0
+• nginx  3  (Critical 1 · High 1 · Medium 1 · Low 0)
+• openssl  2  (Critical 1 · High 1 · Medium 0 · Low 0)
+• Unmapped  1  (Critical 0 · High 0 · Medium 1 · Low 0)
 
-// KEV
+CISA KEV
 • CVE-2026-1111 — added to KEV · CRITICAL
 • CVE-2026-2222 — added to KEV · HIGH
 
-// STACK
+My Stack
 • CVE-2026-1111 — CPE match · CRITICAL
 
-// WATCHLIST
+Pinned CVEs
 • CVE-2026-1234 — EPSS jump
 
 BRIEFR — generated 2026-08-26 18:00 Asia/Kolkata | slot=eod | facts=local | lede=groq

@@ -174,7 +174,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <div className="admin-card">
               <h2 className="admin-card-title">
                 Alert triggers
-                <HelpTip text="One instance policy for watched CVEs. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
+                <HelpTip text="Real-time pinned-CVE alerts — not the daily brief. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
               </h2>
               {policyError ? (
                 <p className="admin-page-subtitle" style={{ color: 'var(--red)' }}>
@@ -190,7 +190,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                       ? 'All triggers on — delivery is digest (one combined alert per CVE per run).'
                       : 'Per-change alerts for enabled triggers. Overrides per CVE are rare and stored in policy JSON.'}
                   </p>
-                  <div className="admin-filter-bar">
+                  <div className="admin-watchlist-triggers">
                     {TRIGGER_LABELS.map(([id, label]) => (
                       <div key={id} className="admin-field" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%' }}>
                         <span className="mono admin-field-label">{label}</span>

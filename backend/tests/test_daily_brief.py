@@ -70,8 +70,8 @@ def test_quiet_window_format(db_env):
     brief, text = run_db_test(_go())
     assert brief.counts["kev_new"] == 0
     assert "Quiet window." in text
-    assert "// COUNTS" in text
-    assert "KEV new: 0" in text
+    assert "At a glance" in text
+    assert "New on CISA KEV: 0" in text
     assert "slot=standup" in text
     assert "lede=template" in text
 
@@ -121,7 +121,7 @@ def test_kev_in_window_listed(db_env):
     brief, text = run_db_test(_seed())
     assert brief.counts["kev_new"] == 1
     assert "CVE-2026-1111" in text
-    assert "// KEV" in text
+    assert "CISA KEV" in text
 
 
 def test_notification_sections_collect_on_sqlite(db_env):
@@ -201,13 +201,13 @@ def test_notification_sections_collect_on_sqlite(db_env):
     assert brief.counts["watchlist"] == 1
     assert brief.counts["ioc_hits"] == 1
     assert brief.counts["ops_issues"] == 1
-    assert "// WATCHLIST" in text
-    assert "// IOC" in text
-    assert "// OPS" in text
+    assert "Pinned CVEs" in text
+    assert "IOC watch" in text
+    assert "Instance problems" in text
     assert "• CVE-2026-1111 — EPSS jump" in text
     assert "• CVE-2026-1111 — CVE-2026-1111" not in text
     assert "• DOMAIN evil.example — THREATFOX" in text
-    assert "• nvd_incremental_sync — TimeoutError" in text
+    assert "Scheduler job failed: NVD Incremental Sync" in text
 
 
 def test_job_error_dsn_is_redacted_from_formatted_text(db_env):
@@ -261,7 +261,7 @@ def test_job_error_dsn_is_redacted_from_formatted_text(db_env):
             await db.close()
 
     text = run_db_test(_seed())
-    assert "• nvd_incremental_sync — " in text
+    assert "Scheduler job failed: NVD Incremental Sync" in text
     assert "hunter2" not in text
     assert "postgresql://" not in text
 
@@ -460,11 +460,11 @@ def test_market_clusters_all_published_not_just_critical(db_env):
     labels = [product["label"] for product in brief.market["products"]]
     assert "openssl" in labels
     assert "nginx" in labels
-    assert "unanalyzed" in labels
+    assert "Unmapped" in labels
     assert "Quiet window." not in template_headline(brief)
     text = format_daily_brief_text(brief, limit=2000)
-    assert "// MARKET" in text
-    assert text.index("// MARKET") > text.index("// COUNTS")
+    assert "Products" in text
+    assert text.index("Products") > text.index("At a glance")
     assert "Published: 3" in text
     assert "CVE-2026-OLD" not in text
     assert brief_to_payload(brief)["market"]["published"] == 3
@@ -503,7 +503,7 @@ def test_headline_skips_unanalyzed_market_leader():
 
     assert "nginx led volume." in headline
     assert "unanalyzed led volume." not in headline
-    assert "unanalyzed" in format_daily_brief_text(brief, limit=2000)
+    assert "Unmapped" in format_daily_brief_text(brief, limit=2000)
 
     unanalyzed_only = replace(brief, market=cluster_published(rows[:-1]))
     unanalyzed_headline = template_headline(unanalyzed_only)
@@ -720,10 +720,10 @@ def test_overflow_never_drops_populated_market():
     text = format_daily_brief_text(brief, limit=700)
 
     assert len(text) <= 700
-    assert "// MARKET" in text
+    assert "Products" in text
     assert "Published: 6" in text
-    assert "// OPS" not in text
-    assert "// KEV" not in text
+    assert "job-0" not in text
+    assert "CVE-2026-" not in text
 
 
 def test_overflow_drops_ops_before_kev():
@@ -754,8 +754,8 @@ def test_overflow_drops_ops_before_kev():
     )
     text = format_daily_brief_text(brief, limit=500)
     assert len(text) <= 500
-    assert "// COUNTS" in text
-    assert "// OPS" not in text or "more in BRIEFR" in text
+    assert "At a glance" in text
+    assert "Instance problems" not in text or "more in BRIEFR" in text
 
 
 def test_overflow_notes_before_footer():
@@ -1183,7 +1183,7 @@ def test_llm_fact_block_redacts_ops_error_strings(monkeypatch):
     assert out.lede_source == "groq"
     assert "/srv/briefr/private/provider-token" not in captured["fact_block"]
     assert "ConnectionError" not in captured["fact_block"]
-    assert "nvd_incremental_sync — job_error" in captured["fact_block"]
+    assert "job_error" in captured["fact_block"]
 
 
 def test_llm_exception_falls_back_to_template(monkeypatch):
@@ -1213,7 +1213,7 @@ def test_llm_exception_falls_back_to_template(monkeypatch):
 
     out = run_db_test(apply_headline(brief, llm_enabled=True))
     assert out.lede_source == "template"
-    assert out.headline == "1 ops issue(s)."
+    assert out.headline == "1 instance problem."
 
 
 def test_standup_without_watermark_uses_twelve_hours(db_env, monkeypatch):
@@ -1386,3 +1386,212 @@ def test_run_daily_brief_failed_eod_does_not_write_watermark(monkeypatch, db_env
             await db.close()
 
     assert run_db_test(check()) is None
+
+
+def test_template_headline_mentions_unmapped_share():
+    rows = [{"severity": "MEDIUM", "cpe_matches": "", "affected_products": ""}] * 6
+    rows.append({"severity": "CRITICAL", "cpe_matches": '[{"product":"gitea"}]', "affected_products": ""})
+    market = cluster_published(rows)
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-26 18:00",
+        window_end_local="2026-08-27 18:00",
+        generated_local="2026-08-27 18:00",
+        headline="",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS},
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+        market=market,
+    )
+    text = template_headline(brief)
+    assert "gitea" in text.lower()
+    assert "unanalyzed led volume" not in text.lower()
+    assert "Unmapped" in text or "no product mapped" in text.lower()
+
+
+def test_headlines_from_snapshot_in_window(db_env):
+    from database import get_db, set_feed_cache
+
+    end = datetime(2026, 8, 27, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+    snapshot = {
+        "cards": [
+            {
+                "kind": "news",
+                "source": "Krebs on Security",
+                "sourceId": "krebs",
+                "title": "CISA adds VPN flaws to KEV",
+                "url": "https://kreb.example/a",
+                "publishedAt": "2026-08-27T10:00:00+00:00",
+            },
+            {
+                "kind": "atlas",
+                "source": "MITRE ATLAS",
+                "title": "Ignore me",
+                "url": "https://atlas.example",
+                "publishedAt": "2026-08-27T11:00:00+00:00",
+            },
+            {
+                "kind": "news",
+                "source": "The Hacker News",
+                "sourceId": "hackernews",
+                "title": "Old",
+                "url": "https://thn.example/old",
+                "publishedAt": "2026-08-20T10:00:00+00:00",
+            },
+        ]
+    }
+
+    async def _go():
+        db = await get_db()
+        try:
+            await set_feed_cache(db, "incident_feed:snapshot", snapshot)
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_go())
+    assert len(brief.headlines) == 1
+    assert brief.headlines[0]["source"] == "Krebs on Security"
+    assert brief_to_payload(brief)["headlines"][0]["title"].startswith("CISA adds")
+    assert brief.advisories == []
+
+
+def test_embed_uses_orange_and_human_fields():
+    import json
+    from reports.daily_brief import DISCORD_EMBED_COLOR, format_daily_brief_embed
+
+    market = cluster_published(
+        [
+            {"severity": "CRITICAL", "cpe_matches": '[{"product":"gitea"}]', "affected_products": ""},
+            {"severity": "LOW", "cpe_matches": "", "affected_products": ""},
+        ]
+    )
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="Asia/Kolkata",
+        window_start_local="2026-08-26 21:15",
+        window_end_local="2026-08-27 21:15",
+        generated_local="2026-08-27 21:15",
+        headline="2 published. gitea ranked first.",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS} | {"critical_high_new": 1, "ops_issues": 1},
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[
+            {
+                "id": "kev_metadata_sync",
+                "reason": "KEV request failed",
+                "error_class": "job_error",
+            }
+        ],
+        market=market,
+        headlines=[
+            {"source": "Krebs on Security", "title": "VPN KEV", "url": "https://kreb.example/a"}
+        ],
+        advisories=[],
+    )
+    embeds = format_daily_brief_embed(brief)
+    assert len(embeds) == 1
+    emb = embeds[0]
+    assert emb["color"] == DISCORD_EMBED_COLOR == 0xE85533
+    assert emb["title"] == "End of day"
+    names = [field["name"] for field in emb["fields"]]
+    assert "At a glance" in names
+    assert "Coverage" in names
+    assert "Headlines" in names
+    blob = json.dumps(emb)
+    assert "// HEADLINE" not in blob
+    assert "Unmapped" in blob
+    assert "KEV Metadata Sync" in blob
+
+
+def test_html_escapes_headline_title():
+    from reports.daily_brief import format_daily_brief_html
+
+    brief = DailyBrief(
+        slot="standup",
+        tz_name="UTC",
+        window_start_local="a",
+        window_end_local="b",
+        generated_local="c",
+        headline="Quiet window.",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS},
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[],
+        headlines=[{"source": "THN", "title": "Foo <script> x", "url": "https://x.example"}],
+        advisories=[],
+    )
+    html = format_daily_brief_html(brief)
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html
+    assert "Morning briefing" in html
+
+
+def test_html_overflow_drops_sections_without_slicing_entities():
+    from reports.daily_brief import format_daily_brief_html
+
+    long_reason = "failed & retry <limit> " * 40
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="2026-08-26 18:00",
+        window_end_local="2026-08-27 18:00",
+        generated_local="2026-08-27 18:00",
+        headline="Quiet window.",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS} | {"kev_new": 8, "ops_issues": 5},
+        kev=[
+            {"cve_id": f"CVE-2026-{i:04d}", "reason": long_reason, "severity": "HIGH"}
+            for i in range(8)
+        ],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[
+            {
+                "id": f"job-{i}",
+                "reason": long_reason,
+                "error_class": "job_error",
+            }
+            for i in range(5)
+        ],
+        headlines=[
+            {
+                "source": "THN",
+                "title": "Ampersand & angle <tag> " * 30,
+                "url": "https://x.example",
+            }
+        ],
+        advisories=[],
+    )
+    html = format_daily_brief_html(brief)
+    assert html.count("<b>") == html.count("</b>")
+    assert "Generated 2026-08-27 18:00 UTC" in html
+    assert "…" not in html
+    assert "&am;" not in html
+    leftover = html
+    while "&" in leftover:
+        idx = leftover.index("&")
+        chunk = leftover[idx : idx + 5]
+        assert chunk.startswith("&amp;") or chunk.startswith("&lt;") or chunk.startswith("&gt;")
+        leftover = leftover[idx + 1 :]
+

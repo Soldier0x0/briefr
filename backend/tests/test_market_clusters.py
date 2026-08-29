@@ -48,7 +48,14 @@ def test_cluster_one_cve_one_bucket_and_merges_same_product():
     assert by_label["nginx"]["critical"] == 1
     assert by_label["nginx"]["high"] == 1
     assert by_label["oracle database"]["total"] == 1
-    assert by_label["unanalyzed"]["total"] == 1
+    assert by_label["Unmapped"]["total"] == 1
+    assert market["unmapped"] == 1
+
+
+def test_unmapped_display_label_not_unanalyzed():
+    market = cluster_published([{"severity": "LOW", "cpe_matches": "", "affected_products": ""}])
+    assert market["products"][0]["label"] == "Unmapped"
+    assert "unanalyzed" not in market["products"][0]["label"]
 
 
 def test_weighted_rank_puts_openssl_above_medium_volume():
@@ -81,9 +88,9 @@ def test_format_market_section_grammar():
         {"severity": "CRITICAL", "cpe_matches": '[{"product":"nginx"}]', "affected_products": ""},
     ])
     lines = format_market_section(market)
-    assert lines[0] == "// MARKET"
+    assert lines[0] == "Products"
     assert lines[1].startswith("Published: 1")
-    assert "• nginx  1  (C 1 · H 0 · M 0 · L 0)" in lines
+    assert "• nginx  1  (Critical 1 · High 0 · Medium 0 · Low 0)" in lines
     assert not any(line.startswith("+") for line in lines)
 
 
