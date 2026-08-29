@@ -5724,6 +5724,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-webhooks->table:publications",
+      "source": "routers-admin-webhooks",
+      "target": "table:publications",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:sync_state",
       "source": "routers-admin-webhooks",
       "target": "table:sync_state",
