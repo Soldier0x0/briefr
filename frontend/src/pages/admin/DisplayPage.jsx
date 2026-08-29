@@ -73,11 +73,16 @@ export default function DisplayPage() {
   function update(key, value) {
     const next = { ...prefs, [key]: value }
     setPrefs(next)
-    void setDisplayPrefs(next).catch(() => {
-      setPrefs(getDisplayPrefs())
-      setStatusError(true)
-      setStatus('Could not save display preferences.')
-    })
+    void setDisplayPrefs(next)
+      .then(() => {
+        setStatusError(false)
+        setStatus('')
+      })
+      .catch(() => {
+        setPrefs(getDisplayPrefs())
+        setStatusError(true)
+        setStatus('Could not save display preferences.')
+      })
   }
 
   function updateNotificationMute(category, muted) {
@@ -239,9 +244,6 @@ export default function DisplayPage() {
             Reset to default
           </button>
         </div>
-        {status ? (
-          <p className={`display-typography-status mono${statusError ? ' display-typography-status--error' : ''}`} role={statusError ? 'alert' : 'status'}>{status}</p>
-        ) : null}
       </Card>
 
       <Card>

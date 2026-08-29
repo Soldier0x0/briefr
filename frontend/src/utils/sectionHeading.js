@@ -1,3 +1,6 @@
 export function formatSectionHeading(text) {
-  return String(text ?? '').replace(/^\s*\/\/\s*/, '').trim()
+  return String(text ?? '')
+    .replace(/^\s*\/\/\s*/, '')
+    .replace(/\s*\/\/\s*$/, '')
+    .trim()
 }

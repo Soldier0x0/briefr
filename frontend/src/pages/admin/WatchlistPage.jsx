@@ -85,13 +85,11 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
   async function loadWatchlist() {
     setWatchlistError(null)
-    setWatchlistRows(null)
     try {
       const { data } = await adminApi.getJson(`/watchlist?state=${watchlistState}&limit=200`)
       setWatchlistRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setWatchlistError(e)
-      setWatchlistRows([])
     }
   }
 
@@ -100,13 +98,11 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     if (iocType) params.set('ioc_type', iocType)
     if (iocSearch) params.set('search', iocSearch)
     setIocError(null)
-    setIocRows(null)
     try {
       const { data } = await adminApi.getJson(`/ioc-cache?${params}`)
       setIocRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setIocError(e)
-      setIocRows([])
     }
   }
 
@@ -114,13 +110,11 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
     const params = new URLSearchParams({ limit: 100 })
     if (huntTechnique) params.set('technique_id', huntTechnique)
     setHuntError(null)
-    setHuntRows(null)
     try {
       const { data } = await adminApi.getJson(`/hunt-packs?${params}`)
       setHuntRows(Array.isArray(data) ? data : [])
     } catch (e) {
       setHuntError(e)
-      setHuntRows([])
     }
   }
 
@@ -308,7 +302,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                   <AdminTableBodySkeletonRows rows={5} cols={7} />
                 )}
                 {!watchlistError && watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs (legacy entries only — snooze was removed from the analyst feed)' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin CVEs from the main feed to see them here'}</td></tr>}
-                {!watchlistError && watchlistRows?.map(r => (
+                {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
                     <td className="mono admin-table-id">{r.cve_id}</td>
                     <td>{r.severity || '—'}</td>
@@ -364,7 +358,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 )}
                 {iocRows === null && !iocError && <AdminTableBodySkeletonRows rows={5} cols={5} />}
                 {!iocError && iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
-                {!iocError && iocRows?.map((r, i) => (
+                {iocRows?.map((r, i) => (
                   <tr key={i}>
                     <td className="mono admin-table-ellipsis">{r.value}</td>
                     <td>{r.ioc_type}</td>
@@ -421,7 +415,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 )}
                 {huntRows === null && !huntError && <AdminTableBodySkeletonRows rows={5} cols={6} />}
                 {!huntError && huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
-                {!huntError && huntRows?.map(r => (
+                {huntRows?.map(r => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
                     <td className="mono admin-table-id">{r.technique_id}</td>

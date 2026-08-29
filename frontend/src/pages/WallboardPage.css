@@ -437,12 +437,12 @@
 
 .wallboard-page--compact .wallboard-tile-sub,
 .wallboard-page--compact .wallboard-mini-list {
-  font-size: clamp(0.75rem, 0.9vw, 0.75rem);
+  font-size: var(--font-size-micro);
 }
 
 .wallboard-page--compact .wallboard-ingest-strip {
-  padding: 0.3rem 0.5rem;
-  font-size: clamp(0.75rem, 0.9vw, 0.75rem);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-micro);
 }
 
 .wallboard-page--compact .wallboard-table-wrap {

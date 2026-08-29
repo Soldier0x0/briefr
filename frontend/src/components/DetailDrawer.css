@@ -1625,7 +1625,7 @@ a.drawer-related-news-title:focus-visible {
 
 .refs-link:hover {
   color: var(--text-heading);
-  text-decoration-color: currentColor;
+  text-decoration-color: currentcolor;
 }
 
 /* MITRE ATLAS (Intel tab) */

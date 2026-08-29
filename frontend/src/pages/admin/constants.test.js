@@ -25,4 +25,10 @@ describe('admin reports nav', () => {
     assert.doesNotMatch(css, /\.admin-watchlist-triggers[^{]*\{[^}]*max-content/)
     assert.doesNotMatch(prefs, /import\('\.\/typographyPrefs/)
   })
+
+  it('exposes display save status in one live region', () => {
+    const src = readFileSync(join(here, 'DisplayPage.jsx'), 'utf8')
+    const regions = src.match(/role=\{statusError \? 'alert' : 'status'\}/g) || []
+    assert.equal(regions.length, 1)
+  })
 })

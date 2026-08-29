@@ -374,7 +374,7 @@ export default function WebhooksPage({ toast }) {
               </div>
             ) : (
               <input
-                className="admin-input"
+                className="admin-input admin-input--block"
                 placeholder="https://… webhook URL"
                 value={createForm.url}
                 onChange={e => setCreateForm(f => ({ ...f, url: e.target.value }))}

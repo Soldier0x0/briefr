@@ -350,11 +350,19 @@
   .brief-chart-card {
     min-height: 180px;
   }
+
+  .brief-chart-card--table {
+    min-height: 0;
+  }
 }
 
 @media (max-width: 640px) {
   .brief-chart-card {
     min-height: 160px;
+  }
+
+  .brief-chart-card--table {
+    min-height: 0;
   }
 
   .brief-chart-canvas-wrap {
