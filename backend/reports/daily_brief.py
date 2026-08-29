@@ -680,10 +680,10 @@ def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
             break
         kept_fields = []
         kept_ids = []
-        for fid, field in zip(field_ids, embed["fields"]):
+        for fid, embed_field in zip(field_ids, embed["fields"], strict=True):
             if fid == drop_id:
                 continue
-            kept_fields.append(field)
+            kept_fields.append(embed_field)
             kept_ids.append(fid)
         embed["fields"] = kept_fields
         field_ids = kept_ids
