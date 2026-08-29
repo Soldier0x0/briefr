@@ -8,6 +8,10 @@ describe('sectionHeading', () => {
     assert.equal(formatSectionHeading('// ACTIVE CAMPAIGNS'), 'ACTIVE CAMPAIGNS')
   })
 
+  it('strips trailing slashes from section headings', () => {
+    assert.equal(formatSectionHeading('STACK //'), 'STACK')
+  })
+
   it('keeps already-clean headings unchanged', () => {
     assert.equal(formatSectionHeading('MITRE ATT&CK'), 'MITRE ATT&CK')
   })

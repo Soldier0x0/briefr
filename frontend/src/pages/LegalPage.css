@@ -12,7 +12,7 @@
 
 .legal-back {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   color: var(--accent);
   text-decoration: none;
@@ -53,7 +53,7 @@
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   color: var(--text3);
 }
@@ -115,7 +115,7 @@
 .legal-ul li::before {
   content: '--';
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   position: absolute;
   left: 0;

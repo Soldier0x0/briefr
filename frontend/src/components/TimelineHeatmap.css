@@ -49,7 +49,7 @@
 
 .timeline-heatmap-title {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   letter-spacing: 0.06em;
   font-weight: 400;
@@ -115,7 +115,7 @@
 
 .timeline-row-label {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   line-height: var(--heatmap-cell);
   height: var(--heatmap-cell);
@@ -167,7 +167,7 @@
 
 .timeline-legend-label {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   letter-spacing: 0.04em;
 }

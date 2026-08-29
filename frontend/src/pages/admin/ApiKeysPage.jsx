@@ -360,6 +360,7 @@ export default function ApiKeysPage({ toast }) {
                   on={value === '1' || value === 'true' || value === true}
                   disabled={isSaving}
                   onChange={v => saveKey(envKey, v ? '1' : '0', field)}
+                  aria-label={label}
                 />
               ) : (
                 <span className="mono admin-input admin-input-display" title={isSecret ? undefined : displayValue}>

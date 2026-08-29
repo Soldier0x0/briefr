@@ -87,6 +87,8 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
   const [relatedMethod, setRelatedMethod] = useState('')
   const [relatedNews, setRelatedNews] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
+  const [relatedError, setRelatedError] = useState(false)
+  const [drawerBundleRetry, setDrawerBundleRetry] = useState(0)
   const [correlation, setCorrelation] = useState(null)
   const [correlationLoading, setCorrelationLoading] = useState(false)
   const [correlationSuppressions, setCorrelationSuppressions] = useState([])
@@ -196,6 +198,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
       setRelatedMethod('')
       setRelatedNews([])
       setRelatedLoading(false)
+      setRelatedError(false)
       setCorrelation(null)
       setCorrelationLoading(false)
       setCorrelationSuppressions([])
@@ -208,6 +211,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     setSentencesLoading(true)
     setEpssLoading(true)
     setRelatedLoading(true)
+    setRelatedError(false)
     setCorrelation(null)
     setCorrelationLoading(true)
     const sector = assetCtx?.profile?.environment?.industry || ''
@@ -218,6 +222,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
     ])
       .then(([bundle, supData, fbData]) => {
         if (cancelled) return
+        setRelatedError(false)
         setSentences(bundle.sentences || null)
         setEpssHistory(Array.isArray(bundle.epss_history) ? bundle.epss_history : [])
         const relatedPayload = bundle.related || {}
@@ -242,6 +247,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
           setRelated([])
           setRelatedMethod('')
           setRelatedNews([])
+          setRelatedError(true)
           setCorrelation(null)
           setCorrelationSuppressions([])
           setCorrelationFeedback([])
@@ -257,7 +263,7 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
         }
       })
     return () => { cancelled = true }
-  }, [cve?.cve_id, assetCtx?.profile?.environment?.industry])
+  }, [cve?.cve_id, assetCtx?.profile?.environment?.industry, drawerBundleRetry])
 
   useEffect(() => {
     if (!isOpen) {
@@ -1055,6 +1061,8 @@ export default function DetailDrawer({ cve, loading = false, error = null, onRet
                 relatedMethod={relatedMethod}
                 relatedNews={relatedNews}
                 loading={relatedLoading}
+                error={relatedError}
+                onRetry={() => setDrawerBundleRetry(n => n + 1)}
                 onSelectRelated={handleSelectRelated}
               />
             )}

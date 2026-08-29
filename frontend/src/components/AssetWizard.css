@@ -14,7 +14,7 @@
 }
 
 .asset-wizard-step {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text2);
   margin: 0;
 }
@@ -48,7 +48,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   margin-bottom: 12px;
 }
@@ -97,7 +97,7 @@
 }
 
 .asset-ai-chip {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   padding: 6px 10px;
   border: 1px solid var(--border2);
   background: transparent;

@@ -5,7 +5,7 @@
   color: var(--text);
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.5rem 0;
+  padding: var(--space-4) var(--space-6) 0;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -14,8 +14,8 @@
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: 1rem 1.25rem;
-  margin-bottom: 0.85rem;
+  gap: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .wallboard-brand {
@@ -42,7 +42,7 @@
 }
 
 .wallboard-header-meta {
-  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.75rem, 1.1vw, 0.9rem);
   color: var(--text3);
   white-space: nowrap;
 }
@@ -123,7 +123,7 @@
   padding: 0.45rem 0.75rem;
   border: 1px solid var(--border);
   background: var(--bg2);
-  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+  font-size: clamp(0.75rem, 1.1vw, 0.85rem);
   color: var(--text2);
 }
 
@@ -135,7 +135,7 @@
   margin-bottom: 0.5rem;
   border: 1px solid var(--border);
   background: var(--surface-raised, var(--bg2));
-  font-size: clamp(0.68rem, 1vw, 0.82rem);
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: var(--text-muted, var(--text2));
 }
 
@@ -168,7 +168,7 @@
 .wallboard-tile-label {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: clamp(0.65rem, 1vw, 0.8rem);
+  font-size: clamp(0.75rem, 1vw, 0.8rem);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text3);
@@ -178,7 +178,7 @@
 .wallboard-tile-hint {
   display: block;
   margin-top: 0.15rem;
-  font-size: clamp(0.58rem, 0.85vw, 0.68rem);
+  font-size: var(--font-size-micro);
   text-transform: none;
   letter-spacing: 0.02em;
   color: var(--text3);
@@ -188,7 +188,7 @@
 
 .wallboard-tile-empty {
   margin: 0.35rem 0 0;
-  font-size: clamp(0.65rem, 0.95vw, 0.78rem);
+  font-size: clamp(0.75rem, 0.95vw, 0.78rem);
   color: var(--text3);
 }
 
@@ -202,7 +202,7 @@
 
 .wallboard-tile-sub {
   margin: 0;
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
   color: var(--text2);
   line-height: 1.35;
 }
@@ -214,7 +214,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
   color: var(--text2);
   overflow: auto;
 }
@@ -408,7 +408,7 @@
 
 .wallboard-page--compact .wallboard-header-stack,
 .wallboard-page--compact .wallboard-header-meta {
-  font-size: clamp(0.65rem, 0.95vw, 0.78rem);
+  font-size: clamp(0.75rem, 0.95vw, 0.78rem);
 }
 
 .wallboard-page--compact .wallboard-body,
@@ -428,7 +428,7 @@
 }
 
 .wallboard-page--compact .wallboard-tile-label {
-  font-size: clamp(0.58rem, 0.85vw, 0.68rem);
+  font-size: var(--font-size-micro);
 }
 
 .wallboard-page--compact .wallboard-tile-metric {
@@ -437,12 +437,12 @@
 
 .wallboard-page--compact .wallboard-tile-sub,
 .wallboard-page--compact .wallboard-mini-list {
-  font-size: clamp(0.62rem, 0.9vw, 0.75rem);
+  font-size: var(--font-size-micro);
 }
 
 .wallboard-page--compact .wallboard-ingest-strip {
-  padding: 0.3rem 0.5rem;
-  font-size: clamp(0.62rem, 0.9vw, 0.75rem);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-micro);
 }
 
 .wallboard-page--compact .wallboard-table-wrap {
@@ -455,5 +455,5 @@
 }
 
 .wallboard-page--compact .wallboard-ticker-track {
-  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.75rem, 1.1vw, 0.9rem);
 }

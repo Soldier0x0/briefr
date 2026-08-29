@@ -18,6 +18,38 @@ const TRIGGER_LABELS = [
   ['withdrawn', 'Withdrawn / rejected'],
 ]
 
+function adminErrText(e) {
+  const msg = String(e?.message || e)
+  return e?.requestId ? `${msg} (ref: ${e.requestId})` : msg
+}
+
+function TableLoadError({ colSpan, error, onRetry, compact = false }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className={compact ? 'admin-empty admin-empty--compact' : 'admin-empty'}>
+        <span className="admin-inline-error" role="alert">{adminErrText(error)}</span>
+        {' '}
+        <button type="button" className="admin-btn admin-btn-ghost" onClick={onRetry}>Retry</button>
+      </td>
+    </tr>
+  )
+}
+
+function TriggerRow({ id, label, on, onChange, disabled }) {
+  const switchId = `watchlist-trigger-${id}`
+  return (
+    <div className="admin-pref-row">
+      <label className="admin-pref-label mono" htmlFor={switchId}>{label}</label>
+      <ToggleSwitch
+        id={switchId}
+        on={on}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    </div>
+  )
+}
+
 export default function WatchlistPage({ toast, mode = 'operator' }) {
   const isAnalyst = mode === 'analyst'
   const [subtab, setSubtab] = useState('watchlist')
@@ -27,6 +59,9 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   const [iocType, setIocType] = useState('')
   const [iocSearch, setIocSearch] = useState('')
   const [huntRows, setHuntRows] = useState(null)
+  const [watchlistError, setWatchlistError] = useState(null)
+  const [iocError, setIocError] = useState(null)
+  const [huntError, setHuntError] = useState(null)
   const [huntTechnique, setHuntTechnique] = useState('')
   const [policy, setPolicy] = useState(null)
   const [policySaving, setPolicySaving] = useState(false)
@@ -49,29 +84,38 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
   useEffect(() => { if (isAnalyst) setSubtab('watchlist') }, [isAnalyst])
 
   async function loadWatchlist() {
+    setWatchlistError(null)
     try {
-      const res = await adminApi.get(`/watchlist?state=${watchlistState}&limit=200`)
-      setWatchlistRows(await res.json())
-    } catch { setWatchlistRows([]) }
+      const { data } = await adminApi.getJson(`/watchlist?state=${watchlistState}&limit=200`)
+      setWatchlistRows(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setWatchlistError(e)
+    }
   }
 
   async function loadIoc() {
     const params = new URLSearchParams({ limit: 50 })
     if (iocType) params.set('ioc_type', iocType)
     if (iocSearch) params.set('search', iocSearch)
+    setIocError(null)
     try {
-      const res = await adminApi.get(`/ioc-cache?${params}`)
-      setIocRows(await res.json())
-    } catch { setIocRows([]) }
+      const { data } = await adminApi.getJson(`/ioc-cache?${params}`)
+      setIocRows(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setIocError(e)
+    }
   }
 
   async function loadHunts() {
     const params = new URLSearchParams({ limit: 100 })
     if (huntTechnique) params.set('technique_id', huntTechnique)
+    setHuntError(null)
     try {
-      const res = await adminApi.get(`/hunt-packs?${params}`)
-      setHuntRows(await res.json())
-    } catch { setHuntRows([]) }
+      const { data } = await adminApi.getJson(`/hunt-packs?${params}`)
+      setHuntRows(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setHuntError(e)
+    }
   }
 
   useEffect(() => { if (subtab === 'watchlist') loadWatchlist() }, [subtab, watchlistState])
@@ -160,7 +204,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             ['ioc', 'IOC CACHE', 'Indicator of Compromise results cached from threat-intel APIs (OTX, etc.). Populates automatically when analysts look up IPs, hashes, or domains from a CVE detail page.'],
             ['hunt', 'HUNT PACKS', 'Pre-computed detection packs grouped by MITRE ATT&CK technique. Created when a technique-based threat hunt is triggered from a CVE detail page.'],
           ].map(([id, label, tip]) => (
-            <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span key={id} className="admin-subtab-item">
               <button className={`admin-subtab ${subtab === id ? 'active' : ''}`} onClick={() => setSubtab(id)}>{label}</button>
               {tip && <HelpTip text={tip} />}
             </span>
@@ -177,7 +221,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 <HelpTip text="Real-time pinned-CVE alerts — not the daily brief. Quiet default: KEV, EPSS jumps, PoC, and withdrawn. Patch is off. Turning every trigger on sends a digest instead of a firehose." />
               </h2>
               {policyError ? (
-                <p className="admin-page-subtitle" style={{ color: 'var(--red)' }}>
+                <p className="admin-page-subtitle admin-inline-error" role="alert">
                   Failed to load policy: {String(policyError.message || policyError)}{' '}
                   <button type="button" className="admin-btn admin-btn-ghost" onClick={loadPolicy}>Retry</button>
                 </p>
@@ -192,21 +236,21 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                   </p>
                   <div className="admin-watchlist-triggers">
                     {TRIGGER_LABELS.map(([id, label]) => (
-                      <div key={id} className="admin-field" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%' }}>
-                        <span className="mono admin-field-label">{label}</span>
-                        <ToggleSwitch
-                          on={!!policy.triggers?.[id]}
-                          onChange={(v) => updateTrigger(id, v)}
-                          disabled={policySaving}
-                        />
-                      </div>
+                      <TriggerRow
+                        key={id}
+                        id={id}
+                        label={label}
+                        on={!!policy.triggers?.[id]}
+                        onChange={(v) => updateTrigger(id, v)}
+                        disabled={policySaving}
+                      />
                     ))}
                   </div>
                 </>
               )}
             </div>
           )}
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
+          <div className="admin-meta-line">
             {pinCount} watched CVEs · {snoozeCount} snoozed CVEs
           </div>
           <div className="admin-action-bar">
@@ -251,20 +295,23 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 </tr>
               </thead>
               <tbody>
-                {watchlistRows === null && (
+                {watchlistError && (
+                  <TableLoadError colSpan={7} error={watchlistError} onRetry={loadWatchlist} compact />
+                )}
+                {watchlistRows === null && !watchlistError && (
                   <AdminTableBodySkeletonRows rows={5} cols={7} />
                 )}
-                {watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs (legacy entries only — snooze was removed from the analyst feed)' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin CVEs from the main feed to see them here'}</td></tr>}
+                {!watchlistError && watchlistRows?.length === 0 && <tr><td colSpan={7} className="admin-empty admin-empty--compact">{watchlistState === 'snooze' ? 'No snoozed CVEs (legacy entries only — snooze was removed from the analyst feed)' : watchlistState === 'pin' ? 'No pinned CVEs — pin CVEs from the main feed to track them here' : 'No watchlist entries yet — pin CVEs from the main feed to see them here'}</td></tr>}
                 {watchlistRows?.map(r => (
                   <tr key={r.cve_id}>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
+                    <td className="mono admin-table-id">{r.cve_id}</td>
                     <td>{r.severity || '—'}</td>
                     <td>{r.epss_score != null ? (r.epss_score * 100).toFixed(1) + '%' : '—'}</td>
                     <td>{r.is_kev ? <span className="badge badge-error">KEV</span> : ''}</td>
                     <td><span className={`badge ${r.state === 'pin' ? 'badge-info' : 'badge-warn'}`}>{r.state}</span></td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.created_at)}</td>
+                    <td className="admin-table-id">{fmtIso(r.created_at)}</td>
                     <td>
-                      <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                      <button className="admin-btn admin-btn-danger admin-btn-compact"
                         onClick={() => removeWatchlist(r.cve_id)}>Remove</button>
                     </td>
                   </tr>
@@ -284,7 +331,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
       {subtab === 'ioc' && (
         <div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
+          <div className="admin-meta-line">
             {iocRows?.length ?? 0} entries
             {iocOldestAge ? ` · oldest ${fmtAge(iocOldestAge)}` : ''}
           </div>
@@ -306,16 +353,19 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
             <table className="admin-table">
               <thead><tr><th>VALUE</th><th>TYPE</th><th>CACHED AT</th><th>AGE</th><th></th></tr></thead>
               <tbody>
-                {iocRows === null && <AdminTableBodySkeletonRows rows={5} cols={5} />}
-                {iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
+                {iocError && (
+                  <TableLoadError colSpan={5} error={iocError} onRetry={loadIoc} compact />
+                )}
+                {iocRows === null && !iocError && <AdminTableBodySkeletonRows rows={5} cols={5} />}
+                {!iocError && iocRows?.length === 0 && <tr><td colSpan={5} className="admin-empty admin-empty--compact">{iocType || iocSearch ? 'No IOC cache entries match the current filters' : 'IOC cache is empty — lookups populate it automatically as you search indicators from CVE details'}</td></tr>}
                 {iocRows?.map((r, i) => (
                   <tr key={i}>
-                    <td className="mono" style={{ fontSize: '0.7rem', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.value}</td>
+                    <td className="mono admin-table-ellipsis">{r.value}</td>
                     <td>{r.ioc_type}</td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.cached_at)}</td>
+                    <td className="admin-table-id">{fmtIso(r.cached_at)}</td>
                     <td>{fmtAge(r.age_seconds)}</td>
                     <td>
-                      <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                      <button className="admin-btn admin-btn-danger admin-btn-compact"
                         onClick={() => deleteIoc(r.value)}>Clear</button>
                     </td>
                   </tr>
@@ -335,7 +385,7 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
 
       {subtab === 'hunt' && (
         <div>
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text3)', marginBottom: '0.75rem' }}>
+          <div className="admin-meta-line">
             {huntRows?.length ?? 0} packs
           </div>
           <div className="admin-filter-bar">
@@ -360,17 +410,20 @@ export default function WatchlistPage({ toast, mode = 'operator' }) {
                 </tr>
               </thead>
               <tbody>
-                {huntRows === null && <AdminTableBodySkeletonRows rows={5} cols={6} />}
-                {huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
+                {huntError && (
+                  <TableLoadError colSpan={6} error={huntError} onRetry={loadHunts} />
+                )}
+                {huntRows === null && !huntError && <AdminTableBodySkeletonRows rows={5} cols={6} />}
+                {!huntError && huntRows?.length === 0 && <tr><td colSpan={6} className="admin-empty">{huntTechnique ? 'No hunt packs match that technique ID' : 'No hunt packs yet — these are created when you run a technique-based threat hunt from a CVE detail page'}</td></tr>}
                 {huntRows?.map(r => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.technique_id}</td>
-                    <td className="mono" style={{ fontSize: '0.75rem' }}>{r.cve_id}</td>
+                    <td className="mono admin-table-id">{r.technique_id}</td>
+                    <td className="mono admin-table-id">{r.cve_id}</td>
                     <td>{r.priority}</td>
-                    <td style={{ fontSize: '0.75rem' }}>{fmtIso(r.created_at)}</td>
+                    <td className="admin-table-id">{fmtIso(r.created_at)}</td>
                     <td>
-                      <button className="admin-btn admin-btn-danger" style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem' }}
+                      <button className="admin-btn admin-btn-danger admin-btn-compact"
                         onClick={() => deleteHunt(r.id)}>Delete</button>
                     </td>
                   </tr>

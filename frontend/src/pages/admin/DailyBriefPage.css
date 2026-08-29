@@ -12,6 +12,12 @@
   color: var(--accent-primary);
 }
 
+.daily-brief-error {
+  color: var(--status-error);
+  font-size: var(--font-size-secondary);
+  margin: 0 0 var(--space-3);
+}
+
 .daily-brief-grid {
   display: grid;
   gap: var(--space-3);

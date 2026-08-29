@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import pytest
 from fastapi.testclient import TestClient
 
 import rate_limit
@@ -15,16 +16,27 @@ from main import app
 from rate_limit import TokenBucket
 from settings import settings
 
-# TestClient connections report this client host; it is the bucket key.
-TESTCLIENT_KEY = "testclient"
+# TestClient default peer is "testclient"; httpx/ASGI peers may be loopback.
+_CLIENT_BUCKET_KEYS = ("testclient", "127.0.0.1", "::1", "localhost")
 
 
-def _drain(bucket: TokenBucket, key: str = TESTCLIENT_KEY) -> None:
-    bucket._buckets[key] = (0.0, time.monotonic())
+@pytest.fixture(autouse=True)
+def _enable_in_memory_rate_limits(monkeypatch):
+    """Suite env / backend/.env often set RATE_LIMIT_ENABLED=0; these tests
+    assert 429 and must not share a Redis/DB token store."""
+    monkeypatch.setattr(settings, "rate_limit_enabled", True)
+    monkeypatch.setattr("rate_limit_store.shared_store_enabled", lambda: False)
 
 
-def _reset(bucket: TokenBucket, key: str = TESTCLIENT_KEY) -> None:
-    bucket._buckets.pop(key, None)
+def _drain(bucket: TokenBucket, extra_keys: tuple[str, ...] = ()) -> None:
+    now = time.monotonic()
+    for key in (*_CLIENT_BUCKET_KEYS, *extra_keys):
+        bucket._buckets[key] = (0.0, now)
+
+
+def _reset(bucket: TokenBucket, extra_keys: tuple[str, ...] = ()) -> None:
+    for key in (*_CLIENT_BUCKET_KEYS, *extra_keys):
+        bucket._buckets.pop(key, None)
 
 
 # ---------------------------------------------------------------- unit tests

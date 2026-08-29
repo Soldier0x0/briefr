@@ -84,13 +84,12 @@
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 10px 10px 8px;
-  min-height: 200px;
   display: flex;
   flex-direction: column;
 }
 
 .brief-chart-card--table {
-  min-height: 200px;
+  min-height: 0;
 }
 
 .brief-chart-card-head {
@@ -187,17 +186,10 @@
 
 .brief-chart-empty,
 .brief-charts-empty {
-  padding: 0.75rem 0;
+  padding: var(--space-4) 0;
   color: var(--text3);
   font-size: var(--type-meta);
   text-align: center;
-}
-
-.brief-charts-empty {
-  min-height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin: 0;
 }
 
@@ -358,11 +350,19 @@
   .brief-chart-card {
     min-height: 180px;
   }
+
+  .brief-chart-card--table {
+    min-height: 0;
+  }
 }
 
 @media (max-width: 640px) {
   .brief-chart-card {
     min-height: 160px;
+  }
+
+  .brief-chart-card--table {
+    min-height: 0;
   }
 
   .brief-chart-canvas-wrap {

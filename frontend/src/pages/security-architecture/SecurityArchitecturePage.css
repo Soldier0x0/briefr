@@ -1119,7 +1119,7 @@
 .sa-graph-node text {
   fill: var(--text);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   pointer-events: none;
   user-select: none;
 }

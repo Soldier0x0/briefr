@@ -203,7 +203,7 @@
 
 .kev-expand-btn {
   margin-top: 10px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.08em;
   color: var(--accent);
   background: none;

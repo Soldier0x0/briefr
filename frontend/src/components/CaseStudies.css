@@ -47,7 +47,7 @@
 
 .cs-headline-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   color: var(--accent);
   margin-bottom: 6px;
@@ -88,7 +88,7 @@
 }
 
 .cs-hero-kicker {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.14em;
   color: var(--accent);
   margin-bottom: 10px;

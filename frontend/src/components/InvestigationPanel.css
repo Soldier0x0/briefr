@@ -172,7 +172,7 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 4px 0 4px 8px;
-  font-size: 0.5rem;
+  font-size: var(--font-size-micro);
   color: var(--text3);
   gap: 2px;
 }
@@ -203,7 +203,7 @@
 }
 
 .inv-type-badge {
-  font-size: 0.5rem;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.08em;
   padding: 2px 5px;
   border: 1px solid var(--border2);
@@ -215,7 +215,7 @@
 .inv-type-technique { color: var(--green); border-color: var(--green); }
 
 .inv-thread-time {
-  font-size: 0.5rem;
+  font-size: var(--font-size-micro);
   color: var(--text3);
 }
 
@@ -266,14 +266,14 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 160;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.08em;
   padding: 10px 20px;
-  background: var(--red);
-  color: #fff;
-  border: none;
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-active);
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-overlay);
 }
 
 .inv-sheet-overlay {
