@@ -16,7 +16,7 @@ class DatabaseError(Exception):
 
 
 class DatabaseLockedError(DatabaseError):
-    """Retryable lock / contention (Postgres deadlocks)."""
+    """Retryable lock / contention (Postgres deadlocks, legacy sqlite backup files)."""
 
 
 def _asyncpg_locked(exc: BaseException) -> bool:
@@ -29,6 +29,18 @@ def _asyncpg_locked(exc: BaseException) -> bool:
         asyncpg.exceptions.LockNotAvailableError,
     )
     return isinstance(exc, locked_types)
+
+
+def _sqlite_locked(exc: BaseException) -> bool:
+    """Legacy backup archives still open sqlite3 files (not the app runtime)."""
+    try:
+        import sqlite3
+    except ImportError:
+        return False
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    msg = str(exc).lower()
+    return "locked" in msg or "busy" in msg
 
 
 def format_db_exception_message(exc: BaseException) -> str:
@@ -53,7 +65,7 @@ def normalize_db_exception(exc: BaseException) -> DatabaseError:
         return exc
     if isinstance(exc, TimeoutError):
         return DatabaseError("Database command timeout")
-    if _asyncpg_locked(exc):
+    if _asyncpg_locked(exc) or _sqlite_locked(exc):
         return DatabaseLockedError(str(exc))
     try:
         import asyncpg

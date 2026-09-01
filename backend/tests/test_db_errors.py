@@ -16,6 +16,13 @@ from db.errors import (
 )
 
 
+def test_normalize_sqlite_locked_maps_to_database_locked():
+    import sqlite3
+
+    out = normalize_db_exception(sqlite3.OperationalError("database is locked"))
+    assert isinstance(out, DatabaseLockedError)
+
+
 def test_normalize_asyncpg_deadlock():
     asyncpg = pytest.importorskip("asyncpg")
     exc = asyncpg.exceptions.DeadlockDetectedError("deadlock")

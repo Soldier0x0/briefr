@@ -30,7 +30,8 @@ def _patch_app_lifecycle(monkeypatch) -> None:
 
 async def _seed_brief_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
-    recent = (now - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
+    recent_dt = now - timedelta(hours=6)
+    recent_text = recent_dt.strftime("%Y-%m-%d %H:%M:%S")
     due_soon = (now + timedelta(days=5)).strftime("%Y-%m-%d")
     published_old = (now - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
     modified_recent = (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
@@ -71,7 +72,7 @@ async def _seed_brief_db(db_path: Path) -> None:
                 'CVE-2024-8001', 'Log4j', 'RCE', 'Patch', ?, ?
             )
             """,
-            (due_soon, recent),
+            (due_soon, recent_text),
         )
         await db.execute(
             """
@@ -81,7 +82,7 @@ async def _seed_brief_db(db_path: Path) -> None:
                 'CVE-2024-8002', 'epss_score', '0.05', '0.15', ?
             )
             """,
-            (recent,),
+            (recent_dt,),
         )
         await db.commit()
     finally:
@@ -349,7 +350,7 @@ def test_build_epss_movers_skips_non_numeric_history():
 
 async def _seed_brief_bad_epss_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
-    recent = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+    recent = now - timedelta(hours=2)
     published_old = (now - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
     modified_recent = (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
