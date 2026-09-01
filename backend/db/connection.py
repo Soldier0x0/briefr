@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from db.config import is_postgres as is_postgres  # noqa: F401 — monkeypatch target
 from db.config import postgres_dsn
 from db.pg_adapt import prepare_query
 from db.errors import reraise_db_exception
