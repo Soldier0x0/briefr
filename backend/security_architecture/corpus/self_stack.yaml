@@ -299,7 +299,7 @@ terms:
   term: pyrage
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 1.3.0
+  version: 1.4.0
 - id: self-stack-python-dotenv
   title: python-dotenv
   summary: BRIEFR dependency term derived from backend/requirements.txt.
