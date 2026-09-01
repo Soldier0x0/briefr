@@ -124,7 +124,7 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
         yield
         return
 
-    from _pytest.monkeypatch import notset
+    _NOTSET = object()
 
     real_delenv = monkeypatch.delenv
     real_setenv = monkeypatch.setenv
@@ -150,15 +150,15 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
             return None
         return real_setenv(name, value, prepend=prepend)
 
-    def setattr(target, name=notset, value=notset, raising=True):
+    def setattr(target, name=_NOTSET, value=_NOTSET, raising=True):
         attr = None
         newval = None
-        if value is notset:
+        if value is _NOTSET:
             if isinstance(target, str):
                 attr = target.rsplit(".", 1)[-1]
                 newval = name
             else:
-                return real_setattr(target, name, value, raising=raising)
+                return real_setattr(target, name, raising=raising)
         else:
             attr = name if isinstance(name, str) else None
             newval = value
@@ -169,6 +169,8 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
             return None
         if attr == "briefr_require_postgres" and newval in {False, 0, "0"}:
             return None
+        if value is _NOTSET:
+            return real_setattr(target, name, raising=raising)
         return real_setattr(target, name, value, raising=raising)
 
     monkeypatch.delenv = delenv

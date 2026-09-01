@@ -34,10 +34,9 @@ def _days_from_now(days: int) -> str:
     return (date.today() + timedelta(days=days)).isoformat()
 
 
-def _recent_timestamp(hours_ago: int = 6) -> str:
-    return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+def _recent_detected_at(hours_ago: int = 6) -> datetime:
+    """TIMESTAMPTZ bind value for cve_change_history.detected_at."""
+    return datetime.now(timezone.utc) - timedelta(hours=hours_ago)
 
 
 CVE_ROWS = [
@@ -261,7 +260,7 @@ KEV_ROWS = [
 
 # EPSS mover for morning-brief section (detected_at within default 24h window).
 BRIEF_EPSS_CHANGES = [
-    ("CVE-2024-6387", "0.20", "0.34", _recent_timestamp(6)),
+    ("CVE-2024-6387", "0.20", "0.34", _recent_detected_at(6)),
 ]
 
 
