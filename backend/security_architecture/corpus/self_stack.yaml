@@ -269,7 +269,7 @@ terms:
   term: pydantic
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 2.13.4
+  version: 2.13.5
 - id: self-stack-pydantic-settings
   title: pydantic-settings
   summary: BRIEFR dependency term derived from backend/requirements.txt.
