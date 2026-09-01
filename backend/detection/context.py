@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import aiosqlite
+from db.types import DbConnection
 
 from db.cache import get_feed_cache, set_feed_cache
 from db.timeutil import utcnow_str
@@ -97,7 +97,7 @@ def merge_detection_inputs(
 
 
 async def get_detection_context(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     cve_id: str,
 ) -> dict | None:
     return await get_feed_cache(
@@ -108,7 +108,7 @@ async def get_detection_context(
 
 
 async def set_detection_context(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     cve_id: str,
     context: dict,
 ) -> None:

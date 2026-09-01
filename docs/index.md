@@ -4,7 +4,7 @@ Pick **one** guide — you do not need to read everything unless something break
 
 | I want to… | Read | Authority |
 |------------|------|-----------|
-| **Install BRIEFR** (SQLite, Postgres+pgvector, production) | [Self-host guide](SELF_HOST.md) | **Authoritative** |
+| **Install BRIEFR** (Postgres+pgvector, production) | [Self-host guide](SELF_HOST.md) | **Authoritative** |
 | **Postgres / pgvector / backups** | [PostgreSQL guide](POSTGRES.md) | **Authoritative** |
 | **Use BRIEFR** | [User guide](USE.md) | **Authoritative** |
 | **Fix something** | [Troubleshooting](TROUBLESHOOTING.md) | **Authoritative** |

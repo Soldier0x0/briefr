@@ -66,19 +66,16 @@ _pg_is_live() {
   return 0
 }
 
-step "Backend tests (required — Postgres-first, matches CI job: test-postgres)"
+step "Backend tests (required — Postgres, matches CI job: test-postgres)"
 PG_URL="$(detect_pg_url)"
+if [[ -z "$PG_URL" ]]; then
+  fail "PostgreSQL required — start one with: docker compose -f deploy/docker-compose.postgres.yml up -d"
+fi
 (
   cd backend
-  if [[ -n "$PG_URL" ]]; then
-    DATABASE_URL="$PG_URL" BRIEFR_REQUIRE_POSTGRES=1 \
-      JWT_SECRET="${JWT_SECRET:-ci-test-jwt-secret-not-for-production}" \
-      python3 -m pytest tests/ -q
-  else
-    echo "  No Postgres detected — falling back to SQLite (opt-in escape hatch)."
-    echo "  Start one with ./scripts/postgres-dev.sh start or deploy/docker-compose.postgres.yml"
-    DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 python3 -m pytest tests/ -q
-  fi
+  DATABASE_URL="$PG_URL" BRIEFR_REQUIRE_POSTGRES=1 \
+    JWT_SECRET="${JWT_SECRET:-ci-test-jwt-secret-not-for-production}" \
+    python3 -m pytest tests/ -q
 )
 pass "backend pytest"
 

@@ -14,9 +14,8 @@ When docs disagree with code, **code + PRODUCT_STATUS win**.
 
 ## Danger zones — read before editing
 
-1. **SQL:** `db/` is **Postgres-native**. Write Postgres SQL; use parallel
-   `_SQLITE` / `_PG` constants only where SQLite compatibility keeps the default
-   test suite green. Production requires `DATABASE_URL` + `BRIEFR_REQUIRE_POSTGRES=1`.
+1. **SQL:** `db/` is **Postgres-native**. Write Postgres SQL. Production and local
+   tests require `DATABASE_URL` (PostgreSQL 16 + pgvector). There is no SQLite fallback.
    Any `db/` change should be validated on Postgres when possible
    (`DATABASE_URL=postgresql://… pytest tests/ -q`).
 2. **Scheduler locks:** job `id=` strings in `scheduler.py` must stay in sync with

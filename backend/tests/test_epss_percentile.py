@@ -4,30 +4,22 @@ import asyncio
 
 from feeds.epss import _parse_epss_fields, fetch_epss_bulk
 
-
 def test_parse_epss_fields_includes_percentile():
     parsed = _parse_epss_fields("0.42", "0.99100")
     assert parsed == {"score": 0.42, "percentile": 0.991}
 
-
 def test_parse_epss_fields_without_percentile():
     parsed = _parse_epss_fields("0.42", None)
     assert parsed == {"score": 0.42, "percentile": None}
-
 
 def test_update_epss_scores_stores_percentile(tmp_path, monkeypatch):
     import database as db_module
     from settings import settings
 
     db_path = tmp_path / "epss_pct.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
     monkeypatch.setattr(settings, "db_path", str(db_path))
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
 
     async def run():
         await db_module.init_db()
@@ -58,7 +50,6 @@ def test_update_epss_scores_stores_percentile(tmp_path, monkeypatch):
             await db.close()
 
     asyncio.run(run())
-
 
 def test_fetch_epss_bulk_parses_percentile(monkeypatch):
     csv_body = (

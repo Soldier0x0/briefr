@@ -49,10 +49,9 @@ flowchart TB
   end
 
   subgraph Data["Data layer"]
-    PG[("PostgreSQL 16<br/>asyncpg pool")]
-    Dialect["db/dialect.py — SQLite translation for tests/dev only"]
-    DBMod["database.py — all SQL (~3k lines)"]
-    DBMod --> Dialect --> PG
+    PG[("PostgreSQL 16 + pgvector<br/>asyncpg pool")]
+    DBMod["database.py / db/* — Postgres SQL"]
+    DBMod --> PG
   end
 
   subgraph External["External intel APIs"]

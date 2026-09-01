@@ -8,36 +8,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
-
-
-def _force_sqlite(tmp_path, monkeypatch):
-    from settings import settings
-
-    db_path = tmp_path / "feed_watchlist_sort.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
-    monkeypatch.setattr(settings, "db_path", str(db_path))
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
-
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-    return db_path
-
 
 async def _seed_feed_campaign_graph(db) -> None:
     published = "2026-01-15T12:00:00Z"
@@ -78,13 +53,11 @@ async def _seed_feed_campaign_graph(db) -> None:
             (cve_id,),
         )
 
-
 def test_feed_boosts_campaign_peer_of_pinned_cve(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_feed_campaign_graph(db)
             await db.commit()
@@ -104,13 +77,11 @@ def test_feed_boosts_campaign_peer_of_pinned_cve(tmp_path, monkeypatch):
     assert ids.index("CVE-2026-PEER-001") < ids.index("CVE-2026-PEER-002")
     assert ids.index("CVE-2026-PEER-002") < ids.index("CVE-2026-PEER-003")
 
-
 def test_feed_skips_boost_for_low_confidence_campaign(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_feed_campaign_graph(db)
             await db.execute(

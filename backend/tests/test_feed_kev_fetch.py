@@ -13,7 +13,6 @@ from feeds.kev import fetch_kev
 from resilient_client import CircuitOpenError
 from tests.conftest import run_db_test
 
-
 def test_fetch_kev_raises_on_circuit_open(monkeypatch):
     async def _boom(*_a, **_k):
         raise CircuitOpenError("kev", 0.0)
@@ -25,7 +24,6 @@ def test_fetch_kev_raises_on_circuit_open(monkeypatch):
             await fetch_kev()
 
     run_db_test(_run())
-
 
 def test_fetch_kev_raises_on_empty_catalog(monkeypatch):
     class _Resp:
@@ -44,7 +42,6 @@ def test_fetch_kev_raises_on_empty_catalog(monkeypatch):
 
     run_db_test(_run())
 
-
 def test_run_kev_sync_sets_had_error_on_fetch_failure(monkeypatch, tmp_path):
     from db import init as db_init_mod
     from scheduler import run_kev_sync
@@ -58,7 +55,6 @@ def test_run_kev_sync_sets_had_error_on_fetch_failure(monkeypatch, tmp_path):
 
     monkeypatch.setattr("scheduler.fetch_kev", _fail)
     monkeypatch.setattr("scheduler.get_lock", lambda _id: _NoopLock())
-    monkeypatch.setattr(db_init_mod, "is_postgres", lambda url=None: False)
 
     written: list[dict] = []
 
@@ -83,7 +79,6 @@ def test_run_kev_sync_sets_had_error_on_fetch_failure(monkeypatch, tmp_path):
     assert written[-1]["job_id"] == "kev_metadata_sync"
     assert written[-1]["had_error"] is True
     assert "KEV" in written[-1]["error_message"]
-
 
 class _NoopLock:
     def locked(self):

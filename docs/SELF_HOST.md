@@ -4,7 +4,7 @@
 
 | I want to… | Go to |
 |------------|-------|
-| Try BRIEFR locally in 5 minutes | [§1 Quick dev (SQLite)](#1-quick-local-development-sqlite) |
+| Try BRIEFR locally | [§1 Quick local (Postgres)](#1-quick-local-development-postgresql) |
 | Develop or test with real Postgres + pgvector | [§2 Postgres dev](#2-local-development-with-postgresql--pgvector) |
 | Run on a production Debian server | [§3 Production](#3-production-debian--systemd--nginx) |
 | Deep Postgres / backup / pgvector cutover | [`POSTGRES.md`](POSTGRES.md) |
@@ -27,25 +27,38 @@
 
 ---
 
-## 1. Quick local development (SQLite)
+## 1. Quick local development (PostgreSQL)
 
-**Use when:** you want to evaluate BRIEFR with zero database setup.  
-**Not for production** — SQLite is a dev/test fallback only.
+**Use when:** you want to evaluate BRIEFR locally.  
+**Requires** Docker (or an existing Postgres 16 server with the `vector` extension). Not a production install — that is [§3](#3-production-debian--systemd--nginx).
 
 ### Prerequisites
 
 - Python 3.11+
 - Node.js 22.22+ (required by `react-router` 8.x pinned in the frontend)
 - Git
+- Docker (or Postgres 16 + pgvector already running)
 
 ### Steps
 
 ```bash
 git clone https://github.com/Soldier0x0/briefr.git
-cd briefr/backend
+cd briefr
+docker compose -f deploy/docker-compose.postgres.yml up -d
+cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env    # optional API keys — app works without them
+cp .env.example .env
+```
+
+Set in `backend/.env`:
+
+```bash
+DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr
+BRIEFR_REQUIRE_POSTGRES=1
+```
+
+```bash
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -59,7 +72,7 @@ npm run dev    # http://localhost:5173 — proxies /api → :8000
 
 1. Open http://localhost:5173
 2. Complete **first-run setup** to create the admin user (shown when no users exist)
-3. Optional sample data: `python scripts/seed_screenshot_data.py` from repo root
+3. Optional sample data: `python scripts/seed_screenshot_data.py` from repo root (with `DATABASE_URL` set)
 
 ### Verify
 
@@ -69,23 +82,23 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 
 | Check | Expected |
 |-------|----------|
-| `"backend"` | `"sqlite"` |
+| `"backend"` | `"postgresql"` |
 | `"cve_count"` | `0` on first boot, then grows (auto-ingest if &lt; 10 CVEs) |
 | UI loads | Login/setup screen at `:5173` |
 
-**Bare cloud VM note:** if `.env` contains a placeholder Postgres URL and nothing listens on `:5432`, startup fails. Clear it: `DATABASE_URL=""` and `BRIEFR_REQUIRE_POSTGRES=0` in `backend/.env`.
+Port 5432 already in use? Use `./scripts/postgres-dev.sh start` and the `:5433` DSN from [§2](#2-local-development-with-postgresql--pgvector).
 
 ---
 
 ## 2. Local development with PostgreSQL + pgvector
 
-**Use when:** you want production-like behaviour locally (migrations, pgvector, dual-dialect tests, embeddings, SigmaHQ index).
+**Use when:** you want extra Postgres notes (port 5433, embeddings flags, pgvector checks) beyond [§1](#1-quick-local-development-postgresql).
 
 **Not for production.** This path uses the Vite dev server (`npm run dev` on `:5173`). For a permanent install with PostgreSQL and nginx serving a built SPA, use [§3 Production](#3-production-debian--systemd--nginx) — `briefr-install.sh` / `setup.sh` runs `npm run build` and systemd + nginx handle the UI.
 
 ### Prerequisites
 
-- Everything in §1, plus **Docker** (or an existing Postgres 16 server with the `vector` extension)
+- Python 3.11+, Node.js 22.22+, Git, plus **Docker** (or an existing Postgres 16 server with the `vector` extension)
 
 ### Step 1 — Start Postgres (pgvector image)
 
@@ -235,7 +248,7 @@ RATE_LIMIT_ENABLED=1
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | **Required** — TCP to Postgres |
-| `BRIEFR_REQUIRE_POSTGRES` | **Required** — refuse SQLite fallback |
+| `BRIEFR_REQUIRE_POSTGRES` | **Required** — refuse a non-Postgres DSN |
 | `JWT_SECRET` | **Required** in production — session signing |
 | `ALLOWED_ORIGINS` | Your public URL (not `:5173`) |
 | `NVD_API_KEY` | Strongly recommended |
@@ -305,7 +318,7 @@ Use this table regardless of path:
 | What to check | Command / location | Good sign |
 |---------------|-------------------|-----------|
 | Backend up | `curl -s http://127.0.0.1:8000/api/health` | HTTP 200, JSON with `cve_count` |
-| Database backend | same JSON → `"backend"` | `"postgresql"` (prod/dev PG) or `"sqlite"` (§1 only) |
+| Database backend | same JSON → `"backend"` | `"postgresql"` |
 | UI | Browser → app URL | Login or setup screen |
 | Migrations applied | Backend logs / restart once | No `relation "cves" does not exist` |
 | pgvector (if embeddings) | `psql "$DATABASE_URL" -c "\\dx vector"` | `vector` extension listed |

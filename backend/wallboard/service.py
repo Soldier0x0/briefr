@@ -334,7 +334,7 @@ async def _kev_due_soon_tile(
         JOIN kev_deadlines k ON k.cve_id = c.cve_id
         WHERE c.is_kev = 1
           AND k.due_date IS NOT NULL
-          AND k.due_date <= {"CURRENT_DATE + INTERVAL '7 days'" if _is_postgres_connection(db) else "date('now', '+7 days')"}
+          AND {"CAST(k.due_date AS date) <= CURRENT_DATE + INTERVAL '7 days'" if _is_postgres_connection(db) else "k.due_date <= date('now', '+7 days')"}
           AND {clause}
         ORDER BY k.due_date ASC
         LIMIT 5

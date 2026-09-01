@@ -22,33 +22,6 @@ class _FakeDb:
         return [{"cnt": 0}]
 
 
-def test_sqlite_integrity_ok(monkeypatch):
-    monkeypatch.setattr("db.integrity.is_postgres", lambda: False)
-    db = _FakeDb({
-        "integrity_check": [{"integrity_check": "ok"}],
-        "foreign_key_check": [],
-    })
-    result = asyncio.run(run_integrity_check(db))
-    assert result.ok is True
-    assert result.integrity_ok is True
-    assert result.foreign_keys_ok is True
-    assert result.backend == "sqlite"
-    assert result.method == "pragma"
-
-
-def test_sqlite_integrity_fails_on_corrupt(monkeypatch):
-    monkeypatch.setattr("db.integrity.is_postgres", lambda: False)
-    db = _FakeDb({
-        "integrity_check": [{"integrity_check": "row 5 missing from index idx_cves"}],
-        "foreign_key_check": [{"table": "watchlist", "rowid": 1, "parent": "cves", "fkid": 0}],
-    })
-    result = asyncio.run(run_integrity_check(db))
-    assert result.ok is False
-    assert result.integrity_ok is False
-    assert result.foreign_keys_ok is False
-    assert result.foreign_key_violations == 1
-
-
 def test_postgres_integrity_fails_on_invalid_indexes(monkeypatch):
     monkeypatch.setattr("db.integrity.is_postgres", lambda: True)
     db = _FakeDb({

@@ -1,16 +1,14 @@
 """Tests for KEV enrichment fields (ransomware use, CWEs, vendor, name)."""
 
-import asyncio
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
-from database import _clean_iso_date, upsert_kev, upsert_kev_batch
+from database import _clean_iso_date, get_db, upsert_kev, upsert_kev_batch
 from feeds.kev import parse_kev_catalog
+from tests.conftest import run_db_test
 
 SAMPLE_CATALOG = {
     "title": "CISA Catalog of Known Exploited Vulnerabilities",
@@ -51,24 +49,6 @@ SAMPLE_CATALOG = {
         },
     ],
 }
-
-
-def _kev_table_sql() -> str:
-    return """
-        CREATE TABLE kev_deadlines (
-            cve_id TEXT PRIMARY KEY,
-            product TEXT,
-            short_description TEXT,
-            required_action TEXT,
-            due_date TEXT,
-            date_added TEXT,
-            vendor_project TEXT DEFAULT '',
-            vulnerability_name TEXT DEFAULT '',
-            known_ransomware TEXT DEFAULT '',
-            cwes TEXT DEFAULT '[]',
-            updated_at TEXT DEFAULT (datetime('now'))
-        )
-    """
 
 
 def test_parse_kev_catalog_keeps_enrichment_fields():
@@ -134,9 +114,7 @@ def test_clean_iso_date_accepts_valid_and_rejects_garbage():
 
 def test_upsert_kev_sanitizes_null_and_garbage_dates():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
 
         await upsert_kev(
             db,
@@ -158,14 +136,12 @@ def test_upsert_kev_sanitizes_null_and_garbage_dates():
         assert dict(row[0]) == {"due_date": "", "date_added": ""}
         await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_upsert_kev_stores_and_updates_enrichment_fields():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
 
         entries = parse_kev_catalog(SAMPLE_CATALOG)
         for entry in entries:
@@ -203,16 +179,14 @@ def test_upsert_kev_stores_and_updates_enrichment_fields():
         assert rows[0]["known_ransomware"] == "Known"
         await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_upsert_kev_batch_matches_per_row_results():
     """PR-P4: batched executemany writes the same rows as per-row upserts,
     skips entries without a cveID, and updates in place on re-sync."""
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
 
         entries = parse_kev_catalog(SAMPLE_CATALOG)
         count = await upsert_kev_batch(db, [*entries, {"product": "no-id"}])
@@ -243,16 +217,14 @@ def test_upsert_kev_batch_matches_per_row_results():
         assert flag[0]["known_ransomware"] == "Known"
         await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())
 
 
 def test_upsert_kev_batch_empty_returns_zero():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
         assert await upsert_kev_batch(db, []) == 0
         assert await upsert_kev_batch(db, [{"product": "no-id"}]) == 0
         await db.close()
 
-    asyncio.run(_run())
+    run_db_test(_run())

@@ -217,7 +217,7 @@ the watermark **and** spawns a forced apply (unlike EPSS clear-only).
 4. **Feed Health → Force re-sync** clears the watermark **and** spawns `run_sigmahq_index_sync(force=True)` (unlike EPSS force-resync, which is clear-only). Documented divergence: operators should not need a second click.
 5. License: rules are **DRL-1.1** — retain author, license link, and unmodified YAML. Do not claim SigmaHQ content as BRIEFR IP.
 6. Detect/Forge read the local index (CVE-exact). GitHub Sigma search is fallback only when the index is empty.
-7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). Column `"references"` is quoted (Postgres reserved word). SQLite test suite skips PG-gated index tests. Raw SQL migrations are scanned for unquoted reserved column names in `test_alembic_revisions.py`.
+7. Postgres-only tables (Alembic `035_detection_rules_sigmahq`). Column `"references"` is quoted (Postgres reserved word). Raw SQL migrations are scanned for unquoted reserved column names in `test_alembic_revisions.py`.
 
 Disable with `SIGMAHQ_INDEX_SYNC_ENABLED=0`. Config + Scheduler disabled gate returns 400 with enable guidance on Run now / Force.
 

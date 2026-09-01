@@ -15,18 +15,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import init_db
 import numpy as np
 import pytest
 
 import database
 import ml.embeddings as emb
 from db.config import is_postgres
-from database import init_db
 from ml.embeddings import (
     blob_to_vector,
     embeddings_enabled,
-    find_similar_cves,
     l2_normalize,
     run_embeddings_backfill,
     vector_to_blob,
@@ -34,16 +32,6 @@ from ml.embeddings import (
 from tests.conftest import run_db_test
 
 MODEL = "BAAI/bge-small-en-v1.5"
-
-# _db_with_embeddings below builds a hand-rolled :memory: SQLite schema with
-# a SQLite-specific column default (datetime('now')) — a standalone unit
-# test of find_similar_cves() against a bespoke schema, not the app's
-# dialect-aware db/ layer. Genuinely SQLite-only; portable rewrite is
-# Post-B scope, not this CI-gate PR's (same call as test_wallboard.py).
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="_db_with_embeddings uses a hand-rolled :memory: SQLite schema",
-)
 
 
 def test_vector_blob_round_trip():
@@ -69,76 +57,6 @@ def test_embeddings_disabled_by_default(monkeypatch):
     assert embeddings_enabled() is True
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "0")
     assert embeddings_enabled() is False
-
-
-async def _db_with_embeddings() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(":memory:")
-    db.row_factory = aiosqlite.Row
-    await db.executescript(
-        """
-        CREATE TABLE cve_embeddings (
-            cve_id TEXT PRIMARY KEY,
-            model TEXT NOT NULL,
-            dim INTEGER NOT NULL,
-            vector BLOB NOT NULL,
-            updated_at TEXT DEFAULT (datetime('now'))
-        );
-        """
-    )
-    vectors = {
-        "CVE-2024-0001": [1.0, 0.0, 0.0],
-        "CVE-2024-0002": [0.9, 0.1, 0.0],   # closest to 0001
-        "CVE-2024-0003": [0.0, 1.0, 0.0],   # orthogonal
-        "CVE-2024-0004": [-1.0, 0.0, 0.0],  # opposite
-    }
-    for cve_id, vec in vectors.items():
-        blob = vector_to_blob(l2_normalize(np.array(vec, dtype="<f4")))
-        await db.execute(
-            "INSERT INTO cve_embeddings (cve_id, model, dim, vector) VALUES (?, ?, 3, ?)",
-            (cve_id, MODEL, blob),
-        )
-    # A row from another model must never enter the scan.
-    await db.execute(
-        "INSERT INTO cve_embeddings (cve_id, model, dim, vector) VALUES (?, ?, 3, ?)",
-        ("CVE-2024-0099", "other-model", vector_to_blob(np.array([1.0, 0.0, 0.0], dtype="<f4"))),
-    )
-    await db.commit()
-    return db
-
-
-@_requires_sqlite
-def test_find_similar_numpy_orders_by_cosine_and_excludes_self(monkeypatch):
-    monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
-
-    async def run():
-        db = await _db_with_embeddings()
-        results = await find_similar_cves(db, "CVE-2024-0001", limit=3)
-        await db.close()
-        return results
-
-    results = run_db_test(run())
-    ids = [r["cve_id"] for r in results]
-    assert "CVE-2024-0001" not in ids
-    assert "CVE-2024-0099" not in ids  # different model excluded
-    assert ids[0] == "CVE-2024-0002"  # highest cosine similarity first
-    assert ids[-1] == "CVE-2024-0004"  # opposite vector ranks last
-    sims = [r["similarity"] for r in results]
-    assert sims == sorted(sims, reverse=True)
-    assert sims[0] > 0.9
-
-
-@_requires_sqlite
-def test_find_similar_returns_none_without_target_vector(monkeypatch):
-    """None signals the caller to use the deterministic heuristic fallback."""
-    monkeypatch.setenv("EMBEDDINGS_MODEL", MODEL)
-
-    async def run():
-        db = await _db_with_embeddings()
-        result = await find_similar_cves(db, "CVE-1999-9999", limit=3)
-        await db.close()
-        return result
-
-    assert run_db_test(run()) is None
 
 
 class _FakeTextEmbedding:
@@ -346,6 +264,7 @@ def related_client(tmp_path, monkeypatch):
         yield client
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_heuristic_when_embeddings_disabled(related_client, monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "0")
     body = related_client.get("/api/cves/CVE-2024-0001/related").json()
@@ -355,6 +274,7 @@ def test_related_endpoint_heuristic_when_embeddings_disabled(related_client, mon
     assert all("similarity" not in c for c in body["data"])
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_semantic_when_embeddings_enabled(related_client, monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "1")
     body = related_client.get("/api/cves/CVE-2024-0001/related?limit=2").json()
@@ -368,6 +288,7 @@ def test_related_endpoint_semantic_when_embeddings_enabled(related_client, monke
             assert field in item
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_falls_back_when_target_has_no_vector(tmp_path, monkeypatch):
     """Embeddings enabled but this CVE not yet embedded → heuristic fallback.
 

@@ -1,15 +1,5 @@
 version: 1
 terms:
-- id: self-stack-aiosqlite
-  title: aiosqlite
-  summary: BRIEFR dependency term derived from backend/requirements.txt.
-  owner: platform
-  status: active
-  origin: generated
-  term: aiosqlite
-  source: backend/requirements.txt
-  ecosystem: pypi
-  version: 0.22.1
 - id: self-stack-alembic
   title: alembic
   summary: BRIEFR dependency term derived from backend/requirements.txt.

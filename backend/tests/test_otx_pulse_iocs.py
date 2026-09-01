@@ -11,7 +11,6 @@ from tests.conftest import run_db_test
 import database
 from database import get_db, init_db, store_otx_pulse_iocs
 
-
 def test_concurrent_store_otx_pulse_iocs_is_idempotent(tmp_path, monkeypatch):
     db_path = str(tmp_path / "otx_ioc.db")
     monkeypatch.setenv("DB_PATH", db_path)
@@ -54,14 +53,11 @@ def test_concurrent_store_otx_pulse_iocs_is_idempotent(tmp_path, monkeypatch):
     assert ("DOMAIN", "example.com") in values
     assert ("IP", "203.0.113.1") in values
 
-
 def test_concurrent_store_persists_raw_and_host_for_url_iocs(tmp_path, monkeypatch):
     """Phase A: concurrent URL-IOC stores through the lock path must persist
     raw_ioc and host_ioc (URL canonical value lowercases the host; raw keeps
     the verbatim input)."""
-    from tests.conftest import use_sqlite_backend
-
-    use_sqlite_backend(monkeypatch, tmp_path / "otx_ioc_url.db")
+    
     run_db_test(init_db())
 
     pulse_id = "pulse-url-concurrent-test"
@@ -103,7 +99,6 @@ def test_concurrent_store_persists_raw_and_host_for_url_iocs(tmp_path, monkeypat
     )
     assert by_value["evil.example.com"]["host_ioc"] == "evil.example.com"
     assert by_value["evil.example.com"]["raw_ioc"] == "EVIL.EXAMPLE.COM"
-
 
 def test_replace_otx_pulse_iocs_removes_stale_rows(tmp_path, monkeypatch):
     db_path = str(tmp_path / "otx_ioc_replace.db")

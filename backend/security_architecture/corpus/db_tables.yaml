@@ -2,7 +2,7 @@ version: 1
 tables:
 - id: ai_operation_payloads
   title: ai_operation_payloads
-  summary: Database table defined in db/init.py (name=ai_operation_payloads).
+  summary: Database table created by Alembic migration (name=ai_operation_payloads).
   owner: platform
   status: active
   origin: generated
@@ -11,7 +11,7 @@ tables:
     ref: ai_operation_payloads
 - id: ai_operations
   title: ai_operations
-  summary: Database table defined in db/init.py (name=ai_operations).
+  summary: Database table created by Alembic migration (name=ai_operations).
   owner: platform
   status: active
   origin: generated
@@ -20,7 +20,7 @@ tables:
     ref: ai_operations
 - id: api_call_events
   title: api_call_events
-  summary: Database table defined in db/init.py (name=api_call_events).
+  summary: Database table created by Alembic migration (name=api_call_events).
   owner: platform
   status: active
   origin: generated
@@ -29,7 +29,7 @@ tables:
     ref: api_call_events
 - id: api_usage
   title: api_usage
-  summary: Database table defined in db/init.py (name=api_usage).
+  summary: Database table created by Alembic migration (name=api_usage).
   owner: platform
   status: active
   origin: generated
@@ -38,7 +38,7 @@ tables:
     ref: api_usage
 - id: app_settings
   title: app_settings
-  summary: Database table defined in db/init.py (name=app_settings).
+  summary: Database table created by Alembic migration (name=app_settings).
   owner: platform
   status: active
   origin: generated
@@ -47,7 +47,7 @@ tables:
     ref: app_settings
 - id: atlas_case_studies
   title: atlas_case_studies
-  summary: Database table defined in db/init.py (name=atlas_case_studies).
+  summary: Database table created by Alembic migration (name=atlas_case_studies).
   owner: platform
   status: active
   origin: generated
@@ -56,7 +56,7 @@ tables:
     ref: atlas_case_studies
 - id: atlas_techniques
   title: atlas_techniques
-  summary: Database table defined in db/init.py (name=atlas_techniques).
+  summary: Database table created by Alembic migration (name=atlas_techniques).
   owner: platform
   status: active
   origin: generated
@@ -65,7 +65,7 @@ tables:
     ref: atlas_techniques
 - id: audit_log
   title: audit_log
-  summary: Database table defined in db/init.py (name=audit_log).
+  summary: Database table created by Alembic migration (name=audit_log).
   owner: platform
   status: active
   origin: generated
@@ -74,7 +74,7 @@ tables:
     ref: audit_log
 - id: correlation_actor
   title: correlation_actor
-  summary: Database table defined in db/init.py (name=correlation_actor).
+  summary: Database table created by Alembic migration (name=correlation_actor).
   owner: platform
   status: active
   origin: generated
@@ -83,7 +83,7 @@ tables:
     ref: correlation_actor
 - id: correlation_campaign_members
   title: correlation_campaign_members
-  summary: Database table defined in db/init.py (name=correlation_campaign_members).
+  summary: Database table created by Alembic migration (name=correlation_campaign_members).
   owner: platform
   status: active
   origin: generated
@@ -92,7 +92,7 @@ tables:
     ref: correlation_campaign_members
 - id: correlation_campaigns
   title: correlation_campaigns
-  summary: Database table defined in db/init.py (name=correlation_campaigns).
+  summary: Database table created by Alembic migration (name=correlation_campaigns).
   owner: platform
   status: active
   origin: generated
@@ -101,7 +101,7 @@ tables:
     ref: correlation_campaigns
 - id: correlation_cve_snapshot
   title: correlation_cve_snapshot
-  summary: Database table defined in db/init.py (name=correlation_cve_snapshot).
+  summary: Database table created by Alembic migration (name=correlation_cve_snapshot).
   owner: platform
   status: active
   origin: generated
@@ -110,7 +110,7 @@ tables:
     ref: correlation_cve_snapshot
 - id: correlation_feedback
   title: correlation_feedback
-  summary: Database table defined in db/init.py (name=correlation_feedback).
+  summary: Database table created by Alembic migration (name=correlation_feedback).
   owner: platform
   status: active
   origin: generated
@@ -119,7 +119,7 @@ tables:
     ref: correlation_feedback
 - id: correlation_metrics
   title: correlation_metrics
-  summary: Database table defined in db/init.py (name=correlation_metrics).
+  summary: Database table created by Alembic migration (name=correlation_metrics).
   owner: platform
   status: active
   origin: generated
@@ -128,7 +128,7 @@ tables:
     ref: correlation_metrics
 - id: correlation_suppressions
   title: correlation_suppressions
-  summary: Database table defined in db/init.py (name=correlation_suppressions).
+  summary: Database table created by Alembic migration (name=correlation_suppressions).
   owner: platform
   status: active
   origin: generated
@@ -137,7 +137,7 @@ tables:
     ref: correlation_suppressions
 - id: correlation_temporal
   title: correlation_temporal
-  summary: Database table defined in db/init.py (name=correlation_temporal).
+  summary: Database table created by Alembic migration (name=correlation_temporal).
   owner: platform
   status: active
   origin: generated
@@ -146,7 +146,7 @@ tables:
     ref: correlation_temporal
 - id: cve_atlas_map
   title: cve_atlas_map
-  summary: Database table defined in db/init.py (name=cve_atlas_map).
+  summary: Database table created by Alembic migration (name=cve_atlas_map).
   owner: platform
   status: active
   origin: generated
@@ -155,7 +155,7 @@ tables:
     ref: cve_atlas_map
 - id: cve_change_history
   title: cve_change_history
-  summary: Database table defined in db/init.py (name=cve_change_history).
+  summary: Database table created by Alembic migration (name=cve_change_history).
   owner: platform
   status: active
   origin: generated
@@ -164,7 +164,7 @@ tables:
     ref: cve_change_history
 - id: cve_embeddings
   title: cve_embeddings
-  summary: Database table defined in db/init.py (name=cve_embeddings).
+  summary: Database table created by Alembic migration (name=cve_embeddings).
   owner: platform
   status: active
   origin: generated
@@ -173,7 +173,7 @@ tables:
     ref: cve_embeddings
 - id: cve_exploits
   title: cve_exploits
-  summary: Database table defined in db/init.py (name=cve_exploits).
+  summary: Database table created by Alembic migration (name=cve_exploits).
   owner: platform
   status: active
   origin: generated
@@ -182,7 +182,7 @@ tables:
     ref: cve_exploits
 - id: cve_technique_map
   title: cve_technique_map
-  summary: Database table defined in db/init.py (name=cve_technique_map).
+  summary: Database table created by Alembic migration (name=cve_technique_map).
   owner: platform
   status: active
   origin: generated
@@ -191,7 +191,7 @@ tables:
     ref: cve_technique_map
 - id: cves
   title: cves
-  summary: Database table defined in db/init.py (name=cves).
+  summary: Database table created by Alembic migration (name=cves).
   owner: platform
   status: active
   origin: generated
@@ -200,16 +200,43 @@ tables:
     ref: cves
 - id: detection_backlog
   title: detection_backlog
-  summary: Database table defined in db/init.py (name=detection_backlog).
+  summary: Database table created by Alembic migration (name=detection_backlog).
   owner: platform
   status: active
   origin: generated
   source_refs:
   - type: table
     ref: detection_backlog
+- id: detection_rule_cves
+  title: detection_rule_cves
+  summary: Database table created by Alembic migration (name=detection_rule_cves).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: detection_rule_cves
+- id: detection_rule_techniques
+  title: detection_rule_techniques
+  summary: Database table created by Alembic migration (name=detection_rule_techniques).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: detection_rule_techniques
+- id: detection_rules
+  title: detection_rules
+  summary: Database table created by Alembic migration (name=detection_rules).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: detection_rules
 - id: embeddings
   title: embeddings
-  summary: Database table defined in db/init.py (name=embeddings).
+  summary: Database table created by Alembic migration (name=embeddings).
   owner: platform
   status: active
   origin: generated
@@ -218,7 +245,7 @@ tables:
     ref: embeddings
 - id: epss_history
   title: epss_history
-  summary: Database table defined in db/init.py (name=epss_history).
+  summary: Database table created by Alembic migration (name=epss_history).
   owner: platform
   status: active
   origin: generated
@@ -227,7 +254,7 @@ tables:
     ref: epss_history
 - id: feed_cache
   title: feed_cache
-  summary: Database table defined in db/init.py (name=feed_cache).
+  summary: Database table created by Alembic migration (name=feed_cache).
   owner: platform
   status: active
   origin: generated
@@ -236,7 +263,7 @@ tables:
     ref: feed_cache
 - id: group_technique_map
   title: group_technique_map
-  summary: Database table defined in db/init.py (name=group_technique_map).
+  summary: Database table created by Alembic migration (name=group_technique_map).
   owner: platform
   status: active
   origin: generated
@@ -245,7 +272,7 @@ tables:
     ref: group_technique_map
 - id: hunt_packs
   title: hunt_packs
-  summary: Database table defined in db/init.py (name=hunt_packs).
+  summary: Database table created by Alembic migration (name=hunt_packs).
   owner: platform
   status: active
   origin: generated
@@ -263,7 +290,7 @@ tables:
     ref: infra_classifications
 - id: ioc_cache
   title: ioc_cache
-  summary: Database table defined in db/init.py (name=ioc_cache).
+  summary: Database table created by Alembic migration (name=ioc_cache).
   owner: platform
   status: active
   origin: generated
@@ -272,7 +299,7 @@ tables:
     ref: ioc_cache
 - id: ioc_degree
   title: ioc_degree
-  summary: Database table defined in db/init.py (name=ioc_degree).
+  summary: Database table created by Alembic migration (name=ioc_degree).
   owner: platform
   status: active
   origin: generated
@@ -281,7 +308,7 @@ tables:
     ref: ioc_degree
 - id: ioc_watchlist
   title: ioc_watchlist
-  summary: Database table defined in db/init.py (name=ioc_watchlist).
+  summary: Database table created by Alembic migration (name=ioc_watchlist).
   owner: platform
   status: active
   origin: generated
@@ -290,7 +317,7 @@ tables:
     ref: ioc_watchlist
 - id: kev_deadlines
   title: kev_deadlines
-  summary: Database table defined in db/init.py (name=kev_deadlines).
+  summary: Database table created by Alembic migration (name=kev_deadlines).
   owner: platform
   status: active
   origin: generated
@@ -299,7 +326,7 @@ tables:
     ref: kev_deadlines
 - id: mitre_groups
   title: mitre_groups
-  summary: Database table defined in db/init.py (name=mitre_groups).
+  summary: Database table created by Alembic migration (name=mitre_groups).
   owner: platform
   status: active
   origin: generated
@@ -308,7 +335,7 @@ tables:
     ref: mitre_groups
 - id: mitre_techniques
   title: mitre_techniques
-  summary: Database table defined in db/init.py (name=mitre_techniques).
+  summary: Database table created by Alembic migration (name=mitre_techniques).
   owner: platform
   status: active
   origin: generated
@@ -317,7 +344,7 @@ tables:
     ref: mitre_techniques
 - id: otx_cve_pulses
   title: otx_cve_pulses
-  summary: Database table defined in db/init.py (name=otx_cve_pulses).
+  summary: Database table created by Alembic migration (name=otx_cve_pulses).
   owner: platform
   status: active
   origin: generated
@@ -326,7 +353,7 @@ tables:
     ref: otx_cve_pulses
 - id: otx_pulse_iocs
   title: otx_pulse_iocs
-  summary: Database table defined in db/init.py (name=otx_pulse_iocs).
+  summary: Database table created by Alembic migration (name=otx_pulse_iocs).
   owner: platform
   status: active
   origin: generated
@@ -335,7 +362,7 @@ tables:
     ref: otx_pulse_iocs
 - id: otx_pulses
   title: otx_pulses
-  summary: Database table defined in db/init.py (name=otx_pulses).
+  summary: Database table created by Alembic migration (name=otx_pulses).
   owner: platform
   status: active
   origin: generated
@@ -344,7 +371,7 @@ tables:
     ref: otx_pulses
 - id: publication_actor_links
   title: publication_actor_links
-  summary: Database table defined in db/init.py (name=publication_actor_links).
+  summary: Database table created by Alembic migration (name=publication_actor_links).
   owner: platform
   status: active
   origin: generated
@@ -353,7 +380,7 @@ tables:
     ref: publication_actor_links
 - id: publication_actors
   title: publication_actors
-  summary: Database table defined in db/init.py (name=publication_actors).
+  summary: Database table created by Alembic migration (name=publication_actors).
   owner: platform
   status: active
   origin: generated
@@ -362,7 +389,7 @@ tables:
     ref: publication_actors
 - id: publication_entity_links
   title: publication_entity_links
-  summary: Database table defined in db/init.py (name=publication_entity_links).
+  summary: Database table created by Alembic migration (name=publication_entity_links).
   owner: platform
   status: active
   origin: generated
@@ -371,7 +398,7 @@ tables:
     ref: publication_entity_links
 - id: publication_event_members
   title: publication_event_members
-  summary: Database table defined in db/init.py (name=publication_event_members).
+  summary: Database table created by Alembic migration (name=publication_event_members).
   owner: platform
   status: active
   origin: generated
@@ -380,7 +407,7 @@ tables:
     ref: publication_event_members
 - id: publication_events
   title: publication_events
-  summary: Database table defined in db/init.py (name=publication_events).
+  summary: Database table created by Alembic migration (name=publication_events).
   owner: platform
   status: active
   origin: generated
@@ -389,7 +416,7 @@ tables:
     ref: publication_events
 - id: publications
   title: publications
-  summary: Database table defined in db/init.py (name=publications).
+  summary: Database table created by Alembic migration (name=publications).
   owner: platform
   status: active
   origin: generated
@@ -398,7 +425,7 @@ tables:
     ref: publications
 - id: pulse_families
   title: pulse_families
-  summary: Database table defined in db/init.py (name=pulse_families).
+  summary: Database table created by Alembic migration (name=pulse_families).
   owner: platform
   status: active
   origin: generated
@@ -407,7 +434,7 @@ tables:
     ref: pulse_families
 - id: resource_metrics
   title: resource_metrics
-  summary: Database table defined in db/init.py (name=resource_metrics).
+  summary: Database table created by Alembic migration (name=resource_metrics).
   owner: platform
   status: active
   origin: generated
@@ -416,7 +443,7 @@ tables:
     ref: resource_metrics
 - id: search_api_tokens
   title: search_api_tokens
-  summary: Database table defined in db/init.py (name=search_api_tokens).
+  summary: Database table created by Alembic migration (name=search_api_tokens).
   owner: platform
   status: active
   origin: generated
@@ -425,7 +452,7 @@ tables:
     ref: search_api_tokens
 - id: sessions
   title: sessions
-  summary: Database table defined in db/init.py (name=sessions).
+  summary: Database table created by Alembic migration (name=sessions).
   owner: platform
   status: active
   origin: generated
@@ -434,7 +461,7 @@ tables:
     ref: sessions
 - id: software_catalog
   title: software_catalog
-  summary: Database table defined in db/init.py (name=software_catalog).
+  summary: Database table created by Alembic migration (name=software_catalog).
   owner: platform
   status: active
   origin: generated
@@ -443,7 +470,7 @@ tables:
     ref: software_catalog
 - id: stack_backfill_checkpoints
   title: stack_backfill_checkpoints
-  summary: Database table defined in db/init.py (name=stack_backfill_checkpoints).
+  summary: Database table created by Alembic migration (name=stack_backfill_checkpoints).
   owner: platform
   status: active
   origin: generated
@@ -452,7 +479,7 @@ tables:
     ref: stack_backfill_checkpoints
 - id: stack_backfill_runs
   title: stack_backfill_runs
-  summary: Database table defined in db/init.py (name=stack_backfill_runs).
+  summary: Database table created by Alembic migration (name=stack_backfill_runs).
   owner: platform
   status: active
   origin: generated
@@ -461,7 +488,7 @@ tables:
     ref: stack_backfill_runs
 - id: sync_state
   title: sync_state
-  summary: Database table defined in db/init.py (name=sync_state).
+  summary: Database table created by Alembic migration (name=sync_state).
   owner: platform
   status: active
   origin: generated
@@ -470,7 +497,7 @@ tables:
     ref: sync_state
 - id: ti_mirror_iocs
   title: ti_mirror_iocs
-  summary: Database table defined in db/init.py (name=ti_mirror_iocs).
+  summary: Database table created by Alembic migration (name=ti_mirror_iocs).
   owner: platform
   status: active
   origin: generated
@@ -479,7 +506,7 @@ tables:
     ref: ti_mirror_iocs
 - id: user_notifications
   title: user_notifications
-  summary: Database table defined in db/init.py (name=user_notifications).
+  summary: Database table created by Alembic migration (name=user_notifications).
   owner: platform
   status: active
   origin: generated
@@ -488,7 +515,7 @@ tables:
     ref: user_notifications
 - id: user_preferences
   title: user_preferences
-  summary: Database table defined in db/init.py (name=user_preferences).
+  summary: Database table created by Alembic migration (name=user_preferences).
   owner: platform
   status: active
   origin: generated
@@ -497,7 +524,7 @@ tables:
     ref: user_preferences
 - id: users
   title: users
-  summary: Database table defined in db/init.py (name=users).
+  summary: Database table created by Alembic migration (name=users).
   owner: platform
   status: active
   origin: generated
@@ -506,7 +533,7 @@ tables:
     ref: users
 - id: watchlist
   title: watchlist
-  summary: Database table defined in db/init.py (name=watchlist).
+  summary: Database table created by Alembic migration (name=watchlist).
   owner: platform
   status: active
   origin: generated
@@ -515,7 +542,7 @@ tables:
     ref: watchlist
 - id: webhook_alert_log
   title: webhook_alert_log
-  summary: Database table defined in db/init.py (name=webhook_alert_log).
+  summary: Database table created by Alembic migration (name=webhook_alert_log).
   owner: platform
   status: active
   origin: generated
@@ -524,7 +551,7 @@ tables:
     ref: webhook_alert_log
 - id: webhook_delivery_log
   title: webhook_delivery_log
-  summary: Database table defined in db/init.py (name=webhook_delivery_log).
+  summary: Database table created by Alembic migration (name=webhook_delivery_log).
   owner: platform
   status: active
   origin: generated
@@ -533,7 +560,7 @@ tables:
     ref: webhook_delivery_log
 - id: webhook_destination_dedupe
   title: webhook_destination_dedupe
-  summary: Database table defined in db/init.py (name=webhook_destination_dedupe).
+  summary: Database table created by Alembic migration (name=webhook_destination_dedupe).
   owner: platform
   status: active
   origin: generated
@@ -542,7 +569,7 @@ tables:
     ref: webhook_destination_dedupe
 - id: webhook_destinations
   title: webhook_destinations
-  summary: Database table defined in db/init.py (name=webhook_destinations).
+  summary: Database table created by Alembic migration (name=webhook_destinations).
   owner: platform
   status: active
   origin: generated

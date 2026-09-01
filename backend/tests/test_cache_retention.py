@@ -6,27 +6,14 @@ from datetime import datetime, timedelta, timezone
 import database as db_module
 from settings import settings
 
-
-def _force_sqlite(tmp_path, monkeypatch, db_name: str):
-    db_path = tmp_path / db_name
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
-    monkeypatch.setattr(settings, "db_path", str(db_path))
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    return db_path
-
-
 def _utc(days_ago: float = 0) -> str:
     dt = datetime.now(timezone.utc) - timedelta(days=days_ago)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+def _utc_ts(days_ago: float = 0) -> datetime:
+    return datetime.now(timezone.utc) - timedelta(days=days_ago)
 
 def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "retention.db")
 
     async def run():
         await db_module.init_db()
@@ -63,9 +50,7 @@ def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-
 def test_purge_old_ai_operations_uses_started_at(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "ai_ops_retention.db")
 
     async def run():
         await db_module.init_db()
@@ -99,9 +84,7 @@ def test_purge_old_ai_operations_uses_started_at(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-
 def test_purge_old_webhook_delivery_log_uses_attempted_at(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "webhook_delivery_retention.db")
 
     async def run():
         await db_module.init_db()
@@ -143,9 +126,7 @@ def test_purge_old_webhook_delivery_log_uses_attempted_at(tmp_path, monkeypatch)
 
     asyncio.run(run())
 
-
 def test_purge_old_audit_log_uses_created_at(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "audit_log_retention.db")
 
     async def run():
         await db_module.init_db()
@@ -182,9 +163,7 @@ def test_purge_old_audit_log_uses_created_at(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-
 def test_run_retention_cleanup_includes_operator_tables(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "retention_all.db")
 
     async def run():
         await db_module.init_db()
@@ -204,9 +183,7 @@ def test_run_retention_cleanup_includes_operator_tables(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-
 def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "change_history.db")
 
     async def run():
         await db_module.init_db()
@@ -223,12 +200,12 @@ def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
                     "severity",
                     "LOW",
                     "HIGH",
-                    _utc(120),
+                    _utc_ts(120),
                     "CVE-2024-0002",
                     "severity",
                     "LOW",
                     "MEDIUM",
-                    _utc(1),
+                    _utc_ts(1),
                 ),
             )
             await db.commit()
@@ -246,9 +223,7 @@ def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-
 def test_purge_stale_ioc_cache(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch, "ioc.db")
 
     async def run():
         await db_module.init_db()

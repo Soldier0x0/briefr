@@ -25,19 +25,12 @@ SEED_SCRIPT = REPO_ROOT / "scripts" / "seed_screenshot_data.py"
 
 sys.path.insert(0, str(BACKEND_DIR))
 
-# Defaults flipped to production + Postgres-only at the product level
-# (settings.py). The test suite explicitly opts back into dev/SQLite so it runs
-# identically with no env (bare `pytest tests/`) and under CI:
-# - BRIEFR_ENV=development keeps /api/docs + openapi visible (router tests)
-#   and disables the production JWT_SECRET import guard (settings.py).
-# - JWT_SECRET setdefault keeps a production-override CI run green.
-# - BRIEFR_REQUIRE_POSTGRES=0 lets the suite run on the SQLite fallback when
-#   DATABASE_URL is unset; Postgres CI sets it to 1 explicitly (setdefault wins
-#   only when absent). These are set BEFORE any settings import — settings is a
-#   module-level singleton instantiated at import time.
+# Tests require a live PostgreSQL DATABASE_URL (CI jobs test-postgres and
+# playwright-smoke). BRIEFR_ENV=development keeps /api/docs + openapi visible
+# and disables the production JWT_SECRET import guard. JWT_SECRET setdefault
+# keeps a production-override CI run green.
 os.environ.setdefault("BRIEFR_ENV", "development")
 os.environ.setdefault("JWT_SECRET", "ci-test-jwt-secret-not-for-production")
-os.environ.setdefault("BRIEFR_REQUIRE_POSTGRES", "0")
 
 
 def _postgres_dsn_or_none() -> str | None:
@@ -53,7 +46,10 @@ def _postgres_dsn_or_none() -> str | None:
     this fixture's isolation TRUNCATE for every test collected after it."""
     from db.config import resolve_database_url
 
-    url = resolve_database_url()
+    try:
+        url = resolve_database_url()
+    except ValueError:
+        return None
     return url if url.startswith("postgresql") else None
 
 
@@ -72,15 +68,20 @@ def _postgres_is_live() -> bool:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _postgres_schema_once():
+def _require_postgres():
+    """Fail fast when DATABASE_URL is unset or Postgres is unreachable."""
+    if not _postgres_is_live():
+        pytest.fail(
+            "PostgreSQL is required for all tests. Set DATABASE_URL and ensure the "
+            "server is running (see docs/SELF_HOST.md)."
+        )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _postgres_schema_once(_require_postgres):
     """Apply Alembic migrations once per session via a standalone asyncpg
     connection — never via the pool, which would bind it to this fixture's
-    closing event loop (see tests/test_postgres_pool.py). No-op on SQLite or
-    when Postgres is configured but unreachable (common on Windows dev boxes
-    with DATABASE_URL in .env but no local server)."""
-    if not _postgres_is_live():
-        yield
-        return
+    closing event loop (see tests/test_postgres_pool.py)."""
 
     async def _boot() -> None:
         from database import run_postgres_migrations
@@ -113,15 +114,68 @@ def _postgres_schema_once():
 
 
 @pytest.fixture(autouse=True)
-def _postgres_test_isolation(_postgres_schema_once):
-    """Truncate all app tables before each test when DATABASE_URL is
-    Postgres and the server is reachable — reproduces the fresh-temp-file
-    isolation SQLite tests get from tmp_path. No-op on SQLite (the default
-    CI/local test run) or when Postgres is configured but down."""
-    if not _postgres_is_live():
+def _ignore_sqlite_escape_hatches(request, monkeypatch):
+    """SQLite runtime is gone; ignore leftover test patches that tried to
+    force a file-backed DB. Isolation is session Postgres + TRUNCATE.
+
+    ``test_db_config.py`` is exempt so it can still assert a missing DSN.
+    """
+    if request.node.path.name == "test_db_config.py":
         yield
         return
 
+    _NOTSET = object()
+
+    real_delenv = monkeypatch.delenv
+    real_setenv = monkeypatch.setenv
+    real_setattr = monkeypatch.setattr
+    blocked_env = {"DATABASE_URL"}
+
+    def delenv(name, raising=True):
+        if name in blocked_env:
+            return None
+        return real_delenv(name, raising=raising)
+
+    def setenv(name, value, prepend=None):
+        if name == "DATABASE_URL" and not str(value).startswith("postgresql"):
+            return None
+        return real_setenv(name, value, prepend=prepend)
+
+    def setattr(target, name=_NOTSET, value=_NOTSET, raising=True):
+        attr = None
+        newval = None
+        if value is _NOTSET:
+            if isinstance(target, str):
+                attr = target.rsplit(".", 1)[-1]
+                newval = name
+            else:
+                return real_setattr(target, name, raising=raising)
+        else:
+            attr = name if isinstance(name, str) else None
+            newval = value
+
+        if attr in {"DB_PATH", "db_path"}:
+            return None
+        if attr == "database_url" and newval in {"", None}:
+            return None
+        if value is _NOTSET:
+            return real_setattr(target, name, raising=raising)
+        return real_setattr(target, name, value, raising=raising)
+
+    monkeypatch.delenv = delenv
+    monkeypatch.setenv = setenv
+    monkeypatch.setattr = setattr
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _postgres_test_isolation(_postgres_schema_once):
+    """Truncate all app tables before each test — reproduces the fresh
+    temp-file isolation SQLite tests used. Playwright smoke seeds once and
+    must not be wiped between cases."""
+    if os.environ.get("PLAYWRIGHT_SMOKE") == "1":
+        yield
+        return
     dsn = _postgres_dsn_or_none()
     assert dsn is not None
 
@@ -178,30 +232,6 @@ def run_db_test(coro):
     return asyncio.run(_wrapped())
 
 
-def use_sqlite_backend(monkeypatch, db_path: Path | str) -> None:
-    """Force a tmp-path SQLite DB even when DATABASE_URL/Postgres is configured.
-
-    Tests that set DB_PATH alone still resolve to Postgres in CI because
-    settings.database_url is frozen at import and takes priority over DB_PATH
-    (see db/config.py::resolve_database_url). Mirrors test_wallboard.py's
-    _use_sqlite_backend helper, centralized here for forge/security-architecture
-    live tests that seed an isolated sa_live.db via TestClient."""
-    path = str(db_path)
-    monkeypatch.setenv("DB_PATH", path)
-    monkeypatch.setattr("database.DB_PATH", path)
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    from settings import settings as _settings
-
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setattr(_settings, "db_path", path)
-    sqlite_url = f"sqlite+aiosqlite:///{path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection._pool", None)
-
-
 @pytest.fixture(autouse=True)
 def _reset_forge_security_architecture_module_caches():
     """Drop in-process caches forge/security-architecture routes may share.
@@ -221,8 +251,7 @@ def _reset_forge_security_architecture_module_caches():
 @pytest.fixture(autouse=True)
 def _reset_db_pool_after_test():
     """Clear a stale asyncpg pool handle so the next test's TestClient lifespan
-    re-binds to the correct DATABASE_URL/DB_PATH (loop mismatch or a prior
-    test's use_sqlite_backend monkeypatch leaving _pool set)."""
+    re-binds to the correct DATABASE_URL (loop mismatch from asyncio.run)."""
     yield
     import db.connection as conn_mod
 
@@ -241,7 +270,7 @@ def _isolate_log_ring_buffer():
 
 
 @pytest.fixture(autouse=True)
-def _noop_scheduler(monkeypatch):
+def _noop_scheduler(monkeypatch, _ignore_sqlite_escape_hatches):
     """Neutralize main.py lifespan's scheduler/on-startup hooks for every
     test. Every `with TestClient(app)` usage runs real FastAPI lifespan;
     without this, each such test would launch the actual scheduler and
@@ -460,8 +489,8 @@ def _smoke_auth_cookies(backend_url: str) -> list[dict[str, str | bool]]:
 
 
 @pytest.fixture(scope="session")
-def playwright_smoke_stack(tmp_path_factory):
-    """Seed SQLite, start uvicorn + Vite preview, yield the UI base URL."""
+def playwright_smoke_stack():
+    """Seed Postgres, start uvicorn + Vite preview, yield the UI base URL."""
     if os.environ.get("PLAYWRIGHT_SMOKE") != "1":
         pytest.skip("Set PLAYWRIGHT_SMOKE=1 to run Chromium smoke tests")
 
@@ -471,11 +500,9 @@ def playwright_smoke_stack(tmp_path_factory):
             "frontend/dist missing — run: cd frontend && npm ci && npm run build",
         )
 
-    db_path = tmp_path_factory.mktemp("playwright") / "briefr.db"
     env = os.environ.copy()
     env.update(
         {
-            "DB_PATH": str(db_path),
             "BACKUP_ENABLED": "0",
             "BRIEFR_ENV": "development",
             "ALLOWED_ORIGINS": f"http://127.0.0.1:{FRONTEND_PORT}",
@@ -483,8 +510,14 @@ def playwright_smoke_stack(tmp_path_factory):
             "AUTH_COOKIE_SECURE": "0",
             "JWT_SECRET": "playwright-smoke-test-jwt-secret-32b",
             "RATE_LIMIT_ENABLED": "0",
+            "BRIEFR_REQUIRE_POSTGRES": "1",
         }
     )
+    if not str(env.get("DATABASE_URL", "")).startswith("postgresql"):
+        pytest.fail(
+            "Playwright smoke requires DATABASE_URL=postgresql://… "
+            "(CI job playwright-smoke provides a pgvector service)."
+        )
 
     subprocess.run(
         [sys.executable, str(SEED_SCRIPT)],

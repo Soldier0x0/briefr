@@ -1,28 +1,22 @@
-"""App-level database exceptions — dialect-neutral replacements for sqlite3/asyncpg types.
+"""App-level database exceptions — replacements for asyncpg types.
 
-Post-B Phase 2: callers outside ``db/`` must catch ``DatabaseError`` /
-``DatabaseLockedError``, not ``sqlite3.*`` or ``asyncpg.*``.
+Callers outside ``db/`` must catch ``DatabaseError`` / ``DatabaseLockedError``,
+not ``asyncpg.*``.
 """
 
 from __future__ import annotations
 
-import sqlite3
 from typing import TypeVar
 
 _T = TypeVar("_T", bound=BaseException)
 
 
 class DatabaseError(Exception):
-    """Unified failure from either SQLite (aiosqlite) or PostgreSQL (asyncpg)."""
+    """Unified failure from PostgreSQL (asyncpg)."""
 
 
 class DatabaseLockedError(DatabaseError):
-    """Retryable lock / contention (SQLite ``database is locked``, Postgres deadlocks)."""
-
-
-def _sqlite_locked_message(exc: sqlite3.Error) -> bool:
-    msg = str(exc).lower()
-    return "locked" in msg or "busy" in msg
+    """Retryable lock / contention (Postgres deadlocks, legacy sqlite backup files)."""
 
 
 def _asyncpg_locked(exc: BaseException) -> bool:
@@ -35,6 +29,18 @@ def _asyncpg_locked(exc: BaseException) -> bool:
         asyncpg.exceptions.LockNotAvailableError,
     )
     return isinstance(exc, locked_types)
+
+
+def _sqlite_locked(exc: BaseException) -> bool:
+    """Legacy backup archives still open sqlite3 files (not the app runtime)."""
+    try:
+        import sqlite3
+    except ImportError:
+        return False
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    msg = str(exc).lower()
+    return "locked" in msg or "busy" in msg
 
 
 def format_db_exception_message(exc: BaseException) -> str:
@@ -54,18 +60,12 @@ def format_db_exception_message(exc: BaseException) -> str:
 
 
 def normalize_db_exception(exc: BaseException) -> DatabaseError:
-    """Map sqlite3/asyncpg failures to app-level types; pass through existing."""
+    """Map asyncpg failures to app-level types; pass through existing."""
     if isinstance(exc, DatabaseError):
         return exc
     if isinstance(exc, TimeoutError):
         return DatabaseError("Database command timeout")
-    if isinstance(exc, sqlite3.OperationalError):
-        if _sqlite_locked_message(exc):
-            return DatabaseLockedError(str(exc))
-        return DatabaseError(str(exc))
-    if isinstance(exc, sqlite3.Error):
-        return DatabaseError(str(exc))
-    if _asyncpg_locked(exc):
+    if _asyncpg_locked(exc) or _sqlite_locked(exc):
         return DatabaseLockedError(str(exc))
     try:
         import asyncpg

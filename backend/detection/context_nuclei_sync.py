@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 
-import aiosqlite
+from db.types import DbConnection
 
 from detection.artifact_extract import fetch_nuclei_template_text
 from detection.context import (
@@ -63,7 +63,7 @@ def _merge_artifacts(existing: list[dict], incoming: list[dict]) -> list[dict]:
 
 
 async def enrich_detection_context_from_nuclei(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     *,
     cve_id: str,
     description: str = "",
@@ -115,7 +115,7 @@ async def enrich_detection_context_from_nuclei(
 
 
 async def run_detection_context_nuclei_for_cves(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     cve_ids: list[str],
     *,
     progress_cb=None,

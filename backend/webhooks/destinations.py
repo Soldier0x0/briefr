@@ -7,9 +7,7 @@ import os
 import re
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
-
-import aiosqlite
+from typing import Any, Mapping
 
 from database import get_db
 
@@ -150,7 +148,7 @@ def load_env_destinations() -> list[WebhookDestination]:
     return destinations
 
 
-def _row_to_destination(row: aiosqlite.Row) -> WebhookDestination:
+def _row_to_destination(row: Mapping[str, Any]) -> WebhookDestination:
     try:
         config = json.loads(row["config_json"] or "{}")
     except json.JSONDecodeError:

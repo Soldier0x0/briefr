@@ -6,7 +6,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-import aiosqlite
+from db.types import DbConnection
 
 from ai.llm_router import any_llm_provider_configured
 from database import read_cve_exploits_from_db, set_feed_cache
@@ -45,7 +45,7 @@ def get_detection_context_llm_retry_hours() -> float:
 
 
 async def get_cves_for_detection_context_llm(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     limit: int,
     *,
     retry_hours: float = RETRY_HOURS,
@@ -90,7 +90,7 @@ def _apply_artifacts_to_context(
 
 
 async def run_detection_context_llm_sync(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     progress_cb=None,
 ) -> dict:
     """Scheduler job: LLM-extract artifacts into DetectionContext cache."""

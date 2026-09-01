@@ -8,37 +8,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
 from routers.cves import _decode_feed_cursor, _encode_feed_cursor
-
-
-def _force_sqlite(tmp_path, monkeypatch):
-    from settings import settings
-
-    db_path = tmp_path / "phase3a.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
-    monkeypatch.setattr(settings, "db_path", str(db_path))
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
-
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-    return db_path
-
 
 def test_feed_cursor_roundtrip():
     cursor = _encode_feed_cursor("2026-01-15T12:00:00Z", "CVE-2026-0002")
@@ -46,13 +21,10 @@ def test_feed_cursor_roundtrip():
     assert published == "2026-01-15T12:00:00Z"
     assert cve_id == "CVE-2026-0002"
 
-
 def test_list_cves_keyset_cursor(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
-        from database import get_db
 
         db = await get_db()
         try:
@@ -94,13 +66,11 @@ def test_list_cves_keyset_cursor(tmp_path, monkeypatch):
         ids = [row["cve_id"] for row in second.json()["data"]]
         assert ids == ["CVE-2026-0002"]
 
-
 def test_drawer_bundle_endpoint(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """
@@ -128,7 +98,6 @@ def test_drawer_bundle_endpoint(tmp_path, monkeypatch):
         assert "related" in body
         assert "correlation" in body
         assert "momentum" in body
-
 
 def test_default_response_not_orjson():
     """Guard: ORJSONResponse is deprecated in FastAPI 0.131+; use Pydantic JSON bytes."""

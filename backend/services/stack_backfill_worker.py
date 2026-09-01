@@ -16,6 +16,7 @@ from procrastinate.exceptions import AlreadyEnqueued
 from database import get_db
 from db.cve import ADDITIVE_ENRICHMENT_COMMIT_CHUNK
 from db.enrichment import mark_cves_as_kev, update_epss_scores, upsert_kev_batch
+from db.config import is_postgres
 from db.stack_backfill import (
     claim_run_running,
     get_run,
@@ -304,7 +305,9 @@ async def _process(run_id: int) -> dict:
                 logger.warning("KEV apply after backfill failed: %s", exc)
             await db.commit()
 
-        done_at = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")
+        done_at = datetime.now(timezone.utc)
+        if not is_postgres():
+            done_at = done_at.replace(tzinfo=None).isoformat(sep=" ")
         await update_run(
             db,
             run_id,

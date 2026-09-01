@@ -56,47 +56,6 @@ def test_blob_to_pgvector_literal_round_trip_shape():
     assert migrated_content_hash(blob).startswith("migrated:")
 
 
-def test_sqlite_init_creates_embeddings_table(tmp_path, monkeypatch):
-    """Dual-DB shim: SQLite gets a BLOB embeddings table (no vector type)."""
-    if os.environ.get("DATABASE_URL", "").startswith("postgresql"):
-        pytest.skip("SQLite init path only")
-    db_path = tmp_path / "e1_embeddings.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-
-    import database
-    from settings import settings as _settings
-
-    monkeypatch.setattr(database, "DB_PATH", str(db_path))
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-
-    async def run():
-        from database import get_db, init_db
-
-        await init_db()
-        db = await get_db()
-        rows = await db.execute_fetchall(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings'"
-        )
-        assert rows
-        cols = await db.execute_fetchall("PRAGMA table_info(embeddings)")
-        names = {r["name"] for r in cols}
-        assert {
-            "entity_type",
-            "entity_id",
-            "model",
-            "dims",
-            "embedding",
-            "content_hash",
-            "updated_at",
-        } <= names
-
-    run_db_test(run())
-
-
 @pytest.mark.postgres_migrations
 @pytestmark_pg
 def test_pgvector_extension_and_embeddings_table():

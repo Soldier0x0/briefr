@@ -7,8 +7,6 @@ Verifies:
 - additive watchlist_state on list + detail responses
 """
 
-import os
-import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,14 +23,6 @@ from tests.conftest import run_db_test
 CVE_A = "CVE-2021-44228"
 CVE_B = "CVE-2024-0001"
 CVE_C = "CVE-2024-0002"
-
-# _table_columns below asserts schema via SQLite PRAGMA table_info — genuine
-# dialect-only introspection (Postgres uses information_schema/pg_catalog),
-# not a fixture-pattern issue. Portable rewrite is Post-B scope.
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="asserts schema via SQLite PRAGMA table_info",
-)
 
 
 def _seed_cves() -> None:
@@ -71,24 +61,31 @@ def watchlist_client(tmp_path, monkeypatch):
         yield client, db_path
 
 
-def _table_columns(db_path: Path, table: str) -> list[str]:
-    conn = sqlite3.connect(db_path)
+async def _watchlist_columns() -> list[str]:
+    db = await get_db()
     try:
-        return [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+        rows = await db.execute_fetchall(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'watchlist'
+              AND table_schema IN ('app', 'intel', 'public')
+            """
+        )
+        return [row["column_name"] for row in rows]
     finally:
-        conn.close()
+        await db.close()
 
 
-@_requires_sqlite
 def test_watchlist_schema_idempotent(watchlist_client):
-    _client, db_path = watchlist_client
-    cols = _table_columns(db_path, "watchlist")
+    _client, _db_path = watchlist_client
+    cols = run_db_test(_watchlist_columns())
     assert "cve_id" in cols
     assert "state" in cols
     assert "snooze_until" in cols
     assert "created_at" in cols
     run_db_test(init_db())
-    assert _table_columns(db_path, "watchlist") == cols
+    assert run_db_test(_watchlist_columns()) == cols
 
 
 def test_watchlist_crud(watchlist_client):

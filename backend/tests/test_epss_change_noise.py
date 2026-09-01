@@ -2,19 +2,18 @@
 
 import asyncio
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
 from database import (
     _epss_scores_differ,
+    get_db,
     get_recent_cve_changes,
     init_db,
     update_epss_scores,
 )
-
 
 def test_epss_scores_differ_uses_display_precision():
     assert not _epss_scores_differ(0.0001, 0.0002)
@@ -23,25 +22,18 @@ def test_epss_scores_differ_uses_display_precision():
     assert _epss_scores_differ(0.001, 0.002)
     assert _epss_scores_differ(None, 0.05)
 
-
 def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatch):
     from settings import settings
 
     db_path = tmp_path / "epss_noise.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
     monkeypatch.setattr(settings, "db_path", str(db_path))
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
 
     asyncio.run(init_db())
 
     async def run() -> None:
-        db = await aiosqlite.connect(db_path)
-        db.row_factory = aiosqlite.Row
+        db = await get_db()
         try:
             await db.execute(
                 """
@@ -69,9 +61,10 @@ def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatc
                 )
                 VALUES (
                     'CVE-2026-9732', 'epss_score', '0.002', '0.003',
-                    datetime('now', '-48 hours')
+                    ?
                 )
-                """
+                """,
+                (datetime.now(timezone.utc) - timedelta(hours=48),),
             )
             await db.commit()
             recent = await get_recent_cve_changes(

@@ -3,17 +3,7 @@
 database.py was split into backend/db/ (Phase 3 refactor). Every
 function moved verbatim; this file only re-exports so the 35+ existing
 `from database import ...` call sites keep working unchanged.
-
-DB_PATH stays defined here (not delegated to a submodule): db/connection.py
-does a lazy `import database; database.DB_PATH` specifically so per-test
-`monkeypatch.setattr("database.DB_PATH", ...)` / `monkeypatch.setattr(database,
-"DB_PATH", ...)` overrides take effect — that only works if DB_PATH is a
-literal attribute of *this* module object.
 """
-import os
-
-DB_PATH = os.environ.get("DB_PATH", "briefr.db")
-
 from db.init import get_db, init_db, run_postgres_migrations
 from db.cve import *
 from db.embeddings_store import (

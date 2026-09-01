@@ -7,23 +7,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
 from tests.conftest import run_db_test
 from wallboard.service import _epss_movers_from_brief
-
-# _seed_wallboard_db below writes via raw aiosqlite with SQLite-dialect SQL
-# (datetime('now', ...)) — genuinely SQLite-only, not a fixture-pattern gap.
-# A portable rewrite is Post-B (Postgres-native db/ conversion) scope, not
-# this CI-gate PR's. Skip explicitly rather than silently passing/failing.
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="_seed_wallboard_db uses raw SQLite-dialect SQL — portable rewrite is Post-B scope",
-)
-
 
 def _patch_app_lifecycle(monkeypatch) -> None:
     async def _noop_async() -> None:
@@ -33,29 +23,12 @@ def _patch_app_lifecycle(monkeypatch) -> None:
     monkeypatch.setattr("main.stop_scheduler", lambda: None)
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
-
-def _use_sqlite_backend(monkeypatch, db_path: Path) -> None:
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    from settings import settings as _settings
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection._pool", None)
-
-
 def _disable_rate_limit(monkeypatch) -> None:
     import rate_limit as _rl
     from settings import settings as _settings
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.wallboard_bucket._buckets.pop("testclient", None)
-
 
 def _open_or_static_wallboard_gate(
     monkeypatch, *, token: str = ""
@@ -76,12 +49,11 @@ def _open_or_static_wallboard_gate(
         return {"X-BRIEFR-Wallboard-Token": token}
     return {}
 
-
 async def _seed_wallboard_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S")
 
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """
@@ -120,25 +92,23 @@ async def _seed_wallboard_db(db_path: Path) -> None:
         )
         await db.execute(
             """
-            INSERT INTO cve_technique_map (cve_id, technique_id)
-            VALUES ('CVE-2024-9001', 'T1190')
+            INSERT INTO mitre_techniques (technique_id, name, tactic, url)
+            VALUES ('T1190', 'Exploit Public-Facing Application', 'Initial Access', '')
             """
         )
         await db.execute(
             """
-            INSERT INTO mitre_techniques (technique_id, name, tactic, url)
-            VALUES ('T1190', 'Exploit Public-Facing Application', 'Initial Access', '')
+            INSERT INTO cve_technique_map (cve_id, technique_id)
+            VALUES ('CVE-2024-9001', 'T1190')
             """
         )
         await db.commit()
     finally:
         await db.close()
 
-
 @pytest.fixture
 def wallboard_client(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard.db"
-    _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("BRIEFR_STACK_TERMS", "log4j")
     _open_or_static_wallboard_gate(monkeypatch)
 
@@ -152,8 +122,6 @@ def wallboard_client(tmp_path, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as client:
         yield client
 
-
-@_requires_sqlite
 def test_wallboard_returns_v2_payload(wallboard_client):
     resp = wallboard_client.get("/api/wallboard")
     assert resp.status_code == 200
@@ -184,10 +152,8 @@ def test_wallboard_returns_v2_payload(wallboard_client):
     assert "gap_count" in body["coverage_gaps"]
     assert "status" in body["ingest_strip"]
 
-
 def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard-auth.db"
-    _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("WALLBOARD_TOKEN", "kiosk-secret-token")
 
     _patch_app_lifecycle(monkeypatch)
@@ -220,10 +186,8 @@ def test_wallboard_token_required_when_set(tmp_path, monkeypatch):
         cookie_ok = client.get("/api/wallboard")
         assert cookie_ok.status_code == 200
 
-
 def test_wallboard_rate_limited(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard-rl.db"
-    _use_sqlite_backend(monkeypatch, db_path)
 
     _patch_app_lifecycle(monkeypatch)
 
@@ -249,14 +213,11 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
 
     _rl.wallboard_bucket._buckets.clear()
 
-
-@_requires_sqlite
 def test_wallboard_response_has_no_admin_keys(wallboard_client):
     body = wallboard_client.get("/api/wallboard").json()
     dumped = str(body).lower()
     for forbidden in ("admin_api_key", "backup_age", "webhook_url", "api_key"):
         assert forbidden not in dumped
-
 
 def test_epss_movers_from_brief_uses_positive_deltas():
     brief = {
@@ -279,12 +240,10 @@ def test_epss_movers_from_brief_uses_positive_deltas():
     assert tile["items"][0]["epss_delta"] == 0.3
     assert tile["items"][0]["epss_score"] == 0.42
 
-
 def test_epss_movers_from_brief_empty_section():
     tile = _epss_movers_from_brief({"sections": {"epss_movers": {"count": 0, "items": []}}})
     assert tile["count"] == 0
     assert tile["items"] == []
-
 
 def test_top_risk_rank_prefers_op_then_threat_over_legacy_blend():
     """W2: CISA KEV (P1) ranks above VulnCheck-high legacy v1.1b total (P2)."""

@@ -6,7 +6,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import resource_collector as collector_mod
-from db.config import is_postgres
 from db.resource_metrics import purge_old_resource_metrics
 from database import get_db, init_db
 from metrics.request_counter import read_and_reset_request_count, reset_for_tests
@@ -79,12 +78,7 @@ def test_request_counter_read_and_reset():
     assert read_and_reset_request_count() == 0
 
 
-def test_collect_and_store_sample_sqlite_null_pg_columns(tmp_path, monkeypatch):
-    if is_postgres():
-        return
-    db_path = tmp_path / "resource_metrics.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+def test_collect_and_store_sample_records_two_rows():
     collector_mod.reset_collector_state_for_tests()
     reset_for_tests()
 
@@ -94,9 +88,7 @@ def test_collect_and_store_sample_sqlite_null_pg_columns(tmp_path, monkeypatch):
         try:
             first = await collector_mod.collect_and_store_sample(db)
             await db.commit()
-            assert first["briefr_io_read_bps"] is None
-            assert first["pg_xact_per_min"] is None
-            assert first["pg_db_size_bytes"] is None
+            assert first["briefr_rss_bytes"] is not None
 
             second = await collector_mod.collect_and_store_sample(db)
             await db.commit()
@@ -112,13 +104,7 @@ def test_collect_and_store_sample_sqlite_null_pg_columns(tmp_path, monkeypatch):
     run_db_test(_run())
 
 
-def test_purge_old_resource_metrics(tmp_path, monkeypatch):
-    if is_postgres():
-        return
-    db_path = tmp_path / "resource_purge.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-
+def test_purge_old_resource_metrics():
     async def _run():
         await init_db()
         db = await get_db()
@@ -143,7 +129,7 @@ def test_purge_old_resource_metrics(tmp_path, monkeypatch):
             assert deleted >= 1
             rows = await db.execute_fetchall("SELECT ts FROM resource_metrics")
             assert len(rows) == 1
-            assert rows[0]["ts"].startswith("2099")
+            assert str(rows[0]["ts"]).startswith("2099")
         finally:
             await db.close()
 
@@ -185,14 +171,8 @@ def test_summarize_metric_peak_timestamp():
     assert summary["low"] == 1.0
 
 
-def test_fetch_resource_metrics_rows_is_not_downsampled(tmp_path, monkeypatch):
+def test_fetch_resource_metrics_rows_is_not_downsampled():
     from db.resource_metrics import fetch_resource_metrics_rows
-
-    if is_postgres():
-        return
-    db_path = tmp_path / "resource_raw.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     async def _run():
         await init_db()
@@ -216,13 +196,7 @@ def test_fetch_resource_metrics_rows_is_not_downsampled(tmp_path, monkeypatch):
     run_db_test(_run())
 
 
-def test_fetch_resources_response_empty_sqlite(tmp_path, monkeypatch):
-    if is_postgres():
-        return
-    db_path = tmp_path / "resources_api.db"
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-
+def test_fetch_resources_response_empty():
     async def _run():
         from db.resource_metrics import fetch_resources_response
 

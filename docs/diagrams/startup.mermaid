@@ -1,12 +1,10 @@
 flowchart TD
   A[uvicorn starts main:app] --> B[lifespan context enters]
-  B --> C{BRIEFR_REQUIRE_POSTGRES=1?}
-  C -->|yes, no Postgres DSN| C_FAIL[RuntimeError — stop]
-  C -->|Postgres| D1[run_postgres_migrations — Alembic]
-  C -->|SQLite dev/test| D2[backup.manager.ensure_db_or_restore]
-  D1 --> E[db.connection.init_pool — asyncpg or aiosqlite]
-  D2 --> E
-  E --> F[database.init_db — schema + inline migrations]
+  B --> C[resolve DATABASE_URL — postgresql:// required]
+  C -->|missing or not postgres| C_FAIL[ValueError — stop]
+  C -->|ok| D1[run_postgres_migrations — Alembic]
+  D1 --> E[db.connection.init_pool — asyncpg]
+  E --> F[database.init_db — schema via Alembic]
   F --> G{BRIEFR_ENV=production?}
   G -->|yes| G1[production_posture_warnings — log each unsafe flag]
   G -->|no| H

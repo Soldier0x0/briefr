@@ -103,4 +103,4 @@ flowchart TB
   POSTURE --> ADMIN_UI
   API -.->|X-Request-ID on errors| ERR
 
-  Note1["SQLite + db/dialect.py translation: tests/dev only.<br/>Production: BRIEFR_REQUIRE_POSTGRES=1."]
+  Note1["PostgreSQL 16 + pgvector required. DATABASE_URL must be postgresql://."]

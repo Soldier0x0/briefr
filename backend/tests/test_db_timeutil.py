@@ -13,9 +13,3 @@ def test_utcnow_for_db_postgres_returns_aware_datetime():
     value = utcnow_for_db(pg=True)
     assert isinstance(value, datetime)
     assert value.tzinfo is not None
-
-
-def test_utcnow_for_db_sqlite_returns_string():
-    value = utcnow_for_db(pg=False)
-    assert isinstance(value, str)
-    assert len(value) >= 19

@@ -14,23 +14,15 @@ from database import get_db, init_db
 from preferences.display_validate import INSTANCE_TYPOGRAPHY_SETTING_KEY
 from tests.conftest import run_db_test
 
-
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     import database as db_module
     from settings import settings as _settings
 
     db_path = tmp_path / "typography_default.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(_settings, "database_url", "")
     monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
 
     run_db_test(init_db())
 
@@ -62,14 +54,12 @@ def client(tmp_path, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
-
 def _login(client):
     res = client.post(
         "/api/auth/login",
         json={"username": "ops", "password": "correct-horse-battery"},
     )
     assert res.status_code == 200
-
 
 def test_instance_typography_default_round_trip(client):
     _login(client)

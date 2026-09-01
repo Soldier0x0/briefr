@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from db.config import is_postgres
 from db.integrity import run_integrity_check
 from db.types import DbConnection
 
@@ -69,14 +67,6 @@ def project_disk_usage(
         "sample_count": len(points),
         "horizon_days": horizon_days,
     }
-
-
-async def _sqlite_db_size_bytes(db: DbConnection) -> int:
-    rows = await db.execute_fetchall("PRAGMA page_count")
-    page_count = int(rows[0]["page_count"]) if rows else 0
-    rows2 = await db.execute_fetchall("PRAGMA page_size")
-    page_size = int(rows2[0]["page_size"]) if rows2 else 0
-    return page_count * page_size
 
 
 async def _postgres_db_metrics(db: DbConnection) -> dict[str, Any]:
@@ -143,53 +133,17 @@ async def _postgres_db_metrics(db: DbConnection) -> dict[str, Any]:
     }
 
 
-async def _sqlite_db_metrics(db: DbConnection, db_path: str) -> dict[str, Any]:
-    db_size_bytes = await _sqlite_db_size_bytes(db)
-    if db_size_bytes <= 0 and db_path and os.path.exists(db_path):
-        try:
-            db_size_bytes = os.path.getsize(db_path)
-        except OSError:
-            pass
-
-    table_row = await db.execute_fetchall(
-        "SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
-    )
-    index_row = await db.execute_fetchall(
-        "SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'"
-    )
-
-    return {
-        "connections": 1,
-        "db_size_bytes": db_size_bytes,
-        "wal_size_bytes": 0,
-        "cache_hit_ratio": None,
-        "table_count": int(table_row[0]["cnt"]) if table_row else 0,
-        "index_count": int(index_row[0]["cnt"]) if index_row else 0,
-    }
-
-
 async def _fetch_db_size_samples(db: DbConnection, days: int = 30) -> list[dict[str, Any]]:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    if type(db).__name__ == "PostgresConnection":
-        rows = await db.execute_fetchall(
-            """
-            SELECT ts, pg_db_size_bytes AS db_bytes
-            FROM resource_metrics
-            WHERE ts >= $1 AND pg_db_size_bytes IS NOT NULL
-            ORDER BY ts ASC
-            """,
-            (cutoff,),
-        )
-    else:
-        rows = await db.execute_fetchall(
-            """
-            SELECT ts, pg_db_size_bytes AS db_bytes
-            FROM resource_metrics
-            WHERE ts >= ? AND pg_db_size_bytes IS NOT NULL
-            ORDER BY ts ASC
-            """,
-            (cutoff,),
-        )
+    rows = await db.execute_fetchall(
+        """
+        SELECT ts, pg_db_size_bytes AS db_bytes
+        FROM resource_metrics
+        WHERE ts >= $1 AND pg_db_size_bytes IS NOT NULL
+        ORDER BY ts ASC
+        """,
+        (cutoff,),
+    )
     if rows:
         return [{"ts": r["ts"], "db_bytes": r["db_bytes"]} for r in rows]
     return []
@@ -202,13 +156,10 @@ async def fetch_database_metrics(
     partition_total_bytes: int = 0,
 ) -> dict[str, Any]:
     """Collect database metrics plus integrity status and disk projection."""
+    del db_path
     integrity = await run_integrity_check(db)
     checked_at = datetime.now(timezone.utc).isoformat()
-
-    if is_postgres():
-        core = await _postgres_db_metrics(db)
-    else:
-        core = await _sqlite_db_metrics(db, db_path)
+    core = await _postgres_db_metrics(db)
 
     samples = await _fetch_db_size_samples(db)
     if not samples and core.get("db_size_bytes"):

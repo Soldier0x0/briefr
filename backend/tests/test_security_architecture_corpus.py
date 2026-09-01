@@ -78,8 +78,33 @@ def test_extract_db_tables_dedupes_and_sorts():
     "CREATE TABLE IF NOT EXISTS zebra (id INTEGER)",
     CREATE TABLE IF NOT EXISTS alpha (id INTEGER);
     "CREATE TABLE IF NOT EXISTS alpha (id INTEGER)",
+    CREATE TABLE IF NOT EXISTS app.infra_classifications (id INTEGER);
     """
-    assert gen.extract_db_tables(source) == ["alpha", "zebra"]
+    assert gen.extract_db_tables(source) == ["alpha", "infra_classifications", "zebra"]
+
+
+def test_extract_alembic_tables_ignores_downgrade_and_applies_drops(tmp_path: Path):
+    versions = tmp_path / "versions"
+    versions.mkdir()
+    (versions / "001_create.py").write_text(
+        """
+def upgrade() -> None:
+    op.execute("CREATE TABLE IF NOT EXISTS keep_me (id INTEGER)")
+    op.execute("CREATE TABLE IF NOT EXISTS gone_me (id INTEGER)")
+
+def downgrade() -> None:
+    op.execute("CREATE TABLE IF NOT EXISTS from_downgrade (id INTEGER)")
+""",
+        encoding="utf-8",
+    )
+    (versions / "002_drop.py").write_text(
+        """
+def upgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS gone_me")
+""",
+        encoding="utf-8",
+    )
+    assert gen.extract_alembic_tables(versions) == ["keep_me"]
 
 
 def test_build_components_skips_framework_internal_modules():
@@ -338,8 +363,8 @@ def test_extract_table_refs_ignores_known_schema_python_imports():
 def test_build_db_tables_yaml_distinguishes_migration_only_tables():
     out = gen.build_db_tables_yaml(["cves", "infra_classifications"])
     by_id = {t["id"]: t for t in out}
-    assert "db/init.py" in by_id["cves"]["summary"]
-    assert "migration" in by_id["infra_classifications"]["summary"]
+    assert "Alembic" in by_id["cves"]["summary"]
+    assert "Alembic" in by_id["infra_classifications"]["summary"]
 
 
 def test_resolve_table_refs_follows_database_shim_and_same_module(tmp_path: Path):

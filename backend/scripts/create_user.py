@@ -18,7 +18,7 @@ from pathlib import Path
 def _reexec_with_venv_python() -> None:
     """Use the same venv as briefr-backend.service when system python lacks deps."""
     try:
-        import aiosqlite  # noqa: F401
+        import asyncpg  # noqa: F401
         return
     except ImportError:
         pass
@@ -42,7 +42,7 @@ def _reexec_with_venv_python() -> None:
             os.execv(str(py), [str(py), *sys.argv])
 
     print(
-        "Could not import aiosqlite. Run with the app venv:\n"
+        "Could not import asyncpg. Run with the app venv:\n"
         "  /opt/briefr/venv/bin/python3 /opt/briefr/backend/scripts/create_user.py",
         file=sys.stderr,
     )

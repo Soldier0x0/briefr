@@ -14,34 +14,20 @@ from database import init_db, set_feed_cache
 from feeds import case_study_feed
 from tests.conftest import run_db_test
 
-
 def _setup_db(tmp_path, monkeypatch, name: str) -> None:
-    from settings import settings as _settings
-
     db_path = tmp_path / name
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-
 
 @pytest.fixture
 def admin_client(tmp_path, monkeypatch, auth_token):
     from settings import settings as _settings
 
     db_path = tmp_path / "incidents_admin.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
 
     import rate_limit as _rl
-    from settings import settings as _settings
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
@@ -52,7 +38,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
         client.cookies.set("briefr_at", auth_token())
         yield client
 
-
 def test_refresh_unknown_source_returns_400(admin_client):
     resp = admin_client.post(
         "/api/admin/incidents/refresh",
@@ -60,7 +45,6 @@ def test_refresh_unknown_source_returns_400(admin_client):
     )
     assert resp.status_code == 400
     assert "Unknown source" in resp.json()["detail"]
-
 
 def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
     _setup_db(tmp_path, monkeypatch, "partial.db")
@@ -122,7 +106,6 @@ def test_partial_rss_refresh_replaces_only_that_source(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_get_incident_feed_drops_removed_source_cards(tmp_path, monkeypatch):
     _setup_db(tmp_path, monkeypatch, "prune_removed.db")
 
@@ -170,7 +153,6 @@ def test_get_incident_feed_drops_removed_source_cards(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_atlas_only_refresh_keeps_rss_cards(tmp_path, monkeypatch):
     _setup_db(tmp_path, monkeypatch, "atlas_only.db")
 
@@ -215,7 +197,6 @@ def test_atlas_only_refresh_keeps_rss_cards(tmp_path, monkeypatch):
         assert snapshot["atlas"][0]["id"] == "new-atlas"
 
     run_db_test(run())
-
 
 def test_admin_incidents_refresh_accepts_valid_source(admin_client, monkeypatch):
     async def _noop_refresh(_sources=None):

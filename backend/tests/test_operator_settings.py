@@ -15,33 +15,7 @@ from database import get_app_setting, get_db, init_db, set_app_setting
 from operator_settings import hydrate_operator_settings_from_db, persist_operator_setting
 from settings import PROCESS_ENV_KEYS
 
-
-def _sqlite_db(tmp_path, monkeypatch) -> str:
-    from settings import settings
-
-    db_path = str(tmp_path / "app_settings.db")
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
-    monkeypatch.setattr(settings, "db_path", db_path)
-    monkeypatch.setenv("DB_PATH", db_path)
-    monkeypatch.setattr(database, "DB_PATH", db_path)
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
-
-    async def _noop_async(*args, **kwargs):
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-    return db_path
-
-
 def test_admin_set_config_persists_to_app_settings(tmp_path, monkeypatch, auth_token):
-    db_path = _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
 
     import rate_limit as _rl
@@ -71,9 +45,7 @@ def test_admin_set_config_persists_to_app_settings(tmp_path, monkeypatch, auth_t
 
     assert run_db_test(read()) == "4"
 
-
 def test_hydrate_applies_db_over_dotenv(tmp_path, monkeypatch):
-    db_path = _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
 
     monkeypatch.setenv("EPSS_SYNC_INTERVAL_HOURS", "6")
@@ -92,9 +64,7 @@ def test_hydrate_applies_db_over_dotenv(tmp_path, monkeypatch):
     assert applied >= 1
     assert os.environ["EPSS_SYNC_INTERVAL_HOURS"] == "12"
 
-
 def test_hydrate_skips_process_env_keys(tmp_path, monkeypatch):
-    db_path = _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
 
     key = "KEV_SYNC_INTERVAL_MINUTES"
@@ -116,9 +86,7 @@ def test_hydrate_skips_process_env_keys(tmp_path, monkeypatch):
     run_db_test(hydrate_operator_settings_from_db())
     assert os.environ[key] == "99"
 
-
 def test_persist_operator_setting_round_trip(tmp_path, monkeypatch):
-    _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
 
     run_db_test(persist_operator_setting("BACKUP_INTERVAL_HOURS", "8"))
@@ -132,9 +100,7 @@ def test_persist_operator_setting_round_trip(tmp_path, monkeypatch):
 
     assert run_db_test(read()) == "8"
 
-
 def test_persist_secret_encrypts_when_settings_key_set(tmp_path, monkeypatch):
-    _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
     monkeypatch.setenv("BRIEFR_SETTINGS_KEY", "unit-test-settings-key")
 
@@ -152,9 +118,7 @@ def test_persist_secret_encrypts_when_settings_key_set(tmp_path, monkeypatch):
     assert stored.startswith("enc:v1:")
     assert "plain-nvd-secret" not in stored
 
-
 def test_persist_secret_skips_db_without_settings_key(tmp_path, monkeypatch):
-    _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
     monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
 
@@ -169,9 +133,7 @@ def test_persist_secret_skips_db_without_settings_key(tmp_path, monkeypatch):
 
     assert run_db_test(read()) is None
 
-
 def test_hydrate_decrypts_secret_rows(tmp_path, monkeypatch):
-    _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())
     monkeypatch.setenv("BRIEFR_SETTINGS_KEY", "unit-test-settings-key")
     # Ensure hydrate is allowed to apply this key (not in process-env snapshot).

@@ -8,40 +8,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
-
 from database import (
+    get_db,
     get_epss_history,
     get_related_cves,
-    init_db,
-    snapshot_epss_scores,
-    update_epss_scores,
 )
 
 
-async def _db_with_cves() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(":memory:")
-    db.row_factory = aiosqlite.Row
-    await db.execute("PRAGMA foreign_keys=ON")
-    await db.executescript(
-        """
-        CREATE TABLE cves (
-            cve_id TEXT PRIMARY KEY,
-            description TEXT,
-            cvss_score REAL,
-            severity TEXT,
-            published TEXT,
-            affected_products TEXT DEFAULT '[]',
-            epss_score REAL
-        );
-        CREATE TABLE epss_history (
-            cve_id TEXT NOT NULL,
-            score REAL NOT NULL,
-            recorded_date TEXT NOT NULL,
-            PRIMARY KEY (cve_id, recorded_date)
-        );
-        """
-    )
+async def _db_with_cves() -> object:
+    db = await get_db()
     today = date.today().isoformat()
     week_ago = (date.today() - timedelta(days=7)).isoformat()
     await db.execute(
