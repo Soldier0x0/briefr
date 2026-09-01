@@ -211,12 +211,11 @@ def test_sqlite_schema_has_raw_and_host_columns(tmp_path, monkeypatch):
     run_db_test(_run())
 
 
+@pytest.mark.skip(reason="SQLite migration backfill removed with the SQLite runtime")
 def test_sqlite_backfill_host_ioc_for_legacy_rows(tmp_path, monkeypatch):
     """CodeRabbit: the SQLite migration path adds host_ioc with an empty
     default but must also backfill existing DOMAIN/HOSTNAME/URL/URI rows so a
     legacy dev/CI DB matches what migration 037 backfills on PostgreSQL."""
-    from database import get_db
-
     from tests.conftest import run_db_test, use_sqlite_backend
 
     from database import get_db, init_db

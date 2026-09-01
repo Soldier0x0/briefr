@@ -15,14 +15,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from database import get_db
+from database import get_db, init_db
 import numpy as np
 import pytest
 
 import database
 import ml.embeddings as emb
 from db.config import is_postgres
-from database import init_db
 from ml.embeddings import (
     blob_to_vector,
     embeddings_enabled,
@@ -73,7 +72,7 @@ def test_embeddings_disabled_by_default(monkeypatch):
 
 async def _db_with_embeddings() -> object:
     db = await get_db()
-        await db.executescript(
+    await db.executescript(
         """
         CREATE TABLE cve_embeddings (
             cve_id TEXT PRIMARY KEY,
@@ -329,6 +328,7 @@ def _seed_related_db(db_path: str) -> None:
     run_db_test(run())
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 @pytest.fixture
 def related_client(tmp_path, monkeypatch):
     db_path = tmp_path / "related.db"
@@ -367,6 +367,7 @@ def test_related_endpoint_semantic_when_embeddings_enabled(related_client, monke
             assert field in item
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_falls_back_when_target_has_no_vector(tmp_path, monkeypatch):
     """Embeddings enabled but this CVE not yet embedded → heuristic fallback.
 

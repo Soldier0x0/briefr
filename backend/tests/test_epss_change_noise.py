@@ -6,10 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from database import get_db
-
 from database import (
     _epss_scores_differ,
+    get_db,
     get_recent_cve_changes,
     init_db,
     update_epss_scores,
@@ -41,7 +40,7 @@ def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatc
 
     async def run() -> None:
         db = await get_db()
-                try:
+        try:
             await db.execute(
                 """
                 INSERT INTO cves (cve_id, description, epss_score, severity)

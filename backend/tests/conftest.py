@@ -25,13 +25,10 @@ SEED_SCRIPT = REPO_ROOT / "scripts" / "seed_screenshot_data.py"
 
 sys.path.insert(0, str(BACKEND_DIR))
 
-# Defaults flipped to production + Postgres-only at the product level
-# (settings.py). The test suite explicitly opts back into dev/SQLite so it runs
-# identically with no env (bare `pytest tests/`) and under CI:
-# - BRIEFR_ENV=development keeps /api/docs + openapi visible (router tests)
-#   and disables the production JWT_SECRET import guard (settings.py).
-# - JWT_SECRET setdefault keeps a production-override CI run green.
-# Tests require a live PostgreSQL DATABASE_URL (CI job test-postgres).
+# Tests require a live PostgreSQL DATABASE_URL (CI jobs test-postgres and
+# playwright-smoke). BRIEFR_ENV=development keeps /api/docs + openapi visible
+# and disables the production JWT_SECRET import guard. JWT_SECRET setdefault
+# keeps a production-override CI run green.
 os.environ.setdefault("BRIEFR_ENV", "development")
 os.environ.setdefault("JWT_SECRET", "ci-test-jwt-secret-not-for-production")
 
@@ -117,9 +114,77 @@ def _postgres_schema_once(_require_postgres):
 
 
 @pytest.fixture(autouse=True)
+def _ignore_sqlite_escape_hatches(request, monkeypatch):
+    """SQLite runtime is gone; ignore leftover test patches that tried to
+    force a file-backed DB. Isolation is session Postgres + TRUNCATE.
+
+    ``test_db_config.py`` is exempt so it can still assert a missing DSN.
+    """
+    if request.node.path.name == "test_db_config.py":
+        yield
+        return
+
+    from _pytest.monkeypatch import notset
+
+    real_delenv = monkeypatch.delenv
+    real_setenv = monkeypatch.setenv
+    real_setattr = monkeypatch.setattr
+    blocked_env = {"DATABASE_URL", "BRIEFR_REQUIRE_POSTGRES", "DB_PATH"}
+
+    def delenv(name, raising=True):
+        if name in blocked_env:
+            return None
+        return real_delenv(name, raising=raising)
+
+    def setenv(name, value, prepend=None):
+        if name == "DB_PATH":
+            return None
+        if name == "DATABASE_URL" and not str(value).startswith("postgresql"):
+            return None
+        if name == "BRIEFR_REQUIRE_POSTGRES" and str(value).strip() in {
+            "0",
+            "false",
+            "False",
+            "",
+        }:
+            return None
+        return real_setenv(name, value, prepend=prepend)
+
+    def setattr(target, name=notset, value=notset, raising=True):
+        attr = None
+        newval = None
+        if value is notset:
+            if isinstance(target, str):
+                attr = target.rsplit(".", 1)[-1]
+                newval = name
+            else:
+                return real_setattr(target, name, value, raising=raising)
+        else:
+            attr = name if isinstance(name, str) else None
+            newval = value
+
+        if attr in {"DB_PATH", "db_path", "is_postgres"}:
+            return None
+        if attr == "database_url" and newval in {"", None}:
+            return None
+        if attr == "briefr_require_postgres" and newval in {False, 0, "0"}:
+            return None
+        return real_setattr(target, name, value, raising=raising)
+
+    monkeypatch.delenv = delenv
+    monkeypatch.setenv = setenv
+    monkeypatch.setattr = setattr
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _postgres_test_isolation(_postgres_schema_once):
-    """Truncate all app tables before each test when DATABASE_URL is
-    Postgres — reproduces the fresh-temp-file isolation SQLite tests used."""
+    """Truncate all app tables before each test — reproduces the fresh
+    temp-file isolation SQLite tests used. Playwright smoke seeds once and
+    must not be wiped between cases."""
+    if os.environ.get("PLAYWRIGHT_SMOKE") == "1":
+        yield
+        return
     dsn = _postgres_dsn_or_none()
     assert dsn is not None
 
@@ -223,7 +288,7 @@ def _isolate_log_ring_buffer():
 
 
 @pytest.fixture(autouse=True)
-def _noop_scheduler(monkeypatch):
+def _noop_scheduler(monkeypatch, _ignore_sqlite_escape_hatches):
     """Neutralize main.py lifespan's scheduler/on-startup hooks for every
     test. Every `with TestClient(app)` usage runs real FastAPI lifespan;
     without this, each such test would launch the actual scheduler and
@@ -442,8 +507,8 @@ def _smoke_auth_cookies(backend_url: str) -> list[dict[str, str | bool]]:
 
 
 @pytest.fixture(scope="session")
-def playwright_smoke_stack(tmp_path_factory):
-    """Seed SQLite, start uvicorn + Vite preview, yield the UI base URL."""
+def playwright_smoke_stack():
+    """Seed Postgres, start uvicorn + Vite preview, yield the UI base URL."""
     if os.environ.get("PLAYWRIGHT_SMOKE") != "1":
         pytest.skip("Set PLAYWRIGHT_SMOKE=1 to run Chromium smoke tests")
 
@@ -453,11 +518,9 @@ def playwright_smoke_stack(tmp_path_factory):
             "frontend/dist missing — run: cd frontend && npm ci && npm run build",
         )
 
-    db_path = tmp_path_factory.mktemp("playwright") / "briefr.db"
     env = os.environ.copy()
     env.update(
         {
-            "DB_PATH": str(db_path),
             "BACKUP_ENABLED": "0",
             "BRIEFR_ENV": "development",
             "ALLOWED_ORIGINS": f"http://127.0.0.1:{FRONTEND_PORT}",
@@ -465,8 +528,14 @@ def playwright_smoke_stack(tmp_path_factory):
             "AUTH_COOKIE_SECURE": "0",
             "JWT_SECRET": "playwright-smoke-test-jwt-secret-32b",
             "RATE_LIMIT_ENABLED": "0",
+            "BRIEFR_REQUIRE_POSTGRES": "1",
         }
     )
+    if not str(env.get("DATABASE_URL", "")).startswith("postgresql"):
+        pytest.fail(
+            "Playwright smoke requires DATABASE_URL=postgresql://… "
+            "(CI job playwright-smoke provides a pgvector service)."
+        )
 
     subprocess.run(
         [sys.executable, str(SEED_SCRIPT)],

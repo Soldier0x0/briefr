@@ -136,6 +136,24 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: briefr
+          POSTGRES_PASSWORD: briefr
+          POSTGRES_DB: briefr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://briefr:briefr@127.0.0.1:5432/briefr
+      BRIEFR_REQUIRE_POSTGRES: "1"
+      JWT_SECRET: ci-test-jwt-secret-not-for-production
     steps:
       - uses: actions/checkout@v4
 

@@ -191,7 +191,7 @@ async def close_pool() -> None:
 
 
 async def get_connection() -> PostgresConnection:
-    if _pool is None:
+    if _pool is None or not _pool_loop_matches_running(_pool):
         await init_pool()
     acquire_timeout = max(1.0, float(settings.database_pool_acquire_timeout_seconds))
     try:
