@@ -101,14 +101,14 @@ async def _seed_wallboard_db(db_path: Path) -> None:
         )
         await db.execute(
             """
-            INSERT INTO cve_technique_map (cve_id, technique_id)
-            VALUES ('CVE-2024-9001', 'T1190')
+            INSERT INTO mitre_techniques (technique_id, name, tactic, url)
+            VALUES ('T1190', 'Exploit Public-Facing Application', 'Initial Access', '')
             """
         )
         await db.execute(
             """
-            INSERT INTO mitre_techniques (technique_id, name, tactic, url)
-            VALUES ('T1190', 'Exploit Public-Facing Application', 'Initial Access', '')
+            INSERT INTO cve_technique_map (cve_id, technique_id)
+            VALUES ('CVE-2024-9001', 'T1190')
             """
         )
         await db.commit()

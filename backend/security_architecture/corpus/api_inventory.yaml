@@ -79,12 +79,6 @@ endpoints:
   path: /api/admin/database
   component_id: routers-admin-database
 - method: POST
-  path: /api/admin/database/migrate
-  component_id: routers-admin-database
-- method: GET
-  path: /api/admin/database/migrate/status
-  component_id: routers-admin-database
-- method: POST
   path: /api/admin/database/test-connection
   component_id: routers-admin-database
 - method: GET

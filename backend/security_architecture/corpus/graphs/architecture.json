@@ -662,7 +662,7 @@
       "label": "routers.admin.database",
       "kind": "component",
       "cluster": "api",
-      "endpoint_count": 4,
+      "endpoint_count": 2,
       "source_refs": [
         {
           "type": "file",

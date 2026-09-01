@@ -25,6 +25,10 @@ def _utc(days_ago: float = 0) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _utc_ts(days_ago: float = 0) -> datetime:
+    return datetime.now(timezone.utc) - timedelta(days=days_ago)
+
+
 def test_purge_stale_feed_cache_keeps_fresh_ssvc(tmp_path, monkeypatch):
     _force_sqlite(tmp_path, monkeypatch, "retention.db")
 
@@ -223,12 +227,12 @@ def test_purge_old_cve_change_history_uses_detected_at(tmp_path, monkeypatch):
                     "severity",
                     "LOW",
                     "HIGH",
-                    _utc(120),
+                    _utc_ts(120),
                     "CVE-2024-0002",
                     "severity",
                     "LOW",
                     "MEDIUM",
-                    _utc(1),
+                    _utc_ts(1),
                 ),
             )
             await db.commit()

@@ -1,17 +1,7 @@
-"""Security and behavior tests for read-only DB explorer."""
+"""Security and behavior tests for read-only DB explorer.
 
-# PG-001: this file used to force SQLite mode via a module-level (import-time)
-# `os.environ["DATABASE_URL"] = ""` -- module-level code can't use monkeypatch,
-# so that mutation was permanent and process-wide, not scoped to this file's
-# own tests. It broke Postgres detection for every test collected afterward
-# in the same pytest invocation (both directly, via tests/conftest.py's own
-# os.environ read, and collaterally, via every other test file's module-level
-# `@pytest.mark.skipif(os.environ.get("DATABASE_URL", "")...)` decorators,
-# which evaluate at collection time). The admin_client fixture below already
-# forces SQLite mode correctly, scoped via monkeypatch (database_url,
-# is_postgres, resolve_database_url, run_postgres_migrations) -- that's the
-# only place this file's own tests need it, and it reverts automatically.
-
+Uses session PostgreSQL + TRUNCATE isolation. Do not force a SQLite DSN.
+"""
 import os
 import sys
 from pathlib import Path
@@ -26,60 +16,15 @@ from tests.conftest import run_db_test, seed_pytest_auth_user_if_missing
 
 
 @pytest.fixture
-def admin_client(tmp_path, monkeypatch):
+def admin_client(monkeypatch):
     from settings import settings as _settings
-
-    db_path = tmp_path / "explorer.db"
-    monkeypatch.setenv("DATABASE_URL", "")
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("main.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-
-    async def _noop_async(*_args, **_kwargs):
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
-    async def _noop_migrations() -> None:
-        return None
-
-    monkeypatch.setattr("database.run_postgres_migrations", _noop_migrations)
-    monkeypatch.setattr("main.run_postgres_migrations", _noop_migrations)
-
-    import main as _main_mod
-    import database as _database_mod
-
-    # PG-001: these three were raw (non-monkeypatch) assignments -- never
-    # reverted, so main.is_postgres stayed permanently False (and both
-    # run_postgres_migrations stayed permanently no-op) for every test that
-    # ran later in the same pytest process, breaking Postgres detection
-    # process-wide for any subsequent TestClient(app)-driven test file.
-    monkeypatch.setattr(_main_mod, "is_postgres", lambda url=None: False)
-    monkeypatch.setattr(_main_mod, "run_postgres_migrations", _noop_migrations)
-    monkeypatch.setattr(_database_mod, "run_postgres_migrations", _noop_migrations)
-
     import rate_limit as _rl
+    from auth.tokens import create_access_token
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
     _rl.db_explorer_bucket._buckets.pop("testclient", None)
 
-    from database import init_db
-    from auth.tokens import create_access_token
-
-    run_db_test(init_db())
     seed_pytest_auth_user_if_missing()
     token = create_access_token(1, "pytest-admin", "admin")
 
@@ -242,33 +187,7 @@ def test_webhook_delivery_log_redacts_error(admin_client):
 
 
 @pytest.mark.no_auth
-def test_unauthenticated_returns_401(tmp_path, monkeypatch):
-    from settings import settings as _settings
-
-    db_path = tmp_path / "explorer-unauth.db"
-    monkeypatch.setenv("DATABASE_URL", "")
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-
-    async def _noop_migrations() -> None:
-        return None
-
-    monkeypatch.setattr("database.run_postgres_migrations", _noop_migrations)
-    monkeypatch.setattr("main.run_postgres_migrations", _noop_migrations)
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    async def _noop_async(*_args, **_kwargs):
-        return None
-
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-
+def test_unauthenticated_returns_401():
     from main import app
 
     with TestClient(app, raise_server_exceptions=False) as client:

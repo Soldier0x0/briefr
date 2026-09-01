@@ -24,6 +24,8 @@ def _pool_loop_matches_running(pool: Any) -> bool:
     except RuntimeError:
         return False
     pool_loop = getattr(pool, "_loop", None)
+    if not isinstance(pool_loop, asyncio.AbstractEventLoop):
+        return True
     return pool_loop is running and not pool_loop.is_closed()
 
 

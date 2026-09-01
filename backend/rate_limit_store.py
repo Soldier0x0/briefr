@@ -83,7 +83,11 @@ def _load_postgres(key: str) -> dict[str, Any] | None:
     dsn = _postgres_dsn()
     if not dsn:
         return None
-    with psycopg.connect(dsn, connect_timeout=5) as conn:
+    with psycopg.connect(
+        dsn,
+        connect_timeout=5,
+        options="-c search_path=app,intel,public",
+    ) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT value FROM sync_state WHERE key = %s", (key,))
             row = cur.fetchone()
@@ -99,7 +103,11 @@ def _save_postgres(key: str, payload: dict[str, Any]) -> None:
     dsn = _postgres_dsn()
     if not dsn:
         return
-    with psycopg.connect(dsn, connect_timeout=5) as conn:
+    with psycopg.connect(
+        dsn,
+        connect_timeout=5,
+        options="-c search_path=app,intel,public",
+    ) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """

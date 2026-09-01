@@ -129,7 +129,7 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
     real_delenv = monkeypatch.delenv
     real_setenv = monkeypatch.setenv
     real_setattr = monkeypatch.setattr
-    blocked_env = {"DATABASE_URL", "BRIEFR_REQUIRE_POSTGRES", "DB_PATH"}
+    blocked_env = {"DATABASE_URL"}
 
     def delenv(name, raising=True):
         if name in blocked_env:
@@ -137,16 +137,7 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
         return real_delenv(name, raising=raising)
 
     def setenv(name, value, prepend=None):
-        if name == "DB_PATH":
-            return None
         if name == "DATABASE_URL" and not str(value).startswith("postgresql"):
-            return None
-        if name == "BRIEFR_REQUIRE_POSTGRES" and str(value).strip() in {
-            "0",
-            "false",
-            "False",
-            "",
-        }:
             return None
         return real_setenv(name, value, prepend=prepend)
 
@@ -163,11 +154,9 @@ def _ignore_sqlite_escape_hatches(request, monkeypatch):
             attr = name if isinstance(name, str) else None
             newval = value
 
-        if attr in {"DB_PATH", "db_path", "is_postgres"}:
+        if attr in {"DB_PATH", "db_path"}:
             return None
         if attr == "database_url" and newval in {"", None}:
-            return None
-        if attr == "briefr_require_postgres" and newval in {False, 0, "0"}:
             return None
         if value is _NOTSET:
             return real_setattr(target, name, raising=raising)
