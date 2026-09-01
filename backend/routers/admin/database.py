@@ -79,8 +79,8 @@ async def test_database_connection(request: Request, body: dict):
         raise HTTPException(400, "database_url is required")
     try:
         dsn = postgres_dsn(database_url)
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
+    except ValueError:
+        return {"ok": False, "error": "DATABASE_URL must be a postgresql:// DSN."}
     try:
         conn = await asyncpg.connect(dsn=dsn, timeout=10)
         try:
