@@ -31,7 +31,8 @@ _REQUEST_ID_RE = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 from database import init_db, run_postgres_migrations
 from db.connection import PoolExhaustedError, close_pool, init_pool
-from db.config import is_postgres, resolve_database_url
+from db.config import is_postgres as is_postgres  # noqa: F401 — tests monkeypatch this
+from db.config import resolve_database_url
 from resilient_client import close_client
 from tracking import flush_api_usage_pending
 from webhooks.ssrf import close_webhook_client
@@ -71,12 +72,6 @@ from scheduler import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("main.py lifespan: starting backend (postgresql)")
-
-    if not is_postgres():
-        raise RuntimeError(
-            "DATABASE_URL must be a postgresql:// DSN. "
-            "See docs/SELF_HOST.md for Postgres + pgvector setup."
-        )
 
     db_target = resolve_database_url()
     host = db_target.split("@")[-1] if "@" in db_target else db_target
