@@ -134,7 +134,6 @@ def wallboard_client(tmp_path, monkeypatch):
         yield client
 
 
-@_requires_sqlite
 def test_wallboard_returns_v2_payload(wallboard_client):
     resp = wallboard_client.get("/api/wallboard")
     assert resp.status_code == 200
@@ -231,7 +230,6 @@ def test_wallboard_rate_limited(tmp_path, monkeypatch):
     _rl.wallboard_bucket._buckets.clear()
 
 
-@_requires_sqlite
 def test_wallboard_response_has_no_admin_keys(wallboard_client):
     body = wallboard_client.get("/api/wallboard").json()
     dumped = str(body).lower()
