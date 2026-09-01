@@ -23,7 +23,7 @@ def client(tmp_path, monkeypatch):
 
     # Seeding happens before the TestClient/lifespan below creates the
     # schema, so create it explicitly first (no-op on Postgres — already
-    # migrated by the session fixture; creates tables on a fresh SQLite file).
+    # migrated by the session fixture).
     run_db_test(init_db())
 
     async def _seed_user():

@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-
 def _patch_app_lifecycle(monkeypatch) -> None:
     async def _noop_async() -> None:
         return None
@@ -18,12 +17,6 @@ def _patch_app_lifecycle(monkeypatch) -> None:
     monkeypatch.setattr("main.stop_scheduler", lambda: None)
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
 
-
-def _use_sqlite_backend(monkeypatch, db_path: Path) -> None:
-    """SQLite removed — isolation is session Postgres + TRUNCATE."""
-    del monkeypatch, db_path
-
-
 def _disable_rate_limit(monkeypatch) -> None:
     import rate_limit as _rl
     from settings import settings as _settings
@@ -31,11 +24,9 @@ def _disable_rate_limit(monkeypatch) -> None:
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.wallboard_bucket._buckets.pop("testclient", None)
 
-
 @pytest.mark.no_auth
 def test_wallboard_auto_token_flow_uses_enabled_default(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "wb-auto.db"
-    _use_sqlite_backend(monkeypatch, db_path)
     monkeypatch.setenv("WALLBOARD_TOKEN", "kiosk-secret-token")
     _patch_app_lifecycle(monkeypatch)
     _disable_rate_limit(monkeypatch)
@@ -66,11 +57,9 @@ def test_wallboard_auto_token_flow_uses_enabled_default(tmp_path, monkeypatch, a
         ok = client.get("/api/wallboard")
         assert ok.status_code == 200
 
-
 @pytest.mark.no_auth
 def test_wallboard_auto_token_disabled_returns_404(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "wb-auto-off.db"
-    _use_sqlite_backend(monkeypatch, db_path)
     _patch_app_lifecycle(monkeypatch)
     _disable_rate_limit(monkeypatch)
 

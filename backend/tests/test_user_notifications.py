@@ -15,23 +15,15 @@ from tests.conftest import run_db_test
 
 pytestmark = pytest.mark.no_auth
 
-
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     import database as db_module
     from settings import settings as _settings
 
     db_path = tmp_path / "user_notifications.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(_settings, "database_url", "")
     monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr(db_module, "DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
 
     run_db_test(init_db())
 
@@ -64,14 +56,12 @@ def client(tmp_path, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
-
 def _login(client, username="admin1"):
     res = client.post(
         "/api/auth/login",
         json={"username": username, "password": "correct-horse-battery"},
     )
     assert res.status_code == 200
-
 
 def _user_id(username: str) -> int:
     async def _lookup():
@@ -86,7 +76,6 @@ def _user_id(username: str) -> int:
             await db.close()
 
     return run_db_test(_lookup())
-
 
 def _insert(user_id: int, scope: str, *, severity: str = "high", dedupe: str):
     async def _do():
@@ -108,11 +97,9 @@ def _insert(user_id: int, scope: str, *, severity: str = "high", dedupe: str):
 
     run_db_test(_do())
 
-
 def test_notifications_require_auth(client):
     res = client.get("/api/me/notifications")
     assert res.status_code == 401
-
 
 def test_analyst_scope_lists_and_counts_unread(client):
     uid = _user_id("analyst1")
@@ -136,7 +123,6 @@ def test_analyst_scope_lists_and_counts_unread(client):
     assert after.json()["unread_count"] == 0
     assert len(after.json()["notifications"]) == 2
 
-
 def test_list_view_done_excludes_inbox(client):
     uid = _user_id("analyst1")
     _insert(uid, "analyst", dedupe="d1")
@@ -149,7 +135,6 @@ def test_list_view_done_excludes_inbox(client):
     assert inbox["notifications"] == []
     assert len(done["notifications"]) == 1
     assert done["unread_count"] == 0
-
 
 def test_list_view_aliases_active_cleared(client):
     uid = _user_id("analyst1")
@@ -169,12 +154,10 @@ def test_list_view_aliases_active_cleared(client):
     assert len(done["notifications"]) == 1
     assert cleared["unread_count"] == 0
 
-
 def test_list_view_rejects_unknown(client):
     _login(client, "analyst1")
     res = client.get("/api/me/notifications?scope=analyst&view=archive")
     assert res.status_code == 422
-
 
 def test_dismiss_one_and_dismiss_all(client):
     uid = _user_id("analyst1")
@@ -198,7 +181,6 @@ def test_dismiss_one_and_dismiss_all(client):
     empty = client.get("/api/me/notifications?scope=analyst").json()
     assert empty["notifications"] == []
 
-
 def test_operator_scope_admin_only(client):
     admin_id = _user_id("admin1")
     _insert(admin_id, "operator", dedupe="op1")
@@ -212,7 +194,6 @@ def test_operator_scope_admin_only(client):
     assert ok.status_code == 200
     assert len(ok.json()["notifications"]) == 1
 
-
 def test_read_does_not_remove_from_inbox(client):
     uid = _user_id("analyst1")
     _insert(uid, "analyst", dedupe="r1")
@@ -225,7 +206,6 @@ def test_read_does_not_remove_from_inbox(client):
     assert body["unread_count"] == 0
     assert body["notifications"][0]["read_at"]
 
-
 def test_restore_returns_to_inbox(client):
     uid = _user_id("analyst1")
     _insert(uid, "analyst", dedupe="u1")
@@ -235,7 +215,6 @@ def test_restore_returns_to_inbox(client):
     assert client.post(f"/api/me/notifications/{nid}/restore").status_code == 200
     inbox = client.get("/api/me/notifications?view=inbox").json()
     assert len(inbox["notifications"]) == 1
-
 
 def test_dismiss_all_scope_all(client):
     admin_id = _user_id("admin1")
@@ -252,7 +231,6 @@ def test_dismiss_all_scope_all(client):
     empty = client.get("/api/me/notifications?scope=all").json()
     assert empty["notifications"] == []
 
-
 def test_scope_all_admin_only(client):
     admin_id = _user_id("admin1")
     analyst_id = _user_id("analyst1")
@@ -267,13 +245,11 @@ def test_scope_all_admin_only(client):
     assert scopes == {"analyst", "operator"}
     assert len(body["notifications"]) == 2
 
-
 def test_patch_preferences_notification_sound(client):
     _login(client, "admin1")
     patch = client.patch("/api/me/preferences", json={"notification_sound": False})
     assert patch.status_code == 200
     assert patch.json()["notification_sound"] is False
-
 
 def test_patch_notification_mutes(client):
     _login(client, "admin1")
@@ -285,7 +261,6 @@ def test_patch_notification_mutes(client):
     assert patch.json()["notification_mutes"]["watchlist"] is True
     assert patch.json()["notification_mutes"]["job_error"] is False
 
-
 def test_patch_notification_mutes_rejects_unknown_key(client):
     _login(client, "admin1")
     res = client.patch(
@@ -293,7 +268,6 @@ def test_patch_notification_mutes_rejects_unknown_key(client):
         json={"notification_mutes": {"not_a_category": True}},
     )
     assert res.status_code == 422
-
 
 def test_cleared_view_excludes_rows_older_than_retention(client):
     from datetime import datetime, timedelta, timezone
@@ -335,7 +309,6 @@ def test_cleared_view_excludes_rows_older_than_retention(client):
     assert [n["title"] for n in done["notifications"]] == titles
     remaining = client.get("/api/me/notifications?scope=analyst&view=active").json()
     assert remaining["notifications"] == []
-
 
 def test_purge_cleared_keeps_active_and_recent(client):
     from datetime import datetime, timedelta, timezone
@@ -381,7 +354,6 @@ def test_purge_cleared_keeps_active_and_recent(client):
     deleted, keys = run_db_test(_stamp_and_purge())
     assert deleted == 1
     assert keys == ["keep-active", "new-cleared"]
-
 
 def test_muted_category_does_not_insert(client):
     from notifications.emit import emit_watchlist_notification

@@ -232,14 +232,6 @@ def run_db_test(coro):
     return asyncio.run(_wrapped())
 
 
-def use_sqlite_backend(monkeypatch, db_path: Path | str) -> None:
-    """No-op: SQLite is removed. Per-test isolation is Postgres TRUNCATE.
-
-    Call sites kept so older tests do not need a mass rename in this PR.
-    """
-    del monkeypatch, db_path
-
-
 @pytest.fixture(autouse=True)
 def _reset_forge_security_architecture_module_caches():
     """Drop in-process caches forge/security-architecture routes may share.
@@ -259,8 +251,7 @@ def _reset_forge_security_architecture_module_caches():
 @pytest.fixture(autouse=True)
 def _reset_db_pool_after_test():
     """Clear a stale asyncpg pool handle so the next test's TestClient lifespan
-    re-binds to the correct DATABASE_URL/DB_PATH (loop mismatch or a prior
-    test's use_sqlite_backend monkeypatch leaving _pool set)."""
+    re-binds to the correct DATABASE_URL (loop mismatch from asyncio.run)."""
     yield
     import db.connection as conn_mod
 

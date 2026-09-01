@@ -15,7 +15,6 @@ from database import (
     update_epss_scores,
 )
 
-
 def test_epss_scores_differ_uses_display_precision():
     assert not _epss_scores_differ(0.0001, 0.0002)
     assert not _epss_scores_differ(None, 0.00004)
@@ -23,19 +22,13 @@ def test_epss_scores_differ_uses_display_precision():
     assert _epss_scores_differ(0.001, 0.002)
     assert _epss_scores_differ(None, 0.05)
 
-
 def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatch):
     from settings import settings
 
     db_path = tmp_path / "epss_noise.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
     monkeypatch.setattr(settings, "db_path", str(db_path))
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
 
     asyncio.run(init_db())
 

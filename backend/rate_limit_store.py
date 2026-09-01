@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import time
 from typing import Any
 
@@ -29,62 +28,17 @@ def _state_key(bucket_name: str, client_key: str) -> str:
     return f"{_STORE_PREFIX}{bucket_name}:{client_key}"
 
 
-def _sqlite_path() -> str:
-    from settings import settings
-
-    return settings.db_path
-
-
-def _postgres_dsn() -> str | None:
+def _postgres_dsn() -> str:
     from db.config import resolve_database_url
 
-    url = resolve_database_url()
-    if url and url.startswith("postgresql"):
-        return url
-    return None
-
-
-def _load_sqlite(key: str) -> dict[str, Any] | None:
-    conn = sqlite3.connect(_sqlite_path(), timeout=5.0)
-    try:
-        row = conn.execute(
-            "SELECT value FROM sync_state WHERE key = ?",
-            (key,),
-        ).fetchone()
-        if not row or not row[0]:
-            return None
-        data = json.loads(row[0])
-        return data if isinstance(data, dict) else None
-    finally:
-        conn.close()
-
-
-def _save_sqlite(key: str, payload: dict[str, Any]) -> None:
-    conn = sqlite3.connect(_sqlite_path(), timeout=5.0)
-    try:
-        conn.execute(
-            """
-            INSERT INTO sync_state (key, value, updated_at)
-            VALUES (?, ?, datetime('now'))
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value,
-                updated_at = excluded.updated_at
-            """,
-            (key, json.dumps(payload)),
-        )
-        conn.commit()
-    finally:
-        conn.close()
+    return resolve_database_url()
 
 
 def _load_postgres(key: str) -> dict[str, Any] | None:
     import psycopg
 
-    dsn = _postgres_dsn()
-    if not dsn:
-        return None
     with psycopg.connect(
-        dsn,
+        _postgres_dsn(),
         connect_timeout=5,
         options="-c search_path=app,intel,public",
     ) as conn:
@@ -100,11 +54,8 @@ def _load_postgres(key: str) -> dict[str, Any] | None:
 def _save_postgres(key: str, payload: dict[str, Any]) -> None:
     import psycopg
 
-    dsn = _postgres_dsn()
-    if not dsn:
-        return
     with psycopg.connect(
-        dsn,
+        _postgres_dsn(),
         connect_timeout=5,
         options="-c search_path=app,intel,public",
     ) as conn:
@@ -123,16 +74,11 @@ def _save_postgres(key: str, payload: dict[str, Any]) -> None:
 
 
 def _load_state(key: str) -> dict[str, Any] | None:
-    if _postgres_dsn():
-        return _load_postgres(key)
-    return _load_sqlite(key)
+    return _load_postgres(key)
 
 
 def _save_state(key: str, payload: dict[str, Any]) -> None:
-    if _postgres_dsn():
-        _save_postgres(key, payload)
-    else:
-        _save_sqlite(key, payload)
+    _save_postgres(key, payload)
 
 
 def shared_acquire(

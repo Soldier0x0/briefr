@@ -13,27 +13,18 @@ from db import init as db_init
 from main import app
 from settings import settings
 
-
 @pytest.fixture
 def admin_client(tmp_path, monkeypatch, auth_token):
     db_path = tmp_path / "admin_tokens_health.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
     monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr(settings, "database_url", "")
     monkeypatch.setattr(settings, "db_path", str(db_path))
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
     monkeypatch.setattr(settings, "rate_limit_enabled", False)
     monkeypatch.setattr(database, "DB_PATH", str(db_path))
-    monkeypatch.setattr(db_init, "is_postgres", lambda url=None: False)
-    monkeypatch.setattr(db_connection, "is_postgres", lambda url=None: False)
-    monkeypatch.setattr(db_config, "is_postgres", lambda url=None: False)
     rate_limit.refresh_bucket._buckets.pop("testclient", None)
 
     with TestClient(app, raise_server_exceptions=False) as client:
         client.cookies.set("briefr_at", auth_token())
         yield client
-
 
 def test_api_keys_health_endpoint_does_not_500_from_missing_get_db(admin_client):
     resp = admin_client.get("/api/admin/api-keys/health")

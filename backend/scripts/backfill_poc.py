@@ -57,8 +57,11 @@ from database import backfill_has_poc, get_db, init_db
 
 
 async def main() -> None:
-    db_path = os.environ.get("DB_PATH", "briefr.db")
-    print(f"Using database: {db_path}")
+    from db.config import resolve_database_url
+
+    dsn = resolve_database_url()
+    host = dsn.split("@")[-1] if "@" in dsn else dsn
+    print(f"Using database: {host}")
 
     await init_db()
     db = await get_db()

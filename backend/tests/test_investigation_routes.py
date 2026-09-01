@@ -10,13 +10,12 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tests.conftest import attach_pytest_session_cookie, run_db_test, use_sqlite_backend
+from tests.conftest import attach_pytest_session_cookie, run_db_test
 
 from correlation.campaigns import build_campaigns_from_pulses
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
 import database
 from main import app
-
 
 async def _seed_routes_db(db) -> None:
     await db.execute(
@@ -59,12 +58,10 @@ async def _seed_routes_db(db) -> None:
     await build_campaigns_from_pulses(db)
     await db.commit()
 
-
 @pytest.mark.no_auth
 def test_resolve_requires_session(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-auth.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -77,11 +74,9 @@ def test_resolve_requires_session(tmp_path, monkeypatch):
     resp = client.get("/api/investigations/resolve", params={"q": "CVE-2024-9100"})
     assert resp.status_code == 401
 
-
 def test_resolve_cve_and_relationships(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-ok.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -113,11 +108,9 @@ def test_resolve_cve_and_relationships(tmp_path, monkeypatch):
     assert graph["root"]["node_id"] == "cve:CVE-2024-9100"
     assert len(graph["edges"]) == 1
 
-
 def test_invalid_entity_type_returns_422(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-invalid.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
@@ -126,11 +119,9 @@ def test_invalid_entity_type_returns_422(tmp_path, monkeypatch):
     resp = client.get("/api/investigations/entities/actor/G1")
     assert resp.status_code == 422
 
-
 def test_depth_three_returns_422(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-depth.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
@@ -142,11 +133,9 @@ def test_depth_three_returns_422(tmp_path, monkeypatch):
     )
     assert resp.status_code == 422
 
-
 def test_resolve_unknown_entity_returns_404(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-miss.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
 
     run_db_test(seed())
@@ -156,11 +145,9 @@ def test_resolve_unknown_entity_returns_404(tmp_path, monkeypatch):
     assert resp.status_code == 404
     assert resp.json()["knowledge_state"] == "unknown"
 
-
 def test_url_ioc_entity_path_is_routable(tmp_path, monkeypatch):
     async def seed():
         db_path = str(tmp_path / "routes-url-ioc.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -189,13 +176,11 @@ def test_url_ioc_entity_path_is_routable(tmp_path, monkeypatch):
     graph = relationships.json()
     assert graph["root"]["entity_id"] == entity_id
 
-
 def test_resolve_campaign_query(tmp_path, monkeypatch):
     campaign_id = "camp_ab12cd34ef56"
 
     async def seed():
         db_path = str(tmp_path / "routes-campaign.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:

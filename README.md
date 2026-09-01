@@ -80,13 +80,15 @@ For architecture depth, see [How it works](docs/HOW_IT_WORKS.md) and [System des
 
 ## Quick start
 
-**Local try-out** (SQLite fallback — good for a first look):
+**Local try-out** (PostgreSQL 16 + pgvector):
 
 ```bash
 git clone https://github.com/Soldier0x0/briefr.git && cd briefr
+docker compose -f deploy/docker-compose.postgres.yml up -d
 cd backend && python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt && cp .env.example .env
-DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 uvicorn main:app --host 0.0.0.0 --port 8000
+# set DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr in .env
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ```bash

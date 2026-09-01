@@ -15,7 +15,7 @@ from database import init_db, replace_otx_cve_pulses
 import database
 
 
-def test_prefetch_pulse_iocs_query_runs_on_sqlite(tmp_path, monkeypatch):
+def test_prefetch_pulse_iocs_query_runs(tmp_path, monkeypatch):
     """GROUP BY prefetch query must not use DISTINCT + ORDER BY on missing columns."""
 
     async def run():
@@ -57,7 +57,7 @@ def test_prefetch_pulse_iocs_query_runs_on_sqlite(tmp_path, monkeypatch):
     run_db_test(run())
 
 
-def test_build_campaign_members_query_runs_on_sqlite(tmp_path, monkeypatch):
+def test_build_campaign_members_query_runs(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "campaign.db")
         monkeypatch.setenv("DB_PATH", db_path)

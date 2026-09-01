@@ -14,22 +14,13 @@ from fastapi.testclient import TestClient
 BACKEND = Path(__file__).resolve().parents[1]
 
 
-def _configure_sqlite_metering_db(monkeypatch, tmp_path):
-    db_path = tmp_path / "audit.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
+def _configure_metering_db(monkeypatch, tmp_path):
     monkeypatch.setenv("API_CALL_EVENTS_ENABLED", "1")
     monkeypatch.setenv("PROCRASTINATE_ENABLED", "0")
-
     from settings import settings as _settings
 
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
-    return db_path
+    return tmp_path
 
 
 async def _seed_api_call_events():
@@ -115,7 +106,7 @@ async def _seed_api_call_events():
 
 @pytest.fixture
 def audit_client(tmp_path, monkeypatch, auth_token):
-    _configure_sqlite_metering_db(monkeypatch, tmp_path)
+    _configure_metering_db(monkeypatch, tmp_path)
     from main import app
 
     with TestClient(app, raise_server_exceptions=False) as client:

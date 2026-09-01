@@ -19,40 +19,13 @@ from intel.provenance import (
 )
 from resilient_client import record_source_failure, reset_feed_health
 
-
-def _force_sqlite(tmp_path, monkeypatch):
-    from settings import settings
-
-    db_path = tmp_path / "provenance.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
-    monkeypatch.setattr(settings, "db_path", str(db_path))
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
-
-    async def _noop_async() -> None:
-        return None
-
-    monkeypatch.setattr("main.start_scheduler", lambda: None)
-    monkeypatch.setattr("main.stop_scheduler", lambda: None)
-    monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-    return db_path
-
-
 @pytest.fixture(autouse=True)
 def _clean_feed_health():
     reset_feed_health()
     yield
     reset_feed_health()
 
-
 def test_exploit_provenance_checked_from_cache(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
@@ -82,9 +55,7 @@ def test_exploit_provenance_checked_from_cache(tmp_path, monkeypatch):
     assert result["status"] == "checked"
     assert "Sploitus" in result["source"]
 
-
 def test_exploit_provenance_source_unavailable_on_circuit(tmp_path, monkeypatch):
-    _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
     for _ in range(3):
         record_source_failure("sploitus", "HTTP 503")
@@ -101,7 +72,6 @@ def test_exploit_provenance_source_unavailable_on_circuit(tmp_path, monkeypatch)
     assert result["status"] == "source_unavailable"
     assert result["source"] == "Sploitus"
 
-
 def test_correlation_provenance_not_configured():
     result = derive_correlation_provenance(
         {"otx_status": "not_configured", "computed_at": "2026-07-09T12:00:00Z"},
@@ -109,7 +79,6 @@ def test_correlation_provenance_not_configured():
     )
     assert result["status"] == "source_unavailable"
     assert "OTX" in result["source"]
-
 
 def test_correlation_provenance_checked():
     result = derive_correlation_provenance(
@@ -119,9 +88,7 @@ def test_correlation_provenance_checked():
     assert result["status"] == "checked"
     assert result["as_of"] == "2026-07-09T12:00:00Z"
 
-
 def test_detection_provenance_checked_after_cache(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:
@@ -153,9 +120,7 @@ def test_detection_provenance_checked_after_cache(tmp_path, monkeypatch):
     assert result["status"] == "checked"
     assert "SigmaHQ" in result["source"]
 
-
 def test_detail_includes_exploit_provenance(tmp_path, monkeypatch):
-    db_path = _force_sqlite(tmp_path, monkeypatch)
     asyncio.run(init_db())
 
     async def seed() -> None:

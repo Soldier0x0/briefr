@@ -28,15 +28,12 @@ from scheduler import run_cvelistv5_sync, run_vulnrichment_sync
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
-
 def _load(name: str) -> dict:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
-
 
 def test_repo_path_helpers():
     assert vulnrichment_repo_path("CVE-2024-0043") == "2024/0xxx/CVE-2024-0043.json"
     assert cvelistv5_repo_path("CVE-2026-0005") == "cves/2026/0xxx/CVE-2026-0005.json"
-
 
 def test_parse_vulnrichment_record_fixture():
     record = _load("vulnrichment_cve_2024_0043.json")
@@ -48,7 +45,6 @@ def test_parse_vulnrichment_record_fixture():
     assert "CWE-863" in parsed["cwe_ids"]
     assert "google:android" in parsed["affected_products"]
 
-
 def test_parse_cvelistv5_prefers_cna_over_adp():
     record = _load("cvelistv5_cve_2026_0005.json")
     parsed = parse_cvelistv5_record(record)
@@ -59,7 +55,6 @@ def test_parse_cvelistv5_prefers_cna_over_adp():
     assert "CWE-200" in parsed["cwe_ids"]
     assert "abacus:erp" in parsed["affected_products"]
     assert "Abacus ERP" in parsed["description"]
-
 
 def test_merge_additive_does_not_downgrade_cvss():
     existing = {
@@ -85,7 +80,6 @@ def test_merge_additive_does_not_downgrade_cvss():
     assert "description" not in changes
     assert set(changes["cwe_ids"]) == {"CWE-79", "CWE-200"}
     assert set(changes["affected_products"]) == {"vendor:product", "other:thing"}
-
 
 def test_parse_cvelistv5_tolerates_malformed_field_types():
     record = {
@@ -121,7 +115,6 @@ def test_parse_cvelistv5_tolerates_malformed_field_types():
     assert parsed["cwe_ids"] == ["CWE-200"]
     assert parsed["affected_products"] == ["acme:widget"]
 
-
 def test_merge_additive_fills_gaps():
     existing = {
         "cve_id": "CVE-2024-0002",
@@ -143,7 +136,6 @@ def test_merge_additive_fills_gaps():
     assert changes["cvss_score"] == 7.8
     assert changes["severity"] == "HIGH"
     assert changes["description"] == "Gap fill"
-
 
 @pytest.fixture
 def mock_transport():
@@ -171,14 +163,12 @@ def mock_transport():
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     return client
 
-
 @pytest.fixture(autouse=True)
 def reset_health(monkeypatch, mock_transport):
     resilient_client.reset_feed_health()
     monkeypatch.setattr(resilient_client, "_client", mock_transport)
     yield
     resilient_client.reset_feed_health()
-
 
 def test_fetch_vulnrichment_enrichments_targeted():
     async def run():
@@ -190,7 +180,6 @@ def test_fetch_vulnrichment_enrichments_targeted():
         assert health["vulnrichment"]["circuit_open"] is False
 
     run_db_test(run())
-
 
 def test_fetch_cvelistv5_delta_advances_watermark():
     async def run():
@@ -204,7 +193,6 @@ def test_fetch_cvelistv5_delta_advances_watermark():
         assert "cvelistv5" in health
 
     run_db_test(run())
-
 
 def test_parse_vulnrichment_record_extracts_ssvc():
     record = {
@@ -239,7 +227,6 @@ def test_parse_vulnrichment_record_extracts_ssvc():
     assert parsed["ssvc"]["decisions"]["Exploitation"] == "active"
     assert parsed["ssvc"]["decisions"]["Decision"] == "Act"
 
-
 def test_parse_vulnrichment_record_ssvc_includes_computed_with_options():
     record = {
         "cveMetadata": {"cveId": "CVE-2024-9998", "state": "PUBLISHED"},
@@ -266,7 +253,6 @@ def test_parse_vulnrichment_record_ssvc_includes_computed_with_options():
     assert parsed is not None
     assert parsed["ssvc"]["decisions"]["Exploitation"] == "active"
     assert parsed["ssvc"]["decisions"]["computed"] == "Exploitation:active/Automatable:yes/Decision:Act"
-
 
 def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
     db_file = str(tmp_path / "intel_feeds.db")
@@ -306,12 +292,9 @@ def test_apply_additive_enrichment_in_db(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
     db_file = str(tmp_path / "intel_ssvc.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
 
     async def run():
         await db_module.init_db()
@@ -363,7 +346,6 @@ def test_apply_additive_stores_ssvc_in_feed_cache(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_apply_additive_batches_new_inserts_with_commit_every(tmp_path, monkeypatch):
     db_file = str(tmp_path / "intel_batch.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)
@@ -397,7 +379,6 @@ def test_apply_additive_batches_new_inserts_with_commit_every(tmp_path, monkeypa
 
     run_db_test(run())
 
-
 def test_scheduler_cvelistv5_sets_sync_state(tmp_path, monkeypatch):
     db_file = str(tmp_path / "scheduler_cvelist.db")
     monkeypatch.setattr(db_module, "DB_PATH", db_file)
@@ -413,7 +394,6 @@ def test_scheduler_cvelistv5_sets_sync_state(tmp_path, monkeypatch):
             await db.close()
 
     run_db_test(run())
-
 
 def test_scheduler_vulnrichment_updates_gap_cve(tmp_path, monkeypatch):
     db_file = str(tmp_path / "scheduler_vuln.db")

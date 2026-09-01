@@ -8,8 +8,6 @@ Verifies:
 - Input validation mirrors the sibling CVE endpoints (CVE- prefix, T-prefix)
 """
 
-import os
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -20,14 +18,6 @@ import pytest
 from database import get_db, init_db
 from routers.forge import _coverage_status, _derive_priority, _first_product
 from tests.conftest import run_db_test
-
-# PRAGMA table_info/index_list below are SQLite-only introspection — a
-# genuine dialect gap (Postgres uses information_schema/pg_catalog), not a
-# fixture-pattern issue. Portable rewrite is Post-B scope, not this PR's.
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="asserts schema via SQLite PRAGMA table_info/index_list",
-)
 
 # T1190 is in the bundled template library ("community"); T1566 (Phishing)
 # is not — it must surface as a "gap".
@@ -118,28 +108,40 @@ def forge_client(tmp_path, monkeypatch):
 
 # ── Schema / migration ────────────────────────────────────
 
-@_requires_sqlite
-def test_hunt_packs_schema_and_idempotent_migration(tmp_path, monkeypatch):
-    db_path = tmp_path / "schema.db"
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-
+def test_hunt_packs_schema_and_idempotent_migration():
     async def run_twice():
         await init_db()
-        await init_db()  # forward-only migration list must be re-runnable
+        await init_db()
 
-    run_db_test(run_twice())
+        db = await get_db()
+        try:
+            col_rows = await db.execute_fetchall(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'hunt_packs'
+                  AND table_schema IN ('app', 'intel', 'public')
+                """
+            )
+            idx_rows = await db.execute_fetchall(
+                """
+                SELECT indexname
+                FROM pg_indexes
+                WHERE tablename = 'hunt_packs'
+                """
+            )
+            return (
+                {row["column_name"] for row in col_rows},
+                {row["indexname"] for row in idx_rows},
+            )
+        finally:
+            await db.close()
 
-    conn = sqlite3.connect(db_path)
-    try:
-        cols = {row[1] for row in conn.execute("PRAGMA table_info(hunt_packs)")}
-        indexes = {row[1] for row in conn.execute("PRAGMA index_list(hunt_packs)")}
-    finally:
-        conn.close()
-
-    assert cols == {
+    cols, indexes = run_db_test(run_twice())
+    assert {
         "id", "technique_id", "cve_id", "title", "priority", "sigma_yaml",
         "siem_queries", "log_patterns", "notes", "created_at", "updated_at",
-    }
+    } <= cols
     assert "idx_hunt_packs_technique" in indexes
     assert "idx_hunt_packs_cve" in indexes
 

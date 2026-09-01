@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tests.conftest import run_db_test, use_sqlite_backend
+from tests.conftest import run_db_test
 
 from correlation.campaigns import build_campaigns_from_pulses
 from database import init_db, replace_otx_cve_pulses, replace_otx_pulse_iocs
@@ -15,7 +15,6 @@ import database
 from investigations.contracts import EdgeClass, RelationshipFilters
 from investigations.projection import expand_relationships, get_entity
 from investigations.resolve import parse_investigation_query
-
 
 async def _seed_projection_db(db) -> str:
     await db.execute(
@@ -65,11 +64,9 @@ async def _seed_projection_db(db) -> str:
     await db.commit()
     return "CVE-2024-9001"
 
-
 def test_get_entity_returns_cve(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -82,11 +79,9 @@ def test_get_entity_returns_cve(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_expand_cve_includes_technique_and_otx_ioc(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-hops.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -111,11 +106,9 @@ def test_expand_cve_includes_technique_and_otx_ioc(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_expand_truncates_when_limit_hit(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-trunc.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -135,11 +128,9 @@ def test_expand_truncates_when_limit_hit(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_get_entity_technique_prefers_mitre_name(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-technique.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -152,11 +143,9 @@ def test_get_entity_technique_prefers_mitre_name(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_stale_cursor_advances_by_edge_id_order(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-cursor.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -183,11 +172,9 @@ def test_stale_cursor_advances_by_edge_id_order(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_expand_cve_includes_publication_hop(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-pub.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:
@@ -246,7 +233,6 @@ def test_expand_cve_includes_publication_hop(tmp_path, monkeypatch):
 
     run_db_test(run())
 
-
 def test_candidate_edge_coerces_postgres_timestamps():
     from datetime import datetime, timezone
 
@@ -266,7 +252,6 @@ def test_candidate_edge_coerces_postgres_timestamps():
     assert candidate.edge.observed_at == "2024-06-15T12:30:00Z"
     assert candidate.edge.fetched_at == "2024-06-15T12:30:00Z"
 
-
 def test_candidate_edge_coerces_decimal_confidence():
     from decimal import Decimal
 
@@ -283,14 +268,12 @@ def test_candidate_edge_coerces_decimal_confidence():
     )
     assert candidate.edge.confidence == "3"
 
-
 def test_ioc_ref_from_row_skips_non_graph_ioc_kinds():
     from investigations.projection import _ioc_ref_from_row
 
     assert _ioc_ref_from_row("email", "attacker@evil.example") is None
     assert _ioc_ref_from_row("mutex", "Global\\Foo") is None
     assert _ioc_ref_from_row("domain", "evil.example") is not None
-
 
 def test_cve_ref_from_otx_indicator_maps_related_cve():
     from investigations.projection import _cve_ref_from_otx_indicator
@@ -303,11 +286,9 @@ def test_cve_ref_from_otx_indicator_maps_related_cve():
     assert ref.entity_id == "CVE-2021-44228"
     assert _cve_ref_from_otx_indicator("CVE", "CVE-2024-9001", "CVE-2024-9001") is None
 
-
 def test_expand_cve_tolerates_non_graph_otx_indicator_types(tmp_path, monkeypatch):
     async def run():
         db_path = str(tmp_path / "projection-exotic-ioc.db")
-        use_sqlite_backend(monkeypatch, db_path)
         await init_db()
         db = await database.get_db()
         try:

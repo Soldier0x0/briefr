@@ -10,19 +10,13 @@ from database import get_db
 
 from database import init_db
 
-
 def test_stats_top_vendors_groups_kev_catalog(tmp_path, monkeypatch):
     from settings import settings
 
     db_path = tmp_path / "top_vendors.db"
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
-    monkeypatch.setattr(settings, "database_url", "")
     monkeypatch.setattr(settings, "db_path", str(db_path))
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setattr("db.init.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection.is_postgres", lambda url=None: False)
 
     async def _noop_async() -> None:
         return None
@@ -30,8 +24,6 @@ def test_stats_top_vendors_groups_kev_catalog(tmp_path, monkeypatch):
     monkeypatch.setattr("main.start_scheduler", lambda: None)
     monkeypatch.setattr("main.stop_scheduler", lambda: None)
     monkeypatch.setattr("main.maybe_run_on_startup", _noop_async)
-    monkeypatch.setattr("main.is_postgres", lambda url=None: False)
-    monkeypatch.setattr(settings, "briefr_require_postgres", False)
 
     asyncio.run(init_db())
 

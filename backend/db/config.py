@@ -44,12 +44,6 @@ def is_postgres(url: str | None = None) -> bool:
     return database_backend(url) == "postgresql"
 
 
-def is_sqlite(url: str | None = None) -> bool:
-    """SQLite is not supported; kept so existing imports fail closed."""
-    del url
-    return False
-
-
 def postgres_dsn(url: str | None = None) -> str:
     """Normalize to an asyncpg-compatible postgresql:// DSN."""
     raw = url or resolve_database_url()

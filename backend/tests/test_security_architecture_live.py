@@ -27,25 +27,20 @@ from fastapi.testclient import TestClient
 
 from database import get_db
 from security_architecture import merge
-from tests.conftest import use_sqlite_backend
 
 COMMUNITY_TID = "T1190"
-
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "sa_live.db"
-    use_sqlite_backend(monkeypatch, db_path)
 
     from main import app
 
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
-
 def _cpe(product: str, **overrides):
     return {"vendor": "", "product": product, **overrides}
-
 
 async def _seed_coro(self_stack_term="fastapi"):
     """Seed a technique + a KEV CVE whose structured CPE matches a real
@@ -82,7 +77,6 @@ async def _seed_coro(self_stack_term="fastapi"):
     finally:
         await db.close()
 
-
 def _seed(client, self_stack_term="fastapi"):
     """Run the seed coroutine on the TestClient's own event loop via its
     anyio portal, not a bare `asyncio.run()` -- the app lifespan already
@@ -90,15 +84,12 @@ def _seed(client, self_stack_term="fastapi"):
     binds release/reset futures to the loop that created it. A second
     `asyncio.run()` spins up an unrelated loop and blows up with
     'attached to a different loop' / 'another operation is in progress'
-    under Postgres (SQLite's aiosqlite tolerates it, which is why this
-    only surfaces in the dual-DB run -- CLAUDE.md danger zone 1). Same fix
-    as tests/test_forge.py's `run_db_test(seed())` placed *before*
+    under Postgres. Same fix as tests/test_forge.py's `run_db_test(seed())` placed *before*
     `TestClient(app)` opens; `portal.call` is the equivalent for seeding
     *after* the client is already open, which every test in this file
     needs (fixture seeding alone isn't enough -- some tests insert more
     rows mid-test)."""
     client.portal.call(_seed_coro, self_stack_term)
-
 
 async def _insert_cve_coro(
     cve_id,
@@ -127,7 +118,6 @@ async def _insert_cve_coro(
     finally:
         await db.close()
 
-
 async def _insert_cves_coro(rows):
     db = await get_db()
     try:
@@ -154,7 +144,6 @@ async def _insert_cves_coro(rows):
     finally:
         await db.close()
 
-
 async def _self_stack_risk_rows_coro(corpus):
 
     db = await get_db()
@@ -162,7 +151,6 @@ async def _self_stack_risk_rows_coro(corpus):
         return await merge.self_stack_risk_rows(db, corpus)
     finally:
         await db.close()
-
 
 def _insert_cve(
     client,
@@ -186,14 +174,11 @@ def _insert_cve(
         published,
     )
 
-
 def _self_stack_risk_rows(client, corpus):
     return client.portal.call(_self_stack_risk_rows_coro, corpus)
 
-
 def _insert_cves(client, rows):
     client.portal.call(_insert_cves_coro, rows)
-
 
 # ── MITRE (wraps routers.forge.build_coverage_map) ─────────────────────
 
@@ -215,13 +200,11 @@ def test_mitre_matches_forge_coverage_output(client):
     assert mitre_body["meta"]["generated_at"]
     assert forge_body["meta"]["generated_at"]
 
-
 def test_mitre_stack_filter_narrows_results(client):
     _seed(client)
     all_res = client.get("/api/security-architecture/mitre").json()
     narrowed = client.get("/api/security-architecture/mitre?stack=nonexistent-product-xyz").json()
     assert all_res["meta"]["technique_total"] >= narrowed["meta"]["technique_total"]
-
 
 # ── Threat scenarios (wraps threat_model.scenarios.build_threat_scenarios) ─
 
@@ -235,7 +218,6 @@ def test_threat_scenarios_matches_forge_parity_endpoint(client):
     assert sa_body["scenarios"] == tm_body["scenarios"]
     assert sa_body["meta"]["catalog"] == "stack"
 
-
 def test_threat_scenarios_self_stack_toggle_ignores_stack_param(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/threat-scenarios?self_stack=true&stack=irrelevant")
@@ -245,7 +227,6 @@ def test_threat_scenarios_self_stack_toggle_ignores_stack_param(client):
     # Self-stack terms come from the generated corpus, not the ignored `stack` param.
     assert "irrelevant" not in body["meta"]["stack_terms"]
     assert any(t["technique_id"] == COMMUNITY_TID for t in body["scenarios"])
-
 
 # ── Controls: live active flag ──────────────────────────────────────────
 
@@ -259,7 +240,6 @@ def test_controls_section_rows_carry_live_active_flag(client):
     jwt = next(i for i in body["items"] if i["id"] == "jwt-session-auth")
     assert jwt["active"] is True
 
-
 def test_controls_active_flag_respects_env_override(client, monkeypatch):
     monkeypatch.setenv("BACKUP_ENABLED", "0")
     res = client.get("/api/security-architecture/section/controls")
@@ -267,12 +247,10 @@ def test_controls_active_flag_respects_env_override(client, monkeypatch):
     backup = next(i for i in body["items"] if i["id"] == "backup-encryption")
     assert backup["active"] is False
 
-
 def test_postgres_required_control_defaults_active_when_unset(client, monkeypatch):
     """BRIEFR_REQUIRE_POSTGRES is enforced by default: settings.py defaults
     settings.briefr_require_postgres to True, so an unset env var must read
     as ACTIVE (flipped from opt-in default-False behavior on PR #494)."""
-    monkeypatch.delenv("BRIEFR_REQUIRE_POSTGRES", raising=False)
     res = client.get("/api/security-architecture/section/controls")
     body = res.json()
     control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
@@ -282,7 +260,6 @@ def test_postgres_required_control_defaults_active_when_unset(client, monkeypatc
     body = res.json()
     control = next(i for i in body["items"] if i["id"] == "postgres-required-in-production")
     assert control["active"] is False
-
 
 def test_rate_limiting_control_reflects_real_toggle(client, monkeypatch):
     """Gemini review on PR #494: the rate-limiting control had no live_flag,
@@ -294,7 +271,6 @@ def test_rate_limiting_control_reflects_real_toggle(client, monkeypatch):
     body = res.json()
     control = next(i for i in body["items"] if i["id"] == "rate-limiting")
     assert control["active"] is False
-
 
 # ── Risks: live self-stack rows (spec §4.5) ─────────────────────────────
 
@@ -316,7 +292,6 @@ def test_curveball_does_not_match_pypi_cryptography(client):
     rows = _self_stack_risk_rows(client, corpus)
 
     assert rows == []
-
 
 def test_product_version_match_is_strong(client):
     corpus = {
@@ -346,7 +321,6 @@ def test_product_version_match_is_strong(client):
     assert rows[0]["match_score"] == 100
     assert rows[0]["match_basis"] == "product+version"
 
-
 def test_product_only_match_is_weaker_labeled(client):
     corpus = {
         "self_stack": {
@@ -368,7 +342,6 @@ def test_product_only_match_is_weaker_labeled(client):
     assert rows[0]["cve_id"] == "CVE-2024-2002"
     assert rows[0]["match_score"] == 55
     assert rows[0]["match_basis"] == "product-only"
-
 
 def test_self_stack_prefilter_finds_older_matching_kev_after_many_newer_nonmatches(client):
     corpus = {
@@ -399,7 +372,6 @@ def test_self_stack_prefilter_finds_older_matching_kev_after_many_newer_nonmatch
 
     assert [row["cve_id"] for row in rows] == ["CVE-2020-4242"]
 
-
 def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/section/risks")
@@ -411,7 +383,6 @@ def test_risks_section_includes_live_self_stack_row_with_matched_term(client):
     assert row["matched_term"]
     assert row["cve_id"] == "CVE-2024-9999"
     assert row["is_kev"] is True
-
 
 def test_risks_section_live_row_reports_real_severity_not_invented(client):
     """A KEV CVE isn't necessarily severity=CRITICAL -- the live row must
@@ -447,14 +418,12 @@ def test_risks_section_live_row_reports_real_severity_not_invented(client):
     assert row["severity"] == "high"
     assert row["is_kev"] is True
 
-
 def test_risks_section_origin_filter_isolates_live_rows(client):
     _seed(client, self_stack_term="fastapi")
     res = client.get("/api/security-architecture/section/risks?origin=live")
     body = res.json()
     assert body["count"] > 0
     assert all(r["origin"] == "live" for r in body["items"])
-
 
 def test_risks_stale_filter_excludes_live_rows(client):
     """Live rows have no review_date -- they can never be 'stale' the way a
@@ -463,7 +432,6 @@ def test_risks_stale_filter_excludes_live_rows(client):
     res = client.get("/api/security-architecture/section/risks?stale=true")
     assert res.status_code == 200
     assert all(r.get("origin") != "live" for r in res.json()["items"])
-
 
 def test_overview_self_cve_exposure_tile_reflects_live_kev_hit(client):
     _seed(client, self_stack_term="fastapi")
@@ -475,7 +443,6 @@ def test_overview_self_cve_exposure_tile_reflects_live_kev_hit(client):
     assert tile["filter"] == {"origin": "live"}
     assert body["self_exposure"]["kev_count"] > 0
 
-
 def test_overview_mitre_detection_coverage_tile_is_a_visible_ratio(client):
     _seed(client)
     res = client.get("/api/security-architecture/overview")
@@ -483,12 +450,10 @@ def test_overview_mitre_detection_coverage_tile_is_a_visible_ratio(client):
     assert "/" in tile["value"]
     assert tile["section"] == "mitre_attack"
 
-
 # ── merge.py pure helpers ────────────────────────────────────────────────
 
 def test_resolve_control_active_structural_control_always_active():
     assert merge.resolve_control_active({"id": "x"}) is True
-
 
 def test_resolve_control_active_respects_falsy_env_values(monkeypatch):
     monkeypatch.setenv("SOME_FLAG", "off")
@@ -496,13 +461,11 @@ def test_resolve_control_active_respects_falsy_env_values(monkeypatch):
     monkeypatch.setenv("SOME_FLAG", "1")
     assert merge.resolve_control_active({"live_flag": "SOME_FLAG"}) is True
 
-
 def test_resolve_control_active_unset_opt_out_flag_defaults_active(monkeypatch):
     """Most *_ENABLED flags are opt-out (default True when unset) --
     RATE_LIMIT_ENABLED matches settings.rate_limit_enabled: bool = True."""
     monkeypatch.delenv("SOME_OPT_OUT_FLAG", raising=False)
     assert merge.resolve_control_active({"live_flag": "SOME_OPT_OUT_FLAG"}) is True
-
 
 def test_resolve_control_active_unset_opt_in_flag_defaults_inactive(monkeypatch):
     """An opt-in flag (default False when unset) must not be reported
@@ -515,11 +478,9 @@ def test_resolve_control_active_unset_opt_in_flag_defaults_inactive(monkeypatch)
     monkeypatch.setenv("SOME_OPT_IN_FLAG", "1")
     assert merge.resolve_control_active(control) is True
 
-
 def test_self_stack_terms_reads_generated_layer():
     corpus = {"self_stack": {"terms": [{"term": "fastapi"}, {"term": "react"}]}}
     assert merge.self_stack_terms(corpus) == ["fastapi", "react"]
-
 
 def test_self_stack_terms_empty_when_layer_missing():
     assert merge.self_stack_terms({}) == []

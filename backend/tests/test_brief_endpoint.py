@@ -1,14 +1,11 @@
 """Tests for GET /api/brief — V1.3 morning brief."""
 
 import asyncio
-import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-import pytest
 
 from brief.service import (
     build_morning_brief,
@@ -20,15 +17,6 @@ from brief.service import (
 )
 from database import get_db, init_db
 from db.pg_adapt import adapt_sql
-
-# _seed_brief_db / _seed_brief_bad_epss_db below use raw aiosqlite with
-# SQLite-specific SQL (datetime('now', '-2 days')) — genuinely SQLite-only,
-# not a fixture-pattern gap. Portable rewrite is Post-B scope, not this
-# CI-gate PR's (same call as test_wallboard.py).
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="_seed_brief_db/_seed_brief_bad_epss_db use raw SQLite-dialect SQL",
-)
 
 
 def _patch_app_lifecycle(monkeypatch) -> None:
@@ -44,6 +32,10 @@ async def _seed_brief_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
     due_soon = (now + timedelta(days=5)).strftime("%Y-%m-%d")
+    published_old = (now - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
+    modified_recent = (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+    published_mid = (now - timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S")
+    modified_mid = (now - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
 
     db = await get_db()
     try:
@@ -54,9 +46,10 @@ async def _seed_brief_db(db_path: Path) -> None:
                 affected_products
             ) VALUES (
                 'CVE-2024-8001', 'Log4j RCE', 'CRITICAL', 1, 0.92,
-                datetime('now', '-2 days'), datetime('now', '-1 hour'), '["apache:log4j"]'
+                ?, ?, '["apache:log4j"]'
             )
-            """
+            """,
+            (published_old, modified_recent),
         )
         await db.execute(
             """
@@ -65,9 +58,10 @@ async def _seed_brief_db(db_path: Path) -> None:
                 affected_products
             ) VALUES (
                 'CVE-2024-8002', 'Nginx overflow', 'HIGH', 0, 0.15,
-                datetime('now', '-12 hours'), datetime('now', '-6 hours'), '["nginx:nginx"]'
+                ?, ?, '["nginx:nginx"]'
             )
-            """
+            """,
+            (published_mid, modified_mid),
         )
         await db.execute(
             """
@@ -99,7 +93,6 @@ def test_stack_profile_id_stable():
     assert _stack_profile_id([]) is None
 
 
-@_requires_sqlite
 def test_brief_endpoint_shape(tmp_path, monkeypatch):
     db_path = tmp_path / "brief.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
@@ -133,7 +126,6 @@ def test_brief_endpoint_shape(tmp_path, monkeypatch):
     assert "CVE-2024-8001" in ids or "CVE-2024-8002" in ids
 
 
-@_requires_sqlite
 def test_brief_kev_due_section(tmp_path, monkeypatch):
     db_path = tmp_path / "brief_kev.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
@@ -155,7 +147,6 @@ def test_brief_kev_due_section(tmp_path, monkeypatch):
     assert any(item["cve_id"] == "CVE-2024-8001" for item in due_items)
 
 
-@_requires_sqlite
 def test_brief_epss_movers_section(tmp_path, monkeypatch):
     db_path = tmp_path / "brief_epss.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
@@ -179,7 +170,6 @@ def test_brief_epss_movers_section(tmp_path, monkeypatch):
     assert mover["epss_delta"] == 0.1
 
 
-@_requires_sqlite
 def test_brief_active_campaigns_section(tmp_path, monkeypatch):
     db_path = tmp_path / "brief_campaigns.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
@@ -360,6 +350,8 @@ def test_build_epss_movers_skips_non_numeric_history():
 async def _seed_brief_bad_epss_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+    published_old = (now - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
+    modified_recent = (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 
     db = await get_db()
     try:
@@ -370,9 +362,10 @@ async def _seed_brief_bad_epss_db(db_path: Path) -> None:
                 affected_products
             ) VALUES (
                 'CVE-2024-9010', 'Bad EPSS history row', 'HIGH', 0, 0.2,
-                datetime('now', '-2 days'), datetime('now', '-1 hour'), '[]'
+                ?, ?, '[]'
             )
-            """
+            """,
+            (published_old, modified_recent),
         )
         await db.execute(
             """
@@ -389,7 +382,6 @@ async def _seed_brief_bad_epss_db(db_path: Path) -> None:
         await db.close()
 
 
-@_requires_sqlite
 def test_brief_tolerates_non_numeric_epss_history(tmp_path, monkeypatch):
     db_path = tmp_path / "brief_bad_epss.db"
     monkeypatch.setenv("DB_PATH", str(db_path))

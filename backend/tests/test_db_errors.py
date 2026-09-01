@@ -1,6 +1,5 @@
 """Post-B Phase 2: unified database exceptions."""
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -15,20 +14,6 @@ from db.errors import (
     normalize_db_exception,
     reraise_db_exception,
 )
-
-
-def test_normalize_sqlite_locked():
-    exc = sqlite3.OperationalError("database is locked")
-    out = normalize_db_exception(exc)
-    assert isinstance(out, DatabaseLockedError)
-    assert "locked" in str(out).lower()
-
-
-def test_normalize_sqlite_other_operational():
-    exc = sqlite3.OperationalError("no such table: missing")
-    out = normalize_db_exception(exc)
-    assert type(out) is DatabaseError
-    assert not isinstance(out, DatabaseLockedError)
 
 
 def test_normalize_asyncpg_deadlock():
@@ -51,5 +36,6 @@ def test_format_db_exception_message_timeout():
 
 
 def test_reraise_db_exception_preserves_subclass():
-    with pytest.raises(DatabaseLockedError, match="busy"):
-        reraise_db_exception(sqlite3.OperationalError("database is busy"))
+    asyncpg = pytest.importorskip("asyncpg")
+    with pytest.raises(DatabaseLockedError, match="deadlock"):
+        reraise_db_exception(asyncpg.exceptions.DeadlockDetectedError("deadlock"))

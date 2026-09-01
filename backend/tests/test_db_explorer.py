@@ -1,8 +1,7 @@
 """Security and behavior tests for read-only DB explorer.
 
-Uses session PostgreSQL + TRUNCATE isolation. Do not force a SQLite DSN.
+Uses session PostgreSQL + TRUNCATE isolation.
 """
-import os
 import sys
 from pathlib import Path
 
@@ -195,10 +194,6 @@ def test_unauthenticated_returns_401():
     assert resp.status_code == 401
 
 
-@pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="audit log read test uses SQLite seed path",
-)
 def test_browse_writes_audit_entry(admin_client):
     _seed_cve(admin_client, "CVE-2024-9999")
     browse = admin_client.get(

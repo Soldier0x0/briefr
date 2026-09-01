@@ -532,7 +532,7 @@ Dismiss one notification (moves to **Cleared**). Rows with `dismissed_at` older 
 
 **EPSS noise:** `update_epss_scores` only writes history when the score would display differently at **0.1%** precision (matching the What changed panel). Sub-threshold float jitter (e.g. `0.0001` → `0.0002`, both shown as `0.0%`) is ignored.
 
-**Postgres:** `detected_at` is `TIMESTAMPTZ` (migration `026`); SQLite dev fallback keeps `TEXT`.
+**Postgres:** `detected_at` is `TIMESTAMPTZ` (migration `026`).
 
 **Frontend:** BRIEF tab **What changed** panel (`WhatChangedPanel.jsx`) — field + time-window filter chips; row click opens the CVE drawer; rows with identical formatted old/new values are hidden (legacy noise). `BriefCharts.jsx` uses `field=epss_score&since_hours=168` for the **Top EPSS movers** compact table (top 10 positive deltas, 7-day sparklines per row via `GET /api/cves/{id}/epss-history`, row click opens the drawer). On viewports **≥901px** wide, the panel sits beside the 90-day activity heatmap in a flex row (`brief-intel-row` in `App.jsx`); below 900px they stack full-width (heatmap above). Alternating row shading uses `--surface-sunken`.
 
@@ -632,7 +632,7 @@ Sub-objects match the shapes returned by `GET /api/cves/{cve_id}/sentences`, `/e
 
 ### GET /api/cves/{cve_id}/related
 
-**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and the target has a stored vector, returns semantically similar CVEs: prefers **pgvector ANN** (or SQLite BLOB cosine) on the multi-entity `embeddings` table, then legacy `cve_embeddings` NumPy scan. Vectors are written by `embeddings_backfill` / auto-on-ingest (E2 dual-write).
+**Description:** Related CVEs. Default: shared-product heuristic (last 30 days). When `EMBEDDINGS_ENABLED=1` and the target has a stored vector, returns semantically similar CVEs: prefers **pgvector ANN** on the multi-entity `embeddings` table, then legacy `cve_embeddings` NumPy scan. Vectors are written by `embeddings_backfill` / auto-on-ingest (E2 dual-write).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -1235,7 +1235,7 @@ Returns a single `GraphNode` (same shape as `root` above) or **404** when unknow
 
 **Auth:** Analyst session.
 
-Bounded read-only graph expansion over existing Postgres/SQLite tables (no outbound enrichment).
+Bounded read-only graph expansion over existing Postgres tables (no outbound enrichment).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
@@ -2160,7 +2160,7 @@ Starts a time-boxed Catch-up window. Body accepts either `{ "duration_hours": 6 
 Ends the active Catch-up window early. Body may be `{}`. Response is the status object with `active: false` and `cleared_reason: "ended_early"`.
 
 ### GET /api/admin/retrieval/health
-Ops honesty for the live hybrid/embeddings index (Admin → AI operations). Returns flags (`embeddings_enabled`, `auto_on_ingest`, `pgvector_writes`), `model`, `extension_vector` (`present` \| `absent` \| `n/a` on SQLite), `counts` by `entity_type` from the **`embeddings`** table **for the active model**, `pending` (cheap SQL: missing/`migrated:` only — excludes hash-drift), `last_backfill` from `scheduler.last_run.embeddings_backfill`, `last_ingest_tail` from `embeddings.ingest_tail.last` (auto-on-ingest success/error), and optional `degraded.reason` (`disabled` \| `no_vector_extension` \| `cold_index`). No model inference on this path.
+Ops honesty for the live hybrid/embeddings index (Admin → AI operations). Returns flags (`embeddings_enabled`, `auto_on_ingest`, `pgvector_writes`), `model`, `extension_vector` (`present` \| `absent`), `counts` by `entity_type` from the **`embeddings`** table **for the active model**, `pending` (cheap SQL: missing/`migrated:` only — excludes hash-drift), `last_backfill` from `scheduler.last_run.embeddings_backfill`, `last_ingest_tail` from `embeddings.ingest_tail.last` (auto-on-ingest success/error), and optional `degraded.reason` (`disabled` \| `no_vector_extension` \| `cold_index`). No model inference on this path.
 
 ### GET /api/admin/system
 Returns system health: CVE count, NVD sync age, backup age, DB integrity, scheduler jobs (with `status`, `last_error_message`, `run_history`), feed sources, active locks, recent errors, open circuit count.
@@ -2196,20 +2196,17 @@ Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`). Returns utilization 
 }
 ```
 
-`series` is downsampled server-side to ≤500 points (bucket-average). `summary` aggregates raw rows in the window (peaks are real peaks). On SQLite dev, `pg_*` SQL-derived fields are NULL and `degraded.code` is `sqlite`. When Postgres runs remotely/in a container, process metrics (`pg_cpu_pct`, etc.) may be NULL while SQL stats remain live (`degraded.code` = `remote_pg`).
+`series` is downsampled server-side to ≤500 points (bucket-average). `summary` aggregates raw rows in the window (peaks are real peaks). When Postgres runs remotely/in a container, process metrics (`pg_cpu_pct`, etc.) may be NULL while SQL stats remain live (`degraded.code` = `remote_pg`).
 
 ### POST /api/admin/storage/purge
 Body `{target, confirm_text, days_back?}`. Targets: `ioc_cache` (confirm `"clear"`), `feed_cache` (confirm `"clear"`), `epss_history_old` (confirm `"prune"`), `change_history_old` (confirm `"prune"`), `rejected_cves` (confirm `"purge"`), `nvd_watermark` (confirm `"backfill"`), `epss_backfill_reset` (no confirm).
 Response: `{ok, rows_deleted, target}`.
 
 ### GET /api/admin/storage/export
-Streams a consistent SQLite snapshot (`briefr.db`) via `VACUUM INTO` for dev/test. **Not exposed in the admin UI** (removed #429 — use Postgres backups in production). Audit: `storage.db_export`.
+Streams a PostgreSQL dump via `pg_dump` (`application/sql`). **Not exposed in the admin UI** (removed #429 — use scheduled Postgres backups in production). Audit: `storage.db_export`.
 
 ### GET /api/admin/db-explorer/tables
 Read-only allowlist catalog: `{read_only: true, tables: [{name, label, tier, row_count, columns, filter_columns, required_filter, order_by}]}`. Denied tables are omitted (not 403). Rate limit: 30/min (`db_explorer` bucket) in addition to admin read limits.
-
-### GET /api/admin/database/migrate/status
-Migration progress for the SQLite→Postgres one-shot copy. `status` is `idle` | `running` | `done` | `error` | `interrupted`, plus `current_table`, `tables_done`, `tables_total`, `rows_copied`, `started_at`, `finished_at`, `error`, `verification`. PR-R4: every transition is snapshotted to `sync_state` (`migration.last_status`); when the in-memory state is idle the persisted snapshot is returned with `persisted: true`, and a persisted `running` from a process that died mid-migration is reported as `interrupted` with an actionable `error` message.
 
 ### GET /api/admin/db-explorer/tables/{table_name}/rows
 Paginated read-only rows for one allowlisted table. Params: `limit` (1–100, default 50), `offset` (0–10000), optional `filter_column` + `filter_value` (single-column equality only — no client SQL). `cves` requires `filter_column=cve_id` with a valid CVE ID. Large text/JSON fields may truncate (~2 KB); Tier-2 tables mask sensitive columns (`audit_log.target`, `webhook_delivery_log.error`). Unknown or forbidden tables return **404**. Audit: `db.explorer.browse.{table}` with filter summary — no row bodies.
@@ -2370,7 +2367,7 @@ Runs in-process smoke checks: CVE count > 0, KEV count > 0, DB integrity, feed h
 Response: `{ok, checks: [{name, passed, detail}], duration_ms}`.
 
 ### POST /api/admin/diagnostics/integrity
-Runs the dialect-aware DB integrity probe from `db.integrity`: SQLite uses `PRAGMA integrity_check` + `PRAGMA foreign_key_check`; Postgres uses `pg_catalog` probes for invalid indexes, unvalidated constraints, and FK violations.
+Runs the Postgres DB integrity probe from `db.integrity`: `pg_catalog` checks for invalid indexes, unvalidated constraints, and FK violations.
 Response: `{ok, integrity_ok, foreign_keys_ok, message, foreign_key_violations, backend, method, checks}`.
 
 ### POST /api/admin/diagnostics/corpus-drift
@@ -2541,5 +2538,5 @@ The `/api/docs` endpoint (Swagger UI) is available at `http://localhost:8000/api
 
 ## Frontend smoke (CI — no new endpoints)
 
-Beta V1.2 adds Chromium Playwright coverage in GitHub Actions (`playwright-smoke` job). The suite seeds SQLite via `scripts/seed_screenshot_data.py`, serves the built SPA, and exercises existing routes only — for example `GET /api/cves`, `GET /api/stats`, `GET /api/case-studies/feed`, and drawer detail fetches. No request/response shapes change; see `backend/tests/test_playwright_smoke.py`.
+Beta V1.2 adds Chromium Playwright coverage in GitHub Actions (`playwright-smoke` job). The suite seeds Postgres via `scripts/seed_screenshot_data.py`, serves the built SPA, and exercises existing routes only — for example `GET /api/cves`, `GET /api/stats`, `GET /api/case-studies/feed`, and drawer detail fetches. No request/response shapes change; see `backend/tests/test_playwright_smoke.py`.
 

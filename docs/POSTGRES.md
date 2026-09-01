@@ -79,11 +79,11 @@ If you previously started `briefr-pg-test` on plain `postgres:16-alpine`, recrea
 
 `./scripts/verify-local.sh --full` auto-starts `briefr-pg-test` when `DATABASE_URL` is unset and compose on `:5432` is not running.
 
-### Dual-dialect tests (SQLite default + Postgres CI)
+### Tests (Postgres required)
 
-- **Default pytest** (`cd backend && pytest tests/ -q`) uses the **SQLite** zero-config fallback. Production SQL is Postgres-native; parallel `_SQLITE` / `_PG` constants in `backend/db/` keep that suite green.
-- **CI** also runs a **`test-postgres`** job (and local `--full` / `postgres-dev.sh`) against real Postgres — that is the production-dialect signal.
-- **Ratchet:** `backend/tests/test_sql_dialect_pairs.py` requires every module-level `_PG` constant to have a same-file `_SQLITE` sibling or an explicit `# pg-only` marker, and caps the pair count at `ALLOWED_MAX` (may only stay equal or decrease without intentional bump). Testcontainers / Postgres-as-default CI remain a later follow-on (not this ratchet).
+Default pytest (`cd backend && pytest tests/ -q`) needs a reachable PostgreSQL 16 + pgvector DSN in `DATABASE_URL`. CI `test-postgres` and `./scripts/verify-local.sh` start compose when Docker is available.
+
+The `_SQLITE` / `_PG` constant pairs in `backend/db/` are leftover dual-dialect SQL; the runtime always uses the Postgres connection. `backend/tests/test_sql_dialect_pairs.py` still ratchets those pairs.
 
 ```bash
 # backend/.env (either stack — pick one URL)
@@ -127,7 +127,7 @@ Verify: `curl -s http://127.0.0.1:8000/api/health` → `"backend": "postgresql"`
 | Migrations | **Alembic** + **psycopg** (sync, migration-time) |
 | SQL compatibility | `db/pg_adapt.py` adapts legacy router SQL at the Postgres connection boundary |
 | Durable jobs | **Procrastinate** (`PROCRASTINATE_ENABLED=0` default). Schema applied by Alembic `028_procrastinate_schema` (official `schema.sql`). In-process worker starts from `main.py` lifespan when enabled. |
-| Embeddings search | `embeddings` (`vector(384)`) + scheduler/auto-on-ingest writes with `content_hash`. Hybrid search and related CVEs prefer pgvector ANN on Postgres, with SQLite BLOB / legacy `cve_embeddings` fallback for dev and cold-index cases. Requires `pgvector/pgvector:pg16` when `EMBEDDINGS_ENABLED=1`. |
+| Embeddings search | `embeddings` (`vector(384)`) + scheduler/auto-on-ingest writes with `content_hash`. Hybrid search and related CVEs prefer pgvector ANN, with legacy `cve_embeddings` NumPy fallback for cold-index cases. Requires `pgvector/pgvector:pg16` when `EMBEDDINGS_ENABLED=1`. |
 
 ## Backups
 

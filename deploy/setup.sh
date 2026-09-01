@@ -102,7 +102,7 @@ echo "==> [4/6] Creating virtual environment and installing packages"
 
 echo "    Installed:"
 "${INSTALL_DIR}/venv/bin/pip" list --format=columns \
-  | grep -E "fastapi|uvicorn|httpx|apscheduler|pydantic|aiosqlite|python-dotenv"
+  | grep -E "fastapi|uvicorn|httpx|apscheduler|pydantic|asyncpg|python-dotenv"
 
 # ── Step 5: Configure .env ─────────────────────────────────
 echo ""

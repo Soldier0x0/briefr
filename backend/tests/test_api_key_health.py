@@ -11,24 +11,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-
-def _use_sqlite_tmp_db(monkeypatch, tmp_path: Path, db_name: str) -> None:
-    """SQLite path tests must clear cached settings.database_url, not only os.environ."""
-    from monitoring.api_key_health import PROVIDER_CHECKS
-    from settings import settings as _settings
-
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setenv("DB_PATH", str(tmp_path / db_name))
-    for spec in PROVIDER_CHECKS:
-        monkeypatch.delenv(spec["env_key"], raising=False)
-
-
 def test_run_api_key_health_checks_skips_placeholders(monkeypatch, tmp_path):
     from database import get_db, init_db
     from monitoring import api_key_health as mod
 
-    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health.db")
     asyncio.run(init_db())
 
     monkeypatch.setenv("GROQ_API_KEY", "your_key_here")
@@ -51,12 +37,10 @@ def test_run_api_key_health_checks_skips_placeholders(monkeypatch, tmp_path):
     stats = asyncio.run(run())
     assert stats["checked"] == 0
 
-
 def test_run_api_key_health_checks_persists_result(monkeypatch, tmp_path):
     from database import get_db, get_sync_state_value, init_db
     from monitoring import api_key_health as mod
 
-    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health2.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
@@ -83,12 +67,10 @@ def test_run_api_key_health_checks_persists_result(monkeypatch, tmp_path):
     assert payload["healthy"] is True
     assert payload["checked_at"]
 
-
 def test_build_api_key_health_payload_suffix(monkeypatch, tmp_path):
     from database import get_db, init_db, set_sync_state_value
     from monitoring.api_key_health import build_api_key_health_payload
 
-    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health3.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GEMINI_API_KEY", "AIzaSyTestKey1234567890")
 
@@ -120,7 +102,6 @@ def test_build_api_key_health_payload_suffix(monkeypatch, tmp_path):
     assert gemini["key_suffix"].startswith("AIza")
     assert gemini["healthy"] is False
     assert gemini["error"] == "HTTP 403"
-
 
 def test_ping_json_actually_reaches_the_http_layer(monkeypatch):
     """Regression test for the source/method argument-order bug.
@@ -163,7 +144,6 @@ def test_ping_json_actually_reaches_the_http_layer(monkeypatch):
     assert len(seen_requests) == 1
     assert seen_requests[0].url.host == "example.com"
 
-
 def test_ping_json_connect_error_does_not_trip_feed_circuit(monkeypatch):
     """API key health probes must not open Feed Health circuits."""
     import resilient_client
@@ -205,7 +185,6 @@ def test_ping_json_connect_error_does_not_trip_feed_circuit(monkeypatch):
     )
     reset_feed_health()
 
-
 def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp_path):
     """Regression test for the dedupe_key bug: it used to embed checked_at
     (a fresh per-run timestamp), so deduplication never fired and a
@@ -223,7 +202,6 @@ def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp
     from database import get_db, init_db
     from monitoring import api_key_health as mod
 
-    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health4.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
@@ -265,7 +243,6 @@ def test_repeated_identical_failure_notifies_once_not_every_run(monkeypatch, tmp
     # still a stable, correct key, just not the literal raw error text.
     assert captured_dedupe_keys[0] == "api_key:groq:HTTP #"
 
-
 def test_dedupe_normalizes_dynamic_content_in_error_text(monkeypatch, tmp_path):
     """Gemini review on PR #482: some exception messages embed a value that
     changes every occurrence (Unix timestamps, ports, byte counts), which
@@ -277,7 +254,6 @@ def test_dedupe_normalizes_dynamic_content_in_error_text(monkeypatch, tmp_path):
     from monitoring import api_key_health as mod
     from resilient_client import CircuitOpenError
 
-    _use_sqlite_tmp_db(monkeypatch, tmp_path, "health5.db")
     asyncio.run(init_db())
     monkeypatch.setenv("GROQ_API_KEY", "gsk_testkey1234567890abcd")
 
