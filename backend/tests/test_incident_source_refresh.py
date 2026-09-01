@@ -15,8 +15,6 @@ from feeds import case_study_feed
 from tests.conftest import run_db_test
 
 def _setup_db(tmp_path, monkeypatch, name: str) -> None:
-    from settings import settings as _settings
-
     db_path = tmp_path / name
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
@@ -30,7 +28,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     monkeypatch.setattr("database.DB_PATH", str(db_path))
 
     import rate_limit as _rl
-    from settings import settings as _settings
 
     monkeypatch.setattr(_settings, "rate_limit_enabled", False)
     _rl.refresh_bucket._buckets.pop("testclient", None)
