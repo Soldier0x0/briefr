@@ -1,7 +1,7 @@
 """Phase A — four-level IOC preservation on otx_pulse_iocs.
 
-raw_ioc/host_ioc storage (write path), db/init.py DDL parity, and the
-migration 037 up/down + host_ioc backfill for legacy rows.
+raw_ioc/host_ioc storage (write path) and migration 037 up/down + host_ioc
+backfill for legacy rows.
 """
 
 from __future__ import annotations
@@ -30,13 +30,15 @@ def _load_migration(name: str):
     return module
 
 
-def test_db_init_sqlite_ddl_has_raw_and_host_columns():
-    """The SQLite executescript CREATE TABLE for otx_pulse_iocs must carry
-    raw_ioc/host_ioc so fresh SQLite dev/CI DBs match migration 037."""
-    source = _DB_INIT.read_text(encoding="utf-8")
-    assert "CREATE TABLE IF NOT EXISTS otx_pulse_iocs" in source
-    assert "raw_ioc TEXT DEFAULT ''" in source
-    assert "host_ioc TEXT DEFAULT ''" in source
+def test_otx_pulse_iocs_table_lives_in_alembic():
+    """otx_pulse_iocs is created in 001; raw_ioc/host_ioc arrive in 037."""
+    initial = (_VERSIONS_DIR / "001_initial_schema.py").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS otx_pulse_iocs" in initial
+    migration_037 = (_VERSIONS_DIR / "037_otx_pulse_iocs_raw_host.py").read_text(
+        encoding="utf-8"
+    )
+    assert "raw_ioc" in migration_037
+    assert "host_ioc" in migration_037
 
 
 def test_db_init_pg_bootstrap_has_raw_and_host_alter():

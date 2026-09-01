@@ -63,11 +63,40 @@ def extract_scheduler_jobs(source: str) -> list[dict[str, str]]:
     return jobs
 
 
+_CREATE_TABLE_RE = re.compile(
+    r"(?i)CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(?:(?:app|intel|public)\.)?(\w+)"
+)
+_DROP_TABLE_RE = re.compile(
+    r"(?i)DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:(?:app|intel|public)\.)?(\w+)"
+)
+_UPGRADE_FN_RE = re.compile(
+    r"^def upgrade\b.*?(?=^def |\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
 def extract_db_tables(source: str) -> list[str]:
     """Parse `CREATE TABLE IF NOT EXISTS <name>` statements -- case-insensitive,
-    flexible whitespace (a developer writing lowercase SQL or extra spacing
-    would otherwise be silently skipped, per review)."""
-    return sorted(set(re.findall(r"(?i)CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)", source)))
+    flexible whitespace, optional app/intel/public schema qualifier."""
+    return sorted(set(_CREATE_TABLE_RE.findall(source)))
+
+
+def extract_upgrade_body(source: str) -> str:
+    match = _UPGRADE_FN_RE.search(source)
+    return match.group(0) if match else ""
+
+
+def extract_alembic_tables(versions_dir: Path) -> list[str]:
+    """Live tables = CREATE TABLE in upgrade() minus DROP TABLE in upgrade().
+
+    Downgrade() bodies are ignored so restored/legacy tables do not reappear.
+    """
+    created: set[str] = set()
+    for path in sorted(versions_dir.glob("*.py")):
+        upgrade = extract_upgrade_body(path.read_text(encoding="utf-8"))
+        created.update(_CREATE_TABLE_RE.findall(upgrade))
+        created.difference_update(_DROP_TABLE_RE.findall(upgrade))
+    return sorted(created)
 
 
 def build_components(
@@ -129,11 +158,7 @@ def build_db_tables_yaml(tables: list[str]) -> list[dict[str, Any]]:
         {
             "id": table,
             "title": table,
-            "summary": (
-                f"Database table created by Alembic migration (name={table})."
-                if table in _MIGRATION_ONLY_TABLES
-                else f"Database table defined in db/init.py (name={table})."
-            ),
+            "summary": f"Database table created by Alembic migration (name={table}).",
             "owner": "platform",
             "status": "active",
             "origin": "generated",
@@ -158,13 +183,8 @@ _SQL_TABLE_REF_RE = re.compile(
     r"(?:(?:app|intel|public)\.)?(\w+)(?!\s+import\b)"
 )
 
-# Tables created by Alembic migrations rather than db/init.py. db/init.py
-# defines the SQLite bootstrap schema; Postgres-only tables added by later
-# migrations (e.g. app.infra_classifications in 040) live only in
-# backend/alembic/versions. Curated explicitly instead of scanning the
-# migrations directory: migrations also drop/rename tables and create views,
-# and a scan would fabricate stale nodes.
-_MIGRATION_ONLY_TABLES: frozenset[str] = frozenset({"infra_classifications"})
+# Schema inventory comes from Alembic upgrade() CREATE/DROP TABLE (see
+# extract_alembic_tables). Views and downgrade() recreates are ignored.
 
 # Allowlisted platform modules (not every backend file — keeps the graph readable).
 _CORE_MODULES: list[dict[str, str]] = [
@@ -774,12 +794,11 @@ def generate(output_dir: Path) -> dict[Path, dict[str, Any]]:
 
     routes_by_module = live_routes_by_module()
     scheduler_source = (BACKEND / "scheduler.py").read_text(encoding="utf-8")
-    db_source = (BACKEND / "db" / "init.py").read_text(encoding="utf-8")
     requirements_text = (BACKEND / "requirements.txt").read_text(encoding="utf-8")
     package_json_text = (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
 
     jobs = extract_scheduler_jobs(scheduler_source)
-    tables = sorted(set(extract_db_tables(db_source)) | set(_MIGRATION_ONLY_TABLES))
+    tables = extract_alembic_tables(BACKEND / "alembic" / "versions")
     requirements_entries = extract_requirements_entries(requirements_text)
     package_json_entries = extract_package_json_entries(package_json_text)
 

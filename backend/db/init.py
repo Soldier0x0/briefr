@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+from db.config import is_postgres as is_postgres  # noqa: F401 — monkeypatch target
 from db.connection import get_connection
 from db.types import DbConnection
 
