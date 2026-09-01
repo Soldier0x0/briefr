@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 
 from database import init_db
@@ -56,7 +56,7 @@ def test_exploit_provenance_checked_from_cache(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """
@@ -71,7 +71,6 @@ def test_exploit_provenance_checked_from_cache(tmp_path, monkeypatch):
     asyncio.run(seed())
 
     async def run():
-        from database import get_db
 
         db = await get_db()
         try:
@@ -91,7 +90,6 @@ def test_exploit_provenance_source_unavailable_on_circuit(tmp_path, monkeypatch)
         record_source_failure("sploitus", "HTTP 503")
 
     async def run():
-        from database import get_db
 
         db = await get_db()
         try:
@@ -127,7 +125,7 @@ def test_detection_provenance_checked_after_cache(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """
@@ -142,7 +140,6 @@ def test_detection_provenance_checked_after_cache(tmp_path, monkeypatch):
     asyncio.run(seed())
 
     async def run():
-        from database import get_db
 
         db = await get_db()
         try:
@@ -162,7 +159,7 @@ def test_detail_includes_exploit_provenance(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """

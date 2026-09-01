@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
@@ -52,7 +52,6 @@ def test_list_cves_keyset_cursor(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        from database import get_db
 
         db = await get_db()
         try:
@@ -100,7 +99,7 @@ def test_drawer_bundle_endpoint(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """

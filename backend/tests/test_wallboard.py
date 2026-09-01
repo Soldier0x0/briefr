@@ -7,22 +7,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
 from database import init_db
 from tests.conftest import run_db_test
 from wallboard.service import _epss_movers_from_brief
-
-# _seed_wallboard_db below writes via raw aiosqlite with SQLite-dialect SQL
-# (datetime('now', ...)) — genuinely SQLite-only, not a fixture-pattern gap.
-# A portable rewrite is Post-B (Postgres-native db/ conversion) scope, not
-# this CI-gate PR's. Skip explicitly rather than silently passing/failing.
-_requires_sqlite = pytest.mark.skipif(
-    os.environ.get("DATABASE_URL", "").startswith("postgresql"),
-    reason="_seed_wallboard_db uses raw SQLite-dialect SQL — portable rewrite is Post-B scope",
-)
 
 
 def _patch_app_lifecycle(monkeypatch) -> None:
@@ -35,18 +26,8 @@ def _patch_app_lifecycle(monkeypatch) -> None:
 
 
 def _use_sqlite_backend(monkeypatch, db_path: Path) -> None:
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    from settings import settings as _settings
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection._pool", None)
+    """SQLite removed — isolation is session Postgres + TRUNCATE."""
+    del monkeypatch, db_path
 
 
 def _disable_rate_limit(monkeypatch) -> None:
@@ -81,7 +62,7 @@ async def _seed_wallboard_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S")
 
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """

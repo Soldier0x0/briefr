@@ -20,19 +20,8 @@ def _patch_app_lifecycle(monkeypatch) -> None:
 
 
 def _use_sqlite_backend(monkeypatch, db_path: Path) -> None:
-    monkeypatch.setenv("DB_PATH", str(db_path))
-    monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    from settings import settings as _settings
-
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setattr(_settings, "db_path", str(db_path))
-    sqlite_url = f"sqlite+aiosqlite:///{db_path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection._pool", None)
+    """SQLite removed — isolation is session Postgres + TRUNCATE."""
+    del monkeypatch, db_path
 
 
 def _disable_rate_limit(monkeypatch) -> None:

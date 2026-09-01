@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
@@ -102,7 +102,6 @@ async def _seed_campaign_graph(db) -> None:
 
 
 async def _build_campaigns() -> None:
-    from database import get_db
 
     db = await get_db()
     try:
@@ -118,7 +117,6 @@ def client(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        from database import get_db
 
         db = await get_db()
         try:
@@ -149,7 +147,6 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        from database import get_db
 
         db = await get_db()
         try:

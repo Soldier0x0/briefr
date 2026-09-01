@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 
 from database import init_db
 
@@ -42,7 +42,7 @@ def test_api_cves_supports_gzip_encoding(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             for i in range(20):
                 cve_id = f"CVE-2026-GZIP-{i:04d}"

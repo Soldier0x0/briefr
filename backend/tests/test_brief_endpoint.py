@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 
 from brief.service import (
@@ -46,7 +46,7 @@ async def _seed_brief_db(db_path: Path) -> None:
     recent = (now - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
     due_soon = (now + timedelta(days=5)).strftime("%Y-%m-%d")
 
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """
@@ -362,7 +362,7 @@ async def _seed_brief_bad_epss_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc)
     recent = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
 
-    db = await aiosqlite.connect(db_path)
+    db = await get_db()
     try:
         await db.execute(
             """

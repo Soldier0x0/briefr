@@ -70,42 +70,30 @@ from scheduler import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from backup.manager import ensure_db_or_restore
-
-    backend = "postgresql" if is_postgres() else "sqlite"
-    logger.info("main.py lifespan: starting backend (%s)", backend)
-
-    if settings.briefr_require_postgres and not is_postgres():
-        raise RuntimeError(
-            "BRIEFR_REQUIRE_POSTGRES=1 but DATABASE_URL is not set to a postgresql:// DSN. "
-            "Migrate via Admin -> Database, apply DATABASE_URL, and restart."
-        )
+    logger.info("main.py lifespan: starting backend (postgresql)")
 
     if not is_postgres():
-        recovery = ensure_db_or_restore()
-        if recovery.get("status") == "restored":
-            logger.warning(
-                "Recovered corrupt database from backup: %s",
-                recovery.get("archive"),
-            )
-    else:
-        db_target = resolve_database_url()
-        host = db_target.split("@")[-1] if "@" in db_target else db_target
-        logger.info("main.py lifespan: DATABASE_URL=%s", host)
-        try:
-            await run_postgres_migrations()
-        except Exception:
-            logger.error("main.py lifespan: STOPPED — Alembic migrations failed (see database.py log above)")
-            raise
+        raise RuntimeError(
+            "DATABASE_URL must be a postgresql:// DSN. "
+            "See docs/SELF_HOST.md for Postgres + pgvector setup."
+        )
+
+    db_target = resolve_database_url()
+    host = db_target.split("@")[-1] if "@" in db_target else db_target
+    logger.info("main.py lifespan: DATABASE_URL=%s", host)
+    try:
+        await run_postgres_migrations()
+    except Exception:
+        logger.error("main.py lifespan: STOPPED — Alembic migrations failed (see database.py log above)")
+        raise
 
     try:
         await init_pool()
     except Exception:
-        if is_postgres():
-            logger.error(
-                "main.py lifespan: STOPPED — cannot open PostgreSQL pool (see db/connection.py log above). "
-                "Is Postgres running? Is DATABASE_URL correct?"
-            )
+        logger.error(
+            "main.py lifespan: STOPPED — cannot open PostgreSQL pool (see db/connection.py log above). "
+            "Is Postgres running? Is DATABASE_URL correct?"
+        )
         raise
 
     await init_db()

@@ -3,13 +3,11 @@
 import sqlite3
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from db.connection import SqliteConnection
 from db.errors import (
     DatabaseError,
     DatabaseLockedError,
@@ -55,17 +53,3 @@ def test_format_db_exception_message_timeout():
 def test_reraise_db_exception_preserves_subclass():
     with pytest.raises(DatabaseLockedError, match="busy"):
         reraise_db_exception(sqlite3.OperationalError("database is busy"))
-
-
-def test_sqlite_connection_translates_locked():
-    raw = MagicMock()
-    raw.execute = AsyncMock(side_effect=sqlite3.OperationalError("database is locked"))
-
-    async def _run():
-        conn = SqliteConnection(raw)
-        with pytest.raises(DatabaseLockedError):
-            await conn.execute("SELECT 1")
-
-    import asyncio
-
-    asyncio.run(_run())

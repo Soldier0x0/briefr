@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 
 from database import _clean_iso_date, upsert_kev, upsert_kev_batch
 from feeds.kev import parse_kev_catalog
@@ -134,9 +134,8 @@ def test_clean_iso_date_accepts_valid_and_rejects_garbage():
 
 def test_upsert_kev_sanitizes_null_and_garbage_dates():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
+                await db.execute(_kev_table_sql())
 
         await upsert_kev(
             db,
@@ -163,9 +162,8 @@ def test_upsert_kev_sanitizes_null_and_garbage_dates():
 
 def test_upsert_kev_stores_and_updates_enrichment_fields():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
+                await db.execute(_kev_table_sql())
 
         entries = parse_kev_catalog(SAMPLE_CATALOG)
         for entry in entries:
@@ -210,9 +208,8 @@ def test_upsert_kev_batch_matches_per_row_results():
     """PR-P4: batched executemany writes the same rows as per-row upserts,
     skips entries without a cveID, and updates in place on re-sync."""
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
+                await db.execute(_kev_table_sql())
 
         entries = parse_kev_catalog(SAMPLE_CATALOG)
         count = await upsert_kev_batch(db, [*entries, {"product": "no-id"}])
@@ -248,9 +245,8 @@ def test_upsert_kev_batch_matches_per_row_results():
 
 def test_upsert_kev_batch_empty_returns_zero():
     async def _run():
-        db = await aiosqlite.connect(":memory:")
-        db.row_factory = aiosqlite.Row
-        await db.execute(_kev_table_sql())
+        db = await get_db()
+                await db.execute(_kev_table_sql())
         assert await upsert_kev_batch(db, []) == 0
         assert await upsert_kev_batch(db, [{"product": "no-id"}]) == 0
         await db.close()

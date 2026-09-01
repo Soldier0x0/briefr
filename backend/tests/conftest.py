@@ -31,13 +31,9 @@ sys.path.insert(0, str(BACKEND_DIR))
 # - BRIEFR_ENV=development keeps /api/docs + openapi visible (router tests)
 #   and disables the production JWT_SECRET import guard (settings.py).
 # - JWT_SECRET setdefault keeps a production-override CI run green.
-# - BRIEFR_REQUIRE_POSTGRES=0 lets the suite run on the SQLite fallback when
-#   DATABASE_URL is unset; Postgres CI sets it to 1 explicitly (setdefault wins
-#   only when absent). These are set BEFORE any settings import — settings is a
-#   module-level singleton instantiated at import time.
+# Tests require a live PostgreSQL DATABASE_URL (CI job test-postgres).
 os.environ.setdefault("BRIEFR_ENV", "development")
 os.environ.setdefault("JWT_SECRET", "ci-test-jwt-secret-not-for-production")
-os.environ.setdefault("BRIEFR_REQUIRE_POSTGRES", "0")
 
 
 def _postgres_dsn_or_none() -> str | None:
@@ -53,7 +49,10 @@ def _postgres_dsn_or_none() -> str | None:
     this fixture's isolation TRUNCATE for every test collected after it."""
     from db.config import resolve_database_url
 
-    url = resolve_database_url()
+    try:
+        url = resolve_database_url()
+    except ValueError:
+        return None
     return url if url.startswith("postgresql") else None
 
 
@@ -72,15 +71,20 @@ def _postgres_is_live() -> bool:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _postgres_schema_once():
+def _require_postgres():
+    """Fail fast when DATABASE_URL is unset or Postgres is unreachable."""
+    if not _postgres_is_live():
+        pytest.fail(
+            "PostgreSQL is required for all tests. Set DATABASE_URL and ensure the "
+            "server is running (see docs/SELF_HOST.md)."
+        )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _postgres_schema_once(_require_postgres):
     """Apply Alembic migrations once per session via a standalone asyncpg
     connection — never via the pool, which would bind it to this fixture's
-    closing event loop (see tests/test_postgres_pool.py). No-op on SQLite or
-    when Postgres is configured but unreachable (common on Windows dev boxes
-    with DATABASE_URL in .env but no local server)."""
-    if not _postgres_is_live():
-        yield
-        return
+    closing event loop (see tests/test_postgres_pool.py)."""
 
     async def _boot() -> None:
         from database import run_postgres_migrations
@@ -115,13 +119,7 @@ def _postgres_schema_once():
 @pytest.fixture(autouse=True)
 def _postgres_test_isolation(_postgres_schema_once):
     """Truncate all app tables before each test when DATABASE_URL is
-    Postgres and the server is reachable — reproduces the fresh-temp-file
-    isolation SQLite tests get from tmp_path. No-op on SQLite (the default
-    CI/local test run) or when Postgres is configured but down."""
-    if not _postgres_is_live():
-        yield
-        return
-
+    Postgres — reproduces the fresh-temp-file isolation SQLite tests used."""
     dsn = _postgres_dsn_or_none()
     assert dsn is not None
 
@@ -179,27 +177,11 @@ def run_db_test(coro):
 
 
 def use_sqlite_backend(monkeypatch, db_path: Path | str) -> None:
-    """Force a tmp-path SQLite DB even when DATABASE_URL/Postgres is configured.
+    """No-op: SQLite is removed. Per-test isolation is Postgres TRUNCATE.
 
-    Tests that set DB_PATH alone still resolve to Postgres in CI because
-    settings.database_url is frozen at import and takes priority over DB_PATH
-    (see db/config.py::resolve_database_url). Mirrors test_wallboard.py's
-    _use_sqlite_backend helper, centralized here for forge/security-architecture
-    live tests that seed an isolated sa_live.db via TestClient."""
-    path = str(db_path)
-    monkeypatch.setenv("DB_PATH", path)
-    monkeypatch.setattr("database.DB_PATH", path)
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.setenv("BRIEFR_REQUIRE_POSTGRES", "0")
-    from settings import settings as _settings
-
-    monkeypatch.setattr(_settings, "database_url", "")
-    monkeypatch.setattr(_settings, "briefr_require_postgres", False)
-    monkeypatch.setattr(_settings, "db_path", path)
-    sqlite_url = f"sqlite+aiosqlite:///{path}"
-    monkeypatch.setattr("db.config.resolve_database_url", lambda: sqlite_url)
-    monkeypatch.setattr("db.config.is_postgres", lambda url=None: False)
-    monkeypatch.setattr("db.connection._pool", None)
+    Call sites kept so older tests do not need a mass rename in this PR.
+    """
+    del monkeypatch, db_path
 
 
 @pytest.fixture(autouse=True)

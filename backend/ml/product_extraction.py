@@ -26,7 +26,7 @@ import logging
 import os
 import re
 
-import aiosqlite
+from db.types import DbConnection
 
 from ai.llm_router import LLMCompletion, any_llm_provider_configured, chat_completion_task
 from ai.llm_payload import has_substantive_source_text
@@ -198,7 +198,7 @@ async def extract_products_via_llm(
     return parse_products_payload(completion.content), completion
 
 
-async def run_llm_product_extraction(db: aiosqlite.Connection | None = None, progress_cb=None) -> dict:
+async def run_llm_product_extraction(db: DbConnection | None = None, progress_cb=None) -> dict:
     """Scheduler job body: extract products for NVD-unanalyzed CVEs.
 
     Caller is responsible for the enabled() gate and the job lock. Every

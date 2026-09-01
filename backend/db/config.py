@@ -1,4 +1,4 @@
-"""Owns DATABASE_URL resolution and backend detection only."""
+"""Owns DATABASE_URL resolution — PostgreSQL only."""
 
 from __future__ import annotations
 
@@ -7,26 +7,20 @@ from urllib.parse import urlparse
 
 from settings import settings
 
+
 def resolve_database_url() -> str:
-    """Return the effective database URL.
+    """Return the effective PostgreSQL DSN.
 
-  Priority:
-  1. ``DATABASE_URL`` env / settings (explicit)
-  2. ``DB_PATH``-derived SQLite URL (legacy default)
-
-    Reads os.environ fresh on every call rather than caching at import time —
-    Settings() is a singleton constructed once at process start, and a
-    module-level constant here would be equally stale, so tests that
-    monkeypatch.setenv("DB_PATH", ...) per-test would otherwise never take
-    effect.
+    ``DATABASE_URL`` is required. SQLite is not supported.
     """
     explicit = (settings.database_url or os.environ.get("DATABASE_URL", "")).strip()
-    if explicit:
-        return explicit
-    path = (settings.db_path or os.environ.get("DB_PATH", "briefr.db")).strip()
-    if path.startswith("sqlite:"):
-        return path
-    return f"sqlite+aiosqlite:///{path}"
+    if not explicit:
+        raise ValueError(
+            "DATABASE_URL is required — set a postgresql:// DSN. "
+            "See docs/SELF_HOST.md for Postgres + pgvector setup."
+        )
+    database_backend(explicit)
+    return explicit
 
 
 def get_database_url() -> str:
@@ -34,16 +28,15 @@ def get_database_url() -> str:
 
 
 def database_backend(url: str | None = None) -> str:
-    """``sqlite`` or ``postgresql``."""
+    """Always ``postgresql`` once the DSN is valid."""
     parsed = urlparse(url or resolve_database_url())
     scheme = (parsed.scheme or "").lower()
     if scheme in {"postgres", "postgresql"}:
         return "postgresql"
-    if scheme in {"sqlite", "sqlite+aiosqlite"}:
-        return "sqlite"
     raise ValueError(
         f"Unsupported DATABASE_URL scheme {scheme!r} — "
-        "use sqlite+aiosqlite:///path or postgresql://user:pass@host/db"
+        "BRIEFR requires postgresql:// (with pgvector/pgvector:pg16). "
+        "See docs/SELF_HOST.md"
     )
 
 
@@ -52,7 +45,9 @@ def is_postgres(url: str | None = None) -> bool:
 
 
 def is_sqlite(url: str | None = None) -> bool:
-    return database_backend(url) == "sqlite"
+    """SQLite is not supported; kept so existing imports fail closed."""
+    del url
+    return False
 
 
 def postgres_dsn(url: str | None = None) -> str:

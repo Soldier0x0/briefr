@@ -52,7 +52,6 @@ async def _seed_coro(self_stack_term="fastapi"):
     self-stack term (fastapi ships in requirements.txt -- see
     corpus/self_stack.yaml) so self-stack merge queries have something to
     match without needing to monkeypatch the corpus."""
-    from database import get_db
 
     db = await get_db()
     try:
@@ -110,7 +109,6 @@ async def _insert_cve_coro(
     is_kev=1,
     published="2024-01-01T00:00:00",
 ):
-    from database import get_db
 
     db = await get_db()
     try:
@@ -158,7 +156,6 @@ async def _insert_cves_coro(rows):
 
 
 async def _self_stack_risk_rows_coro(corpus):
-    from database import get_db
 
     db = await get_db()
     try:
@@ -421,7 +418,6 @@ def test_risks_section_live_row_reports_real_severity_not_invented(client):
     report the DB's actual severity, not synthesize one. Inventing
     'critical' here would violate the central principle (spec v2 note 3:
     no opinion rendered as measurement)."""
-    from database import get_db
 
     async def _insert_high_severity_kev():
         db = await get_db()

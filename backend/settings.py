@@ -34,7 +34,6 @@ class Settings(BaseSettings):
     briefr_env: str = "production"
     allowed_origins: str = "http://localhost:3000"
     database_url: str = ""
-    db_path: str = ""
     database_pool_size: int = 10
     database_pool_acquire_timeout_seconds: int = 10
     database_pool_command_timeout_seconds: int = 60  # SQL only; not feed HTTP
@@ -80,7 +79,7 @@ class Settings(BaseSettings):
     def _strip_jwt_secret(cls, value: str) -> str:
         return value.strip()
 
-    @field_validator("database_url", "db_path")
+    @field_validator("database_url")
     @classmethod
     def _strip_db_settings(cls, value: str) -> str:
         return value.strip()

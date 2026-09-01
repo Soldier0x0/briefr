@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 
 from database import init_db
 
@@ -36,7 +36,7 @@ def test_cve_list_includes_kev_due_date(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await db.execute(
                 """

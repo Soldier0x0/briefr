@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tests.conftest import run_db_test
 
-import aiosqlite
+from database import get_db
 
 from database import init_db
 from feeds import case_study_feed
@@ -29,7 +29,7 @@ def test_build_snapshot_uses_single_db_connection(tmp_path, monkeypatch):
     async def run() -> None:
         await init_db()
 
-        connections: list[aiosqlite.Connection] = []
+        connections: list[object] = []
         original_get_db = case_study_feed.get_db
 
         async def tracking_get_db():

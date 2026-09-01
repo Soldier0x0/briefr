@@ -18,13 +18,13 @@ BRIEFR is FastAPI (`backend/`) + React/Vite (`frontend/`). See `README.md` and
 
 ### Database
 
-Production uses PostgreSQL 16 (product default: `briefr_require_postgres=True`). On bare cloud VMs without Docker, use SQLite dev fallback:
+Production uses PostgreSQL 16 + pgvector. `DATABASE_URL` (postgresql://) is required; there is no SQLite fallback.
 
 ```bash
-DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0
+DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5432/briefr
 ```
 
-`./scripts/verify-local.sh` runs Postgres-first and falls back to this SQLite path only when no Postgres is reachable.
+`./scripts/verify-local.sh` requires a reachable Postgres (starts `deploy/docker-compose.postgres.yml` when Docker is available).
 
 ### Services
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 from fastapi.testclient import TestClient
 
@@ -84,7 +84,7 @@ def test_feed_boosts_campaign_peer_of_pinned_cve(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_feed_campaign_graph(db)
             await db.commit()
@@ -110,7 +110,7 @@ def test_feed_skips_boost_for_low_confidence_campaign(tmp_path, monkeypatch):
     asyncio.run(init_db())
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_feed_campaign_graph(db)
             await db.execute(

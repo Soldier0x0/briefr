@@ -145,8 +145,6 @@ EXPECTED_ROUTES = [
     ("POST", "/api/admin/webhooks/daily-brief/test"),
     ("GET", "/api/admin/database"),
     ("POST", "/api/admin/database/test-connection"),
-    ("POST", "/api/admin/database/migrate"),
-    ("GET", "/api/admin/database/migrate/status"),
     ("GET", "/api/admin/outbound-pacing"),
     ("GET", "/api/admin/api-usage/metering"),
     ("GET", "/api/admin/api-usage/events"),

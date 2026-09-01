@@ -1,8 +1,4 @@
-"""Database backend abstraction (V2.0 foundation).
-
-SQLite remains the default. Set ``DATABASE_URL`` to a ``postgresql://`` DSN to
-use PostgreSQL (beta — see ``docs/POSTGRES.md``).
-"""
+"""Database backend — PostgreSQL + pgvector only."""
 
 from db.config import (
     database_backend,

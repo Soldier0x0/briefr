@@ -238,7 +238,7 @@ def extract_function_source(module_source: str, func_name: str) -> str:
 _SKIP_IMPORT_ROOTS = frozenset({
     "fastapi", "pydantic", "starlette", "uvicorn", "httpx", "apscheduler",
     "jwt", "jose", "passlib", "bcrypt", "dotenv", "yaml", "orjson", "redis",
-    "asyncpg", "aiosqlite", "sqlalchemy", "alembic", "numpy", "pandas",
+    "asyncpg", "sqlalchemy", "alembic", "numpy", "pandas",
     "sklearn", "torch", "transformers", "openai", "groq", "bs4", "lxml",
     "feedparser", "PIL", "cv2", "asyncio", "typing", "collections",
     "dataclasses", "pathlib", "os", "sys", "re", "json", "logging",

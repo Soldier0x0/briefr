@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 
 from database import (
     get_epss_history,
@@ -19,10 +19,9 @@ from database import (
 )
 
 
-async def _db_with_cves() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(":memory:")
-    db.row_factory = aiosqlite.Row
-    await db.execute("PRAGMA foreign_keys=ON")
+async def _db_with_cves() -> object:
+    db = await get_db()
+        await db.execute("PRAGMA foreign_keys=ON")
     await db.executescript(
         """
         CREATE TABLE cves (

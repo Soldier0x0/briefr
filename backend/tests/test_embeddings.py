@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import numpy as np
 import pytest
 
@@ -71,10 +71,9 @@ def test_embeddings_disabled_by_default(monkeypatch):
     assert embeddings_enabled() is False
 
 
-async def _db_with_embeddings() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(":memory:")
-    db.row_factory = aiosqlite.Row
-    await db.executescript(
+async def _db_with_embeddings() -> object:
+    db = await get_db()
+        await db.executescript(
         """
         CREATE TABLE cve_embeddings (
             cve_id TEXT PRIMARY KEY,

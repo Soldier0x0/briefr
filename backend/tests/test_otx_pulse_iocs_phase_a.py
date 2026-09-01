@@ -215,7 +215,7 @@ def test_sqlite_backfill_host_ioc_for_legacy_rows(tmp_path, monkeypatch):
     """CodeRabbit: the SQLite migration path adds host_ioc with an empty
     default but must also backfill existing DOMAIN/HOSTNAME/URL/URI rows so a
     legacy dev/CI DB matches what migration 037 backfills on PostgreSQL."""
-    import aiosqlite
+    from database import get_db
 
     from tests.conftest import run_db_test, use_sqlite_backend
 
@@ -225,7 +225,7 @@ def test_sqlite_backfill_host_ioc_for_legacy_rows(tmp_path, monkeypatch):
     use_sqlite_backend(monkeypatch, db_path)
 
     async def _seed_legacy_db():
-        conn = await aiosqlite.connect(str(db_path))
+        conn = await get_db()
         try:
             await conn.executescript(
                 """

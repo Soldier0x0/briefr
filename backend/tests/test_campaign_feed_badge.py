@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 import pytest
 
 from database import init_db
@@ -76,7 +76,7 @@ def test_list_cves_campaign_marker(tmp_path, monkeypatch, lifecycle):
     cve_id = f"CVE-2026-CAMP-{lifecycle.upper()}"
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_campaign_cve(db, cve_id)
             await _seed_campaign(db, f"camp_{lifecycle}", cve_id, lifecycle)
@@ -108,7 +108,7 @@ def test_list_cves_no_campaign_marker(tmp_path, monkeypatch):
     cve_id = "CVE-2026-NOCAMP"
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_campaign_cve(db, cve_id)
             await db.commit()
@@ -136,7 +136,7 @@ def test_export_includes_campaign_marker(tmp_path, monkeypatch):
     cve_id = "CVE-2026-EXPORT-CAMP"
 
     async def seed() -> None:
-        db = await aiosqlite.connect(db_path)
+        db = await get_db()
         try:
             await _seed_campaign_cve(db, cve_id)
             await _seed_campaign(db, "camp_export", cve_id, "active")

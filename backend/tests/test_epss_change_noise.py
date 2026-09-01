@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import aiosqlite
+from database import get_db
 
 from database import (
     _epss_scores_differ,
@@ -40,9 +40,8 @@ def test_update_epss_scores_skips_display_identical_changes(tmp_path, monkeypatc
     asyncio.run(init_db())
 
     async def run() -> None:
-        db = await aiosqlite.connect(db_path)
-        db.row_factory = aiosqlite.Row
-        try:
+        db = await get_db()
+                try:
             await db.execute(
                 """
                 INSERT INTO cves (cve_id, description, epss_score, severity)

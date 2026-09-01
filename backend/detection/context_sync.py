@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import os
 
-import aiosqlite
+from db.types import DbConnection
 
 from detection.context import (
     DETECTION_CTX_CACHE_HOURS,
@@ -37,7 +37,7 @@ def get_detection_context_max_per_run() -> int:
 
 
 async def get_cves_for_detection_context_sync(
-    db: aiosqlite.Connection,
+    db: DbConnection,
     limit: int,
 ) -> list[dict]:
     """CVEs missing a fresh detection_ctx cache entry."""
@@ -58,7 +58,7 @@ async def get_cves_for_detection_context_sync(
 
 
 async def run_detection_context_sync(
-    db: aiosqlite.Connection | None = None,
+    db: DbConnection | None = None,
     progress_cb=None,
 ) -> dict:
     """Backfill DetectionContext cache rows for CVEs missing them."""
