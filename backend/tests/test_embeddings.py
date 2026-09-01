@@ -328,7 +328,6 @@ def _seed_related_db(db_path: str) -> None:
     run_db_test(run())
 
 
-@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 @pytest.fixture
 def related_client(tmp_path, monkeypatch):
     db_path = tmp_path / "related.db"
@@ -345,6 +344,7 @@ def related_client(tmp_path, monkeypatch):
         yield client
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_heuristic_when_embeddings_disabled(related_client, monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "0")
     body = related_client.get("/api/cves/CVE-2024-0001/related").json()
@@ -354,6 +354,7 @@ def test_related_endpoint_heuristic_when_embeddings_disabled(related_client, mon
     assert all("similarity" not in c for c in body["data"])
 
 
+@pytest.mark.skipif(is_postgres(), reason="fake 2-dim vectors are incompatible with pgvector(384)")
 def test_related_endpoint_semantic_when_embeddings_enabled(related_client, monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_ENABLED", "1")
     body = related_client.get("/api/cves/CVE-2024-0001/related?limit=2").json()
