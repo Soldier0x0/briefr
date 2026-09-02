@@ -7,26 +7,65 @@ import re
 import time
 from typing import Any
 
+_OPERATOR_SCHEMAS = ("app", "intel")
+_SYSTEM_SCHEMAS = ("public",)
+_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 _TABLE_SIZES_PG = """
-SELECT c.relname AS name,
+SELECT n.nspname AS schema,
+       c.relname AS name,
        pg_total_relation_size(c.oid)::bigint AS size_bytes
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = 'public'
+WHERE n.nspname = ANY (?::text[])
   AND c.relkind = 'r'
 ORDER BY size_bytes DESC
 """
 
 
-async def fetch_table_sizes(db: Any) -> list[dict[str, Any]]:
+def _size_namespaces(*, include_system: bool) -> list[str]:
+    namespaces = list(_OPERATOR_SCHEMAS)
+    if include_system:
+        namespaces.extend(_SYSTEM_SCHEMAS)
+    return namespaces
+
+
+def quote_pg_ident(name: str) -> str:
+    if not _IDENT_RE.fullmatch(name or ""):
+        raise ValueError("invalid PostgreSQL identifier")
+    return '"' + name.replace('"', '""') + '"'
+
+
+async def fetch_table_sizes(
+    db: Any,
+    *,
+    include_system: bool = False,
+) -> list[dict[str, Any]]:
+    namespaces = _size_namespaces(include_system=include_system)
     try:
-        rows = await db.execute_fetchall(_TABLE_SIZES_PG)
+        rows = await db.execute_fetchall(_TABLE_SIZES_PG, (list(namespaces),))
         return [
-            {"table": r["name"], "size_bytes": int(r["size_bytes"] or 0)}
+            {
+                "schema": r["schema"],
+                "table": r["name"],
+                "size_bytes": int(r["size_bytes"] or 0),
+            }
             for r in rows
         ]
     except Exception:
         return []
+
+
+async def count_table_rows(db: Any, schema: str, table: str) -> int:
+    """Exact COUNT(*) for one catalog-qualified relation. -1 on failure."""
+    try:
+        sql = (
+            f"SELECT COUNT(*) AS cnt FROM {quote_pg_ident(schema)}.{quote_pg_ident(table)}"
+        )
+        rows = await db.execute_fetchall(sql)
+        return int(rows[0]["cnt"]) if rows else 0
+    except Exception:
+        return -1
 
 
 def estimate_growth_bytes_per_day(

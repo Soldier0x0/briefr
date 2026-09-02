@@ -169,3 +169,52 @@ def test_resources_reuses_held_connection(admin_client, monkeypatch):
     resp = admin_client.get("/api/admin/resources")
     assert resp.status_code == 200
     assert calls["n"] == 1
+
+
+def test_fetch_table_sizes_includes_app_or_intel():
+    from database import get_db
+    from storage_metrics import fetch_table_sizes
+    from tests.conftest import run_db_test
+
+    async def _run():
+        db = await get_db()
+        try:
+            rows = await fetch_table_sizes(db)
+            names = {r["table"] for r in rows}
+            assert "api_call_events" in names or "cves" in names
+            assert "procrastinate_jobs" not in names  # default exclude system
+            for row in rows:
+                assert "schema" in row
+                assert "table" in row
+                assert "size_bytes" in row
+                assert row["schema"] in ("app", "intel")
+            with_system = await fetch_table_sizes(db, include_system=True)
+            system_names = {r["table"] for r in with_system}
+            assert "procrastinate_jobs" in system_names or any(
+                r["schema"] == "public" for r in with_system
+            )
+        finally:
+            await db.close()
+
+    run_db_test(_run())
+
+
+def test_storage_table_sizes_include_row_counts(admin_client):
+    resp = admin_client.get("/api/admin/storage")
+    assert resp.status_code == 200
+    data = resp.json()
+    sizes = data["table_sizes"]
+    assert isinstance(sizes, list)
+    names = {r["table"] for r in sizes}
+    assert "api_call_events" in names or "cves" in names
+    assert "procrastinate_jobs" not in names
+    target = next(
+        (r for r in sizes if r["table"] in ("api_call_events", "cves")),
+        None,
+    )
+    assert target is not None
+    assert target["schema"] in ("app", "intel")
+    assert isinstance(target.get("rows"), int)
+    assert target["rows"] >= 0
+    tables = data["tables"]
+    assert tables[target["table"]] == target["rows"]

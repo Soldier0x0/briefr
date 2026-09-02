@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { bytesChartScale, durationChartScale, fmtBytes, fmtDur, ingestDurationChartScale, niceCeil } from './formatters.js'
+import { bytesChartScale, durationChartScale, fmtBytes, fmtCountRatio, fmtDur, ingestDurationChartScale, niceCeil } from './formatters.js'
 
 describe('fmtDur', () => {
   it('formats sub-minute durations with s unit', () => {
@@ -21,6 +21,14 @@ describe('fmtDur', () => {
   it('returns em dash for nullish input', () => {
     assert.equal(fmtDur(null), '—')
     assert.equal(fmtDur(undefined), '—')
+  })
+})
+
+describe('fmtCountRatio', () => {
+  it('renders integer connection counts, not bytes', () => {
+    assert.equal(fmtCountRatio(2, 20), '2 / 20 (10%)')
+    assert.equal(fmtCountRatio(0, 0), '0 / 0 (0%)')
+    assert.ok(!fmtCountRatio(2, 20).includes('B'))
   })
 })
 

@@ -2178,7 +2178,7 @@ Trigger an immediate health ping sweep for all configured providers. Returns `{o
 Durable operator notification feed for the admin StatusBar panel (#439). Params: `limit` (1–100, default 40). Response: `{events: [{type, summary, created_at, ...}], counts: {audit, api_key_alerts, job_errors}}`. Event types include `audit`, `api_key_unhealthy`, and `job_error` (from `sync_state` job last-run JSON).
 
 ### GET /api/admin/storage
-Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, per-table size estimates (`table_sizes`), growth estimate (`growth_estimate`), host disk I/O counters (`disk_io` when available), archive count.
+Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts (`tables`), per-table size estimates (`table_sizes`: `{schema, table, size_bytes, rows}` for `app`/`intel` relations; leftover `public`/Procrastinate omitted), growth estimate from backup archives (`growth_estimate` — not live table growth), host disk I/O counters (`disk_io` when available), archive count.
 
 ### GET /api/admin/resources
 Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`). Returns utilization telemetry from `resource_metrics` (RB-1 collector, 60s samples):

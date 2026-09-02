@@ -28,11 +28,18 @@ def _env_bool(key: str, default: bool = False) -> bool:
     return raw in ("1", "true", "yes", "on")
 
 
-def _table_bytes(table_sizes: list[dict[str, Any]], name: str) -> int:
-    for row in table_sizes:
-        if row.get("table") == name:
-            return int(row.get("size_bytes") or 0)
-    return 0
+def _table_bytes(
+    table_sizes: list[dict[str, Any]],
+    name: str,
+    *,
+    schema: str | None = None,
+) -> int:
+    matches = [row for row in table_sizes if row.get("table") == name]
+    if schema is not None:
+        matches = [row for row in matches if row.get("schema") == schema]
+    elif any(row.get("schema") in ("app", "intel") for row in matches):
+        matches = [row for row in matches if row.get("schema") in ("app", "intel")]
+    return sum(int(row.get("size_bytes") or 0) for row in matches)
 
 
 async def _row_count(db: DbConnection, table: str) -> int:

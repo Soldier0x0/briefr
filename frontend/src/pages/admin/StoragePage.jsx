@@ -7,7 +7,12 @@ import AdminDataGrid from './shared/AdminDataGrid.jsx'
 import { fmtBytes, diskPct, diskBarColor } from './formatters.js'
 
 const TABLE_SIZE_COLUMNS = [
-  { id: 'table', label: 'Table', width: 220 },
+  {
+    id: 'table',
+    label: 'Table',
+    width: 220,
+    render: (row) => (row.schema ? `${row.schema}.${row.table}` : row.table),
+  },
   { id: 'size_bytes', label: 'Size', width: 120, render: (row) => fmtBytes(row.size_bytes) },
   { id: 'rows', label: 'Rows', width: 100, render: (row) => (
     row.rows >= 0 ? row.rows.toLocaleString() : '—'
@@ -48,7 +53,7 @@ export default function StoragePage({ toast }) {
     const counts = storage?.tables || {}
     return (storage?.table_sizes || []).map((row) => ({
       ...row,
-      rows: counts[row.table] ?? -1,
+      rows: row.rows ?? counts[row.table] ?? -1,
     }))
   }, [storage])
 
@@ -113,28 +118,31 @@ export default function StoragePage({ toast }) {
                   <div style={{ marginTop: '0.15rem', fontSize: '0.7rem', color: 'var(--text3)' }}>
                     {storage.archive_count ?? 0} archives in {storage.backup_dir}
                   </div>
+                  {growth?.bytes_per_day != null && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.35rem', marginBottom: 0 }}>
+                      Estimated growth from backup archives: ~{fmtBytes(growth.bytes_per_day)}/day
+                      {growth.sample_days ? ` (${growth.sample_days}d backup trend)` : ''}
+                    </p>
+                  )}
+                  {growth?.bytes_per_day == null && growth?.basis && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.35rem', marginBottom: 0 }}>
+                      Backup archive growth unavailable ({growth.basis.replace(/_/g, ' ')}).
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="admin-card" style={{ marginTop: '1rem' }}>
               <div className="admin-card-title">Table sizes</div>
-              {growth?.bytes_per_day != null && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.5rem' }}>
-                  Estimated growth: ~{fmtBytes(growth.bytes_per_day)}/day
-                  {growth.sample_days ? ` (from ${growth.sample_days}d backup trend)` : ''}
-                </p>
-              )}
-              {growth?.bytes_per_day == null && growth?.basis && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.5rem' }}>
-                  Growth estimate unavailable ({growth.basis.replace(/_/g, ' ')}).
-                </p>
-              )}
+              <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.5rem' }}>
+                Live relation sizes in the <code>app</code> and <code>intel</code> schemas (not leftover <code>public</code> tables).
+              </p>
               <AdminDataGrid
                 gridId="storage-table-sizes"
                 columns={TABLE_SIZE_COLUMNS}
                 rows={tableSizeRows}
-                rowKey={(row) => row.table}
+                rowKey={(row) => `${row.schema || ''}.${row.table}`}
                 emptyMessage="No table size data"
               />
             </div>

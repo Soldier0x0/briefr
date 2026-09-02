@@ -183,6 +183,7 @@ def _partition_stats(dir_path: str) -> dict[str, Any]:
 @router.get("/storage")
 async def get_storage(request: Request):
     from storage_metrics import (
+        count_table_rows,
         estimate_growth_bytes_per_day,
         fetch_table_sizes,
         read_host_disk_io,
@@ -193,13 +194,22 @@ async def get_storage(request: Request):
     db_size_bytes = 0
     try:
         counts: dict[str, int] = {}
+        table_sizes = await fetch_table_sizes(db)
+        for entry in table_sizes:
+            schema = str(entry.get("schema") or "")
+            table = str(entry.get("table") or "")
+            row_count = await count_table_rows(db, schema, table)
+            entry["rows"] = row_count
+            if table:
+                counts[table] = row_count
         for table in _STORAGE_TABLES:
+            if table in counts:
+                continue
             try:
                 rows = await db.execute_fetchall(f"SELECT COUNT(*) as cnt FROM {table}")
                 counts[table] = rows[0]["cnt"] if rows else 0
             except Exception:
                 counts[table] = -1
-        table_sizes = await fetch_table_sizes(db)
         try:
             rows = await db.execute_fetchall(
                 "SELECT pg_database_size(current_database()) as size"

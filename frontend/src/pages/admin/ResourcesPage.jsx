@@ -7,7 +7,7 @@ import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import { AdminChartSkeleton } from './shared/AdminSkeletons.jsx'
-import { fmtBytes, fmtIsoMono, diskBarColor } from './formatters.js'
+import { fmtBytes, fmtCountRatio, fmtIsoMono, diskBarColor } from './formatters.js'
 import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 
 const ResourceLineChart = lazy(() =>
@@ -184,18 +184,33 @@ function HostCapacityCard({ profile, live = false }) {
   )
 }
 
+function CountCapacityBar({ label, used, total, sub }) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
+  return (
+    <div className="admin-capacity-bar-wrap">
+      <div className="admin-capacity-bar-header">
+        <span>{label}</span>
+        <span className="mono">{fmtCountRatio(used, total)}</span>
+      </div>
+      <div className="disk-bar">
+        <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(pct)}`} style={{ width: `${pct}%` }} />
+      </div>
+      {sub && <p className="admin-capacity-bar-sub mono">{sub}</p>}
+    </div>
+  )
+}
+
 function PoolStatsCard({ poolStats }) {
   if (!poolStats?.size) return null
   const inUse = poolStats.in_use ?? 0
   const size = poolStats.max ?? poolStats.size
-  const pct = size > 0 ? Math.min(100, Math.round((inUse / size) * 100)) : 0
   return (
     <div className="admin-card admin-pool-stats">
       <div className="admin-card-title">
         Connection pool
         <HelpTip text="PostgreSQL asyncpg pool counters. SQLite dev mode has no pool." />
       </div>
-      <CapacityBar label="Connections in use" used={inUse} total={size} />
+      <CountCapacityBar label="Connections in use" used={inUse} total={size} />
       <p className="mono admin-host-meta">{inUse} in use · {poolStats.idle ?? 0} idle · max {size}</p>
     </div>
   )
