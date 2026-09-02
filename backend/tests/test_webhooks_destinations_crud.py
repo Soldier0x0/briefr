@@ -237,9 +237,11 @@ def test_delete_env_discord_succeeds_when_url_only_in_db_config(admin_client, mo
 
 def test_delete_env_discord_409_when_process_env_set(admin_client, monkeypatch):
     import settings as settings_mod
+    from database import get_db, get_webhook_destination_source
     from webhooks.destinations import load_env_destinations
 
-    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/token")
+    url = "https://discord.com/api/webhooks/1/token"
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
     monkeypatch.setattr(
         settings_mod,
         "PROCESS_ENV_KEYS",
@@ -255,8 +257,16 @@ def test_delete_env_discord_409_when_process_env_set(admin_client, monkeypatch):
     detail = deleted.json()["detail"]
     assert "DISCORD_WEBHOOK_URL" in detail
     assert "process environment" in detail
+    assert url not in detail
+    assert url not in deleted.text
 
-    listed = admin_client.get("/api/admin/webhooks/destinations")
-    assert any(row["id"] == "discord" for row in listed.json()["destinations"])
+    async def discord_row_source():
+        db = await get_db()
+        try:
+            return await get_webhook_destination_source(db, "discord")
+        finally:
+            await db.close()
+
+    assert run_db_test(discord_row_source()) is None
     env_ids = {dest.id for dest in load_env_destinations()}
     assert "discord" in env_ids

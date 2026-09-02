@@ -159,15 +159,19 @@ def env_bootstrap_process_conflict_message(destination_id: str) -> str | None:
         token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
         chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
         if token and chat_id:
-            return (
-                "unset `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the process environment"
-            )
-        return None
-    still = [key for key in keys if os.environ.get(key, "").strip()]
-    if not still:
-        return None
+            still = ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
+        else:
+            return None
+    else:
+        still = [key for key in keys if os.environ.get(key, "").strip()]
+        if not still:
+            return None
     names = ", ".join(f"`{key}`" for key in still)
-    return f"unset {names} in the process environment"
+    return (
+        f"app_settings keys and the destination row were cleared, but {names} "
+        "remain in the process environment so the card stays until those keys "
+        "are unset; after that it stays gone (no second delete required)."
+    )
 
 
 async def clear_env_bootstrap_config(destination_id: str) -> str | None:

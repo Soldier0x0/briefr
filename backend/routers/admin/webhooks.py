@@ -173,8 +173,6 @@ async def delete_webhook_destination_route(
         if not any(dest.id == destination_id for dest in await load_destinations()):
             raise HTTPException(404, f"Destination '{destination_id}' not found")
         conflict = await clear_env_bootstrap_config(destination_id)
-        if conflict:
-            raise HTTPException(409, conflict)
         db = await get_db()
         try:
             await db_delete(db, destination_id)
@@ -182,6 +180,8 @@ async def delete_webhook_destination_route(
         finally:
             await db.close()
         await audit(request, f"webhook.destination.delete.{destination_id}", destination_id)
+        if conflict:
+            raise HTTPException(409, conflict)
         return {"ok": True, "destination_id": destination_id}
 
     await sync_env_destinations_to_db()
