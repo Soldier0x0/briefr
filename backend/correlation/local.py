@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Any
 
-def stack_terms_list() -> list[str]:
-    from database import get_stack_terms
 
-    raw = get_stack_terms() or ""
-    return [t.strip().lower() for t in raw.split(",") if t.strip()]
+async def stack_terms_list(db: Any) -> list[str]:
+    """Admin My Stack product terms (after env migrate-once). Not live env."""
+    from matching.stack_assets import assets_to_terms
+    from preferences.repo import get_operator_stack_assets
+
+    assets = await get_operator_stack_assets(db)
+    return [t.strip().lower() for t in assets_to_terms(assets) if t.strip()]
 
 
 def cve_matches_stack(

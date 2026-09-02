@@ -316,7 +316,7 @@ async def _get_temporal_for_cve(db, cve_id: str) -> list[dict]:
     if not vendors:
         return []
 
-    terms = stack_terms_list()
+    terms = await stack_terms_list(db)
     on_stack = cve_matches_stack(cve_id, cve_row["description"] or "", products, terms)
     has_signal = bool(cve_row["is_kev"]) or bool(cve_row["has_poc"])
     if terms and not on_stack and not has_signal:
