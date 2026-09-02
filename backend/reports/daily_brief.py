@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
 from database import get_db, get_feed_cache
+from feeds.incident_news import _is_relevant_news_item
 from db.enrichment import filter_cves_matching_assets
 from db.software_catalog import lookup_catalog_titles
 from db.sync_state import get_sync_state_value, set_sync_state_value
@@ -471,7 +472,9 @@ async def _fetch_headlines(
     snapshot = await get_feed_cache(db, _SNAPSHOT_CACHE_KEY, _SNAPSHOT_MAX_AGE_HOURS)
     if not snapshot:
         return []
-    cards = snapshot.get("cards") if isinstance(snapshot, dict) else None
+    cards = snapshot.get("news") if isinstance(snapshot, dict) else None
+    if not isinstance(cards, list):
+        cards = snapshot.get("cards") if isinstance(snapshot, dict) else None
     if not isinstance(cards, list):
         return []
     scored: list[tuple[datetime, dict[str, str]]] = []
@@ -479,6 +482,8 @@ async def _fetch_headlines(
         if not isinstance(card, dict):
             continue
         if str(card.get("kind") or "").strip().lower() == "atlas":
+            continue
+        if not _is_relevant_news_item(card):
             continue
         published = _parse_aware_utc(card.get("publishedAt") or card.get("published_at"))
         if published is None:

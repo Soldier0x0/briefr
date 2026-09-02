@@ -153,3 +153,49 @@ def test_status_without_snapshot_is_stale(tmp_path, monkeypatch):
         assert isinstance(status.get("sources"), list)
 
     run_db_test(run())
+
+
+def test_get_incident_feed_drops_excluded_title_cards(tmp_path, monkeypatch):
+    _setup_db(tmp_path, monkeypatch, "feed_exclude_title.db")
+
+    async def run() -> None:
+        await init_db()
+        db = await case_study_feed.get_db()
+        try:
+            await case_study_feed.set_feed_cache(
+                db,
+                case_study_feed.SNAPSHOT_CACHE_KEY,
+                {
+                    "news": [
+                        {
+                            "id": "promo",
+                            "sourceId": "darkreading",
+                            "source": "Dark Reading",
+                            "title": "[Virtual Event] Building a Secure AI Strategy",
+                            "publishedAt": "2026-09-02T10:00:00+00:00",
+                            "kind": "news",
+                        },
+                        {
+                            "id": "real",
+                            "sourceId": "krebs",
+                            "source": "Krebs on Security",
+                            "title": "CISA adds VPN flaws to KEV",
+                            "publishedAt": "2026-09-02T11:00:00+00:00",
+                            "kind": "news",
+                        },
+                    ],
+                    "atlas": [],
+                    "errors": [],
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+        cards, _errors, _meta = await case_study_feed.get_incident_feed()
+        titles = [c.get("title") for c in cards]
+        assert "[Virtual Event] Building a Secure AI Strategy" not in titles
+        assert titles == ["CISA adds VPN flaws to KEV"]
+
+    run_db_test(run())

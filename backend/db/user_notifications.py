@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -158,6 +159,53 @@ async def insert_notification(
     return int(getattr(result, "rowcount", 0) or 0) > 0
 
 
+def _latest_scheduler_run(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    if isinstance(parsed, list):
+        latest = parsed[0] if parsed else {}
+        return latest if isinstance(latest, dict) else {}
+    if isinstance(parsed, dict):
+        return parsed
+    return {}
+
+
+async def recovered_job_ids_from_last_run(db: DbConnection) -> list[str]:
+    """Job ids whose latest scheduler last_run had_error is false."""
+    rows = await db.execute_fetchall(
+        "SELECT key, value FROM sync_state WHERE key LIKE 'scheduler.last_run.%'"
+    )
+    recovered: list[str] = []
+    for row in rows:
+        job_id = str(row["key"]).removeprefix("scheduler.last_run.")
+        if not job_id:
+            continue
+        latest = _latest_scheduler_run(row["value"])
+        if latest and not latest.get("had_error"):
+            recovered.append(job_id)
+    return recovered
+
+
+async def reconcile_recovered_job_error_notifications(db: DbConnection) -> int:
+    """Dismiss open job_error rows for jobs whose last run succeeded.
+
+    Matches daily-brief ops: Open Alerts / badge = undismissed job_error whose
+    job is currently failing. Recovered rows move to Cleared (not deleted).
+    """
+    total = 0
+    for job_id in await recovered_job_ids_from_last_run(db):
+        total += await dismiss_job_error_notifications(db, job_id)
+    return total
+
+
+def _scope_includes_operator(scope: str) -> bool:
+    return scope in (_SCOPE_OPERATOR, "all")
+
+
 async def list_notifications(
     db: DbConnection,
     *,
@@ -166,6 +214,10 @@ async def list_notifications(
     limit: int = 30,
     view: str = "inbox",
 ) -> list[dict[str, Any]]:
+    if _scope_includes_operator(scope):
+        dismissed = await reconcile_recovered_job_error_notifications(db)
+        if dismissed:
+            await db.commit()
     canonical = normalize_notification_view(view)
     pg = _is_postgres_connection(db)
     lim_n = max(1, min(limit, 100))
@@ -216,6 +268,10 @@ async def count_unread(
     user_id: int,
     scope: str,
 ) -> int:
+    if _scope_includes_operator(scope):
+        dismissed = await reconcile_recovered_job_error_notifications(db)
+        if dismissed:
+            await db.commit()
     pg = _is_postgres_connection(db)
     if scope == "all":
         scope_clause = ""

@@ -10,6 +10,7 @@ from typing import Any
 
 from database import get_atlas_case_studies, get_db, get_feed_cache, set_feed_cache
 from feeds.incident_news import (
+    _filter_news_items,
     extract_cve_ids,
     fetch_all_incident_news_parallel,
     fetch_rss_source,
@@ -46,12 +47,13 @@ def _ensure_news_cve_ids(card: dict[str, Any]) -> dict[str, Any]:
 
 
 def _prune_news_cards(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Drop RSS cards from removed sources (stale snapshot rows)."""
-    return [
+    """Drop RSS cards from removed sources or excluded titles (stale snapshot)."""
+    kept = [
         _ensure_news_cve_ids(c)
         for c in cards
         if isinstance(c, dict) and c.get("sourceId") in INCIDENT_RSS_SOURCE_IDS
     ]
+    return _filter_news_items(kept)
 
 
 def _card_mentions_cve(card: dict[str, Any], cve_key: str) -> bool:

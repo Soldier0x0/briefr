@@ -333,6 +333,11 @@ async def _get_all_scheduler_jobs() -> list[dict[str, Any]]:
     jobs = scheduler.get_jobs()
     db = await get_db()
     try:
+        from db.user_notifications import reconcile_recovered_job_error_notifications
+
+        dismissed = await reconcile_recovered_job_error_notifications(db)
+        if dismissed:
+            await db.commit()
         result = []
         for job in jobs:
             history = await _get_job_last_run(db, job.id)

@@ -1674,6 +1674,53 @@ def test_headlines_from_snapshot_in_window(db_env):
     assert brief.advisories == []
 
 
+def test_headlines_exclude_virtual_event_from_snapshot(db_env):
+    from database import get_db, set_feed_cache
+
+    end = datetime(2026, 8, 27, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+    snapshot = {
+        "news": [
+            {
+                "kind": "news",
+                "source": "Dark Reading",
+                "sourceId": "darkreading",
+                "title": "[Virtual Event] Building a Secure AI Strategy",
+                "url": "https://darkreading.example/event",
+                "publishedAt": "2026-08-27T12:00:00+00:00",
+            },
+            {
+                "kind": "news",
+                "source": "Krebs on Security",
+                "sourceId": "krebs",
+                "title": "CISA adds VPN flaws to KEV",
+                "url": "https://kreb.example/a",
+                "publishedAt": "2026-08-27T10:00:00+00:00",
+            },
+        ]
+    }
+
+    async def _go():
+        db = await get_db()
+        try:
+            await set_feed_cache(db, "incident_feed:snapshot", snapshot)
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_go())
+    titles = [row["title"] for row in brief.headlines]
+    assert not any("Virtual Event" in title for title in titles)
+    assert titles == ["CISA adds VPN flaws to KEV"]
+
+
 def test_embed_uses_orange_and_human_fields():
     import json
     from reports.daily_brief import DISCORD_EMBED_COLOR, format_daily_brief_embed

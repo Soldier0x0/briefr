@@ -431,6 +431,86 @@ def test_dismiss_job_errors_on_success_leaves_cleared_row(client):
     assert row_count == 1
 
 
+def test_inbox_hides_job_error_when_last_run_succeeded(client):
+    import json
+
+    from database import set_sync_state_value
+
+    uid = _user_id("admin1")
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await insert_notification(
+                db,
+                user_id=uid,
+                scope="operator",
+                category="job_error",
+                severity="critical",
+                title="Job failed: kev_metadata_sync",
+                body="timeout",
+                entity_type="job",
+                entity_id="kev_metadata_sync",
+                dedupe_key="job:kev_metadata_sync:stale-open",
+            )
+            await insert_notification(
+                db,
+                user_id=uid,
+                scope="operator",
+                category="job_error",
+                severity="critical",
+                title="Job failed: nvd_incremental_sync",
+                body="nvd 503",
+                entity_type="job",
+                entity_id="nvd_incremental_sync",
+                dedupe_key="job:nvd_incremental_sync:still-failing",
+            )
+            await set_sync_state_value(
+                db,
+                "scheduler.last_run.kev_metadata_sync",
+                json.dumps(
+                    [
+                        {
+                            "had_error": False,
+                            "error_message": "",
+                            "started_at": "2026-09-02T10:00:00+00:00",
+                        }
+                    ]
+                ),
+            )
+            await set_sync_state_value(
+                db,
+                "scheduler.last_run.nvd_incremental_sync",
+                json.dumps(
+                    [
+                        {
+                            "had_error": True,
+                            "error_message": "nvd 503",
+                            "started_at": "2026-09-02T10:00:00+00:00",
+                        }
+                    ]
+                ),
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+    _login(client, "admin1")
+    inbox = client.get("/api/me/notifications?scope=operator&view=inbox").json()
+    ids = [row["entity_id"] for row in inbox["notifications"]]
+    assert "kev_metadata_sync" not in ids
+    assert ids == ["nvd_incremental_sync"]
+    assert inbox["unread_count"] == 1
+    badge = client.get("/api/me/notifications/unread-count?scope=operator").json()
+    assert badge["unread_count"] == 1
+    cleared = client.get("/api/me/notifications?scope=operator&view=cleared").json()
+    assert [row["entity_id"] for row in cleared["notifications"]] == [
+        "kev_metadata_sync"
+    ]
+    assert cleared["notifications"][0]["dismissed_at"]
+
+
 def test_muted_category_does_not_insert(client):
     from notifications.emit import emit_watchlist_notification
 
