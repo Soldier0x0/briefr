@@ -46,6 +46,9 @@ CACHE_HOURS = 0.5  # 30 minutes per source
 # Editorial/promotional RSS items that are not security news (matched against title).
 EXCLUDED_NEWS_TITLE_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"name that toon", re.I),
+    re.compile(r"\[virtual event\]", re.I),
+    re.compile(r"\bwebinar\b", re.I),
+    re.compile(r"\bregister now\b", re.I),
 ]
 
 
@@ -175,6 +178,8 @@ def parse_rss_xml(xml_text: str, source: dict) -> list[dict]:
         techniques, tags = _extract_meta(title, description)
         # Extract CVEs from full text before truncating the card description.
         cve_ids = extract_cve_ids_for_card(title, description)
+        if description == title:
+            description = ""
         card = {
             "id": url,
             "source": source["label"],
