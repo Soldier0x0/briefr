@@ -22,6 +22,8 @@ EPSS_BACKFILL_DONE_KEY = "epss_backfill_done"
 
 ATLAS_UPSTREAM_VERSION_KEY = "atlas_upstream_version"
 
+STACK_ENV_MIGRATED_KEY = "stack_terms_env_migrated"
+
 _SELECT_VALUE_SQLITE = "SELECT value FROM sync_state WHERE key = ?"
 
 _UPSERT_SQLITE = """
@@ -112,5 +114,5 @@ async def resolve_nvd_watermark(db: DbConnection, *, min_cves: int = 10) -> str 
 
 
 def get_stack_terms() -> str:
-    """Wallboard tiles plus detection-backlog fallback when My Stack is empty. Not used for KEV alerts."""
+    """Raw ``BRIEFR_STACK_TERMS`` env. Matching uses admin My Stack after one-time migrate."""
     return os.environ.get("BRIEFR_STACK_TERMS", "").strip()

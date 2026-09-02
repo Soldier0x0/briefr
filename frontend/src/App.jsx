@@ -31,7 +31,7 @@ import { formatAbsolute, getTimezone } from './utils/timezone.js'
 import { createCveDrawerController } from './utils/openCveDrawer.js'
 import { lazyWithReload } from './utils/lazyWithReload.js'
 import { ingestLogUrl } from './utils/adminLinks.js'
-import { getSavedStack, filtersPatchChanged } from './utils/cveFilters.js'
+import { filtersPatchChanged } from './utils/cveFilters.js'
 import { hasTutorialSeen, markTutorialSeen } from './utils/tutorial.js'
 import { useInvestigation } from './context/InvestigationContext.jsx'
 import useVisibilityAwareInterval from './hooks/useVisibilityAwareInterval.js'
@@ -472,19 +472,6 @@ export default function App() {
       window.removeEventListener('briefr-profile-change', onRefreshStats)
     }
   }, [loadStats])
-
-  useEffect(() => {
-    const existing = getSavedStack()
-    if (existing) {
-      setFilters((prev) => (prev.stack ? prev : { ...prev, stack: existing }))
-    }
-    function onStackLoaded(e) {
-      const terms = e.detail?.stack_terms || ''
-      setFilters((prev) => (prev.stack ? prev : { ...prev, stack: terms }))
-    }
-    window.addEventListener('briefr-stack-loaded', onStackLoaded)
-    return () => window.removeEventListener('briefr-stack-loaded', onStackLoaded)
-  }, [])
 
   useEffect(() => {
     loadHealth()

@@ -204,19 +204,24 @@ async def upsert_user_stack(
 
 
 async def get_effective_stack_terms(db: Any) -> str:
-    """Operator/wallboard stack keywords: env BRIEFR_STACK_TERMS only.
+    """Admin My Stack product terms for wallboard / backlog keyword filters.
 
-    User My Stack is not a fallback. Alerts use ``get_alert_stack_assets``.
+    ``BRIEFR_STACK_TERMS`` is copied once into empty admin My Stack then ignored.
     """
-    from db.sync_state import get_stack_terms
+    from matching.stack_assets import assets_to_terms
 
-    return (get_stack_terms() or "").strip()
+    await migrate_env_stack_terms_once(db)
+    assets = await get_alert_stack_assets(db)
+    if assets:
+        return ",".join(assets_to_terms(assets))
+    return ""
 
 
 async def get_alert_stack_assets(db: Any) -> list[dict[str, str]]:
     """Admin My Stack as CPE assets (profile preferred, else keyword products)."""
     from matching.stack_assets import profile_to_assets, terms_to_assets
 
+    await migrate_env_stack_terms_once(db)
     rows = await db.execute_fetchall(
         """
         SELECT p.profile_json, p.stack_terms
@@ -245,17 +250,43 @@ async def get_alert_stack_assets(db: Any) -> list[dict[str, str]]:
 
 
 async def get_operator_stack_assets(db: Any) -> list[dict[str, str]]:
-    """Admin My Stack first; else env BRIEFR_STACK_TERMS as keyword products.
+    """Admin My Stack only (after one-time env migrate). Used by detection backlog."""
+    await migrate_env_stack_terms_once(db)
+    return await get_alert_stack_assets(db)
 
-    Used by detection backlog / operator jobs. User alerts use
-    ``get_alert_stack_assets`` only (env is not a fallback).
-    """
-    from matching.stack_assets import terms_to_assets
 
-    assets = await get_alert_stack_assets(db)
-    if assets:
-        return assets
-    return terms_to_assets(await get_effective_stack_terms(db))
+async def migrate_env_stack_terms_once(db: Any) -> None:
+    """If env is set and the latest admin My Stack is empty, copy then stop matching env."""
+    from db.sync_state import (
+        STACK_ENV_MIGRATED_KEY,
+        get_stack_terms,
+        get_sync_state_value,
+        set_sync_state_value,
+    )
+
+    if await get_sync_state_value(db, STACK_ENV_MIGRATED_KEY):
+        return
+    env = (get_stack_terms() or "").strip()
+    if not env:
+        return
+    rows = await db.execute_fetchall(
+        """
+        SELECT u.id AS user_id, p.stack_terms
+        FROM users u
+        LEFT JOIN user_preferences p ON p.user_id = u.id
+        WHERE u.role = 'admin' AND u.is_active = 1
+        ORDER BY COALESCE(p.updated_at, '') DESC, u.id ASC
+        LIMIT 1
+        """
+    )
+    if not rows:
+        return
+    admin_id = rows[0]["user_id"]
+    existing = (rows[0]["stack_terms"] or "").strip()
+    if not existing:
+        await upsert_user_stack(db, admin_id, env)
+    await set_sync_state_value(db, STACK_ENV_MIGRATED_KEY, "1")
+    await db.commit()
 
 
 async def get_user_preferences(db: Any, user_id: int) -> dict:

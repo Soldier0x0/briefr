@@ -301,7 +301,7 @@ CONFIG_SCHEMA: tuple[ConfigField, ...] = (
 
     # ── Application behaviour ───────────────────────────────────────────────
     ConfigField("BRIEFR_STACK_TERMS", "app", "str",
-                help_text="Comma-separated products for wallboard keyword tiles, and for detection-backlog matching when admin My Stack is empty. Not used for KEV-on-stack alerts."),
+                help_text="Legacy comma-separated products. If set while admin My Stack is empty, copied once into that admin My Stack then ignored for matching. Wallboard and detection-backlog use My Stack only. Not used for KEV-on-stack alerts."),
     ConfigField("LOG_FORMAT", "app", "enum", enum_values=("json", "plain"), restart_required=True,
                 help_text="Structured JSON logs (journald-friendly) or plain text."),
     ConfigField("RATE_LIMIT_ENABLED", "app", "bool", restart_required=True,
