@@ -15,15 +15,15 @@ Webhook channels are not the BRIEFR UI. **Discord `daily_brief` uses one classic
 
 **Masthead** and **footer** always render. **Summary** and **At a glance** always render. Coverage / severity mix / products render when at least one CVE was published. Headlines (RSS snapshot, max 3) and Advisories (publications, max 2) render only when rows exist. Other lists render only when they have rows. Quiet windows still send At a glance zeros plus Summary `Quiet window.`
 
-Morning vs end of day: same sections; title is **Morning briefing** or **End of day**. Author/product word remains **BRIEFR**. Discord does not use `//` PDF titles.
+Morning vs end of day: same At a glance / KEV / My Stack / ops grammar; titles are **Morning report** and **EOD report**. Author remains **BRIEFR**. Discord does not use `//` PDF titles. Morning omits **Published by product** (EOD-first leaderboard; also dropped first if a standup embed still exceeds Discord 6000/25).
 
 | Order | Section id | Title | Body |
 |-------|------------|-------|------|
 | 0 | `masthead` | `BRIEFR` + slot title | Window start → end, IANA tz |
-| 1 | `headline` | **Summary** | 1–3 short sentences. Template or optional LLM. Never invent CVEs. |
+| 1 | `headline` | **Summary** | 2–3 short sentences (max three). Template or optional LLM. Never invent CVEs or vendor brands. |
 | 2 | `counts` | **At a glance** | Fixed keys, one per line, integer values |
 | 3 | `coverage` | **Coverage** | Named vs Unmapped counts + CPE snapshot copy (when published > 0) |
-| 4 | `products` | **Published by product** | Top 8 primary-product clusters |
+| 4 | `products` | **Published by product** | EOD: top 8 primary-product clusters. Omitted on morning (`standup`). |
 | 5 | `headlines` | **Headlines** | RSS snapshot cards in the window (max 3; `kind != atlas`) |
 | 6 | `advisories` | **Advisories** | Publications in the window (max 2; prefer `cisa-news`) |
 | 7 | `kev` | **CISA KEV** | New KEV in window (max 8 lines) |
@@ -50,7 +50,9 @@ Instance problems: {n}
 
 Internal cluster key remains `unanalyzed`. Display label is **Unmapped**. Empty CPE and empty `affected_products` land in that bucket. Unmapped must not be the Summary “led volume” product. If Unmapped ≥ 50% of published, Summary includes `{unmapped} of {published} published CVEs have no product mapped yet (Unmapped).`
 
-Severity mix is spelled out (Critical / High / Medium / Low), not `C · H · M · L`.
+Product labels: `software_catalog.title` for the cluster `vendor`+`product` when present; else `display_name_for(vendor, product)`; else the raw product key (underscores to spaces). Do not invent brands (no guessed “Dell EMC …” prefix).
+
+Severity mix is **one** Discord field (not four inline fields): `Critical n · High n · Medium n · Low n`. Stay on **one** embed unless the 6000-character / 25-field limits force overflow drops.
 
 ### List line grammar
 
@@ -76,7 +78,7 @@ No nested bullets. No tables. No JSON inside Discord/Telegram text. Telegram HTM
 
 ## 3. Overflow
 
-**Discord embeds:** if over 6000 characters or 25 fields, drop fields in order `ioc` → `watchlist` → `stack` → `kev` → `advisories` → `headlines`, then trim product lines to 5. Never drop coverage, severity mix, at a glance, or footer. Do not apply the 2000 `content` budget to Discord `daily_brief` embeds. If Discord rejects the embed (HTTP 400), retry once with plain `content` truncated to 2000.
+**Discord embeds:** if over 6000 characters or 25 fields, drop fields in order `ioc` → `watchlist` → `stack` → `kev` → `advisories` → `headlines` (standup also drops `products` first when that field is present), then trim product lines to 5. Never drop coverage, severity mix, at a glance, or footer. Do not apply the 2000 `content` budget to Discord `daily_brief` embeds. If Discord rejects the embed (HTTP 400), retry once with plain `content` truncated to 2000.
 
 **Telegram / generic / fallback text:** assemble against 2000 (plain) or ~3500 (HTML) then engine-truncate. Drop list sections `ops` → `ioc` → `watchlist` → `stack` → `kev` → `advisories` → `headlines`. Never drop masthead, summary, at a glance, products, or footer.
 
@@ -87,7 +89,7 @@ Machine consumers should read the structured `brief` object for the bounded item
 ### Quiet standup
 
 ```text
-BRIEFR Morning briefing
+BRIEFR Morning report
 2026-08-25 18:00 → 2026-08-26 07:00 (Asia/Kolkata)
 
 Summary
@@ -107,11 +109,11 @@ BRIEFR — generated 2026-08-26 07:00 Asia/Kolkata | slot=standup | facts=local 
 ### Busy end-of-day (abridged)
 
 ```text
-BRIEFR End of day
+BRIEFR EOD report
 2026-08-25 18:00 → 2026-08-26 18:00 (Asia/Kolkata)
 
 Summary
-6 published. nginx led volume. 2 new KEV. 1 stack match. Watchlist: 1.
+6 published. nginx led volume. 2 new KEV.
 
 At a glance
 New on CISA KEV: 2

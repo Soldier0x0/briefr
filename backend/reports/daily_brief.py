@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
 from database import get_db, get_feed_cache
 from db.enrichment import filter_cves_matching_assets
+from db.software_catalog import lookup_catalog_titles
 from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
@@ -136,7 +137,7 @@ def _kev_date_predicate(start_date: str, end_date: str, p1: str, p2: str) -> str
 
 
 def slot_title(slot: DailyBriefSlot) -> str:
-    return "End of day" if slot == "eod" else "Morning briefing"
+    return "EOD report" if slot == "eod" else "Morning report"
 
 
 def _job_display_name(job_id: str) -> str:
@@ -200,7 +201,7 @@ def template_headline(brief: DailyBrief) -> str:
     published = int(brief.market.get("published", 0))
     if published == 0 and all(c[k] == 0 for k in COUNT_KEYS):
         return "Quiet window."
-    parts = []
+    parts: list[str] = []
     if published:
         parts.append(f"{published} published.")
         products = brief.market.get("products") or []
@@ -235,7 +236,7 @@ def template_headline(brief: DailyBrief) -> str:
     ops_phrase = _ops_headline_phrase(brief)
     if ops_phrase:
         parts.append(ops_phrase)
-    return " ".join(parts) or "Quiet window."
+    return " ".join(parts[:3]) or "Quiet window."
 
 
 async def apply_headline(brief: DailyBrief, *, llm_enabled: bool) -> DailyBrief:
@@ -334,7 +335,11 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
                 f"New Critical or High: {brief.counts['critical_high_new']}",
                 f"Instance problems: {brief.counts['ops_issues']}",
             ],
-            "market": format_market_section(brief.market),
+            "market": (
+                []
+                if brief.slot == "standup"
+                else format_market_section(brief.market)
+            ),
             "headlines": ["Headlines"] + [_link_line(r) for r in brief.headlines[:_HEADLINE_LIMIT]],
             "advisories": ["Advisories"] + [_link_line(r) for r in brief.advisories[:_ADVISORY_LIMIT]],
             "kev": ["CISA KEV"] + [_line_cve(r) for r in brief.kev[:8]],
@@ -602,6 +607,15 @@ def _glance_text(brief: DailyBrief) -> str:
     )
 
 
+def _severity_mix_text(market: dict) -> str:
+    return (
+        f"Critical {market.get('critical') or 0} · "
+        f"High {market.get('high') or 0} · "
+        f"Medium {market.get('medium') or 0} · "
+        f"Low {market.get('low') or 0}"
+    )
+
+
 def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
     summary = brief.headline or "Quiet window."
     description = (
@@ -620,13 +634,11 @@ def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
         field_ids.append(fid)
 
     if published > 0:
-        add("critical", _field("Critical", str(brief.market.get("critical") or 0), inline=True))
-        add("high", _field("High", str(brief.market.get("high") or 0), inline=True))
-        add("medium", _field("Medium", str(brief.market.get("medium") or 0), inline=True))
-        add("low", _field("Low", str(brief.market.get("low") or 0), inline=True))
+        add("severity", _field("Severity mix", _severity_mix_text(brief.market)))
         add("coverage", _field("Coverage", "\n".join(coverage_lines(brief.market))))
     add("glance", _field("At a glance", _glance_text(brief)))
-    if published > 0:
+    include_products = published > 0 and brief.slot != "standup"
+    if include_products:
         product_lines = [_product_line(p) for p in _products_for_display(brief.market)]
         add("products", _field("Published by product", "\n".join(product_lines)))
     if brief.headlines:
@@ -676,7 +688,10 @@ def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
     def over_limit() -> bool:
         return len(embed["fields"]) > 25 or _embed_char_count(embed) > 6000
 
-    for drop_id in EMBED_DROP_ORDER:
+    embed_drop_order = (
+        ("products", *EMBED_DROP_ORDER) if brief.slot == "standup" else EMBED_DROP_ORDER
+    )
+    for drop_id in embed_drop_order:
         if not over_limit():
             break
         kept_fields = []
@@ -724,16 +739,12 @@ def format_daily_brief_html(brief: DailyBrief) -> str:
                 [
                     "",
                     "<b>Severity mix</b>",
-                    esc(
-                        f"Critical {brief.market.get('critical') or 0} · "
-                        f"High {brief.market.get('high') or 0} · "
-                        f"Medium {brief.market.get('medium') or 0} · "
-                        f"Low {brief.market.get('low') or 0}"
-                    ),
+                    esc(_severity_mix_text(brief.market)),
                 ],
             )
         )
-        optional.append(("products", []))
+        if brief.slot != "standup":
+            optional.append(("products", []))
     if brief.headlines:
         optional.append(
             ("headlines", ["", "<b>Headlines</b>", esc("\n".join(_link_line(r) for r in brief.headlines))])
@@ -1320,6 +1331,15 @@ async def collect_daily_brief(
         "ops_issues": ops_total,
     }
     market = cluster_published(market_rows)
+    catalog_titles = await lookup_catalog_titles(
+        db,
+        [
+            (str(product.get("vendor") or ""), str(product.get("product") or ""))
+            for product in market.get("products") or []
+        ],
+    )
+    if catalog_titles:
+        market = cluster_published(market_rows, catalog_titles=catalog_titles)
     market.update(market_totals)
     headlines = await _fetch_headlines(db, window_start_utc, window_end_utc)
     advisories = await _fetch_advisories(db, start_bound, end_bound)

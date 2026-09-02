@@ -16,8 +16,11 @@ from reports.daily_brief import (
     apply_headline,
     brief_to_payload,
     collect_daily_brief,
+    format_daily_brief_embed,
+    format_daily_brief_html,
     format_daily_brief_text,
     run_daily_brief_slot,
+    slot_title,
     template_headline,
 )
 from reports.market_clusters import cluster_published
@@ -1711,8 +1714,16 @@ def test_embed_uses_orange_and_human_fields():
     assert len(embeds) == 1
     emb = embeds[0]
     assert emb["color"] == DISCORD_EMBED_COLOR == 0xE85533
-    assert emb["title"] == "End of day"
+    assert emb["title"] == "EOD report"
     names = [field["name"] for field in emb["fields"]]
+    assert names.count("Critical") == 0
+    assert names.count("High") == 0
+    assert "Severity mix" in names
+    assert sum(1 for field in emb["fields"] if field["name"] == "Severity mix") == 1
+    mix = next(field for field in emb["fields"] if field["name"] == "Severity mix")
+    assert mix["value"] == "Critical 1 · High 0 · Medium 0 · Low 1"
+    assert mix["inline"] is False
+    assert "Published by product" in names
     assert "At a glance" in names
     assert "Coverage" in names
     assert "Headlines" in names
@@ -1745,7 +1756,8 @@ def test_html_escapes_headline_title():
     html = format_daily_brief_html(brief)
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
-    assert "Morning briefing" in html
+    assert "Morning report" in html
+    assert "Published by product" not in html
 
 
 def test_html_overflow_drops_sections_without_slicing_entities():
@@ -1796,4 +1808,148 @@ def test_html_overflow_drops_sections_without_slicing_entities():
         chunk = leftover[idx : idx + 5]
         assert chunk.startswith("&amp;") or chunk.startswith("&lt;") or chunk.startswith("&gt;")
         leftover = leftover[idx + 1 :]
+
+
+def test_slot_titles_are_human_reports():
+    assert slot_title("eod") == "EOD report"
+    assert slot_title("standup") == "Morning report"
+
+
+def test_template_headline_caps_at_three_sentences():
+    counts = {key: 0 for key in COUNT_KEYS}
+    counts.update(
+        {
+            "kev_new": 2,
+            "stack_matches": 3,
+            "watchlist": 1,
+            "ioc_hits": 4,
+            "ops_issues": 1,
+        }
+    )
+    rows = [{"severity": "MEDIUM", "cpe_matches": "", "affected_products": ""}] * 6
+    rows.append(
+        {"severity": "CRITICAL", "cpe_matches": '[{"product":"gitea"}]', "affected_products": ""}
+    )
+    brief = DailyBrief(
+        slot="eod",
+        tz_name="UTC",
+        window_start_local="a",
+        window_end_local="b",
+        generated_local="c",
+        headline="",
+        lede_source="template",
+        counts=counts,
+        kev=[],
+        stack=[],
+        watchlist=[],
+        ioc=[],
+        ops=[{"id": "nvd_incremental_sync", "reason": "fail", "error_class": "job_error"}],
+        market=cluster_published(rows),
+    )
+    headline = template_headline(brief)
+    sentences = [part.strip() for part in headline.split(".") if part.strip()]
+    assert 1 <= len(sentences) <= 3
+    assert "led volume" in headline or "published" in headline
+
+
+def test_standup_embed_omits_products_and_keeps_one_severity_field():
+    market = cluster_published(
+        [
+            {"severity": "CRITICAL", "cpe_matches": '[{"product":"gitea"}]', "affected_products": ""},
+            {"severity": "LOW", "cpe_matches": "", "affected_products": ""},
+        ]
+    )
+    brief = DailyBrief(
+        slot="standup",
+        tz_name="UTC",
+        window_start_local="2026-08-26 06:00",
+        window_end_local="2026-08-26 18:00",
+        generated_local="2026-08-26 18:00",
+        headline="2 published. gitea led volume.",
+        lede_source="template",
+        counts={key: 0 for key in COUNT_KEYS} | {"kev_new": 1, "stack_matches": 1, "ops_issues": 1},
+        kev=[{"cve_id": "CVE-2026-1111", "reason": "added to KEV", "severity": "HIGH"}],
+        stack=[{"cve_id": "CVE-2026-1111", "reason": "CPE match", "severity": "HIGH"}],
+        watchlist=[],
+        ioc=[],
+        ops=[{"id": "kev_metadata_sync", "reason": "stale", "error_class": "job_error"}],
+        market=market,
+    )
+    embeds = format_daily_brief_embed(brief)
+    assert len(embeds) == 1
+    names = [field["name"] for field in embeds[0]["fields"]]
+    assert embeds[0]["title"] == "Morning report"
+    assert embeds[0]["author"]["name"] == "BRIEFR"
+    assert "Published by product" not in names
+    assert names.count("Severity mix") == 1
+    assert "At a glance" in names
+    assert "My Stack" in names
+    assert "CISA KEV" in names
+    assert "Instance problems" in names
+    html = format_daily_brief_html(brief)
+    assert "Published by product" not in html
+    text = format_daily_brief_text(brief, limit=2000)
+    assert "Products" not in text
+
+
+def test_collect_uses_catalog_title_not_invented_vendor(db_env):
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO software_catalog (
+                    cpe_uri, vendor, product, version, display_name, category, title
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "cpe:2.3:a:dell:unity:1.0:*:*:*:*:*:*:*",
+                    "dell",
+                    "unity",
+                    "1.0",
+                    "dell unity",
+                    "other",
+                    "Dell Unity",
+                ),
+            )
+            await db.execute(
+                """
+                INSERT INTO cves (
+                    cve_id, description, affected_products, mitre_technique,
+                    severity, cvss_score, epss_score, is_kev, published, cpe_matches
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "CVE-2026-9001",
+                    "unity",
+                    "[]",
+                    "",
+                    "HIGH",
+                    0,
+                    0,
+                    0,
+                    "2026-08-26T12:00:00.000",
+                    '[{"vendor":"dell","product":"unity"}]',
+                ),
+            )
+            await db.commit()
+            return await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    labels = [product["label"] for product in brief.market["products"]]
+    assert "Dell Unity" in labels
+    assert not any("Dell EMC" in label for label in labels)
+    assert "Dell Unity led volume." in template_headline(brief)
+
 

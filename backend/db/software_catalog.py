@@ -262,3 +262,49 @@ async def suggest_software(
             }
         )
     return out
+
+
+async def lookup_catalog_titles(
+    db: DbConnection,
+    pairs: list[tuple[str, str]],
+) -> dict[tuple[str, str], str]:
+    """Return catalog `title` for each (vendor, product). Empty titles omitted."""
+    cleaned: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for vendor, product in pairs:
+        vend = (vendor or "").strip().lower()
+        prod = (product or "").strip().lower()
+        if not vend or not prod or (vend, prod) in seen:
+            continue
+        seen.add((vend, prod))
+        cleaned.append((vend, prod))
+    if not cleaned:
+        return {}
+
+    clauses: list[str] = []
+    params: list[Any] = []
+    pg = is_postgres()
+    for vendor, product in cleaned:
+        if pg:
+            i = len(params)
+            clauses.append(f"(lower(vendor) = ${i + 1} AND lower(product) = ${i + 2})")
+        else:
+            clauses.append("(lower(vendor) = ? AND lower(product) = ?)")
+        params.extend([vendor, product])
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT lower(vendor) AS vendor, lower(product) AS product,
+               MAX(NULLIF(TRIM(title), '')) AS title
+        FROM software_catalog
+        WHERE {' OR '.join(clauses)}
+        GROUP BY lower(vendor), lower(product)
+        """,
+        tuple(params),
+    )
+    out: dict[tuple[str, str], str] = {}
+    for row in rows or []:
+        title = (row["title"] or "").strip()
+        if not title:
+            continue
+        out[(str(row["vendor"]), str(row["product"]))] = title[:200]
+    return out
