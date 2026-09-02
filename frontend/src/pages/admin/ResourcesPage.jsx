@@ -542,22 +542,31 @@ export default function ResourcesPage({ toast, active = true }) {
               </div>
             )}
 
-            <HostCapacityCard profile={hostProfile} live={Boolean(liveHostProfile)} />
-            <PoolStatsCard poolStats={payload?.pool_stats} />
+            <div className="admin-two-col">
+              <HostCapacityCard profile={hostProfile} live={Boolean(liveHostProfile)} />
+              <PoolStatsCard poolStats={payload?.pool_stats} />
+            </div>
             <EfficiencyPanel report={efficiency} onApplyConfig={applyConfig} />
 
-            {chartSections.map(section => (
-              <div className="admin-card admin-resources-chart-card" key={section.id}>
-                {summaryCards(summary, section.field, section.label, section.tip)}
-                <ResourceChartSection
-                  series={series}
-                  fields={section.fields}
-                  labels={section.labels}
-                  tableTitle={section.label}
-                  hostProfile={hostProfile}
-                />
-              </div>
-            ))}
+            {Array.from({ length: Math.ceil(chartSections.length / 2) }, (_, rowIdx) => {
+              const pair = chartSections.slice(rowIdx * 2, rowIdx * 2 + 2)
+              return (
+                <div className="admin-two-col" key={pair.map(s => s.id).join('-')}>
+                  {pair.map(section => (
+                    <div className="admin-card admin-resources-chart-card" key={section.id}>
+                      {summaryCards(summary, section.field, section.label, section.tip)}
+                      <ResourceChartSection
+                        series={series}
+                        fields={section.fields}
+                        labels={section.labels}
+                        tableTitle={section.label}
+                        hostProfile={hostProfile}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
 
             <div className="admin-card">
               <div className="admin-card-title">System context</div>

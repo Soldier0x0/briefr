@@ -3644,6 +3644,11 @@
   margin-bottom: 1rem;
 }
 
+/* Two-col owns vertical rhythm; cards inside must not stack extra margin. */
+.admin-resources-page .admin-two-col > .admin-card {
+  margin-bottom: 0;
+}
+
 .admin-capacity-bar-wrap {
   margin-bottom: 0.75rem;
 }
