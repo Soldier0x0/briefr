@@ -156,13 +156,33 @@ async def delete_webhook_destination_route(
     confirm_text: str = Query(default=""),
 ):
     from database import delete_webhook_destination as db_delete, get_webhook_destination_source
-    from webhooks.destinations import RESERVED_ENV_IDS, load_destinations, sync_env_destinations_to_db
+    from webhooks.destinations import (
+        RESERVED_ENV_IDS,
+        clear_env_bootstrap_config,
+        load_destinations,
+        sync_env_destinations_to_db,
+    )
+
+    confirm_text = confirm_text or ""
+    try:
+        require_confirm("webhook.destination.delete", confirm_text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     if destination_id in RESERVED_ENV_IDS:
-        raise HTTPException(
-            400,
-            "env bootstrap destinations cannot be deleted; disable them instead",
-        )
+        if not any(dest.id == destination_id for dest in await load_destinations()):
+            raise HTTPException(404, f"Destination '{destination_id}' not found")
+        conflict = await clear_env_bootstrap_config(destination_id)
+        if conflict:
+            raise HTTPException(409, conflict)
+        db = await get_db()
+        try:
+            await db_delete(db, destination_id)
+            await db.commit()
+        finally:
+            await db.close()
+        await audit(request, f"webhook.destination.delete.{destination_id}", destination_id)
+        return {"ok": True, "destination_id": destination_id}
 
     await sync_env_destinations_to_db()
     if not any(dest.id == destination_id for dest in await load_destinations()):
@@ -178,11 +198,6 @@ async def delete_webhook_destination_route(
                 400,
                 "only database-backed destinations can be deleted; disable env destinations instead",
             )
-        confirm_text = confirm_text or ""
-        try:
-            require_confirm("webhook.destination.delete", confirm_text)
-        except ValueError as exc:
-            raise HTTPException(400, str(exc)) from exc
         deleted = await db_delete(db, destination_id)
         if not deleted:
             raise HTTPException(404, f"Destination '{destination_id}' not found")

@@ -173,16 +173,14 @@ export default function WebhookDestinationCard({
             Config
           </button>
         )}
-        {dest.source === 'db' && (
-          <button
-            type="button"
-            className="admin-btn admin-btn-ghost"
-            style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem', color: 'var(--red)' }}
-            onClick={onDelete}
-          >
-            Delete
-          </button>
-        )}
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost"
+          style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem', color: 'var(--danger)' }}
+          onClick={onDelete}
+        >
+          Delete
+        </button>
       </div>
     </article>
   )
