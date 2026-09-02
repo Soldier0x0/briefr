@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import _postgres_is_live
+
 
 
 @pytest.fixture
@@ -171,6 +173,10 @@ def test_resources_reuses_held_connection(admin_client, monkeypatch):
     assert calls["n"] == 1
 
 
+@pytest.mark.skipif(
+    not _postgres_is_live(),
+    reason="requires live Postgres (pg_class app/intel table sizes)",
+)
 def test_fetch_table_sizes_includes_app_or_intel():
     from database import get_db
     from storage_metrics import fetch_table_sizes
@@ -199,6 +205,10 @@ def test_fetch_table_sizes_includes_app_or_intel():
     run_db_test(_run())
 
 
+@pytest.mark.skipif(
+    not _postgres_is_live(),
+    reason="requires live Postgres (pg_class app/intel table sizes and COUNT)",
+)
 def test_storage_table_sizes_include_row_counts(admin_client):
     resp = admin_client.get("/api/admin/storage")
     assert resp.status_code == 200
