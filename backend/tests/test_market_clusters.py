@@ -104,8 +104,6 @@ def test_format_omits_section_when_empty():
 
 
 def test_catalog_title_wins_over_display_name():
-    from reports.market_clusters import product_display_label
-
     rows = [
         {
             "severity": "HIGH",
