@@ -210,6 +210,208 @@ def test_notification_sections_collect_on_sqlite(db_env):
     assert "Scheduler job failed: NVD Incremental Sync" in text
 
 
+async def _insert_job_error_rows(db, *, job_id: str, count: int, created_at: str):
+    rows = []
+    for i in range(count):
+        rows.append(
+            (
+                1,
+                "operator",
+                "job_error",
+                "critical",
+                f"Job failed: {job_id}",
+                f"KEV request failed {i}",
+                "job",
+                job_id,
+                f"job:{job_id}:fail-{i}",
+                created_at,
+            )
+        )
+    await db.executemany(
+        """
+        INSERT INTO user_notifications (
+            user_id, scope, category, severity, title, body,
+            entity_type, entity_id, dedupe_key, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        rows,
+    )
+
+
+def test_ops_omits_resolved_job_errors_from_created_at_window(db_env):
+    import json
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-operator", "hash", "admin", 1),
+            )
+            await _insert_job_error_rows(
+                db,
+                job_id="kev_metadata_sync",
+                count=3,
+                created_at="2026-08-26 10:02:00",
+            )
+            await set_sync_state_value(
+                db,
+                "scheduler.last_run.kev_metadata_sync",
+                json.dumps(
+                    [
+                        {
+                            "had_error": False,
+                            "error_message": "",
+                            "started_at": "2026-08-26T17:00:00+00:00",
+                        }
+                    ]
+                ),
+            )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+            return brief, format_daily_brief_text(brief, limit=2000)
+        finally:
+            await db.close()
+
+    brief, text = run_db_test(_seed())
+    assert brief.counts["ops_issues"] == 0
+    assert brief.ops == []
+    assert "Scheduler job failed: KEV Metadata Sync" not in text
+
+
+def test_ops_dedupes_current_job_failure_to_one_line(db_env):
+    import json
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-operator", "hash", "admin", 1),
+            )
+            await _insert_job_error_rows(
+                db,
+                job_id="kev_metadata_sync",
+                count=3,
+                created_at="2026-08-26 10:02:00",
+            )
+            await set_sync_state_value(
+                db,
+                "scheduler.last_run.kev_metadata_sync",
+                json.dumps(
+                    [
+                        {
+                            "had_error": True,
+                            "error_message": "KEV request failed",
+                            "started_at": "2026-08-26T17:00:00+00:00",
+                        }
+                    ]
+                ),
+            )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+            return brief, format_daily_brief_text(brief, limit=2000)
+        finally:
+            await db.close()
+
+    brief, text = run_db_test(_seed())
+    assert brief.counts["ops_issues"] == 1
+    assert [row["id"] for row in brief.ops] == ["kev_metadata_sync"]
+    assert text.count("Scheduler job failed: KEV Metadata Sync") == 1
+
+
+def test_ops_keeps_last_run_failure_after_job_error_dismissed(db_env):
+    import json
+
+    end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
+    start = end - timedelta(hours=24)
+
+    async def _seed():
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "daily-brief-operator", "hash", "admin", 1),
+            )
+            await db.execute(
+                """
+                INSERT INTO user_notifications (
+                    user_id, scope, category, severity, title, body,
+                    entity_type, entity_id, dedupe_key, created_at, dismissed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    1,
+                    "operator",
+                    "job_error",
+                    "critical",
+                    "Job failed: kev_metadata_sync",
+                    "old timeout",
+                    "job",
+                    "kev_metadata_sync",
+                    "job:kev_metadata_sync:old",
+                    "2026-08-26 10:02:00",
+                    "2026-08-26 11:00:00",
+                ),
+            )
+            await set_sync_state_value(
+                db,
+                "scheduler.last_run.kev_metadata_sync",
+                json.dumps(
+                    [
+                        {
+                            "had_error": True,
+                            "error_message": "still failing",
+                            "started_at": "2026-08-26T17:00:00+00:00",
+                        }
+                    ]
+                ),
+            )
+            await db.commit()
+            brief = await collect_daily_brief(
+                db,
+                slot="eod",
+                window_start_utc=start,
+                window_end_utc=end,
+                tz_name="UTC",
+            )
+            return brief
+        finally:
+            await db.close()
+
+    brief = run_db_test(_seed())
+    assert brief.counts["ops_issues"] == 1
+    assert brief.ops[0]["id"] == "kev_metadata_sync"
+    assert "still failing" in brief.ops[0]["reason"]
+
+
 def test_job_error_dsn_is_redacted_from_formatted_text(db_env):
     end = datetime(2026, 8, 26, 18, 0, tzinfo=timezone.utc)
     start = end - timedelta(hours=24)

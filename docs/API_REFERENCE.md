@@ -474,7 +474,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 | `view` | str | `inbox` | `inbox` \| `done` \| `active` \| `cleared` — `inbox`=`active` (undismissed rows) or `done`=`cleared` (dismissed rows with `dismissed_at` in the last 24 hours) |
 | `limit` | int | 30 | 1–100 |
 
-**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read.
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read. A successful scheduler run for a `job_id` sets `dismissed_at` on undismissed `job_error` rows with `entity_type=job` and that `entity_id` (they move to **Cleared**; they are not deleted).
 
 ### GET /api/me/notifications/unread-count
 

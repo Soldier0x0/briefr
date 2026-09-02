@@ -235,6 +235,22 @@ async def _write_job_last_run(
                         job_id,
                         notify_exc,
                     )
+            else:
+                try:
+                    ok_db = await get_db()
+                    try:
+                        from db.user_notifications import dismiss_job_error_notifications
+
+                        await dismiss_job_error_notifications(ok_db, job_id)
+                        await ok_db.commit()
+                    finally:
+                        await ok_db.close()
+                except Exception as notify_exc:
+                    logger.warning(
+                        "Failed to dismiss job error notifications for %s: %s",
+                        job_id,
+                        notify_exc,
+                    )
             return
         except DatabaseLockedError as exc:
             if attempt == 3:

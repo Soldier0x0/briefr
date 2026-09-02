@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 import os
 import re
@@ -83,7 +84,7 @@ _JOB_DISPLAY = {
     "daily_brief_standup": "Morning Standup Daily Brief Webhook",
 }
 
-_OPS_CATEGORIES = ("job_error", "api_key_unhealthy", "webhook_failure")
+_OPS_WINDOW_CATEGORIES = ("api_key_unhealthy", "webhook_failure")
 
 
 def _is_postgres_connection(db: DbConnection) -> bool:
@@ -1013,6 +1014,84 @@ async def _fetch_notifications(
     return [dict(row) for row in rows], total
 
 
+def _latest_scheduler_run(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    if isinstance(parsed, list):
+        latest = parsed[0] if parsed else {}
+        return latest if isinstance(latest, dict) else {}
+    if isinstance(parsed, dict):
+        return parsed
+    return {}
+
+
+async def _fetch_scheduler_last_runs(db: DbConnection) -> dict[str, dict[str, Any]]:
+    rows = await db.execute_fetchall(
+        "SELECT key, value FROM sync_state WHERE key LIKE 'scheduler.last_run.%'"
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        job_id = str(row["key"]).removeprefix("scheduler.last_run.")
+        if not job_id:
+            continue
+        latest = _latest_scheduler_run(row["value"])
+        if latest:
+            out[job_id] = latest
+    return out
+
+
+async def _fetch_undismissed_job_errors(db: DbConnection) -> dict[str, dict[str, Any]]:
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
+        FROM user_notifications
+        WHERE category = 'job_error'
+          AND entity_type = 'job'
+          AND dismissed_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT {_LIST_QUERY_LIMIT}
+        """
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        job_id = (row["entity_id"] or "").strip()
+        if job_id and job_id not in out:
+            out[job_id] = dict(row)
+    return out
+
+
+async def _collect_current_job_ops(db: DbConnection) -> list[dict[str, Any]]:
+    last_runs = await _fetch_scheduler_last_runs(db)
+    last_run_failures = {
+        job_id: {
+            "category": "job_error",
+            "title": f"Job failed: {job_id}",
+            "body": (latest.get("error_message") or "").strip(),
+            "entity_type": "job",
+            "entity_id": job_id,
+            "dedupe_key": f"job:{job_id}:last_run",
+            "created_at": latest.get("last_run_utc") or latest.get("started_at") or "",
+        }
+        for job_id, latest in last_runs.items()
+        if latest.get("had_error")
+    }
+    succeeded = {
+        job_id for job_id, latest in last_runs.items() if not latest.get("had_error")
+    }
+    open_errors = await _fetch_undismissed_job_errors(db)
+    by_job = {
+        job_id: row
+        for job_id, row in open_errors.items()
+        if job_id not in succeeded
+    }
+    by_job.update(last_run_failures)
+    return list(by_job.values())
+
+
 def _map_watchlist(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for row in rows:
@@ -1207,13 +1286,16 @@ async def collect_daily_brief(
         start_bound=start_bound,
         end_bound=end_bound,
     )
-    ops_rows, ops_total = await _fetch_notifications(
+    window_ops_rows, window_ops_total = await _fetch_notifications(
         db,
         category=None,
-        categories=_OPS_CATEGORIES,
+        categories=_OPS_WINDOW_CATEGORIES,
         start_bound=start_bound,
         end_bound=end_bound,
     )
+    job_ops_rows = await _collect_current_job_ops(db)
+    ops_rows = [*job_ops_rows, *window_ops_rows]
+    ops_total = len(job_ops_rows) + window_ops_total
 
     watchlist = _map_watchlist(watch_rows)
     ioc = _map_ioc(ioc_rows)

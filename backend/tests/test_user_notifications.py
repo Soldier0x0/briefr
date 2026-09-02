@@ -10,7 +10,11 @@ from fastapi.testclient import TestClient
 
 from auth.repo import create_user
 from database import get_db, init_db
-from db.user_notifications import insert_notification
+from db.user_notifications import (
+    dismiss_job_error_notifications,
+    insert_notification,
+    list_notifications,
+)
 from tests.conftest import run_db_test
 
 pytestmark = pytest.mark.no_auth
@@ -381,6 +385,50 @@ def test_purge_cleared_keeps_active_and_recent(client):
     deleted, keys = run_db_test(_stamp_and_purge())
     assert deleted == 1
     assert keys == ["keep-active", "new-cleared"]
+
+
+def test_dismiss_job_errors_on_success_leaves_cleared_row(client):
+    uid = _user_id("admin1")
+
+    async def _seed_and_dismiss():
+        db = await get_db()
+        try:
+            await insert_notification(
+                db,
+                user_id=uid,
+                scope="operator",
+                category="job_error",
+                severity="critical",
+                title="Job failed: kev_metadata_sync",
+                body="timeout",
+                entity_type="job",
+                entity_id="kev_metadata_sync",
+                dedupe_key="job:kev_metadata_sync:2026-08-26T10:00:00",
+            )
+            await db.commit()
+            dismissed = await dismiss_job_error_notifications(db, "kev_metadata_sync")
+            await db.commit()
+            inbox = await list_notifications(
+                db, user_id=uid, scope="operator", view="inbox"
+            )
+            cleared = await list_notifications(
+                db, user_id=uid, scope="operator", view="cleared"
+            )
+            remaining = await db.execute_fetchall(
+                "SELECT id FROM user_notifications WHERE entity_id = ?",
+                ("kev_metadata_sync",),
+            )
+            return dismissed, inbox, cleared, len(remaining)
+        finally:
+            await db.close()
+
+    dismissed, inbox, cleared, row_count = run_db_test(_seed_and_dismiss())
+    assert dismissed == 1
+    assert inbox == []
+    assert len(cleared) == 1
+    assert cleared[0]["entity_id"] == "kev_metadata_sync"
+    assert cleared[0]["dismissed_at"]
+    assert row_count == 1
 
 
 def test_muted_category_does_not_insert(client):

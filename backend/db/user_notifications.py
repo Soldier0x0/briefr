@@ -281,6 +281,27 @@ async def mark_scope_seen(db: DbConnection, *, user_id: int, scope: str) -> int:
     return await mark_scope_read(db, user_id=user_id, scope=scope)
 
 
+async def dismiss_job_error_notifications(db: DbConnection, job_id: str) -> int:
+    """Move open job_error rows for a job into Cleared. Does not delete."""
+    ident = (job_id or "").strip()
+    if not ident:
+        return 0
+    now = utcnow_str()
+    pg = _is_postgres_connection(db)
+    sql = f"""
+        UPDATE user_notifications
+        SET dismissed_at = {_placeholder(pg, 2 if pg else 1)},
+            read_at = COALESCE(read_at, {_placeholder(pg, 3 if pg else 2)})
+        WHERE category = 'job_error'
+          AND entity_type = 'job'
+          AND entity_id = {_placeholder(pg, 1 if pg else 3)}
+          AND dismissed_at IS NULL
+        """
+    params: tuple[Any, ...] = (ident, now, now) if pg else (now, now, ident)
+    result = await db.execute(sql, params)
+    return int(getattr(result, "rowcount", 0) or 0)
+
+
 async def dismiss_notification(
     db: DbConnection,
     *,
