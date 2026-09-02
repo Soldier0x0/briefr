@@ -86,3 +86,14 @@ export function communityRulesEmptyMessage(detection) {
   }
   return '// No community Sigma/Elastic rules found for this CVE'
 }
+
+/**
+ * Framing copy when community Sigma + Elastic count is 0.
+ * Must not claim DRL-1.1 / Elastic as community coverage.
+ * @param {object | null | undefined} detection
+ * @returns {string}
+ */
+export function templateFallbackFraming(detection) {
+  const empty = communityRulesEmptyMessage(detection).replace(/^\/\/\s*/, '')
+  return `${empty}. ${COMPOSE_BASIS_TOOLTIPS.template_fallback}`
+}
