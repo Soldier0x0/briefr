@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 import resilient_client
 from tests.conftest import run_db_test
-from webhooks.destinations import sync_env_destinations_to_db
+from webhooks.destinations import configured_channels, sync_env_destinations_to_db
 from webhooks.engine import send_test_message
 
 
@@ -233,6 +233,11 @@ def test_delete_env_discord_succeeds_when_url_only_in_db_config(admin_client, mo
     assert all(row["id"] != "discord" for row in listed.json()["destinations"])
     assert load_env_destinations() == []
     assert not (os.environ.get("DISCORD_WEBHOOK_URL") or "").strip()
+    assert os.environ.get("DISCORD_WEBHOOK_ENABLED") not in {"0", "false", "no", "off"}
+
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
+    run_db_test(sync_env_destinations_to_db())
+    assert run_db_test(configured_channels()) == ["discord"]
 
 
 def test_delete_env_discord_409_when_process_env_set(admin_client, monkeypatch):

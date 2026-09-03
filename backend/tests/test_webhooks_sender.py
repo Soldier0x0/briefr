@@ -38,6 +38,9 @@ def _clean(monkeypatch):
         "DISCORD_WEBHOOK_URL",
         "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_CHAT_ID",
+        "DISCORD_WEBHOOK_ENABLED",
+        "TELEGRAM_WEBHOOK_ENABLED",
+        "WEBHOOK_GENERIC_ENABLED",
     ):
         monkeypatch.delenv(key, raising=False)
 

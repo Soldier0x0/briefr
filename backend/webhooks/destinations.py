@@ -189,7 +189,9 @@ async def clear_env_bootstrap_config(destination_id: str) -> str | None:
     from settings import PROCESS_ENV_KEYS
 
     for key in keys:
-        value = "0" if key.endswith("_ENABLED") else ""
+        # Empty, not "0": writing ENABLED=0 leaked into the process and disabled
+        # later dests that only set a URL (shared Postgres suite). URL gone is enough.
+        value = ""
         await persist_operator_setting(key, value)
         db = await get_db()
         try:
