@@ -2387,6 +2387,13 @@
   line-height: 1.4;
 }
 
+.admin-storage-caption {
+  margin: 0 0 var(--space-2);
+  font-size: var(--type-meta);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 .admin-ops-chart-empty {
   min-height: 0;
   padding: 0.75rem 1rem;

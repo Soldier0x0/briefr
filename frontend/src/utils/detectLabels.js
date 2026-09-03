@@ -97,3 +97,18 @@ export function templateFallbackFraming(detection) {
   const empty = communityRulesEmptyMessage(detection).replace(/^\/\/\s*/, '')
   return `${empty}. ${COMPOSE_BASIS_TOOLTIPS.template_fallback}`
 }
+
+/**
+ * Framing copy for generated Detect content when community count is 0.
+ * Nuclei / YARA / SigmaHQ-index compose bases keep their own tooltips;
+ * only true template fallback uses the empty-index + template sentence.
+ * @param {object | null | undefined} detection
+ * @returns {string}
+ */
+export function detectionFramingNote(detection) {
+  const basis = String(detection?.generated_sigma_meta?.compose_basis || '').toLowerCase()
+  if (basis && basis !== 'template_fallback' && basis !== 'none') {
+    return composeBasisTooltip(basis)
+  }
+  return templateFallbackFraming(detection)
+}

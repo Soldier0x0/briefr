@@ -135,7 +135,7 @@ export default function StoragePage({ toast }) {
 
             <div className="admin-card" style={{ marginTop: '1rem' }}>
               <div className="admin-card-title">Table sizes</div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.5rem' }}>
+              <p className="admin-storage-caption">
                 Live relation sizes in the <code>app</code> and <code>intel</code> schemas (not leftover <code>public</code> tables).
               </p>
               <AdminDataGrid
@@ -150,7 +150,7 @@ export default function StoragePage({ toast }) {
             {diskIo?.available && (
               <div className="admin-card" style={{ marginTop: '1rem' }}>
                 <div className="admin-card-title">Host disk I/O</div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text3)', marginBottom: '0.5rem' }}>
+                <p className="admin-storage-caption">
                   Cumulative reads/writes since boot for device <code>{diskIo.device}</code>.
                 </p>
                 <div className="admin-two-col" style={{ gap: '1rem' }}>

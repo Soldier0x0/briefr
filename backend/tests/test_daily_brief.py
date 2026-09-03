@@ -1896,7 +1896,11 @@ def test_template_headline_caps_at_three_sentences():
     headline = template_headline(brief)
     sentences = [part.strip() for part in headline.split(".") if part.strip()]
     assert 1 <= len(sentences) <= 3
-    assert "led volume" in headline or "published" in headline
+    assert "2 new KEV" in headline
+    assert "3 stack matches" in headline
+    assert "1 scheduler problem" in headline
+    assert "published" not in headline
+    assert "led volume" not in headline
 
 
 def test_standup_embed_omits_products_and_keeps_one_severity_field():

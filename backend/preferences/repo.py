@@ -256,7 +256,7 @@ async def get_operator_stack_assets(db: Any) -> list[dict[str, str]]:
 
 
 async def migrate_env_stack_terms_once(db: Any) -> None:
-    """If env is set and the latest admin My Stack is empty, copy then stop matching env."""
+    """Copy env into admin My Stack only when both terms and profile assets are empty."""
     from db.sync_state import (
         STACK_ENV_MIGRATED_KEY,
         get_stack_terms,
@@ -271,7 +271,7 @@ async def migrate_env_stack_terms_once(db: Any) -> None:
         return
     rows = await db.execute_fetchall(
         """
-        SELECT u.id AS user_id, p.stack_terms
+        SELECT u.id AS user_id, p.stack_terms, p.profile_json
         FROM users u
         LEFT JOIN user_preferences p ON p.user_id = u.id
         WHERE u.role = 'admin' AND u.is_active = 1
@@ -283,7 +283,20 @@ async def migrate_env_stack_terms_once(db: Any) -> None:
         return
     admin_id = rows[0]["user_id"]
     existing = (rows[0]["stack_terms"] or "").strip()
-    if not existing:
+    raw_profile = rows[0]["profile_json"]
+    profile = None
+    if isinstance(raw_profile, dict):
+        profile = raw_profile
+    elif raw_profile:
+        try:
+            loaded = json.loads(raw_profile)
+        except json.JSONDecodeError:
+            loaded = None
+        if isinstance(loaded, dict):
+            profile = loaded
+    from matching.stack_assets import profile_to_assets
+
+    if not existing and not profile_to_assets(profile):
         await upsert_user_stack(db, admin_id, env)
     await set_sync_state_value(db, STACK_ENV_MIGRATED_KEY, "1")
     await db.commit()

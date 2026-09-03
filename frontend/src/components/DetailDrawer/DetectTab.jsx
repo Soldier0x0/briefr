@@ -8,8 +8,8 @@ import {
   confidenceMatchLabel,
   composeBasisLabel,
   composeBasisTooltip,
+  detectionFramingNote,
   formatEvidenceSummary,
-  templateFallbackFraming,
 } from '../../utils/detectLabels.js'
 import { formatSectionHeading } from '../../utils/sectionHeading.js'
 import ControlTooltip from '../ControlTooltip.jsx'
@@ -380,15 +380,14 @@ export default function TabDetect({ detection, loading, error, onRetry }) {
           {hasCommunity && (
             <p className="det-framing-note mono">
               SigmaHQ community rules (DRL-1.1 — keep author credit) and Elastic
-              community rules are primary when present. Class-aware SIEM queries
-              stay available; BRIEFR templates only appear when no community hit
-              and a CWE/ATT&amp;CK class maps — they are not a claim of community
+              community rules are primary when present. Generated hunt templates
+              below supplement those rules; they are not a claim of community
               coverage.
             </p>
           )}
           {!hasCommunity && (generatedSigma || hasSiemQueries || logPatterns.length > 0) && (
             <p className="det-framing-note mono" data-testid="det-template-fallback-framing">
-              {templateFallbackFraming(detection)}
+              {detectionFramingNote(detection)}
             </p>
           )}
           {evidenceSummary && (

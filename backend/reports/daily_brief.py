@@ -202,9 +202,24 @@ def template_headline(brief: DailyBrief) -> str:
     published = int(brief.market.get("published", 0))
     if published == 0 and all(c[k] == 0 for k in COUNT_KEYS):
         return "Quiet window."
-    parts: list[str] = []
+    triage: list[str] = []
+    market: list[str] = []
+    if c["kev_new"]:
+        triage.append(f"{c['kev_new']} new KEV.")
+    if c["stack_matches"]:
+        stack_noun = "stack match" if c["stack_matches"] == 1 else "stack matches"
+        triage.append(f"{c['stack_matches']} {stack_noun}.")
+    ops_phrase = _ops_headline_phrase(brief)
+    if ops_phrase:
+        triage.append(ops_phrase)
+    if c["critical_high_new"] and not c["kev_new"]:
+        triage.append(f"{c['critical_high_new']} new Critical/High.")
+    if c["watchlist"]:
+        triage.append(f"Watchlist: {c['watchlist']}.")
+    if c["ioc_hits"]:
+        triage.append(f"{c['ioc_hits']} IOC hit(s).")
     if published:
-        parts.append(f"{published} published.")
+        market.append(f"{published} published.")
         products = brief.market.get("products") or []
         analyzed_leader = next(
             (
@@ -216,28 +231,14 @@ def template_headline(brief: DailyBrief) -> str:
             None,
         )
         if analyzed_leader:
-            parts.append(f"{analyzed_leader['label']} led volume.")
+            market.append(f"{analyzed_leader['label']} led volume.")
         cov = unmapped_coverage(brief.market)
         if cov["published"] and cov["unmapped"] / cov["published"] >= 0.5:
-            parts.append(
+            market.append(
                 f"{cov['unmapped']} of {cov['published']} published CVEs have "
                 "no product mapped yet (Unmapped)."
             )
-    if c["kev_new"]:
-        parts.append(f"{c['kev_new']} new KEV.")
-    if c["stack_matches"]:
-        stack_noun = "stack match" if c["stack_matches"] == 1 else "stack matches"
-        parts.append(f"{c['stack_matches']} {stack_noun}.")
-    if c["watchlist"]:
-        parts.append(f"Watchlist: {c['watchlist']}.")
-    if c["ioc_hits"]:
-        parts.append(f"{c['ioc_hits']} IOC hit(s).")
-    if c["critical_high_new"] and not c["kev_new"]:
-        parts.append(f"{c['critical_high_new']} new Critical/High.")
-    ops_phrase = _ops_headline_phrase(brief)
-    if ops_phrase:
-        parts.append(ops_phrase)
-    return " ".join(parts[:3]) or "Quiet window."
+    return " ".join((triage + market)[:3]) or "Quiet window."
 
 
 async def apply_headline(brief: DailyBrief, *, llm_enabled: bool) -> DailyBrief:
