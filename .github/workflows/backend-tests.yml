@@ -129,6 +129,15 @@ jobs:
         working-directory: frontend
         run: |
           npm ci --ignore-scripts
+          # registry.npmjs.org /-/npm/v1/security/advisories/bulk 503s are
+          # transient; npm ci already reported 0 vulns before audit:ci.
+          for attempt in 1 2 3 4; do
+            if npm run audit:ci; then
+              exit 0
+            fi
+            echo "npm audit failed (attempt ${attempt}); retrying..."
+            sleep $((attempt * 20))
+          done
           npm run audit:ci
 
   playwright-smoke:
