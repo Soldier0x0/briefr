@@ -58,7 +58,7 @@ Generic UI-skill “cyberpunk / Fira / horizontal scroll” is **out of scope**.
 ### 6. Discord / Telegram briefs
 
 - Titles: **EOD report** / **Morning report** (author remains BRIEFR).
-- Lede: 2–3 short sentences. Product labels: `software_catalog` title if present, else `display_name_for(vendor, product)`, else raw key. Never invent a vendor.
+- Lede: 2–3 short sentences. Product labels: pass `software_catalog.title` as the `title` argument to `display_name_for`; if no catalog title, `display_name_for(vendor, product)` or the raw key. Never invent a vendor.
 - Severity mix: **one** field `Critical n · High n · Medium n · Low n` (avoid Discord 3+1 wrap).
 - Stay on **one** embed unless Discord 6000/25 limits force a second.
 - Morning: glance + My Stack + KEV + open ops. Full product leaderboard is EOD-first (omit products on morning if over budget).
@@ -67,7 +67,7 @@ Generic UI-skill “cyberpunk / Fira / horizontal scroll” is **out of scope**.
 
 - Delete allowed on `source=env` reserved ids.
 - Effect: remove destination row, **clear** `DISCORD_WEBHOOK_URL` (and enabled flag) in the same config store Admin already writes, skip env bootstrap until the operator pastes a URL into **Add destination**.
-- If process-level env still injects the URL after clear: UI error “unset `DISCORD_WEBHOOK_URL` in the process environment”; do not show a live card that cannot be deleted.
+- If process-level env still injects the URL after clear: HTTP 409 “unset `DISCORD_WEBHOOK_URL` in the process environment”. Persist the delete first (row + app_settings); do not no-op the write because process env is set.
 - DB destinations (e.g. `discord-c5dd6db9`) unchanged.
 
 ### 8. DETECT

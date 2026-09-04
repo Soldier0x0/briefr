@@ -16,6 +16,7 @@
 
 - Dark-only; semantic tokens; no Fira/cyberpunk; no emoji icons.
 - Merge gate: `./scripts/verify-local.sh`. Frontend: `cd frontend && npm run test:unit && npm run build`.
+- After each code edit: `graphify update .` from the repository root. Do not commit `graphify-out/` (gitignored).
 - Update `docs/PRODUCT_STATUS.md` and `docs/API_REFERENCE.md` in the PR that changes the contract.
 - Do not invent CPE vendor names. Do not hard-delete notification rows on job success.
 - Process-level env vars still win over `backend/.env` (`load_dotenv` without override) — webhook Delete must say so if the URL remains injected.
@@ -74,9 +75,12 @@ import pytest
 async def test_fetch_table_sizes_includes_app_or_intel(pg_db):
     from storage_metrics import fetch_table_sizes
     rows = await fetch_table_sizes(pg_db)
-    names = {r["table"] for r in rows}
-    assert "api_call_events" in names or "cves" in names
-    assert "procrastinate_jobs" not in names  # default exclude system
+    pairs = {(r["schema"], r["table"]) for r in rows}
+    assert ("app", "api_call_events") in pairs or ("intel", "cves") in pairs or any(
+        schema in {"app", "intel"} for schema, _table in pairs
+    )
+    assert all(schema in {"app", "intel"} for schema, _table in pairs)
+    assert all(table != "procrastinate_jobs" for _schema, table in pairs)
 ```
 
 If the suite has no `pg_db` fixture name, use the existing Postgres fixture from `conftest.py` (same as other admin storage tests).
@@ -122,7 +126,8 @@ Expected: PASS.
 ```bash
 git add backend/storage_metrics.py backend/efficiency_audit.py backend/db/database_metrics.py \
   backend/routers/admin/storage.py frontend/src/pages/admin/StoragePage.jsx \
-  frontend/src/pages/admin/ResourcesPage.jsx backend/tests docs/PRODUCT_STATUS.md
+  frontend/src/pages/admin/ResourcesPage.jsx backend/tests docs/PRODUCT_STATUS.md \
+  docs/API_REFERENCE.md
 git commit -m "fix(admin): size app/intel tables and stop fmtBytes on pool counts"
 ```
 
@@ -178,11 +183,11 @@ git commit -m "fix(notify): auto-clear open job_error into Cleared when job succ
 **Interfaces:**
 - FEED `filters.stack` initial `''` and **must not** be set from `getSavedStack()` on load.
 - `get_operator_stack_assets`: My Stack only after migrate.
-- One-time migrate: if `BRIEFR_STACK_TERMS` non-empty and admin `stack_terms` empty, `save` terms to that admin prefs, then ignore env for matching. Document in PRODUCT_STATUS.
+- One-time migrate: persist `sync_state` key `stack_terms_env_migrated`. Copy non-empty `BRIEFR_STACK_TERMS` into admin My Stack only when that marker is unset **and** both `stack_terms` and profile-derived assets are empty. Set the marker even when copy is skipped. After the operator clears My Stack, a reload must not copy env again.
 
 - [ ] Write frontend unit: load App seed helper or extract `applyLoadedStackToFeedFilters` and assert it is **not** called from App (gate test: `App.jsx` must not match `setFilters((prev) => (prev.stack ? prev : { ...prev, stack:`).
 
-- [ ] Flip `test_effective_stack_terms_prefers_env` to “env does not match after migrate” / empty env.
+- [ ] Sequence test: env set + empty My Stack → terms copied once; operator clears My Stack; reload leaves stack empty (marker prevents remigration). Flip `test_effective_stack_terms_prefers_env` to “env does not match after migrate”.
 
 - [ ] Commit: `fix(stack): do not seed FEED from My Stack; retire env keyword matching`
 
@@ -216,7 +221,7 @@ When building the item dict, if `description == title` after fallback, set `desc
 **Interfaces:**
 - `slot_title`: `"EOD report"` / `"Morning report"`
 - `template_headline`: max three short sentences; no single run-on lede
-- Product label: lookup catalog by `vendor`+`product` if cluster keeps those keys; else `display_name_for(vendor, product, title)`
+- Product label: `display_name_for(vendor, product, software_catalog.title)` so catalog `title` wins; if no title, `display_name_for(vendor, product)` or the raw vendor/product key. Never invent a brand.
 - Embed: one severity field; morning omits products section when `slot=="standup"` if character budget tight (spec: morning = glance + stack + kev + open ops)
 
 Depends on Task 2 for ops. If Task 5 lands first, still filter ops to last-run failures.
@@ -255,11 +260,11 @@ Wrap `chartSections` in `admin-two-col` at `min-width: 901px` (existing breakpoi
 
 **Interfaces:**
 - DELETE `/api/admin/webhooks/destinations/discord` with `confirm_text=delete` **allowed**.
-- Implementation: clear config keys `DISCORD_WEBHOOK_URL`, `DISCORD_WEBHOOK_ENABLED` via existing admin config apply helper (same path as API keys page — do not write `.env` if product no longer writes files). Delete DB row. `load_env_destinations` returns None when URL empty.
-- If `os.environ.get("DISCORD_WEBHOOK_URL")` still set after config clear: return 409 with message to unset process env.
+- Implementation: clear config keys `DISCORD_WEBHOOK_URL`, `DISCORD_WEBHOOK_ENABLED` via existing admin config apply helper (same path as API keys page — do not write `.env` if product no longer writes files). Delete DB row even when process env would 409. `load_env_destinations` returns None when URL empty.
+- If `os.environ.get("DISCORD_WEBHOOK_URL")` is still set **after** those writes: return 409 with the unset-process-environment message. Do **not** preflight-skip writes — the operator asked to delete persisted state; process env can still rebuild a live card until those keys are unset (that is the 409).
 - Show Delete on env cards.
 
-- [ ] Test: delete reserved id when URL only in DB config succeeds; 409 when process env set.
+- [ ] Test: delete reserved id when URL only in DB config succeeds; 409 when process env set **and** the destination row is already gone.
 - [ ] Commit: `fix(webhooks): allow deleting env Discord bootstrap`
 
 ---
