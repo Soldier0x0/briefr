@@ -53,7 +53,7 @@ Generic UI-skill “cyberpunk / Fira / horizontal scroll” is **out of scope**.
 ### 5. Stack
 
 - FEED `STACK //` does **not** initialize from My Stack. Empty until the user types or uses “My stack only”.
-- `BRIEFR_STACK_TERMS`: remove example keywords; if env set and admin My Stack empty, **one-time** copy into admin My Stack then stop using env for matching. Wallboard/backlog = My Stack only after that.
+- `BRIEFR_STACK_TERMS`: remove example keywords; if env set and admin My Stack empty (no terms and no profile assets), **one-time** copy into admin My Stack, persist `stack_terms_env_migrated`, then stop using env for matching. Clearing My Stack later must not remigrate. Wallboard/backlog = My Stack only after that.
 
 ### 6. Discord / Telegram briefs
 
