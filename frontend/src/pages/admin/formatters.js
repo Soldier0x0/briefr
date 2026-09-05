@@ -9,6 +9,13 @@ export function fmtAge(seconds) {
   return `${Math.round(s / 86400)}d ago`
 }
 
+export function fmtCountRatio(used, total) {
+  const u = Number(used) || 0
+  const t = Number(total) || 0
+  const pct = t > 0 ? Math.min(100, Math.round((u / t) * 100)) : 0
+  return `${u} / ${t} (${pct}%)`
+}
+
 export function fmtBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']

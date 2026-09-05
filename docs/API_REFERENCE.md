@@ -391,7 +391,7 @@ When no row exists yet, `stack_terms` is `""`, `profile` is `null`, and `updated
 
 **Validation:** `stack_terms` is normalized (trimmed, empty segments dropped, rejoined with commas). `profile` must be a JSON object when present; unknown keys are dropped and lists are sanitized to the asset-wizard shape. Omit `profile` to leave the saved inventory unchanged; send `null` to clear. Oversized payloads → `422`.
 
-**Notes:** KEV-on-stack webhooks (`kev_alert`) match the latest active **admin** My Stack (profile assets preferred, else `stack_terms` as product names) against CVE `cpe_matches` / structured `affected_products` — not description LIKE and not `BRIEFR_STACK_TERMS`. The FEED `stack` query param remains a throwaway keyword filter. `BRIEFR_STACK_TERMS` drives wallboard keyword tiles and, when admin My Stack is empty, detection-backlog CPE matching; it is not a fallback for `kev_alert`.
+**Notes:** KEV-on-stack webhooks (`kev_alert`) match the latest active **admin** My Stack (profile assets preferred, else `stack_terms` as product names) against CVE `cpe_matches` / structured `affected_products` — not description LIKE. The FEED `stack` query param remains a throwaway keyword filter and is **not** seeded from My Stack on load. `BRIEFR_STACK_TERMS` is copied once into empty admin My Stack then ignored for matching; wallboard keyword tiles and detection-backlog use admin My Stack only.
 
 ### GET /api/stack/catalog/suggest
 
@@ -474,7 +474,7 @@ When no row exists yet, fields use defaults and `updated_at` is `null`.
 | `view` | str | `inbox` | `inbox` \| `done` \| `active` \| `cleared` — `inbox`=`active` (undismissed rows) or `done`=`cleared` (dismissed rows with `dismissed_at` in the last 24 hours) |
 | `limit` | int | 30 | 1–100 |
 
-**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read.
+**Response:** `{notifications: [{id, scope, category, severity, title, body, entity_type, entity_id, created_at, read_at, dismissed_at}], unread_count}` — `unread_count` counts undismissed rows with `read_at` null (all severities; not limited to critical/high). Opening the alert tray does not mark rows read. Open Alerts / badge for `job_error` match current scheduler health: listing or counting operator (or `all`) inbox reconciles undismissed `job_error` rows whose job `last_run.had_error` is false into **Cleared**. A successful scheduler run for a `job_id` also sets `dismissed_at` on those rows (`entity_type=job`); they are not deleted.
 
 ### GET /api/me/notifications/unread-count
 
@@ -2178,7 +2178,7 @@ Trigger an immediate health ping sweep for all configured providers. Returns `{o
 Durable operator notification feed for the admin StatusBar panel (#439). Params: `limit` (1–100, default 40). Response: `{events: [{type, summary, created_at, ...}], counts: {audit, api_key_alerts, job_errors}}`. Event types include `audit`, `api_key_unhealthy`, and `job_error` (from `sync_state` job last-run JSON).
 
 ### GET /api/admin/storage
-Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts, per-table size estimates (`table_sizes`), growth estimate (`growth_estimate`), host disk I/O counters (`disk_io` when available), archive count.
+Returns disk partition info (`db_partition`, `backup_partition` with free/total/used bytes), DB file size, table row counts (`tables`), per-table size estimates (`table_sizes`: `{schema, table, size_bytes, rows}` for `app`/`intel` relations; leftover `public`/Procrastinate omitted), growth estimate from backup archives (`growth_estimate` — not live table growth), host disk I/O counters (`disk_io` when available), archive count.
 
 ### GET /api/admin/resources
 Query `window` = `1d` | `3d` | `7d` | `30d` (default `1d`). Returns utilization telemetry from `resource_metrics` (RB-1 collector, 60s samples):
@@ -2329,7 +2329,7 @@ Body `{kind, config, id?, label?, enabled?, event_types?}`. Creates a **database
 Body `{enabled?: bool, event_types?: string[], label?: string, config?: object}`. Updates enable flag, subscriptions, and label. **`config` only for `source: db`** destinations (env bootstrap destinations keep secrets in `.env`). Audit: `webhook.destination.update.{id}`.
 
 ### DELETE /api/admin/webhooks/destinations/{destination_id}
-Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes **database-backed** destinations only; env bootstrap ids cannot be deleted (disable via PATCH). Audit: `webhook.destination.delete.{id}`.
+Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes database-backed destinations (`source: db`) and reserved env bootstrap ids (`discord`, `telegram`, `generic`). For reserved ids, Admin clears the matching webhook keys in the same `app_settings` store as API keys & config (`DISCORD_WEBHOOK_URL` / `DISCORD_WEBHOOK_ENABLED`, Telegram token+chat+enabled, or generic URL+enabled) and deletes the destination row so `load_env_destinations` skips bootstrap until the operator pastes a URL into **Add destination**. Does not write `backend/.env`. If a **process-level** env var still injects the URL (or Telegram token+chat) after that clear, returns **409** with detail naming those keys only — app_settings and the row are already gone; the live card remains until process env is unset, then it stays gone (no second delete). Audit: `webhook.destination.delete.{id}`.
 
 ### GET /api/admin/webhooks/delivery-log
 Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`. `error` values are masked on read (URLs and token-like substrings redacted).

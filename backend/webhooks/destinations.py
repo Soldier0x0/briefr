@@ -150,6 +150,68 @@ def load_env_destinations() -> list[WebhookDestination]:
     return destinations
 
 
+def env_bootstrap_process_conflict_message(destination_id: str) -> str | None:
+    """If process env would still rebuild this reserved dest, return a 409 message."""
+    keys = _ENV_BOOTSTRAP_PROCESS_KEYS.get(destination_id)
+    if not keys:
+        return None
+    if destination_id == "telegram":
+        token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+        if token and chat_id:
+            still = ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
+        else:
+            return None
+    else:
+        still = [key for key in keys if os.environ.get(key, "").strip()]
+        if not still:
+            return None
+    names = ", ".join(f"`{key}`" for key in still)
+    return (
+        f"app_settings keys and the destination row were cleared, but {names} "
+        "remain in the process environment so the card stays until those keys "
+        "are unset; after that it stays gone (no second delete required)."
+    )
+
+
+async def clear_env_bootstrap_config(destination_id: str) -> str | None:
+    """Clear reserved env webhook keys in app_settings and os.environ (non-process).
+
+    Process-level env keys are left in place. Returns a 409 operator message when
+    those leftover values would resurrect the destination on the next bootstrap.
+    """
+    keys = _ENV_BOOTSTRAP_CLEAR_KEYS.get(destination_id)
+    if not keys:
+        return None
+
+    from database import set_app_setting
+    from operator_settings import persist_operator_setting
+    from settings import PROCESS_ENV_KEYS
+
+    for key in keys:
+        # Empty, not "0": writing ENABLED=0 leaked into the process and disabled
+        # later dests that only set a URL (shared Postgres suite). URL gone is enough.
+        value = ""
+        await persist_operator_setting(key, value)
+        db = await get_db()
+        try:
+            # persist_operator_setting skips secret-typed keys when
+            # BRIEFR_SETTINGS_KEY is unset; still write empty so hydrate cannot
+            # resurrect the URL from leftover app_settings.
+            await set_app_setting(db, key, value)
+            await db.commit()
+        finally:
+            await db.close()
+        if key in PROCESS_ENV_KEYS:
+            continue
+        if value:
+            os.environ[key] = value
+        else:
+            os.environ.pop(key, None)
+
+    return env_bootstrap_process_conflict_message(destination_id)
+
+
 def _row_to_destination(row: aiosqlite.Row) -> WebhookDestination:
     try:
         config = json.loads(row["config_json"] or "{}")
@@ -250,6 +312,20 @@ async def configured_channels() -> list[str]:
 
 RESERVED_ENV_IDS = frozenset({"discord", "telegram", "generic"})
 DESTINATION_KINDS = frozenset({"discord", "telegram", "generic"})
+
+# Operator config keys that seed reserved env bootstrap destinations.
+# Cleared via the same app_settings store Admin → API keys uses (not .env files).
+_ENV_BOOTSTRAP_CLEAR_KEYS: dict[str, tuple[str, ...]] = {
+    "discord": ("DISCORD_WEBHOOK_URL", "DISCORD_WEBHOOK_ENABLED"),
+    "telegram": ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "TELEGRAM_WEBHOOK_ENABLED"),
+    "generic": ("WEBHOOK_GENERIC_URL", "WEBHOOK_GENERIC_ENABLED"),
+}
+
+_ENV_BOOTSTRAP_PROCESS_KEYS: dict[str, tuple[str, ...]] = {
+    "discord": ("DISCORD_WEBHOOK_URL",),
+    "telegram": ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"),
+    "generic": ("WEBHOOK_GENERIC_URL",),
+}
 MAX_DESTINATIONS_PER_KIND = 20
 _DESTINATION_ID_RE = re.compile(r"^[a-z0-9-]{3,64}$")
 

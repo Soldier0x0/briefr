@@ -38,6 +38,58 @@ def test_parse_rss_xml_excludes_name_that_toon_contest():
     assert "Critical RCE Patched in Popular VPN" in titles
 
 
+def test_parse_rss_xml_excludes_virtual_event_headline():
+    source = {"id": "darkreading", "label": "Dark Reading"}
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <item>
+          <title>[Virtual Event] Building a Secure AI Strategy</title>
+          <link>https://www.darkreading.com/events/ai-strategy</link>
+          <description>Join our webinar series.</description>
+          <pubDate>Mon, 08 Jun 2026 12:00:00 GMT</pubDate>
+        </item>
+        <item>
+          <title>Critical RCE Patched in Popular VPN</title>
+          <link>https://www.darkreading.com/vulnerabilities/rce</link>
+          <description>Vendor issued emergency patch.</description>
+          <pubDate>Mon, 08 Jun 2026 11:00:00 GMT</pubDate>
+        </item>
+      </channel>
+    </rss>"""
+
+    cards = parse_rss_xml(xml, source)
+    titles = [card["title"] for card in cards]
+
+    assert "[Virtual Event] Building a Secure AI Strategy" not in titles
+    assert "Critical RCE Patched in Popular VPN" in titles
+
+
+def test_parse_rss_xml_drops_description_cloned_from_title():
+    source = {"id": "krebs", "label": "Krebs on Security"}
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <item>
+          <title>CISA adds VPN flaw to KEV</title>
+          <link>https://krebsonsecurity.com/cisa-vpn-kev</link>
+          <pubDate>Mon, 08 Jun 2026 12:00:00 GMT</pubDate>
+        </item>
+        <item>
+          <title>Same title and body</title>
+          <link>https://krebsonsecurity.com/same</link>
+          <description>Same title and body</description>
+          <pubDate>Mon, 08 Jun 2026 11:00:00 GMT</pubDate>
+        </item>
+      </channel>
+    </rss>"""
+
+    cards = parse_rss_xml(xml, source)
+    by_title = {card["title"]: card for card in cards}
+    assert by_title["CISA adds VPN flaw to KEV"]["description"] == ""
+    assert by_title["Same title and body"]["description"] == ""
+
+
 def test_parse_rss_xml_extracts_cve_ids_from_title_and_body():
     source = {"id": "cisa-news", "label": "CISA Advisories"}
     xml = """<?xml version="1.0" encoding="UTF-8"?>

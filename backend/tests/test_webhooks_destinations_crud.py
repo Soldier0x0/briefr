@@ -1,6 +1,7 @@
 """Admin CRUD for webhook destinations (PR12b)."""
 
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -13,7 +14,7 @@ from fastapi.testclient import TestClient
 
 import resilient_client
 from tests.conftest import run_db_test
-from webhooks.destinations import sync_env_destinations_to_db
+from webhooks.destinations import configured_channels, sync_env_destinations_to_db
 from webhooks.engine import send_test_message
 
 
@@ -197,3 +198,80 @@ def test_per_destination_dedupe_allows_second_destination(admin_client, monkeypa
     )
     assert "discord-backup" in second["sent"]
     assert "discord" not in second["sent"]
+
+
+def test_delete_env_discord_succeeds_when_url_only_in_db_config(admin_client, monkeypatch):
+    from database import get_db, set_app_setting
+    from settings import PROCESS_ENV_KEYS
+    from webhooks.destinations import load_env_destinations
+
+    assert "DISCORD_WEBHOOK_URL" not in PROCESS_ENV_KEYS
+    url = "https://discord.com/api/webhooks/1/token"
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
+
+    async def seed():
+        db = await get_db()
+        try:
+            await set_app_setting(db, "DISCORD_WEBHOOK_URL", url)
+            await set_app_setting(db, "DISCORD_WEBHOOK_ENABLED", "1")
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(seed())
+    run_db_test(sync_env_destinations_to_db())
+
+    deleted = admin_client.delete(
+        "/api/admin/webhooks/destinations/discord",
+        params={"confirm_text": "delete"},
+    )
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["ok"] is True
+
+    listed = admin_client.get("/api/admin/webhooks/destinations")
+    assert listed.status_code == 200
+    assert all(row["id"] != "discord" for row in listed.json()["destinations"])
+    assert load_env_destinations() == []
+    assert not (os.environ.get("DISCORD_WEBHOOK_URL") or "").strip()
+    assert os.environ.get("DISCORD_WEBHOOK_ENABLED") not in {"0", "false", "no", "off"}
+
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
+    run_db_test(sync_env_destinations_to_db())
+    assert run_db_test(configured_channels()) == ["discord"]
+
+
+def test_delete_env_discord_409_when_process_env_set(admin_client, monkeypatch):
+    import settings as settings_mod
+    from database import get_db, get_webhook_destination_source
+    from webhooks.destinations import load_env_destinations
+
+    url = "https://discord.com/api/webhooks/1/token"
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
+    monkeypatch.setattr(
+        settings_mod,
+        "PROCESS_ENV_KEYS",
+        frozenset({*settings_mod.PROCESS_ENV_KEYS, "DISCORD_WEBHOOK_URL"}),
+    )
+    run_db_test(sync_env_destinations_to_db())
+
+    deleted = admin_client.delete(
+        "/api/admin/webhooks/destinations/discord",
+        params={"confirm_text": "delete"},
+    )
+    assert deleted.status_code == 409, deleted.text
+    detail = deleted.json()["detail"]
+    assert "DISCORD_WEBHOOK_URL" in detail
+    assert "process environment" in detail
+    assert url not in detail
+    assert url not in deleted.text
+
+    async def discord_row_source():
+        db = await get_db()
+        try:
+            return await get_webhook_destination_source(db, "discord")
+        finally:
+            await db.close()
+
+    assert run_db_test(discord_row_source()) is None
+    env_ids = {dest.id for dest in load_env_destinations()}
+    assert "discord" in env_ids

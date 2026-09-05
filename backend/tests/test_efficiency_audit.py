@@ -6,7 +6,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database import get_db, init_db
+from efficiency_audit import _table_bytes
 from tests.conftest import run_db_test
+
+
+def test_table_bytes_matches_by_table_name_with_schema():
+    sizes = [
+        {"schema": "app", "table": "api_call_events", "size_bytes": 4096},
+        {"schema": "intel", "table": "cves", "size_bytes": 8192},
+        {"schema": "public", "table": "api_call_events", "size_bytes": 99},
+    ]
+    assert _table_bytes(sizes, "api_call_events") == 4096
+    assert _table_bytes(sizes, "cves") == 8192
+    assert _table_bytes(sizes, "missing") == 0
+    assert _table_bytes(sizes, "api_call_events", schema="public") == 99
 
 
 def test_efficiency_report_includes_subsystems_and_recommendations(tmp_path, monkeypatch):

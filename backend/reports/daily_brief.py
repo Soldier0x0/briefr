@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 import os
 import re
@@ -11,7 +12,9 @@ from zoneinfo import ZoneInfo
 
 from ai.llm_router import any_llm_provider_configured, chat_completion_task
 from database import get_db, get_feed_cache
+from feeds.incident_news import _is_relevant_news_item
 from db.enrichment import filter_cves_matching_assets
+from db.software_catalog import lookup_catalog_titles
 from db.sync_state import get_sync_state_value, set_sync_state_value
 from db.types import DbConnection
 from preferences.repo import get_alert_stack_assets
@@ -83,7 +86,7 @@ _JOB_DISPLAY = {
     "daily_brief_standup": "Morning Standup Daily Brief Webhook",
 }
 
-_OPS_CATEGORIES = ("job_error", "api_key_unhealthy", "webhook_failure")
+_OPS_WINDOW_CATEGORIES = ("api_key_unhealthy", "webhook_failure")
 
 
 def _is_postgres_connection(db: DbConnection) -> bool:
@@ -135,7 +138,7 @@ def _kev_date_predicate(start_date: str, end_date: str, p1: str, p2: str) -> str
 
 
 def slot_title(slot: DailyBriefSlot) -> str:
-    return "End of day" if slot == "eod" else "Morning briefing"
+    return "EOD report" if slot == "eod" else "Morning report"
 
 
 def _job_display_name(job_id: str) -> str:
@@ -199,9 +202,24 @@ def template_headline(brief: DailyBrief) -> str:
     published = int(brief.market.get("published", 0))
     if published == 0 and all(c[k] == 0 for k in COUNT_KEYS):
         return "Quiet window."
-    parts = []
+    triage: list[str] = []
+    market: list[str] = []
+    if c["kev_new"]:
+        triage.append(f"{c['kev_new']} new KEV.")
+    if c["stack_matches"]:
+        stack_noun = "stack match" if c["stack_matches"] == 1 else "stack matches"
+        triage.append(f"{c['stack_matches']} {stack_noun}.")
+    ops_phrase = _ops_headline_phrase(brief)
+    if ops_phrase:
+        triage.append(ops_phrase)
+    if c["critical_high_new"] and not c["kev_new"]:
+        triage.append(f"{c['critical_high_new']} new Critical/High.")
+    if c["watchlist"]:
+        triage.append(f"Watchlist: {c['watchlist']}.")
+    if c["ioc_hits"]:
+        triage.append(f"{c['ioc_hits']} IOC hit(s).")
     if published:
-        parts.append(f"{published} published.")
+        market.append(f"{published} published.")
         products = brief.market.get("products") or []
         analyzed_leader = next(
             (
@@ -213,28 +231,14 @@ def template_headline(brief: DailyBrief) -> str:
             None,
         )
         if analyzed_leader:
-            parts.append(f"{analyzed_leader['label']} led volume.")
+            market.append(f"{analyzed_leader['label']} led volume.")
         cov = unmapped_coverage(brief.market)
         if cov["published"] and cov["unmapped"] / cov["published"] >= 0.5:
-            parts.append(
+            market.append(
                 f"{cov['unmapped']} of {cov['published']} published CVEs have "
                 "no product mapped yet (Unmapped)."
             )
-    if c["kev_new"]:
-        parts.append(f"{c['kev_new']} new KEV.")
-    if c["stack_matches"]:
-        stack_noun = "stack match" if c["stack_matches"] == 1 else "stack matches"
-        parts.append(f"{c['stack_matches']} {stack_noun}.")
-    if c["watchlist"]:
-        parts.append(f"Watchlist: {c['watchlist']}.")
-    if c["ioc_hits"]:
-        parts.append(f"{c['ioc_hits']} IOC hit(s).")
-    if c["critical_high_new"] and not c["kev_new"]:
-        parts.append(f"{c['critical_high_new']} new Critical/High.")
-    ops_phrase = _ops_headline_phrase(brief)
-    if ops_phrase:
-        parts.append(ops_phrase)
-    return " ".join(parts) or "Quiet window."
+    return " ".join((triage + market)[:3]) or "Quiet window."
 
 
 async def apply_headline(brief: DailyBrief, *, llm_enabled: bool) -> DailyBrief:
@@ -333,7 +337,11 @@ def format_daily_brief_text(brief: DailyBrief, *, limit: int) -> str:
                 f"New Critical or High: {brief.counts['critical_high_new']}",
                 f"Instance problems: {brief.counts['ops_issues']}",
             ],
-            "market": format_market_section(brief.market),
+            "market": (
+                []
+                if brief.slot == "standup"
+                else format_market_section(brief.market)
+            ),
             "headlines": ["Headlines"] + [_link_line(r) for r in brief.headlines[:_HEADLINE_LIMIT]],
             "advisories": ["Advisories"] + [_link_line(r) for r in brief.advisories[:_ADVISORY_LIMIT]],
             "kev": ["CISA KEV"] + [_line_cve(r) for r in brief.kev[:8]],
@@ -465,7 +473,9 @@ async def _fetch_headlines(
     snapshot = await get_feed_cache(db, _SNAPSHOT_CACHE_KEY, _SNAPSHOT_MAX_AGE_HOURS)
     if not snapshot:
         return []
-    cards = snapshot.get("cards") if isinstance(snapshot, dict) else None
+    cards = snapshot.get("news") if isinstance(snapshot, dict) else None
+    if not isinstance(cards, list):
+        cards = snapshot.get("cards") if isinstance(snapshot, dict) else None
     if not isinstance(cards, list):
         return []
     scored: list[tuple[datetime, dict[str, str]]] = []
@@ -473,6 +483,8 @@ async def _fetch_headlines(
         if not isinstance(card, dict):
             continue
         if str(card.get("kind") or "").strip().lower() == "atlas":
+            continue
+        if not _is_relevant_news_item(card):
             continue
         published = _parse_aware_utc(card.get("publishedAt") or card.get("published_at"))
         if published is None:
@@ -601,6 +613,15 @@ def _glance_text(brief: DailyBrief) -> str:
     )
 
 
+def _severity_mix_text(market: dict) -> str:
+    return (
+        f"Critical {market.get('critical') or 0} · "
+        f"High {market.get('high') or 0} · "
+        f"Medium {market.get('medium') or 0} · "
+        f"Low {market.get('low') or 0}"
+    )
+
+
 def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
     summary = brief.headline or "Quiet window."
     description = (
@@ -619,13 +640,11 @@ def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
         field_ids.append(fid)
 
     if published > 0:
-        add("critical", _field("Critical", str(brief.market.get("critical") or 0), inline=True))
-        add("high", _field("High", str(brief.market.get("high") or 0), inline=True))
-        add("medium", _field("Medium", str(brief.market.get("medium") or 0), inline=True))
-        add("low", _field("Low", str(brief.market.get("low") or 0), inline=True))
+        add("severity", _field("Severity mix", _severity_mix_text(brief.market)))
         add("coverage", _field("Coverage", "\n".join(coverage_lines(brief.market))))
     add("glance", _field("At a glance", _glance_text(brief)))
-    if published > 0:
+    include_products = published > 0 and brief.slot != "standup"
+    if include_products:
         product_lines = [_product_line(p) for p in _products_for_display(brief.market)]
         add("products", _field("Published by product", "\n".join(product_lines)))
     if brief.headlines:
@@ -675,7 +694,10 @@ def format_daily_brief_embed(brief: DailyBrief) -> list[dict[str, Any]]:
     def over_limit() -> bool:
         return len(embed["fields"]) > 25 or _embed_char_count(embed) > 6000
 
-    for drop_id in EMBED_DROP_ORDER:
+    embed_drop_order = (
+        ("products", *EMBED_DROP_ORDER) if brief.slot == "standup" else EMBED_DROP_ORDER
+    )
+    for drop_id in embed_drop_order:
         if not over_limit():
             break
         kept_fields = []
@@ -723,16 +745,12 @@ def format_daily_brief_html(brief: DailyBrief) -> str:
                 [
                     "",
                     "<b>Severity mix</b>",
-                    esc(
-                        f"Critical {brief.market.get('critical') or 0} · "
-                        f"High {brief.market.get('high') or 0} · "
-                        f"Medium {brief.market.get('medium') or 0} · "
-                        f"Low {brief.market.get('low') or 0}"
-                    ),
+                    esc(_severity_mix_text(brief.market)),
                 ],
             )
         )
-        optional.append(("products", []))
+        if brief.slot != "standup":
+            optional.append(("products", []))
     if brief.headlines:
         optional.append(
             ("headlines", ["", "<b>Headlines</b>", esc("\n".join(_link_line(r) for r in brief.headlines))])
@@ -1013,6 +1031,84 @@ async def _fetch_notifications(
     return [dict(row) for row in rows], total
 
 
+def _latest_scheduler_run(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    if isinstance(parsed, list):
+        latest = parsed[0] if parsed else {}
+        return latest if isinstance(latest, dict) else {}
+    if isinstance(parsed, dict):
+        return parsed
+    return {}
+
+
+async def _fetch_scheduler_last_runs(db: DbConnection) -> dict[str, dict[str, Any]]:
+    rows = await db.execute_fetchall(
+        "SELECT key, value FROM sync_state WHERE key LIKE 'scheduler.last_run.%'"
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        job_id = str(row["key"]).removeprefix("scheduler.last_run.")
+        if not job_id:
+            continue
+        latest = _latest_scheduler_run(row["value"])
+        if latest:
+            out[job_id] = latest
+    return out
+
+
+async def _fetch_undismissed_job_errors(db: DbConnection) -> dict[str, dict[str, Any]]:
+    rows = await db.execute_fetchall(
+        f"""
+        SELECT category, title, body, entity_type, entity_id, dedupe_key, created_at
+        FROM user_notifications
+        WHERE category = 'job_error'
+          AND entity_type = 'job'
+          AND dismissed_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT {_LIST_QUERY_LIMIT}
+        """
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        job_id = (row["entity_id"] or "").strip()
+        if job_id and job_id not in out:
+            out[job_id] = dict(row)
+    return out
+
+
+async def _collect_current_job_ops(db: DbConnection) -> list[dict[str, Any]]:
+    last_runs = await _fetch_scheduler_last_runs(db)
+    last_run_failures = {
+        job_id: {
+            "category": "job_error",
+            "title": f"Job failed: {job_id}",
+            "body": (latest.get("error_message") or "").strip(),
+            "entity_type": "job",
+            "entity_id": job_id,
+            "dedupe_key": f"job:{job_id}:last_run",
+            "created_at": latest.get("last_run_utc") or latest.get("started_at") or "",
+        }
+        for job_id, latest in last_runs.items()
+        if latest.get("had_error")
+    }
+    succeeded = {
+        job_id for job_id, latest in last_runs.items() if not latest.get("had_error")
+    }
+    open_errors = await _fetch_undismissed_job_errors(db)
+    by_job = {
+        job_id: row
+        for job_id, row in open_errors.items()
+        if job_id not in succeeded
+    }
+    by_job.update(last_run_failures)
+    return list(by_job.values())
+
+
 def _map_watchlist(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for row in rows:
@@ -1207,13 +1303,16 @@ async def collect_daily_brief(
         start_bound=start_bound,
         end_bound=end_bound,
     )
-    ops_rows, ops_total = await _fetch_notifications(
+    window_ops_rows, window_ops_total = await _fetch_notifications(
         db,
         category=None,
-        categories=_OPS_CATEGORIES,
+        categories=_OPS_WINDOW_CATEGORIES,
         start_bound=start_bound,
         end_bound=end_bound,
     )
+    job_ops_rows = await _collect_current_job_ops(db)
+    ops_rows = [*job_ops_rows, *window_ops_rows]
+    ops_total = len(job_ops_rows) + window_ops_total
 
     watchlist = _map_watchlist(watch_rows)
     ioc = _map_ioc(ioc_rows)
@@ -1238,6 +1337,15 @@ async def collect_daily_brief(
         "ops_issues": ops_total,
     }
     market = cluster_published(market_rows)
+    catalog_titles = await lookup_catalog_titles(
+        db,
+        [
+            (str(product.get("vendor") or ""), str(product.get("product") or ""))
+            for product in market.get("products") or []
+        ],
+    )
+    if catalog_titles:
+        market = cluster_published(market_rows, catalog_titles=catalog_titles)
     market.update(market_totals)
     headlines = await _fetch_headlines(db, window_start_utc, window_end_utc)
     advisories = await _fetch_advisories(db, start_bound, end_bound)

@@ -7,7 +7,7 @@ import StatCard from './shared/StatCard.jsx'
 import HelpTip from './shared/HelpTip.jsx'
 import DiffReviewModal from './shared/DiffReviewModal.jsx'
 import { AdminChartSkeleton } from './shared/AdminSkeletons.jsx'
-import { fmtBytes, fmtIsoMono, diskBarColor } from './formatters.js'
+import { fmtBytes, fmtCountRatio, fmtIsoMono, diskBarColor } from './formatters.js'
 import { notifyBackendRestarting } from '../../utils/backendRestart.js'
 
 const ResourceLineChart = lazy(() =>
@@ -184,18 +184,33 @@ function HostCapacityCard({ profile, live = false }) {
   )
 }
 
+function CountCapacityBar({ label, used, total, sub }) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
+  return (
+    <div className="admin-capacity-bar-wrap">
+      <div className="admin-capacity-bar-header">
+        <span>{label}</span>
+        <span className="mono">{fmtCountRatio(used, total)}</span>
+      </div>
+      <div className="disk-bar">
+        <div className={`disk-bar-fill disk-bar-fill-${diskBarColor(pct)}`} style={{ width: `${pct}%` }} />
+      </div>
+      {sub && <p className="admin-capacity-bar-sub mono">{sub}</p>}
+    </div>
+  )
+}
+
 function PoolStatsCard({ poolStats }) {
   if (!poolStats?.size) return null
   const inUse = poolStats.in_use ?? 0
   const size = poolStats.max ?? poolStats.size
-  const pct = size > 0 ? Math.min(100, Math.round((inUse / size) * 100)) : 0
   return (
     <div className="admin-card admin-pool-stats">
       <div className="admin-card-title">
         Connection pool
         <HelpTip text="PostgreSQL asyncpg pool counters. SQLite dev mode has no pool." />
       </div>
-      <CapacityBar label="Connections in use" used={inUse} total={size} />
+      <CountCapacityBar label="Connections in use" used={inUse} total={size} />
       <p className="mono admin-host-meta">{inUse} in use · {poolStats.idle ?? 0} idle · max {size}</p>
     </div>
   )
@@ -527,22 +542,31 @@ export default function ResourcesPage({ toast, active = true }) {
               </div>
             )}
 
-            <HostCapacityCard profile={hostProfile} live={Boolean(liveHostProfile)} />
-            <PoolStatsCard poolStats={payload?.pool_stats} />
+            <div className="admin-two-col">
+              <HostCapacityCard profile={hostProfile} live={Boolean(liveHostProfile)} />
+              <PoolStatsCard poolStats={payload?.pool_stats} />
+            </div>
             <EfficiencyPanel report={efficiency} onApplyConfig={applyConfig} />
 
-            {chartSections.map(section => (
-              <div className="admin-card admin-resources-chart-card" key={section.id}>
-                {summaryCards(summary, section.field, section.label, section.tip)}
-                <ResourceChartSection
-                  series={series}
-                  fields={section.fields}
-                  labels={section.labels}
-                  tableTitle={section.label}
-                  hostProfile={hostProfile}
-                />
-              </div>
-            ))}
+            {Array.from({ length: Math.ceil(chartSections.length / 2) }, (_, rowIdx) => {
+              const pair = chartSections.slice(rowIdx * 2, rowIdx * 2 + 2)
+              return (
+                <div className="admin-two-col" key={pair.map(s => s.id).join('-')}>
+                  {pair.map(section => (
+                    <div className="admin-card admin-resources-chart-card" key={section.id}>
+                      {summaryCards(summary, section.field, section.label, section.tip)}
+                      <ResourceChartSection
+                        series={series}
+                        fields={section.fields}
+                        labels={section.labels}
+                        tableTitle={section.label}
+                        hostProfile={hostProfile}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
 
             <div className="admin-card">
               <div className="admin-card-title">System context</div>

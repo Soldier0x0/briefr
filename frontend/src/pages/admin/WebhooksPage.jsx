@@ -38,7 +38,6 @@ export default function WebhooksPage({ toast }) {
   const [loadError, setLoadError] = useState(null)
   const [userStack, setUserStack] = useState(null)
   const [stackError, setStackError] = useState(null)
-  const [envStack, setEnvStack] = useState('')
   const [results, setResults] = useState({})
   const [testing, setTesting] = useState({})
   const [saving, setSaving] = useState({})
@@ -99,9 +98,6 @@ export default function WebhooksPage({ toast }) {
     loadDestinations()
     loadHealth()
     loadUserStack()
-    adminApi.get('/config').then(r => r.json()).then(c => {
-      setEnvStack((c?.app?.BRIEFR_STACK_TERMS || '').trim())
-    }).catch(() => {})
   }, [loadDestinations, loadHealth, loadUserStack])
 
   const loadDeliveryLog = useCallback(async (offset = 0, destinationId = deliveryLogFilter) => {
@@ -520,9 +516,7 @@ export default function WebhooksPage({ toast }) {
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
           Alerts match CPE / affected products from the header Asset wizard. FEED <code className="mono">STACK //</code> is a throwaway filter.
-          {envStack ? (
-            <> <code className="mono">BRIEFR_STACK_TERMS</code> is set for wallboard tiles and detection-backlog fallback, not KEV alerts.</>
-          ) : null}
+          Wallboard tiles and detection-backlog use the same admin My Stack; <code className="mono">BRIEFR_STACK_TERMS</code> is copied once into empty My Stack then ignored.
         </div>
       </div>
 

@@ -3,6 +3,9 @@ import {
   relativeDate,
 } from '../../utils/caseStudyFeed.js'
 import { safeExternalUrl } from '../../utils/safeExternalUrl.js'
+import { shouldShowFeedDescription } from './shouldShowFeedDescription.js'
+
+export { shouldShowFeedDescription }
 
 export function SkeletonCards({ count = 4 }) {
   return (
@@ -95,11 +98,13 @@ export function FeedCard({ card, query, onOpenCve }) {
       {card.target && card.kind === 'atlas' && (
         <p className="cs-card-target mono">Target: {card.target}</p>
       )}
-      <p className="cs-card-desc">
-        {descParts.map((p, i) =>
-          p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
-        )}
-      </p>
+      {shouldShowFeedDescription(card.title, card.description) && (
+        <p className="cs-card-desc">
+          {descParts.map((p, i) =>
+            p.match ? <mark key={i} className="cs-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>,
+          )}
+        </p>
+      )}
       <CveChips cveIds={card.cve_ids} onOpenCve={onOpenCve} />
       <TechniqueChips techniques={card.techniques} />
     </article>

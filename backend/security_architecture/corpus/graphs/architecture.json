@@ -5730,6 +5730,12 @@
       "kind": "references_table"
     },
     {
+      "id": "routers-admin-webhooks->table:software_catalog",
+      "source": "routers-admin-webhooks",
+      "target": "table:software_catalog",
+      "kind": "references_table"
+    },
+    {
       "id": "routers-admin-webhooks->table:sync_state",
       "source": "routers-admin-webhooks",
       "target": "table:sync_state",
@@ -7197,6 +7203,12 @@
       "id": "routers-notifications_me->table:otx_pulse_iocs",
       "source": "routers-notifications_me",
       "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-notifications_me->table:sync_state",
+      "source": "routers-notifications_me",
+      "target": "table:sync_state",
       "kind": "references_table"
     },
     {

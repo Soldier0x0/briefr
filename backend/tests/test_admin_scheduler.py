@@ -437,3 +437,73 @@ def test_last_run_history_includes_error_message(monkeypatch, tmp_path):
         assert entry["error_message"] == "Connection timeout"
 
     run_db_test(_do())
+
+
+def test_write_job_last_run_success_dismisses_job_error(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+
+    from db.user_notifications import insert_notification, list_notifications
+
+    db_path = tmp_path / "dismisshist.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setattr("database.DB_PATH", str(db_path))
+
+    run_db_test(init_db())
+
+    import scheduler as sched_module
+
+    async def _do():
+        from database import get_db
+
+        db = await get_db()
+        try:
+            await db.execute(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (1, "sched-admin", "hash", "admin", 1),
+            )
+            await insert_notification(
+                db,
+                user_id=1,
+                scope="operator",
+                category="job_error",
+                severity="critical",
+                title="Job failed: kev_metadata_sync",
+                body="timeout",
+                entity_type="job",
+                entity_id="kev_metadata_sync",
+                dedupe_key="job:kev_metadata_sync:fail-1",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+        await sched_module._write_job_last_run(
+            "kev_metadata_sync",
+            datetime.now(timezone.utc),
+            had_error=False,
+            error_message="",
+        )
+
+        db = await get_db()
+        try:
+            inbox = await list_notifications(
+                db, user_id=1, scope="operator", view="inbox"
+            )
+            cleared = await list_notifications(
+                db, user_id=1, scope="operator", view="cleared"
+            )
+            remaining = await db.execute_fetchall(
+                "SELECT dismissed_at FROM user_notifications WHERE entity_id = ?",
+                ("kev_metadata_sync",),
+            )
+            return inbox, cleared, [dict(r) for r in remaining]
+        finally:
+            await db.close()
+
+    inbox, cleared, remaining = run_db_test(_do())
+    assert inbox == []
+    assert len(cleared) == 1
+    assert remaining[0]["dismissed_at"]

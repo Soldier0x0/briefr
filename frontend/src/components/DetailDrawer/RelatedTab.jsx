@@ -114,14 +114,18 @@ export default function TabRelated({
                           {sev}
                         </span>
                       )}
-                      {item.cvss_score != null && (
-                        <span className="drawer-related-cvss mono">
-                          CVSS {Number(item.cvss_score).toFixed(1)}
-                        </span>
-                      )}
-                      {semantic && item.similarity != null && (
-                        <span className="drawer-related-sim mono">
-                          {Math.round(Number(item.similarity) * 100)}% description similarity
+                      {(item.cvss_score != null || (semantic && item.similarity != null)) && (
+                        <span className="drawer-related-metrics">
+                          {item.cvss_score != null && (
+                            <span className="drawer-related-cvss mono">
+                              CVSS {Number(item.cvss_score).toFixed(1)}
+                            </span>
+                          )}
+                          {semantic && item.similarity != null && (
+                            <span className="drawer-related-sim mono">
+                              {Math.round(Number(item.similarity) * 100)}% description similarity
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>

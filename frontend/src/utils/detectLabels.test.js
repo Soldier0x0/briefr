@@ -10,6 +10,8 @@ import {
   composeBasisLabel,
   composeBasisTooltip,
   formatEvidenceSummary,
+  detectionFramingNote,
+  templateFallbackFraming,
 } from './detectLabels.js'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -63,6 +65,51 @@ describe('detectLabels', () => {
     )
     assert.match(communityRulesEmptyMessage({}), /No community Sigma\/Elastic/)
   })
+
+  it('templateFallbackFraming reuses empty/template copy and never claims DRL-1.1', () => {
+    const miss = templateFallbackFraming({
+      sigmahq_index: { rules_active: 40, synced_at: '2026-07-01' },
+    })
+    assert.match(miss, /No CVE-exact SigmaHQ/)
+    assert.match(miss, /template/i)
+    assert.doesNotMatch(miss, /DRL-1\.1/)
+    assert.doesNotMatch(miss, /Elastic is DRL/)
+
+    const unsynced = templateFallbackFraming({
+      sigmahq_index: { rules_active: 0, synced_at: '' },
+    })
+    assert.match(unsynced, /not synced yet/)
+    assert.doesNotMatch(unsynced, /DRL-1\.1/)
+
+    const generic = templateFallbackFraming({})
+    assert.equal(
+      generic,
+      `${communityRulesEmptyMessage({}).replace(/^\/\/\s*/, '')}. ${composeBasisTooltip('template_fallback')}`,
+    )
+  })
+
+  it('detectionFramingNote uses compose_basis tooltips for Nuclei/YARA', () => {
+    assert.equal(
+      detectionFramingNote({
+        generated_sigma_meta: { compose_basis: 'nuclei_artifacts' },
+      }),
+      composeBasisTooltip('nuclei_artifacts'),
+    )
+    assert.equal(
+      detectionFramingNote({ generated_sigma_meta: { compose_basis: 'yara' } }),
+      composeBasisTooltip('yara'),
+    )
+    assert.equal(
+      detectionFramingNote({
+        generated_sigma_meta: { compose_basis: 'template_fallback' },
+      }),
+      templateFallbackFraming({ generated_sigma_meta: { compose_basis: 'template_fallback' } }),
+    )
+    assert.doesNotMatch(
+      detectionFramingNote({ generated_sigma_meta: { compose_basis: 'nuclei_artifacts' } }),
+      /DRL-1\.1/,
+    )
+  })
 })
 
 describe('DC-3 Detect tab evidence pack', () => {
@@ -74,6 +121,10 @@ describe('DC-3 Detect tab evidence pack', () => {
     assert.match(src, /formatEvidenceSummary/)
     assert.match(src, /composeBasisLabel/)
     assert.match(src, /communityRulesEmptyMessage/)
+    assert.match(src, /detectionFramingNote/)
+    assert.match(src, /hasCommunity &&/)
+    assert.match(src, /!hasCommunity &&/)
+    assert.match(src, /supplement/)
     assert.match(src, /detection\.evidence/)
     assert.match(src, /compose_basis/)
     assert.match(src, /det-evidence-summary/)

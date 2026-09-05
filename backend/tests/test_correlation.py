@@ -982,15 +982,21 @@ def test_kev_booster_affects_priority_not_confidence(tmp_path, monkeypatch):
 def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
     """§15: a vendor spike should be hidden for an unrelated, non-KEV CVE
     when a stack is configured, but shown for a KEV/exploit CVE regardless."""
+    from auth.repo import create_user
     from correlation.engine import _get_temporal_for_cve, _store_temporal_anomalies
+    from preferences.repo import upsert_user_stack
 
     async def run():
         db_path = str(tmp_path / "corr-temporal-gate.db")
         monkeypatch.setenv("DB_PATH", db_path)
         monkeypatch.setattr(database, "DB_PATH", db_path)
-        monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
+        # Env would match acme:widget if still used as the matcher; admin My Stack must win.
+        monkeypatch.setenv("BRIEFR_STACK_TERMS", "acme")
         db = await _seed_db(db_path)
         try:
+            user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+            await upsert_user_stack(db, user["id"], "nginx")
+            await db.commit()
             await db.execute(
                 "UPDATE cves SET affected_products = '[\"acme:widget\"]' "
                 "WHERE cve_id = 'CVE-2024-1001'"
@@ -1014,6 +1020,28 @@ def test_temporal_anomaly_gated_off_stack_without_signal(tmp_path, monkeypatch):
             on_kev = await _get_temporal_for_cve(db, "CVE-2024-HUB1")
             assert len(on_kev) == 1
             assert on_kev[0]["vendor"] == "acme"
+        finally:
+            await db.close()
+
+    run_db_test(run())
+
+
+def test_stack_terms_list_uses_admin_my_stack_not_env(tmp_path, monkeypatch):
+    from auth.repo import create_user
+    from correlation.local import stack_terms_list
+    from preferences.repo import upsert_user_stack
+
+    async def run():
+        db_path = str(tmp_path / "corr-stack-terms.db")
+        monkeypatch.setenv("DB_PATH", db_path)
+        monkeypatch.setattr(database, "DB_PATH", db_path)
+        monkeypatch.setenv("BRIEFR_STACK_TERMS", "env-only")
+        db = await _seed_db(db_path)
+        try:
+            user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+            await upsert_user_stack(db, user["id"], "nginx")
+            await db.commit()
+            assert await stack_terms_list(db) == ["nginx"]
         finally:
             await db.close()
 

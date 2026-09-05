@@ -235,6 +235,22 @@ async def _write_job_last_run(
                         job_id,
                         notify_exc,
                     )
+            else:
+                try:
+                    ok_db = await get_db()
+                    try:
+                        from db.user_notifications import dismiss_job_error_notifications
+
+                        await dismiss_job_error_notifications(ok_db, job_id)
+                        await ok_db.commit()
+                    finally:
+                        await ok_db.close()
+                except Exception as notify_exc:
+                    logger.warning(
+                        "Failed to dismiss job error notifications for %s: %s",
+                        job_id,
+                        notify_exc,
+                    )
             return
         except DatabaseLockedError as exc:
             if attempt == 3:
@@ -1347,7 +1363,27 @@ async def run_wallboard_token_rotation() -> bool:
     return True
 
 
+async def _reconcile_recovered_job_errors_on_startup() -> None:
+    """Align operator inbox with last_run health after a restart skip."""
+    from db.user_notifications import reconcile_recovered_job_error_notifications
+
+    db = await get_db()
+    try:
+        dismissed = await reconcile_recovered_job_error_notifications(db)
+        if dismissed:
+            await db.commit()
+            logger.info(
+                "Startup: cleared %d recovered job_error notification(s)",
+                dismissed,
+            )
+    except Exception:
+        logger.exception("Startup job_error notification reconcile failed")
+    finally:
+        await db.close()
+
+
 async def maybe_run_on_startup() -> None:
+    await _reconcile_recovered_job_errors_on_startup()
     count = 0
     db = await get_db()
     try:

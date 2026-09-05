@@ -195,7 +195,7 @@ All four LLM keys are optional and gate a fixed failover chain (Groq → Cerebra
 | `WEBHOOK_GENERIC_ENABLED` | `1` | Enable/disable generic destination |
 | `WEBHOOK_GENERIC_EVENTS` | all | Comma-separated event subscriptions |
 | `WEBHOOK_GENERIC_LABEL` | `Generic HTTPS` | Admin display label |
-| `BRIEFR_STACK_TERMS` | — | Comma-separated products for wallboard keyword tiles, and for detection-backlog matching when admin My Stack is empty. Not used for KEV-on-stack alerts. |
+| `BRIEFR_STACK_TERMS` | — | Legacy. If set while admin My Stack is empty, copied once into that admin profile then ignored for matching. Wallboard and detection-backlog use My Stack. Not used for KEV-on-stack alerts. |
 
 Configure **one or more** destinations. Alerts are scheduler-side (`kev_alert` after KEV sync; `backup_failure` from dead-man check). Per-destination enable/event subscriptions can be overridden via `PATCH /api/admin/webhooks/destinations/{id}`.
 

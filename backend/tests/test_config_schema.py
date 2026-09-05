@@ -194,6 +194,15 @@ def test_set_config_accepts_in_range_int(admin_client, tmp_path, monkeypatch):
     assert resp.status_code == 200
 
 
+def test_stack_terms_help_is_migrate_once_not_live_matching():
+    field = get_field("BRIEFR_STACK_TERMS")
+    assert field is not None
+    help_text = field.help_text.lower()
+    assert "my stack" in help_text
+    assert "one-time" in help_text or "once" in help_text or "migrat" in help_text
+    assert "when admin my stack is empty" not in help_text
+
+
 def test_cache_refresh_help_does_not_claim_live_job():
     fields = {f.key: f for f in CONFIG_SCHEMA}
     help_h = fields["CACHE_REFRESH_HOUR"].help_text.lower()

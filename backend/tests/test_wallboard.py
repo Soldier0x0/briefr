@@ -130,6 +130,18 @@ async def _seed_wallboard_db(db_path: Path) -> None:
             VALUES ('T1190', 'Exploit Public-Facing Application', 'Initial Access', '')
             """
         )
+        await db.execute(
+            """
+            INSERT INTO users (username, password_hash, role, is_active)
+            VALUES ('ops', 'x', 'admin', 1)
+            """
+        )
+        await db.execute(
+            """
+            INSERT INTO user_preferences (user_id, stack_terms, updated_at)
+            VALUES (1, 'log4j', datetime('now'))
+            """
+        )
         await db.commit()
     finally:
         await db.close()
@@ -139,7 +151,7 @@ async def _seed_wallboard_db(db_path: Path) -> None:
 def wallboard_client(tmp_path, monkeypatch):
     db_path = tmp_path / "wallboard.db"
     _use_sqlite_backend(monkeypatch, db_path)
-    monkeypatch.setenv("BRIEFR_STACK_TERMS", "log4j")
+    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
     _open_or_static_wallboard_gate(monkeypatch)
 
     _patch_app_lifecycle(monkeypatch)

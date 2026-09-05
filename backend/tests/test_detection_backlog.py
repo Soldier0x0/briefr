@@ -8,8 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from fastapi.testclient import TestClient
 
+from auth.repo import create_user
 from database import get_db, init_db
 from detection.backlog import process_new_kev_backlog, upsert_gap_items_for_cves
+from preferences.repo import upsert_user_stack
 from tests.conftest import run_db_test
 
 GAP_TID = "T1566"
@@ -21,7 +23,7 @@ def backlog_client(tmp_path, monkeypatch):
     db_path = tmp_path / "backlog.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
+    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
 
     async def _noop_async() -> None:
         return None
@@ -84,6 +86,8 @@ def backlog_client(tmp_path, monkeypatch):
                     ("CVE-2024-2002", COMMUNITY_TID),
                 ],
             )
+            user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+            await upsert_user_stack(db, user["id"], "nginx")
             await db.commit()
         finally:
             await db.close()
@@ -223,7 +227,7 @@ def test_kev_backlog_skips_description_only(tmp_path, monkeypatch):
     db_path = tmp_path / "backlog_desc.db"
     monkeypatch.setenv("DB_PATH", str(db_path))
     monkeypatch.setattr("database.DB_PATH", str(db_path))
-    monkeypatch.setenv("BRIEFR_STACK_TERMS", "nginx")
+    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
 
     async def seed() -> None:
         await init_db()
@@ -254,6 +258,8 @@ def test_kev_backlog_skips_description_only(tmp_path, monkeypatch):
                 "INSERT INTO cve_technique_map (cve_id, technique_id) VALUES (?, ?)",
                 ("CVE-2024-2099", GAP_TID),
             )
+            user = await create_user(db, "ops", "correct-horse-battery", role="admin")
+            await upsert_user_stack(db, user["id"], "nginx")
             await db.commit()
         finally:
             await db.close()

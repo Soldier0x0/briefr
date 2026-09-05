@@ -70,11 +70,11 @@ INSERT INTO webhook_destinations (
 """
 
 _DELETE_DESTINATION_SQLITE = """
-DELETE FROM webhook_destinations WHERE id = ? AND source = 'db'
+DELETE FROM webhook_destinations WHERE id = ?
 """
 
 _DELETE_DESTINATION_PG = """
-DELETE FROM webhook_destinations WHERE id = $1 AND source = 'db'
+DELETE FROM webhook_destinations WHERE id = $1
 """
 
 _SELECT_DESTINATION_SOURCE_SQLITE = """

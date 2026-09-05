@@ -10,6 +10,7 @@ from reports.market_clusters import (
     cluster_weight,
     format_market_section,
     primary_product,
+    product_display_label,
 )
 
 
@@ -44,10 +45,14 @@ def test_cluster_one_cve_one_bucket_and_merges_same_product():
     assert market["medium"] == 1
     assert market["low"] == 1
     by_label = {p["label"]: p for p in market["products"]}
-    assert by_label["nginx"]["total"] == 2
-    assert by_label["nginx"]["critical"] == 1
-    assert by_label["nginx"]["high"] == 1
-    assert by_label["oracle database"]["total"] == 1
+    from db.software_catalog import display_name_for
+
+    nginx_label = display_name_for("f5", "nginx")
+    oracle_label = display_name_for("oracle", "oracle_database")
+    assert by_label[nginx_label]["total"] == 2
+    assert by_label[nginx_label]["critical"] == 1
+    assert by_label[nginx_label]["high"] == 1
+    assert by_label[oracle_label]["total"] == 1
     assert by_label["Unmapped"]["total"] == 1
     assert market["unmapped"] == 1
 
@@ -96,3 +101,51 @@ def test_format_market_section_grammar():
 
 def test_format_omits_section_when_empty():
     assert format_market_section(cluster_published([])) == []
+
+
+def test_catalog_title_wins_over_display_name():
+    rows = [
+        {
+            "severity": "HIGH",
+            "cpe_matches": '[{"vendor":"dell","product":"unity"}]',
+            "affected_products": "",
+        }
+    ]
+    titled = cluster_published(
+        rows,
+        catalog_titles={("dell", "unity"): "Dell Unity"},
+    )
+    assert titled["products"][0]["label"] == "Dell Unity"
+    assert "Dell EMC" not in titled["products"][0]["label"]
+
+    untitled = cluster_published(rows)
+    from db.software_catalog import display_name_for
+
+    assert untitled["products"][0]["label"] == display_name_for("dell", "unity")
+    assert untitled["products"][0]["label"] == "dell unity"
+    assert "EMC" not in untitled["products"][0]["label"]
+
+    product_only = cluster_published(
+        [{"severity": "LOW", "cpe_matches": '[{"product":"unity"}]', "affected_products": ""}]
+    )
+    assert product_only["products"][0]["label"] == "unity"
+    assert product_display_label("", "unity") == "unity"
+
+
+def test_conflicting_vendors_use_raw_product_key():
+    market = cluster_published(
+        [
+            {
+                "severity": "HIGH",
+                "cpe_matches": '[{"vendor":"f5","product":"nginx"}]',
+                "affected_products": "",
+            },
+            {
+                "severity": "LOW",
+                "cpe_matches": '[{"vendor":"other","product":"nginx"}]',
+                "affected_products": "",
+            },
+        ]
+    )
+    assert market["products"][0]["label"] == "nginx"
+    assert market["products"][0]["vendor"] == ""

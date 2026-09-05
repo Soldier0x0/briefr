@@ -153,29 +153,44 @@ def test_put_stack_rejects_oversized_profile(client):
     assert res.status_code == 422
 
 
-def test_effective_stack_terms_prefers_env(client, monkeypatch):
-    from preferences.repo import get_effective_stack_terms
+def test_env_stack_migrates_into_empty_admin_then_ignored(client, monkeypatch):
+    from preferences.repo import get_effective_stack_terms, get_user_stack
     from database import get_db
     from tests.conftest import run_db_test
 
     monkeypatch.setenv("BRIEFR_STACK_TERMS", "env-term")
 
-    async def run():
+    async def first():
+        db = await get_db()
+        try:
+            terms = await get_effective_stack_terms(db)
+            saved = await get_user_stack(db, 1)
+            return terms, saved["stack_terms"]
+        finally:
+            await db.close()
+
+    terms, saved = run_db_test(first())
+    assert terms == "env-term"
+    assert saved == "env-term"
+
+    monkeypatch.setenv("BRIEFR_STACK_TERMS", "other-env")
+
+    async def second():
         db = await get_db()
         try:
             return await get_effective_stack_terms(db)
         finally:
             await db.close()
 
-    assert run_db_test(run()) == "env-term"
+    assert run_db_test(second()) == "env-term"
 
 
-def test_effective_stack_terms_does_not_use_user_prefs(tmp_path, monkeypatch, client):
+def test_effective_stack_terms_uses_admin_my_stack_not_env(tmp_path, monkeypatch, client):
     from preferences.repo import get_effective_stack_terms
     from database import get_db
     from tests.conftest import run_db_test
 
-    monkeypatch.delenv("BRIEFR_STACK_TERMS", raising=False)
+    monkeypatch.setenv("BRIEFR_STACK_TERMS", "env-term")
     _login(client)
     client.put("/api/me/stack", json={"stack_terms": "saved-stack", "profile": None})
 
@@ -186,7 +201,46 @@ def test_effective_stack_terms_does_not_use_user_prefs(tmp_path, monkeypatch, cl
         finally:
             await db.close()
 
-    assert run_db_test(run()) == ""
+    assert run_db_test(run()) == "saved-stack"
+
+
+def test_env_stack_skips_migrate_when_admin_profile_has_assets(client, monkeypatch):
+    from preferences.repo import get_effective_stack_terms, get_user_stack
+    from database import get_db
+    from tests.conftest import run_db_test
+
+    monkeypatch.setenv("BRIEFR_STACK_TERMS", "env-term")
+    _login(client)
+    profile = {
+        "version": 1,
+        "operatingSystems": [
+            {"product": "Windows Server", "version": "2022", "vendor": "Microsoft"}
+        ],
+        "applications": [],
+        "environment": {
+            "internetFacing": "Some",
+            "industry": "Technology",
+            "criticality": "Medium",
+        },
+        "aiSystems": [],
+    }
+    put = client.put("/api/me/stack", json={"stack_terms": "", "profile": profile})
+    assert put.status_code == 200
+    assert put.json()["stack_terms"] == ""
+
+    async def run():
+        db = await get_db()
+        try:
+            terms = await get_effective_stack_terms(db)
+            saved = await get_user_stack(db, 1)
+            return terms, saved["stack_terms"]
+        finally:
+            await db.close()
+
+    terms, saved_terms = run_db_test(run())
+    assert saved_terms == ""
+    assert "env-term" not in terms.split(",")
+    assert "Windows Server" in terms
 
 
 def test_alert_stack_assets_from_admin_terms(client, monkeypatch):

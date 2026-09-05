@@ -621,7 +621,7 @@ Health for both appears under `GET /api/health` → `feeds.sources.vulnrichment`
 
 **Rejected CVEs:** NVD `vulnStatus: Rejected` and cvelistV5 `cveMetadata.state: REJECTED` records are **not upserted**. Each NVD sync also runs `purge_legacy_rejected_cves` (rows whose description starts with `Rejected reason:`) and deletes any reject IDs seen in the current feed batch. cvelistV5 deltas delete matching rows when a file flips to `REJECTED`.
 
-RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Krebs on Security, Dark Reading, Schneier on Security, CISA Advisories. Non-security editorial items (e.g. Dark Reading cartoon contests) are excluded via `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py`.
+RSS sources defined in `feeds/incident_sources.py`: The Hacker News, Krebs on Security, Dark Reading, Schneier on Security, CISA Advisories. Non-security editorial items (e.g. Dark Reading cartoon contests, `[Virtual Event]` webinars) are excluded via `EXCLUDED_NEWS_TITLE_PATTERNS` in `incident_news.py` at RSS parse and when serving cached `incident_feed:snapshot` cards.
 
 ---
 
