@@ -259,7 +259,7 @@ terms:
   term: psycopg
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 3.3.4
+  version: 3.3.5
 - id: self-stack-pydantic
   title: pydantic
   summary: BRIEFR dependency term derived from backend/requirements.txt.
