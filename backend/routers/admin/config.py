@@ -255,6 +255,8 @@ async def set_config(request: Request, body: dict):
         os.environ[write_key] = write_value
         _propagate_to_settings(write_key, write_value)
         await persist_operator_setting(write_key, write_value)
+        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
+        await maybe_clear_env_dest_tombstone_for_key(write_key, write_value)
         written_keys.append(write_key)
         await audit(
             request,
@@ -350,6 +352,8 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         os.environ[key] = value
         _propagate_to_settings(key, value)
         await persist_operator_setting(key, value)
+        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
+        await maybe_clear_env_dest_tombstone_for_key(key, value)
         changed_keys.append(key)
 
     if not changed_keys:

@@ -120,3 +120,13 @@ async def persist_operator_setting(key: str, value: str) -> None:
         await db.commit()
     finally:
         await db.close()
+
+    if (value or "").strip() and key in {
+        "DISCORD_WEBHOOK_URL",
+        "WEBHOOK_GENERIC_URL",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID",
+    }:
+        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
+
+        await maybe_clear_env_dest_tombstone_for_key(key, value)
