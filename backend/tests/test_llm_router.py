@@ -6,13 +6,22 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ai import llm_router as router
 from ai.llm_router import LLMCompletion, chat_completion_task
 from db.config import is_postgres
-from resilient_client import CircuitOpenError
+from resilient_client import CircuitOpenError, reset_feed_health
 from tests.conftest import run_db_test
+
+
+@pytest.fixture(autouse=True)
+def _reset_source_health():
+    reset_feed_health()
+    yield
+    reset_feed_health()
 
 
 def test_get_configured_providers_reads_env(monkeypatch):
