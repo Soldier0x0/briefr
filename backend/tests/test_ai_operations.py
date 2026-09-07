@@ -38,7 +38,7 @@ def admin_client(tmp_path, monkeypatch, auth_token):
 def test_ai_operations_sql_uses_native_placeholders():
     if is_postgres():
         assert "$1" in ai_ops_mod._INSERT_PG
-        assert "$19" in ai_ops_mod._INSERT_PG
+        assert "$20" in ai_ops_mod._INSERT_PG
     else:
         assert "?" in ai_ops_mod._INSERT_SQLITE
 

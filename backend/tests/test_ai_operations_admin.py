@@ -45,6 +45,7 @@ def test_providers_payload_lists_five_providers():
     names = [p["provider"] for p in payload["providers"]]
     assert names == ["custom", "groq", "cerebras", "openrouter", "gemini"]
     assert all("configured" in p for p in payload["providers"])
+    assert all("enabled" in p for p in payload["providers"])
 
 
 def test_usage_aggregates_and_activity_pagination(tmp_path, monkeypatch):
@@ -349,6 +350,36 @@ def test_get_payload_returns_stored_payload(admin_client):
     assert isinstance(body["messages"], list)
     assert body["messages"][0]["role"] == "system"
     assert body["created_at"]
+
+
+def test_get_payload_200_when_messages_json_invalid(admin_client):
+    operation_id = "op-bad-json"
+
+    async def _seed():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation_payload(
+                db,
+                operation_id=operation_id,
+                messages_json='[{"role":"user","content":"partial',
+                response_excerpt="[Errno -3] Temporary failure in name resolution",
+                task_class="product_extraction",
+                provider="cerebras",
+                model="gpt-oss-120b",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+    r = admin_client.get(f"/api/admin/ai/operations/{operation_id}/payload")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["messages_parse_ok"] is False
+    assert body["messages"] == []
+    assert "Errno -3" in body["response_excerpt"]
+    assert "partial" in (body.get("messages_raw") or "")
 
 
 def test_retry_replays_stored_messages(admin_client, monkeypatch):

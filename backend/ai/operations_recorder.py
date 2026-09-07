@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import uuid
 from time import monotonic
 
@@ -11,6 +12,8 @@ from database import get_db, insert_ai_operation
 from db.timeutil import utcnow_str
 from resilient_client import CircuitOpenError
 from structured_logging import request_id_var
+
+_HTTP_STATUS_RE = re.compile(r"\b([45]\d\d)\b")
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +45,39 @@ def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str
         return "rate_limit"
     if "404" in msg or ("model" in msg and "not found" in msg):
         return "model_not_found"
+    if _HTTP_STATUS_RE.search(msg):
+        return "unknown"
+    errno = getattr(exc, "errno", None)
+    if (
+        errno == -3
+        or "name resolution" in msg
+        or "errno -3" in msg
+        or "gaierror" in msg
+    ):
+        return "dns"
+    if any(
+        token in msg
+        for token in (
+            "connection refused",
+            "connection reset",
+            "connecterror",
+            "network is unreachable",
+            "ssl",
+            "tls",
+            "certificate verify failed",
+            "handshake",
+        )
+    ):
+        return "network"
     return "unknown"
+
+
+def redact_error_detail(text: str | None, *, limit: int = 200) -> str | None:
+    if not text:
+        return None
+    from db.ai_operation_payloads import _redact_secrets
+
+    return _redact_secrets(text)[:limit]
 
 
 async def record_llm_attempt(
@@ -56,6 +91,7 @@ async def record_llm_attempt(
     context_type: str | None,
     context_id: str | None,
     error_class: str | None = None,
+    error_detail: str | None = None,
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
     input_tokens: int | None = None,
@@ -79,6 +115,7 @@ async def record_llm_attempt(
             model=model,
             success=success,
             error_class=error_class,
+            error_detail=redact_error_detail(error_detail),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             total_tokens=total_tokens,

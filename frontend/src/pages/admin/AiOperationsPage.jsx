@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useBusyGuard } from '../../hooks/useBusyGuard.js'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../../api.js'
-import { AlertDialog, Button, Modal, Select } from '../../components/ui/index.js'
+import { AlertDialog, Button, Modal, Select, Switch } from '../../components/ui/index.js'
 import { fmtIso } from './formatters.js'
 import AsyncSection from './shared/AsyncSection.jsx'
 import HelpTip from './shared/HelpTip.jsx'
@@ -87,6 +87,11 @@ function resultCell(row) {
     <span className="admin-result-cell">
       {successBadge(false)}
       {reason && <span className="admin-result-reason">{reason}</span>}
+      {row.error_detail && (
+        <span className="admin-result-reason" title={row.error_detail}>
+          {String(row.error_detail).slice(0, 80)}
+        </span>
+      )}
       {row.fallback_from_provider && (
         <span className="admin-result-fallback">
           fallback from {row.fallback_from_provider}
@@ -97,6 +102,7 @@ function resultCell(row) {
 }
 
 function providerStatus(p) {
+  if (p.enabled === false) return { label: 'Disabled', className: 'badge-muted' }
   if (!p.configured) return { label: 'No key', className: 'badge-muted' }
   if (p.circuit_open) return { label: CIRCUIT_UI.pausedProvider, className: 'badge-error' }
   if ((p.consecutive_failures || 0) > 0 || p.last_error) {
@@ -325,13 +331,28 @@ function OverviewTab({ overview, setPage, retrievalHealth, retrievalLoading, ret
   )
 }
 
-function ProvidersTab({ providers }) {
+function ProvidersTab({ providers, toast, onChanged }) {
+  const [busyProvider, setBusyProvider] = useState('')
   const rows = providers?.providers || []
+
+  async function setProviderEnabled(p, next) {
+    const key = p.enabled_key || `LLM_PROVIDER_${String(p.provider).toUpperCase()}_ENABLED`
+    setBusyProvider(p.provider)
+    try {
+      await adminApi.postJson('/config', { key, value: next ? '1' : '0' })
+      await onChanged?.()
+    } catch (e) {
+      toast?.(formatErrorWithRef(e), false)
+    } finally {
+      setBusyProvider('')
+    }
+  }
+
   return (
     <div className="admin-card">
       <div className="admin-card-title">
         Provider health
-        <HelpTip text="Pause state from the shared outbound client. Providers without traffic yet show empty health until first call." />
+        <HelpTip text="Pause state from the shared outbound client. Disable a provider here without deleting its API key. Providers without traffic yet show empty health until first call." />
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table className="admin-table">
@@ -339,6 +360,7 @@ function ProvidersTab({ providers }) {
             <tr>
               <th>Provider</th>
               <th>Key</th>
+              <th>Enabled</th>
               <th>Status</th>
               <th>Last success</th>
               <th>Last error</th>
@@ -347,6 +369,7 @@ function ProvidersTab({ providers }) {
           <tbody>
             {rows.map(p => {
               const st = providerStatus(p)
+              const enabled = p.enabled !== false
               return (
                 <tr key={p.provider}>
                   <td style={{ fontFamily: 'monospace' }}>{p.provider}</td>
@@ -355,6 +378,14 @@ function ProvidersTab({ providers }) {
                       {p.configured ? 'configured' : 'missing'}
                     </span>
                     <span className="admin-env-key mono" title={p.env_key}>{p.env_key}</span>
+                  </td>
+                  <td>
+                    <Switch
+                      checked={enabled}
+                      disabled={busyProvider === p.provider}
+                      label={enabled ? 'On' : 'Off'}
+                      onCheckedChange={(next) => setProviderEnabled(p, next)}
+                    />
                   </td>
                   <td><span className={`badge ${st.className}`}>{st.label}</span></td>
                   <td style={{ fontSize: '0.78rem' }}>{p.last_success ? fmtIso(p.last_success) : '—'}</td>
@@ -763,7 +794,9 @@ function ActivityTab({ toast, providerOptions }) {
                   <div>
                     <p className="admin-text-dim admin-cell-mono" style={{ margin: '0 0 var(--space-2)' }}>Messages JSON</p>
                     <pre style={PAYLOAD_PRE_STYLE}>
-                      {JSON.stringify(payloadData.messages || [], null, 2)}
+                      {payloadData.messages_parse_ok === false
+                        ? (payloadData.messages_raw || '')
+                        : JSON.stringify(payloadData.messages || [], null, 2)}
                     </pre>
                   </div>
                   <div>
@@ -888,7 +921,9 @@ export default function AiOperationsPage({ toast, setPage }) {
                   onRetryRetrieval={loadRetrieval}
                 />
               )}
-              {tab === 'providers' && <ProvidersTab providers={providers} />}
+              {tab === 'providers' && (
+                <ProvidersTab providers={providers} toast={toast} onChanged={loadCore} />
+              )}
               {tab === 'models' && <ModelsTab models={models} />}
               {tab === 'usage' && <UsageTab overview={overview} />}
             </>
