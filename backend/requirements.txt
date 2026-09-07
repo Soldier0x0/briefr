@@ -7,13 +7,8 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 aiosqlite==0.22.1
 asyncpg==0.31.0
-<<<<<<< HEAD
-alembic==1.19.1
-psycopg[binary]==3.3.5
-=======
 alembic==1.19.2
-psycopg[binary]==3.3.4
->>>>>>> d215eca8 (chore(deps): bump alembic from 1.19.1 to 1.19.2 in /backend)
+psycopg[binary]==3.3.5
 procrastinate==3.9.0
 PyYAML==6.0.3
 pyrage==1.4.0
