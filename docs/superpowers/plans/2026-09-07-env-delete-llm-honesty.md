@@ -112,7 +112,30 @@ def test_delete_env_discord_tombstone_ignores_process_env(admin_client, monkeypa
 
 `admin_client` already imported `webhooks.destinations` at module load. `_ENV_BOOTSTRAP_PROCESS_KEYS` is a static tuple of **key names** (`DISCORD_WEBHOOK_URL`, …), not a snapshot of `PROCESS_ENV_KEYS`. Warning must read live `settings.PROCESS_ENV_KEYS` at request time (same as today’s 409 test). Keep this monkeypatch order; do not reload `webhooks.destinations`.
 
-Also add a failure-injection test: if the delete transaction rolls back, `os.environ` still has the URL, tombstone is absent, and `sync_env_destinations_to_db` may still see `discord` (card not half-deleted).
+Also add this rollback test (commit raises; env URL stays; no tombstone; `sync_env_destinations_to_db` can still see `discord`):
+
+```python
+def test_delete_env_discord_rollback_does_not_pop_or_tombstone(admin_client, monkeypatch):
+    url = "https://discord.com/api/webhooks/1/token"
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", url)
+    run_db_test(sync_env_destinations_to_db())
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("injected commit failure")
+
+    monkeypatch.setattr("webhooks.destinations.commit_reserved_env_delete", boom)
+    deleted = admin_client.delete(
+        "/api/admin/webhooks/destinations/discord",
+        params={"confirm_text": "delete"},
+    )
+    assert deleted.status_code == 500
+    assert os.environ.get("DISCORD_WEBHOOK_URL") == url
+    run_db_test(sync_env_destinations_to_db())
+    listed = admin_client.get("/api/admin/webhooks/destinations")
+    assert any(row["id"] == "discord" for row in listed.json()["destinations"])
+```
+
+Implement `commit_reserved_env_delete(db, destination_id)` as the single transactional helper (settings clear + tombstone + row delete + `commit`). Route pops env only after that returns.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -122,7 +145,7 @@ Expected: FAIL (409 or discord still listed).
 
 - [ ] **Step 3: Implement tombstone + pop + 200**
 
-One connection: `set_app_setting` empty URL/enabled keys, `set_app_setting` tombstone `"1"`, `db_delete` reserved id, **one `commit`**. Only after commit: `os.environ.pop` for `_ENV_BOOTSTRAP_CLEAR_KEYS[id]` including keys in `PROCESS_ENV_KEYS`. If commit raises, do not pop env. `load_destinations`: after merge, drop dests whose id is reserved and tombstoned. `sync_env_destinations_to_db`: skip upsert for tombstoned ids. `load_env_destinations` unchanged (env-only). Delete route returns `{"ok": True, "destination_id": id}` plus `warning` when those URL keys are in **live** `settings.PROCESS_ENV_KEYS` (systemd will re-inject on restart). In `persist_operator_setting`, if key is `DISCORD_WEBHOOK_URL` / `WEBHOOK_GENERIC_URL` / telegram token+chat and new value is non-empty, clear matching tombstone.
+`commit_reserved_env_delete(db, destination_id)`: on one connection, `set_app_setting` empty URL/enabled keys, tombstone `"1"`, `db_delete` reserved id, **one `commit`**. Route calls that helper then `os.environ.pop` for `_ENV_BOOTSTRAP_CLEAR_KEYS[id]` including keys in `PROCESS_ENV_KEYS`. If the helper raises, do not pop env. `load_destinations`: after merge, drop dests whose id is reserved and tombstoned. `sync_env_destinations_to_db`: skip upsert for tombstoned ids. `load_env_destinations` unchanged (env-only). Delete route returns `{"ok": True, "destination_id": id}` plus `warning` when those URL keys are in **live** `settings.PROCESS_ENV_KEYS` (systemd will re-inject on restart). In `persist_operator_setting`, if key is `DISCORD_WEBHOOK_URL` / `WEBHOOK_GENERIC_URL` / telegram token+chat and new value is non-empty, clear matching tombstone.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
