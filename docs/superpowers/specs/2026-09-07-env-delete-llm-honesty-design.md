@@ -29,9 +29,9 @@ View payload **500**s when `messages_json` is not a JSON array (truncation at 32
 Applies to reserved ids `discord`, `telegram`, `generic`.
 
 - Confirm remains `confirm_text=delete`.
-- Persist: clear matching keys in `app_settings` (same store as API keys), **pop those keys from `os.environ` even if they were process-env at boot**, delete the destination row, set a **tombstone** in `app_settings` for that reserved id.
+- Persist in **one DB transaction**: clear matching keys in `app_settings`, write the tombstone, delete the destination row. **After that commit succeeds**, pop those keys from `os.environ` even if they were process-env at boot. Do not pop env if the transaction rolls back.
 - Response **200** `{ok: true, destination_id}`. If process-env *would have* re-injected the URL, include a non-secret `warning` naming the env key(s) (systemd still holds the secret until the unit is edited). **Do not 409.**
-- `load_destinations` / `sync_env_destinations_to_db`: skip bootstrap of a tombstoned reserved id even if env still has a URL after restart.
+- `load_env_destinations` stays env-only (no rename). `load_destinations` (env+DB merge) and `sync_env_destinations_to_db` skip a tombstoned reserved id even if env still has a URL after restart.
 - Other destination rows are untouched (same Discord URL string in `brief` still delivers).
 - Discord.com is not called; the webhook token is not revoked there.
 - Clear tombstone when the operator **saves a non-empty** matching URL/token via API keys & config. Then ENV bootstrap may return.
@@ -39,7 +39,7 @@ Applies to reserved ids `discord`, `telegram`, `generic`.
 
 ### 2. LLM error class + circuits
 
-- `classify_llm_error` adds **`dns`** (name resolution / `Errno -3` / `gaierror`) and **`network`** (connection refused/reset, TLS handshake fail without HTTP status). Keep existing `empty`, `timeout`, `auth`, `rate_limit`, `model_not_found`, `circuit_open`. Default remains `unknown` only when none match.
+- `classify_llm_error` adds **`dns`** (name resolution / `Errno -3` / `gaierror`) and **`network`** (connection refused/reset, TLS handshake / SSL errors **with no HTTP status**). Keep existing `empty`, `timeout`, `auth`, `rate_limit`, `model_not_found`, `circuit_open`. Any exception whose text includes an HTTP **4xx/5xx** status is **not** `dns`/`network` (401/403 → `auth`, 429 → `rate_limit`, other 4xx/5xx stay `unknown` or existing classes). Default remains `unknown` only when none match.
 - On failed attempts (including `dns`/`network`/`timeout`/`unknown`), call `record_source_failure` so Feed Health / API health pauses after the existing circuit threshold.
 - For `dns` (and `network` that is not an HTTP 4xx/5xx), mark that **provider** skipped for the rest of the current `llm_job_session` (same pattern as empty body). Do **not** skip other providers in the chain for that reason.
 - DNS/network failures must not be described as wasting provider quota. Tokens stay unset. Overview copy may say attempts failed before the provider billed.
@@ -50,7 +50,7 @@ Applies to reserved ids `discord`, `telegram`, `generic`.
 - Labels: `dns` → `dns failure`; `network` → `network error`. Keep `unknown error` only for class `unknown`.
 - `GET /api/admin/ai/operations/{id}/payload` returns **200** when a payload row exists: `{messages, messages_parse_ok, messages_raw?, response_excerpt, …}`. If `messages_json` is not a message list, `messages` is `[]`, `messages_parse_ok` is false, and `messages_raw` is the truncated stored text. **Never 500** for invalid JSON.
 - Retry: if messages cannot be parsed as a list, **400** with a short detail (cannot replay). Not 500.
-- Truncate failure payloads inside each message `content`, not by slicing the JSON blob.
+- Truncate failure payloads inside each message `content`, never by slicing the JSON blob. If insert input is not a message list, store bounded raw text as a valid JSON object `{"parse_ok": false, "raw": "…"}` (or skip the payload row) — do not persist a mid-cut array as if it were replayable messages.
 
 ### 4. Per-provider enable (without deleting keys)
 

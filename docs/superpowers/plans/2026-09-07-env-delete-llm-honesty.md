@@ -56,7 +56,7 @@
 - Test: `backend/tests/test_webhooks_destinations_crud.py`
 
 **Interfaces:**
-- Produces: `TOMBSTONE_KEYS = {"discord": "WEBHOOK_TOMBSTONE_DISCORD", "telegram": "WEBHOOK_TOMBSTONE_TELEGRAM", "generic": "WEBHOOK_TOMBSTONE_GENERIC"}`; `async def is_env_dest_tombstoned(destination_id: str) -> bool`; `async def set_env_dest_tombstone(destination_id: str, *, tombstoned: bool) -> None`; `clear_env_bootstrap_config` pops URL keys even when listed in `PROCESS_ENV_KEYS`; `load_destinations` omits tombstoned reserved ids; DELETE 200 `{ok, destination_id, warning?: str}`
+- Produces: `TOMBSTONE_KEYS = {"discord": "WEBHOOK_TOMBSTONE_DISCORD", "telegram": "WEBHOOK_TOMBSTONE_TELEGRAM", "generic": "WEBHOOK_TOMBSTONE_GENERIC"}`; `async def is_env_dest_tombstoned(destination_id: str) -> bool`; `async def set_env_dest_tombstone(destination_id: str, *, tombstoned: bool) -> None`; reserved Delete commits app_settings clear + tombstone + row delete in one transaction, then pops URL keys from `os.environ` even when listed in `PROCESS_ENV_KEYS`; `load_destinations` (merge) omits tombstoned reserved ids; `load_env_destinations` stays env-only (no rename); DELETE 200 `{ok, destination_id, warning?: str}`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -110,7 +110,9 @@ def test_delete_env_discord_tombstone_ignores_process_env(admin_client, monkeypa
     assert "discord-ops" in ids2
 ```
 
-Also update `test_delete_env_discord_succeeds_when_url_only_in_db_config`: after re-`setenv` + sync, **do not** expect `configured_channels() == ["discord"]` unless tombstone was cleared by saving the URL through config persist. Split: re-inject env without config save → still gone.
+`admin_client` already imported `webhooks.destinations` at module load. `_ENV_BOOTSTRAP_PROCESS_KEYS` is a static tuple of **key names** (`DISCORD_WEBHOOK_URL`, …), not a snapshot of `PROCESS_ENV_KEYS`. Warning must read live `settings.PROCESS_ENV_KEYS` at request time (same as today’s 409 test). Keep this monkeypatch order; do not reload `webhooks.destinations`.
+
+Also add a failure-injection test: if the delete transaction rolls back, `os.environ` still has the URL, tombstone is absent, and `sync_env_destinations_to_db` may still see `discord` (card not half-deleted).
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -120,7 +122,7 @@ Expected: FAIL (409 or discord still listed).
 
 - [ ] **Step 3: Implement tombstone + pop + 200**
 
-`clear_env_bootstrap_config`: for every key in `_ENV_BOOTSTRAP_CLEAR_KEYS[id]`, `os.environ.pop(key, None)` **including** `PROCESS_ENV_KEYS`. Persist empty via existing `persist_operator_setting` / `set_app_setting`. `set_env_dest_tombstone(id, tombstoned=True)` writes `"1"`. `load_destinations`: after merge, drop dests whose id is reserved and tombstoned. `sync_env_destinations_to_db`: skip upsert for tombstoned ids. Delete route: if reserved, clear + tombstone + `db_delete`; return `{"ok": True, "destination_id": id}` plus `warning` when `_ENV_BOOTSTRAP_PROCESS_KEYS` were in `PROCESS_ENV_KEYS` at import (systemd will re-inject). In `persist_operator_setting`, if key is `DISCORD_WEBHOOK_URL` / `WEBHOOK_GENERIC_URL` / telegram token+chat and new value is non-empty, clear matching tombstone.
+One connection: `set_app_setting` empty URL/enabled keys, `set_app_setting` tombstone `"1"`, `db_delete` reserved id, **one `commit`**. Only after commit: `os.environ.pop` for `_ENV_BOOTSTRAP_CLEAR_KEYS[id]` including keys in `PROCESS_ENV_KEYS`. If commit raises, do not pop env. `load_destinations`: after merge, drop dests whose id is reserved and tombstoned. `sync_env_destinations_to_db`: skip upsert for tombstoned ids. `load_env_destinations` unchanged (env-only). Delete route returns `{"ok": True, "destination_id": id}` plus `warning` when those URL keys are in **live** `settings.PROCESS_ENV_KEYS` (systemd will re-inject on restart). In `persist_operator_setting`, if key is `DISCORD_WEBHOOK_URL` / `WEBHOOK_GENERIC_URL` / telegram token+chat and new value is non-empty, clear matching tombstone.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -158,6 +160,14 @@ def test_classify_llm_error_dns_errno_minus_3():
     from ai.operations_recorder import classify_llm_error
     exc = OSError(-3, "Temporary failure in name resolution")
     assert classify_llm_error(exc) == "dns"
+
+
+def test_classify_llm_error_tls_is_network_http_status_is_not():
+    from ssl import SSLError
+    from ai.operations_recorder import classify_llm_error
+    assert classify_llm_error(SSLError("TLS handshake failure")) == "network"
+    assert classify_llm_error(Exception("403 Forbidden")) == "auth"
+    assert classify_llm_error(Exception("HTTP 500 internal")) not in {"dns", "network"}
 
 
 def test_dns_failure_skips_provider_later_in_job(tmp_path, monkeypatch):
@@ -217,13 +227,15 @@ Confirm `list_ai_operations` SELECT includes `error_detail` once the column exis
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd backend && pytest tests/test_llm_router.py::test_classify_llm_error_dns_errno_minus_3 tests/test_llm_router.py::test_dns_failure_skips_provider_later_in_job -q`
+Run: `cd backend && pytest tests/test_llm_router.py::test_classify_llm_error_dns_errno_minus_3 tests/test_llm_router.py::test_classify_llm_error_tls_is_network_http_status_is_not tests/test_llm_router.py::test_dns_failure_skips_provider_later_in_job -q`
 
 Expected: FAIL (`unknown` class and/or cerebras called twice).
 
 - [ ] **Step 3: Implement**
 
-`classify_llm_error`: `msg = str(exc).lower()`; if `"name resolution" in msg` or `"errno -3" in msg` or `"gaierror" in msg` or getattr `errno == -3`: return `"dns"`. If `"connection refused"` / `"connection reset"` / `"connecterror"` / `"network is unreachable"`: `"network"`. Keep existing checks first for 429/401 so HTTP errors stay `rate_limit`/`auth`.
+`classify_llm_error`: run existing 429/`rate_limit` and 401/403/`auth` checks first. If `re.search(r"\b(4\d\d|5\d\d)\b", msg)` (HTTP status in the text), do **not** return `dns` or `network` (403 stays `auth`; 500 stays `unknown` unless already classified). Else if `"name resolution" in msg` or `"errno -3" in msg` or `"gaierror" in msg` or `getattr(exc, "errno", None) == -3`: `"dns"`. Else if any of `"connection refused"`, `"connection reset"`, `"connecterror"`, `"network is unreachable"`, `"ssl"`, `"tls"`, `"certificate verify failed"`, `"handshake"`: `"network"`.
+
+Add tests: `SSLError("TLS handshake failure")` → `network`; `Exception("403 Forbidden")` → `auth`; `Exception("HTTP 500")` → not `network`/`dns`.
 
 `llm_session.mark_provider_transport_failure` = same set as empty skip (reuse `_job_empty_providers` or rename to `_job_skip_providers` in that file only).
 
@@ -315,7 +327,7 @@ Expected: FAIL 500.
 
 - [ ] **Step 3: Implement**
 
-Replace `_parse_payload_messages` raising 500 with a helper that returns `(messages, parse_ok, raw)`. GET uses it. Retry: if not `parse_ok`, `HTTPException(400, "Stored payload cannot be replayed")`. `_truncate` in `insert_ai_operation_payload`: `json.loads` messages, truncate each `content` to keep dumped JSON under 32768, fallback to current truncate only if parse fails on insert. Activity `resultCell`: after reason, if `row.error_detail`, show it truncated to 80 chars. Payload modal: if `messages_parse_ok === false`, show `messages_raw` in the Messages pre and still show excerpt; do not toast on 200.
+Replace `_parse_payload_messages` raising 500 with a helper that returns `(messages, parse_ok, raw)`. GET uses it. Retry: if not `parse_ok`, `HTTPException(400, "Stored payload cannot be replayed")`. `insert_ai_operation_payload`: `json.loads` the list, truncate each `content` so the re-dumped JSON stays under 32768. If input is not a JSON message list, wrap as `json.dumps({"parse_ok": False, "raw": bounded_text})` — **never** slice a `[` array mid-string. Router continues to pass `json.dumps(messages)` lists. GET treats `parse_ok: false` wrapper and legacy truncated arrays as `messages_parse_ok=false`. Activity `resultCell`: after reason, if `row.error_detail`, show it truncated to 80 chars. Payload modal: if `messages_parse_ok === false`, show `messages_raw` in the Messages pre and still show excerpt; do not toast on 200.
 
 - [ ] **Step 4: Run tests**
 
@@ -398,11 +410,16 @@ Replace ENV delete 409 sentence with tombstone + 200 + other dests unchanged. LL
 
 DELETE reserved: 200, `warning` optional, tombstone keys named. GET payload fields. Provider health `enabled`.
 
-- [ ] **Step 3: verify-local**
+- [ ] **Step 3: graphify then verify-local**
 
-Run: `./scripts/verify-local.sh`
+After the code+docs edits in this plan, from repo root:
 
-Expected: green.
+```bash
+graphify update .
+./scripts/verify-local.sh
+```
+
+Expected: `verify-local` green. Do **not** commit `graphify-out/` (gitignored).
 
 - [ ] **Step 4: Commit**
 
