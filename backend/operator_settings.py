@@ -99,18 +99,17 @@ async def bootstrap_operator_settings() -> None:
     await hydrate_operator_settings_from_db()
 
 
+_WEBHOOK_TOMBSTONE_KEYS = {
+    "DISCORD_WEBHOOK_URL": "discord",
+    "WEBHOOK_GENERIC_URL": "generic",
+    "TELEGRAM_BOT_TOKEN": "telegram",
+    "TELEGRAM_CHAT_ID": "telegram",
+}
+
+
 async def persist_operator_setting(key: str, value: str) -> None:
     """Persist a writable setting. Secrets are encrypted when the settings key is set."""
-    if (value or "").strip() and key in {
-        "DISCORD_WEBHOOK_URL",
-        "WEBHOOK_GENERIC_URL",
-        "TELEGRAM_BOT_TOKEN",
-        "TELEGRAM_CHAT_ID",
-    }:
-        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
-
-        await maybe_clear_env_dest_tombstone_for_key(key, value)
-
+    webhook_dest = _WEBHOOK_TOMBSTONE_KEYS.get(key) if (value or "").strip() else None
     to_store = value
     if _is_secret_key(key):
         encrypted = encrypt_secret(value)
@@ -121,12 +120,29 @@ async def persist_operator_setting(key: str, value: str) -> None:
                 ".env / process env still apply)",
                 key,
             )
+            if webhook_dest:
+                from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
+
+                await maybe_clear_env_dest_tombstone_for_key(key, value)
             return
         to_store = encrypted
 
     db = await get_db()
+    tomb = None
     try:
         await set_app_setting(db, key, to_store)
+        if webhook_dest:
+            from webhooks.destinations import stage_env_dest_tombstone_clear
+
+            tomb = await stage_env_dest_tombstone_clear(db, webhook_dest)
         await db.commit()
+    except Exception:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        raise
     finally:
         await db.close()
+    if tomb:
+        os.environ.pop(tomb, None)

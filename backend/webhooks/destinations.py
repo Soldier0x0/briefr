@@ -247,11 +247,21 @@ async def maybe_clear_env_dest_tombstone_for_key(key: str, value: str) -> None:
         await clear_env_dest_tombstone(dest_id)
 
 
+async def stage_env_dest_tombstone_clear(db, destination_id: str) -> str | None:
+    """Write tombstone='' on the caller's connection. Caller commits, then pops env."""
+    tomb = TOMBSTONE_KEYS.get(destination_id)
+    if not tomb:
+        return None
+    from database import set_app_setting
+
+    await set_app_setting(db, tomb, "")
+    return tomb
+
+
 async def clear_env_dest_tombstone(destination_id: str) -> None:
     tomb = TOMBSTONE_KEYS.get(destination_id)
     if not tomb:
         return
-    os.environ.pop(tomb, None)
     from database import set_app_setting
 
     db = await get_db()
@@ -260,6 +270,7 @@ async def clear_env_dest_tombstone(destination_id: str) -> None:
         await db.commit()
     finally:
         await db.close()
+    os.environ.pop(tomb, None)
 
 
 async def clear_env_bootstrap_config(destination_id: str) -> str | None:
