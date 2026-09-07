@@ -153,6 +153,22 @@ def test_persist_secret_encrypts_when_settings_key_set(tmp_path, monkeypatch):
     assert "plain-nvd-secret" not in stored
 
 
+def test_persist_discord_url_clears_tombstone_without_settings_key(tmp_path, monkeypatch):
+    _sqlite_db(tmp_path, monkeypatch)
+    run_db_test(init_db())
+    monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
+    monkeypatch.setenv("WEBHOOK_TOMBSTONE_DISCORD", "1")
+
+    run_db_test(
+        persist_operator_setting(
+            "DISCORD_WEBHOOK_URL",
+            "https://discord.com/api/webhooks/99/tok",
+        )
+    )
+
+    assert os.environ.get("WEBHOOK_TOMBSTONE_DISCORD") != "1"
+
+
 def test_persist_secret_skips_db_without_settings_key(tmp_path, monkeypatch):
     _sqlite_db(tmp_path, monkeypatch)
     run_db_test(init_db())

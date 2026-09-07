@@ -23,7 +23,12 @@ from ai.llm_session import (
 from ai.model_catalog import ProviderStep, task_chain
 from ai.model_catalog import gemini_model as gemini_model  # re-export for tests
 from ai.openai_chat import openai_chat_completion
-from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
+from ai.operations_recorder import (
+    AttemptTimer,
+    classify_llm_error,
+    record_llm_attempt,
+    redact_error_detail,
+)
 from ai.provider_catalog import custom_provider_step
 from api_queue_operations import LLM_TASK_OPERATIONS
 from database import get_db
@@ -511,9 +516,12 @@ async def chat_completion_task(
                 "LLM %s failed for task %s — trying next provider: %s",
                 step.provider,
                 task,
-                exc,
+                redact_error_detail(str(exc)) or type(exc).__name__,
             )
-            record_source_failure(step.provider, str(exc)[:200])
+            record_source_failure(
+                step.provider,
+                redact_error_detail(str(exc), limit=300) or type(exc).__name__,
+            )
             error_class = classify_llm_error(exc)
             if error_class in {"dns", "network"}:
                 mark_provider_transport_failure(step.provider)
@@ -526,7 +534,7 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class=error_class,
-                error_detail=str(exc)[:200],
+                error_detail=str(exc),
             )
             await _store_failure_payload(
                 operation_id=operation_id,

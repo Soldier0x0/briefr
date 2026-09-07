@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import socket
 import uuid
 from time import monotonic
 
@@ -27,6 +28,32 @@ def recording_enabled() -> bool:
     }
 
 
+def _exception_chain(exc: BaseException) -> list[BaseException]:
+    seen: list[BaseException] = []
+    current: BaseException | None = exc
+    while current is not None and current not in seen:
+        seen.append(current)
+        current = current.__cause__ or current.__context__
+    return seen
+
+
+def _is_dns_failure(exc: BaseException) -> bool:
+    for item in _exception_chain(exc):
+        errno = getattr(item, "errno", None)
+        msg = str(item).lower()
+        if (
+            errno in {-2, -3}
+            or isinstance(item, socket.gaierror)
+            or "name resolution" in msg
+            or "errno -3" in msg
+            or "errno -2" in msg
+            or "gaierror" in msg
+            or "name or service not known" in msg
+        ):
+            return True
+    return False
+
+
 def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str:
     if empty:
         return "empty"
@@ -47,13 +74,7 @@ def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str
         return "model_not_found"
     if _HTTP_STATUS_RE.search(msg):
         return "unknown"
-    errno = getattr(exc, "errno", None)
-    if (
-        errno == -3
-        or "name resolution" in msg
-        or "errno -3" in msg
-        or "gaierror" in msg
-    ):
+    if _is_dns_failure(exc):
         return "dns"
     if any(
         token in msg

@@ -101,6 +101,16 @@ async def bootstrap_operator_settings() -> None:
 
 async def persist_operator_setting(key: str, value: str) -> None:
     """Persist a writable setting. Secrets are encrypted when the settings key is set."""
+    if (value or "").strip() and key in {
+        "DISCORD_WEBHOOK_URL",
+        "WEBHOOK_GENERIC_URL",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID",
+    }:
+        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
+
+        await maybe_clear_env_dest_tombstone_for_key(key, value)
+
     to_store = value
     if _is_secret_key(key):
         encrypted = encrypt_secret(value)
@@ -120,13 +130,3 @@ async def persist_operator_setting(key: str, value: str) -> None:
         await db.commit()
     finally:
         await db.close()
-
-    if (value or "").strip() and key in {
-        "DISCORD_WEBHOOK_URL",
-        "WEBHOOK_GENERIC_URL",
-        "TELEGRAM_BOT_TOKEN",
-        "TELEGRAM_CHAT_ID",
-    }:
-        from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
-
-        await maybe_clear_env_dest_tombstone_for_key(key, value)

@@ -412,6 +412,18 @@ def test_classify_llm_error_dns_errno_minus_3():
     assert classify_llm_error(exc) == "dns"
 
 
+def test_classify_llm_error_dns_errno_minus_2_and_cause_chain():
+    from ai.operations_recorder import classify_llm_error
+
+    assert classify_llm_error(OSError(-2, "Name or service not known")) == "dns"
+    assert classify_llm_error(Exception("[Errno -2] Name or service not known")) == "dns"
+
+    inner = OSError(-2, "Name or service not known")
+    outer = Exception("ConnectError")
+    outer.__cause__ = inner
+    assert classify_llm_error(outer) == "dns"
+
+
 def test_classify_llm_error_tls_is_network_http_status_is_not():
     from ssl import SSLError
 
@@ -482,4 +494,46 @@ def test_dns_failure_skips_provider_later_in_job(tmp_path, monkeypatch):
     dns_rows = [r for r in rows if r["error_class"] == "dns"]
     assert dns_rows
     assert "name resolution" in (dns_rows[0].get("error_detail") or "").lower()
+
+
+def test_failed_attempt_redacts_secret_that_straddles_char_200(tmp_path, monkeypatch):
+    from database import get_db, init_db, list_ai_operations
+
+    secret = "gsk_" + "B" * 48
+    if not is_postgres():
+        db_path = tmp_path / "llm_redact.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", secret)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    async def fake_call(step, **_kwargs):
+        raise RuntimeError(("n" * 190) + secret + " leftover")
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        await init_db()
+        try:
+            await chat_completion_task(
+                "product_extraction",
+                messages=[{"role": "user", "content": "cve"}],
+            )
+        except Exception:
+            pass
+        db = await get_db()
+        try:
+            return await list_ai_operations(db, limit=5)
+        finally:
+            await db.close()
+
+    rows = run_db_test(run())
+    assert rows
+    detail = rows[0].get("error_detail") or ""
+    assert secret not in detail
+    assert secret[:12] not in detail
+    assert "[REDACTED]" in detail
 
