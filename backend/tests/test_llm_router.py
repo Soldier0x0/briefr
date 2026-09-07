@@ -433,6 +433,15 @@ def test_classify_llm_error_dns_errno_minus_2_and_cause_chain():
     assert classify_llm_error(outer) == "dns"
 
 
+def test_classify_llm_error_network_via_cause_chain():
+    from ai.operations_recorder import classify_llm_error
+
+    inner = ConnectionRefusedError("Connection refused")
+    outer = Exception("provider call failed")
+    outer.__cause__ = inner
+    assert classify_llm_error(outer) == "network"
+
+
 def test_classify_llm_error_tls_is_network_http_status_is_not():
     from ssl import SSLError
 

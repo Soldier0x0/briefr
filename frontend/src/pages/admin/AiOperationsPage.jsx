@@ -336,6 +336,7 @@ function ProvidersTab({ providers, toast, onChanged }) {
   const rows = providers?.providers || []
 
   async function setProviderEnabled(p, next) {
+    if (busyProvider) return
     const key = p.enabled_key || `LLM_PROVIDER_${String(p.provider).toUpperCase()}_ENABLED`
     setBusyProvider(p.provider)
     try {
@@ -382,7 +383,7 @@ function ProvidersTab({ providers, toast, onChanged }) {
                   <td>
                     <Switch
                       checked={enabled}
-                      disabled={busyProvider === p.provider}
+                      disabled={Boolean(busyProvider)}
                       label={enabled ? 'On' : 'Off'}
                       onCheckedChange={(next) => setProviderEnabled(p, next)}
                     />

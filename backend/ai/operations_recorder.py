@@ -54,6 +54,26 @@ def _is_dns_failure(exc: BaseException) -> bool:
     return False
 
 
+def _is_network_failure(exc: BaseException) -> bool:
+    tokens = (
+        "connection refused",
+        "connection reset",
+        "connecterror",
+        "network is unreachable",
+        "ssl",
+        "tls",
+        "certificate verify failed",
+        "handshake",
+    )
+    for item in _exception_chain(exc):
+        if isinstance(item, ConnectionRefusedError | ConnectionResetError | ConnectionError):
+            return True
+        msg = str(item).lower()
+        if any(token in msg for token in tokens):
+            return True
+    return False
+
+
 def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str:
     if empty:
         return "empty"
@@ -76,19 +96,7 @@ def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str
         return "unknown"
     if _is_dns_failure(exc):
         return "dns"
-    if any(
-        token in msg
-        for token in (
-            "connection refused",
-            "connection reset",
-            "connecterror",
-            "network is unreachable",
-            "ssl",
-            "tls",
-            "certificate verify failed",
-            "handshake",
-        )
-    ):
+    if _is_network_failure(exc):
         return "network"
     return "unknown"
 

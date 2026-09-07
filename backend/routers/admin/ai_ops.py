@@ -63,10 +63,14 @@ def _parse_payload_messages(
     for item in parsed:
         if not isinstance(item, dict):
             return [], False, raw
+        role = item.get("role")
+        content = item.get("content")
+        if not isinstance(role, str) or not role.strip() or not isinstance(content, str):
+            return [], False, raw
         cleaned.append(
             {
-                "role": str(item.get("role", "")).strip(),
-                "content": str(item.get("content", "")),
+                "role": role.strip(),
+                "content": content,
             }
         )
     return cleaned, True, None

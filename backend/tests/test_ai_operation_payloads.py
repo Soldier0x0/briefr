@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -96,3 +97,13 @@ def test_failure_payload_stored_when_flag_on(tmp_path, monkeypatch):
     assert payload["task_class"] == "product_extraction"
     assert payload["provider"] == "groq"
     assert "hello" in payload["messages_json"]
+
+
+def test_bounded_messages_json_caps_parse_failure_raw():
+    from db.ai_operation_payloads import _bounded_messages_json
+
+    blob = "not-json-" + ("x" * 50_000)
+    out = _bounded_messages_json(blob)
+    parsed = json.loads(out)
+    assert parsed["parse_ok"] is False
+    assert len(parsed["raw"]) <= 32_768

@@ -62,7 +62,7 @@ This plan owns ENV dest delete honesty and LLM attempt honesty/disable.
 
 - R4. Failed LLM attempts classify `dns` and `network` when the exception matches resolver, connect, or TLS-handshake failures with no HTTP status; HTTP 4xx/5xx are not transport classes. Activity labels them `dns failure` / `network error`. Persist redacted `error_detail` (max 200 chars) on the operation row.
 - R5. Those failures call `record_source_failure`. `dns` (and non-HTTP `network`) skip that provider for the rest of the current job session. Other providers in the chain still run. Tokens stay unset when the provider was not billed.
-- R6. GET payload is 200 when a row exists. Invalid `messages_json` yields empty `messages`, `messages_parse_ok=false`, and `messages_raw`. Truncate per message content; never slice a JSON array. Unparsed insert input is stored as `{"parse_ok": false, "raw": "…"}` or omitted. Retry is 400 when messages cannot replay.
+- R6. GET payload is 200 when a row exists. Invalid `messages_json` yields empty `messages`, `messages_parse_ok=false`, and `messages_raw`. Parse-failure `raw` / `messages_raw` is bounded to 32,768 characters. Truncate per message content; never slice a JSON array. Unparsed insert input is stored as `{"parse_ok": false, "raw": "…"}` or omitted. Retry is 400 when messages cannot replay (including incomplete objects such as `[{}]`).
 - R7. View payload UI renders excerpt even when parse failed. No error toast for invalid JSON on a successful 200.
 - R8. Immediate-apply per-provider enabled flags (default on). Disabled providers are not called and show disabled on the Providers tab. Keys remain.
 
