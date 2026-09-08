@@ -23,8 +23,11 @@ from `.env`.
    Values stored as `enc:v1:<token>`. Master material from optional env
    `BRIEFR_SETTINGS_KEY` (any high-entropy string; derived to a Fernet key).
 4. **No key ⇒ no secret rows:** if `BRIEFR_SETTINGS_KEY` is unset, Admin save
-   still writes secrets to `.env` + `os.environ`, but **does not** persist
+   updates process `os.environ` for this run only and **does not** persist
    secret keys into `app_settings` (matches existing seed skip for secrets).
+   Admin Save does **not** rewrite `backend/.env` for secrets; generated
+   `JWT_SECRET` still uses `set_key`. POST `/config` returns `persisted_to_db: false`
+   plus a warning when the secret was skipped.
 5. **Legacy plaintext rows:** on hydrate, plaintext secret values still apply;
    when a key is present, the next Admin save re-writes them encrypted.
 6. **`.env` remains supported forever** for this decision — encryption is

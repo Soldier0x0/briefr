@@ -315,7 +315,7 @@ export default function WebhooksPage({ toast }) {
         <HelpTip text="Destinations receive alert events (KEV, watchlist, backups, etc.). Env bootstrap rows come from API keys & config; add more destinations here. Secrets are masked after save — re-enter to change." />
       </h1>
       <p className="admin-page-subtitle">
-        Manage delivery endpoints, event subscriptions, and test sends. Legacy Discord/Telegram/generic env vars on API keys &amp; config still seed the default destinations.
+        Manage delivery endpoints, event subscriptions, and test sends. Legacy Discord/Telegram/generic env vars on API keys &amp; config still seed the default destinations. An explicit <code className="mono">DISCORD_WEBHOOK_EVENTS</code> / Telegram / generic events list does not auto-gain <code className="mono">daily_brief</code> — tick Daily brief (EOD / standup) on each destination.
       </p>
 
       <div className="admin-action-bar">
