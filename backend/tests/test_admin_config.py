@@ -380,3 +380,32 @@ def test_audit_log_returns_metadata(admin_client):
     assert row.get("metadata") is not None
     assert row["metadata"].get("changed_keys") == ["FOO"]
     assert "metadata_json" not in row
+
+
+def test_config_includes_daily_brief_defaults(admin_client, monkeypatch):
+    for key in (
+        "DAILY_BRIEF_EOD_ENABLED",
+        "DAILY_BRIEF_STANDUP_ENABLED",
+        "DAILY_BRIEF_EOD_HOUR",
+        "DAILY_BRIEF_EOD_MINUTE",
+        "DAILY_BRIEF_STANDUP_HOUR",
+        "DAILY_BRIEF_STANDUP_MINUTE",
+        "DAILY_BRIEF_LLM_ENABLED",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    data = admin_client.get("/api/admin/config").json()
+    sched = data["scheduler"]
+    assert sched["DAILY_BRIEF_EOD_ENABLED"] == "0"
+    assert sched["DAILY_BRIEF_STANDUP_ENABLED"] == "0"
+    assert sched["DAILY_BRIEF_EOD_HOUR"] == 18
+    assert sched["DAILY_BRIEF_EOD_MINUTE"] == 0
+    assert sched["DAILY_BRIEF_STANDUP_HOUR"] == 7
+    assert sched["DAILY_BRIEF_STANDUP_MINUTE"] == 0
+    assert data["ml"]["DAILY_BRIEF_LLM_ENABLED"] == "0"
+
+
+def test_config_daily_brief_enabled_round_trip(admin_client):
+    r = admin_client.post("/api/admin/config", json={"key": "DAILY_BRIEF_EOD_ENABLED", "value": "1"})
+    assert r.status_code == 200
+    sched = admin_client.get("/api/admin/config").json()["scheduler"]
+    assert sched["DAILY_BRIEF_EOD_ENABLED"] == "1"
