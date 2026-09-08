@@ -409,3 +409,29 @@ def test_config_daily_brief_enabled_round_trip(admin_client):
     assert r.status_code == 200
     sched = admin_client.get("/api/admin/config").json()["scheduler"]
     assert sched["DAILY_BRIEF_EOD_ENABLED"] == "1"
+
+
+def test_config_secret_without_settings_key_warns(admin_client, monkeypatch):
+    monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
+    r = admin_client.post(
+        "/api/admin/config",
+        json={"key": "DISCORD_WEBHOOK_URL", "value": "https://discord.com/api/webhooks/1/aaa"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["persisted_to_db"] is False
+    assert "warning" in body and body["warning"]
+
+
+def test_config_meta_process_pinned_keys(admin_client, monkeypatch):
+    import settings as settings_mod
+    monkeypatch.setattr(
+        settings_mod,
+        "PROCESS_ENV_KEYS",
+        frozenset({*settings_mod.PROCESS_ENV_KEYS, "DAILY_BRIEF_EOD_ENABLED"}),
+    )
+    data = admin_client.get("/api/admin/config").json()
+    assert "meta" in data
+    assert "settings_key_configured" in data["meta"]
+    assert isinstance(data["meta"]["process_pinned_keys"], list)
+    assert "DAILY_BRIEF_EOD_ENABLED" in data["meta"]["process_pinned_keys"]

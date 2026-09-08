@@ -65,8 +65,16 @@ def _get_config_response() -> dict[str, Any]:
     allowed_origins_raw = _env("ALLOWED_ORIGINS", "http://localhost:5173")
     allowed_origins_list = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
 
+    from settings import PROCESS_ENV_KEYS
+
     return {
         "dotenv_path": str(_admin_pkg._DOTENV_PATH.resolve()),
+        "meta": {
+            "settings_key_configured": bool(os.environ.get("BRIEFR_SETTINGS_KEY", "").strip()),
+            "process_pinned_keys": sorted(
+                k for k in WRITABLE_CONFIG_KEYS if k in PROCESS_ENV_KEYS
+            ),
+        },
         "scheduler": {
             "NVD_SYNC_INTERVAL_HOURS": _env_int("NVD_SYNC_INTERVAL_HOURS", 1),
             "KEV_SYNC_INTERVAL_MINUTES": _env_int("KEV_SYNC_INTERVAL_MINUTES", 15),
@@ -258,10 +266,13 @@ async def set_config(request: Request, body: dict):
     from redact import redact_audit_target
 
     written_keys: list[str] = []
+    persist_result: dict[str, Any] = {"persisted_to_db": True, "warning": None}
     for write_key, write_value in to_write:
         os.environ[write_key] = write_value
         _propagate_to_settings(write_key, write_value)
-        await persist_operator_setting(write_key, write_value)
+        result = await persist_operator_setting(write_key, write_value)
+        if result and result.get("persisted_to_db") is False:
+            persist_result = result
         from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
         await maybe_clear_env_dest_tombstone_for_key(write_key, write_value)
         written_keys.append(write_key)
@@ -292,6 +303,8 @@ async def set_config(request: Request, body: dict):
         "warning_restart_required": strategy == APPLY_RESTART,
         "rescheduled_jobs": side_effects.get("rescheduled_jobs", []),
         "coupled_keys": [k for k in written_keys if k != key],
+        "persisted_to_db": persist_result.get("persisted_to_db", True),
+        "warning": persist_result.get("warning"),
         "message": _config_apply_message(
             written_keys,
             restart_needed=False,
@@ -353,12 +366,15 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
             raise HTTPException(400, {"errors": [validation_error], "partial_keys": []})
 
     changed_keys: list[str] = []
+    persist_result: dict[str, Any] = {"persisted_to_db": True, "warning": None}
     from operator_settings import persist_operator_setting
 
     for key, value in validated:
         os.environ[key] = value
         _propagate_to_settings(key, value)
-        await persist_operator_setting(key, value)
+        result = await persist_operator_setting(key, value)
+        if result and result.get("persisted_to_db") is False:
+            persist_result = result
         from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
         await maybe_clear_env_dest_tombstone_for_key(key, value)
         changed_keys.append(key)
@@ -393,6 +409,8 @@ async def apply_all_config(request: Request, background_tasks: BackgroundTasks):
         "changed_keys": changed_keys,
         "restart_required": restart_needed,
         "rescheduled_jobs": side_effects.get("rescheduled_jobs", []),
+        "persisted_to_db": persist_result.get("persisted_to_db", True),
+        "warning": persist_result.get("warning"),
         "message": message,
     }
 

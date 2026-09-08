@@ -106,8 +106,13 @@ _WEBHOOK_TOMBSTONE_KEYS = {
     "TELEGRAM_CHAT_ID": "telegram",
 }
 
+_SECRET_SKIP_WARNING = (
+    "Secret not stored in the database (set BRIEFR_SETTINGS_KEY). "
+    "This process holds it until restart."
+)
 
-async def persist_operator_setting(key: str, value: str) -> None:
+
+async def persist_operator_setting(key: str, value: str) -> dict:
     """Persist a writable setting. Secrets are encrypted when the settings key is set."""
     webhook_dest = _WEBHOOK_TOMBSTONE_KEYS.get(key) if (value or "").strip() else None
     to_store = value
@@ -124,7 +129,7 @@ async def persist_operator_setting(key: str, value: str) -> None:
                 from webhooks.destinations import maybe_clear_env_dest_tombstone_for_key
 
                 await maybe_clear_env_dest_tombstone_for_key(key, value)
-            return
+            return {"persisted_to_db": False, "warning": _SECRET_SKIP_WARNING}
         to_store = encrypted
 
     db = await get_db()
@@ -146,3 +151,4 @@ async def persist_operator_setting(key: str, value: str) -> None:
         await db.close()
     if tomb:
         os.environ.pop(tomb, None)
+    return {"persisted_to_db": True, "warning": None}
