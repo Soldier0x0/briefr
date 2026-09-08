@@ -359,8 +359,7 @@ export default function ApiKeysPage({ toast }) {
           <span title={envKey}>{label}</span>
           {config?.meta?.process_pinned_keys?.includes(envKey) && (
             <span
-              className="badge badge-warn"
-              style={{ fontSize: '0.6rem', marginLeft: '0.35rem' }}
+              className="badge badge-warn config-pin-badge"
               title="This key is set in the process environment (systemd / secrets manager). Saving updates the running process, but a restart restores the pin."
             >
               pinned by process env

@@ -13,8 +13,29 @@ const SLOT_OPTIONS = [
   { value: 'standup', label: 'Morning briefing' },
 ]
 
+const PIN_TITLE = 'This key is set in the process environment (systemd / secrets manager). Saving updates the running process, but a restart restores the pin.'
+
 function flagOn(raw) {
   return raw === '1' || raw === 'true' || raw === true
+}
+
+function pinnedKeys(config) {
+  const rows = config?.meta?.process_pinned_keys
+  return Array.isArray(rows) ? rows : []
+}
+
+function slotPinned(config, keys) {
+  const pins = pinnedKeys(config)
+  return keys.some((key) => pins.includes(key))
+}
+
+function ProcessPinBadge({ show }) {
+  if (!show) return null
+  return (
+    <span className="badge badge-warn config-pin-badge" title={PIN_TITLE}>
+      pinned by process env
+    </span>
+  )
 }
 
 function SectionCard({ title, children }) {
@@ -142,6 +163,16 @@ export default function DailyBriefPage({ toast }) {
   const sched = config?.scheduler || {}
   const tz = sched.SCHEDULER_TIMEZONE || 'instance timezone'
   const scheduleLocked = Boolean(busy)
+  const eodPinned = slotPinned(config, [
+    'DAILY_BRIEF_EOD_ENABLED',
+    'DAILY_BRIEF_EOD_HOUR',
+    'DAILY_BRIEF_EOD_MINUTE',
+  ])
+  const standupPinned = slotPinned(config, [
+    'DAILY_BRIEF_STANDUP_ENABLED',
+    'DAILY_BRIEF_STANDUP_HOUR',
+    'DAILY_BRIEF_STANDUP_MINUTE',
+  ])
 
   const productLines = (brief?.market?.products || []).map(
     (p) =>
@@ -169,16 +200,19 @@ export default function DailyBriefPage({ toast }) {
               Retry
             </button>
           </p>
+        ) : !config ? (
+          <p className="daily-brief-muted" role="status">Loading schedule…</p>
         ) : (
           <div className="daily-brief-schedule">
             <div className="daily-brief-slot-enable">
               <span className="admin-field-label">End of day</span>
               <ToggleSwitch
                 on={flagOn(sched.DAILY_BRIEF_EOD_ENABLED)}
-                disabled={scheduleLocked || !config}
+                disabled={scheduleLocked}
                 onChange={(next) => saveSetting('DAILY_BRIEF_EOD_ENABLED', next ? '1' : '0')}
                 aria-label="Enable end of day brief"
               />
+              <ProcessPinBadge show={eodPinned} />
               <label className="admin-field daily-brief-time">
                 <span className="admin-field-label">Hour</span>
                 <input
@@ -186,7 +220,7 @@ export default function DailyBriefPage({ toast }) {
                   type="number"
                   min={0}
                   max={23}
-                  disabled={scheduleLocked || !config}
+                  disabled={scheduleLocked}
                   defaultValue={sched.DAILY_BRIEF_EOD_HOUR ?? 18}
                   key={`eod-h-${sched.DAILY_BRIEF_EOD_HOUR}`}
                   onBlur={(e) => saveSetting('DAILY_BRIEF_EOD_HOUR', e.target.value)}
@@ -199,7 +233,7 @@ export default function DailyBriefPage({ toast }) {
                   type="number"
                   min={0}
                   max={59}
-                  disabled={scheduleLocked || !config}
+                  disabled={scheduleLocked}
                   defaultValue={sched.DAILY_BRIEF_EOD_MINUTE ?? 0}
                   key={`eod-m-${sched.DAILY_BRIEF_EOD_MINUTE}`}
                   onBlur={(e) => saveSetting('DAILY_BRIEF_EOD_MINUTE', e.target.value)}
@@ -210,10 +244,11 @@ export default function DailyBriefPage({ toast }) {
               <span className="admin-field-label">Morning briefing</span>
               <ToggleSwitch
                 on={flagOn(sched.DAILY_BRIEF_STANDUP_ENABLED)}
-                disabled={scheduleLocked || !config}
+                disabled={scheduleLocked}
                 onChange={(next) => saveSetting('DAILY_BRIEF_STANDUP_ENABLED', next ? '1' : '0')}
                 aria-label="Enable morning briefing"
               />
+              <ProcessPinBadge show={standupPinned} />
               <label className="admin-field daily-brief-time">
                 <span className="admin-field-label">Hour</span>
                 <input
@@ -221,7 +256,7 @@ export default function DailyBriefPage({ toast }) {
                   type="number"
                   min={0}
                   max={23}
-                  disabled={scheduleLocked || !config}
+                  disabled={scheduleLocked}
                   defaultValue={sched.DAILY_BRIEF_STANDUP_HOUR ?? 7}
                   key={`stand-h-${sched.DAILY_BRIEF_STANDUP_HOUR}`}
                   onBlur={(e) => saveSetting('DAILY_BRIEF_STANDUP_HOUR', e.target.value)}
@@ -234,7 +269,7 @@ export default function DailyBriefPage({ toast }) {
                   type="number"
                   min={0}
                   max={59}
-                  disabled={scheduleLocked || !config}
+                  disabled={scheduleLocked}
                   defaultValue={sched.DAILY_BRIEF_STANDUP_MINUTE ?? 0}
                   key={`stand-m-${sched.DAILY_BRIEF_STANDUP_MINUTE}`}
                   onBlur={(e) => saveSetting('DAILY_BRIEF_STANDUP_MINUTE', e.target.value)}
@@ -257,7 +292,7 @@ export default function DailyBriefPage({ toast }) {
           </button>
         </div>
         <p
-          className={delivery.kind === 'empty' ? 'daily-brief-error' : 'daily-brief-delivery'}
+          className={delivery.kind === 'empty' || delivery.kind === 'error' ? 'daily-brief-error' : 'daily-brief-delivery'}
           role={delivery.kind === 'empty' || delivery.kind === 'error' ? 'alert' : undefined}
         >
           {delivery.kind === 'error' ? (

@@ -1,9 +1,12 @@
 """Tests for /api/admin/config endpoints."""
 
+import os
 import re
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+from routers.admin.helpers import _propagate_to_settings
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -45,6 +48,25 @@ def admin_client(tmp_path, monkeypatch, auth_token):
     with TestClient(app, raise_server_exceptions=False) as client:
         client.cookies.set("briefr_at", auth_token())
         yield client
+
+
+def _restore_written_config_key(key: str, previous: str | None) -> None:
+    if previous is None:
+        os.environ.pop(key, None)
+        _propagate_to_settings(key, "")
+    else:
+        os.environ[key] = previous
+        _propagate_to_settings(key, previous)
+
+
+async def _app_setting_value(key: str) -> str | None:
+    from database import get_app_setting, get_db
+
+    db = await get_db()
+    try:
+        return await get_app_setting(db, key)
+    finally:
+        await db.close()
 
 
 def test_config_api_keys_are_masked(admin_client):
@@ -405,22 +427,57 @@ def test_config_includes_daily_brief_defaults(admin_client, monkeypatch):
 
 
 def test_config_daily_brief_enabled_round_trip(admin_client):
-    r = admin_client.post("/api/admin/config", json={"key": "DAILY_BRIEF_EOD_ENABLED", "value": "1"})
-    assert r.status_code == 200
-    sched = admin_client.get("/api/admin/config").json()["scheduler"]
-    assert sched["DAILY_BRIEF_EOD_ENABLED"] == "1"
+    key = "DAILY_BRIEF_EOD_ENABLED"
+    previous = os.environ.get(key)
+    try:
+        r = admin_client.post("/api/admin/config", json={"key": key, "value": "1"})
+        assert r.status_code == 200
+        sched = admin_client.get("/api/admin/config").json()["scheduler"]
+        assert sched[key] == "1"
+    finally:
+        _restore_written_config_key(key, previous)
 
 
 def test_config_secret_without_settings_key_warns(admin_client, monkeypatch):
+    from tests.conftest import run_db_test
+
     monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
-    r = admin_client.post(
-        "/api/admin/config",
-        json={"key": "DISCORD_WEBHOOK_URL", "value": "https://discord.com/api/webhooks/1/aaa"},
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["persisted_to_db"] is False
-    assert "warning" in body and body["warning"]
+    key = "DISCORD_WEBHOOK_URL"
+    previous = os.environ.get(key)
+    try:
+        r = admin_client.post(
+            "/api/admin/config",
+            json={"key": key, "value": "https://discord.com/api/webhooks/1/aaa"},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["persisted_to_db"] is False
+        assert "warning" in body and body["warning"]
+        stored = run_db_test(_app_setting_value(key))
+        assert stored is None
+    finally:
+        _restore_written_config_key(key, previous)
+
+
+def test_config_apply_all_secret_without_settings_key_warns(admin_client, monkeypatch):
+    from tests.conftest import run_db_test
+
+    monkeypatch.delenv("BRIEFR_SETTINGS_KEY", raising=False)
+    key = "DISCORD_WEBHOOK_URL"
+    previous = os.environ.get(key)
+    try:
+        r = admin_client.post(
+            "/api/admin/config/apply-all",
+            json=[{"key": key, "value": "https://discord.com/api/webhooks/1/bbb"}],
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["persisted_to_db"] is False
+        assert "warning" in body and body["warning"]
+        stored = run_db_test(_app_setting_value(key))
+        assert stored is None
+    finally:
+        _restore_written_config_key(key, previous)
 
 
 def test_config_meta_process_pinned_keys(admin_client, monkeypatch):

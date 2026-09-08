@@ -17,11 +17,11 @@
 }
 
 .daily-brief-time {
-  min-width: 4.5rem;
+  min-width: var(--control-width-sm);
 }
 
 .daily-brief-time .admin-input {
-  width: 4.5rem;
+  width: var(--control-width-sm);
 }
 
 .daily-brief-delivery {

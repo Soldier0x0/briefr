@@ -49,4 +49,5 @@ from `.env`.
 - Positive: Existing `.env`-only installs keep working with zero change.
 - Negative: Operators who want DB-durable secrets must set
   `BRIEFR_SETTINGS_KEY` (and back it up — loss = cannot decrypt those rows).
-- Follow-up: optional Admin UI hint when saving a secret without the key.
+- Config POST/apply-all return `persisted_to_db` and `warning`; Admin Config
+  toasts the warning when a secret is not stored.
