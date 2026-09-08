@@ -47,21 +47,33 @@ class RetryRequest(BaseModel):
     force: bool = False
 
 
-def _parse_payload_messages(messages_json: str) -> list[dict[str, str]]:
+def _parse_payload_messages(
+    messages_json: str,
+) -> tuple[list[dict[str, str]], bool, str | None]:
+    raw = messages_json or ""
     try:
-        parsed = json.loads(messages_json)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail="Stored payload is invalid JSON") from exc
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return [], False, raw
+    if isinstance(parsed, dict) and parsed.get("parse_ok") is False:
+        return [], False, str(parsed.get("raw") or raw)
     if not isinstance(parsed, list):
-        raise HTTPException(status_code=500, detail="Stored payload messages must be a list")
+        return [], False, raw
     cleaned: list[dict[str, str]] = []
     for item in parsed:
         if not isinstance(item, dict):
-            raise HTTPException(status_code=500, detail="Stored payload messages are malformed")
-        role = str(item.get("role", "")).strip()
-        content = str(item.get("content", ""))
-        cleaned.append({"role": role, "content": content})
-    return cleaned
+            return [], False, raw
+        role = item.get("role")
+        content = item.get("content")
+        if not isinstance(role, str) or not role.strip() or not isinstance(content, str):
+            return [], False, raw
+        cleaned.append(
+            {
+                "role": role.strip(),
+                "content": content,
+            }
+        )
+    return cleaned, True, None
 
 
 def _retryable_task(task_class: str) -> Literal["product_extraction", "pdf_summary", "detection_context"]:
@@ -157,9 +169,12 @@ async def get_ai_operation_payload_endpoint(operation_id: str, request: Request)
     if payload is None:
         raise HTTPException(status_code=404, detail="AI operation payload not found")
 
+    messages, parse_ok, messages_raw = _parse_payload_messages(payload["messages_json"])
     return {
         "operation_id": payload["operation_id"],
-        "messages": _parse_payload_messages(payload["messages_json"]),
+        "messages": messages,
+        "messages_parse_ok": parse_ok,
+        "messages_raw": messages_raw,
         "response_excerpt": payload.get("response_excerpt"),
         "task_class": payload["task_class"],
         "provider": payload["provider"],
@@ -203,7 +218,9 @@ async def retry_ai_operation(
         await db.close()
 
     task = _retryable_task(payload["task_class"])
-    messages = _parse_payload_messages(payload["messages_json"])
+    messages, parse_ok, _raw = _parse_payload_messages(payload["messages_json"])
+    if not parse_ok:
+        raise HTTPException(status_code=400, detail="Stored payload cannot be replayed")
     completion = await chat_completion_task(
         task,
         messages=messages,

@@ -96,6 +96,8 @@ class WebhookDestination:
 
 
 def _discord_destination() -> WebhookDestination | None:
+    if env_dest_tombstoned("discord"):
+        return None
     url = _env("DISCORD_WEBHOOK_URL")
     if not url:
         return None
@@ -111,6 +113,8 @@ def _discord_destination() -> WebhookDestination | None:
 
 
 def _telegram_destination() -> WebhookDestination | None:
+    if env_dest_tombstoned("telegram"):
+        return None
     token = _env("TELEGRAM_BOT_TOKEN")
     chat_id = _env("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
@@ -127,6 +131,8 @@ def _telegram_destination() -> WebhookDestination | None:
 
 
 def _generic_destination() -> WebhookDestination | None:
+    if env_dest_tombstoned("generic"):
+        return None
     url = _env("WEBHOOK_GENERIC_URL")
     if not url:
         return None
@@ -141,11 +147,26 @@ def _generic_destination() -> WebhookDestination | None:
     )
 
 
+TOMBSTONE_KEYS = {
+    "discord": "WEBHOOK_TOMBSTONE_DISCORD",
+    "telegram": "WEBHOOK_TOMBSTONE_TELEGRAM",
+    "generic": "WEBHOOK_TOMBSTONE_GENERIC",
+}
+
+
+def env_dest_tombstoned(destination_id: str) -> bool:
+    key = TOMBSTONE_KEYS.get(destination_id)
+    if not key:
+        return False
+    return os.environ.get(key, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_env_destinations() -> list[WebhookDestination]:
+    """Env-only reserved dests. Tombstoned ids are omitted so bootstrap cannot resurrect them."""
     destinations: list[WebhookDestination] = []
     for builder in (_discord_destination, _telegram_destination, _generic_destination):
         dest = builder()
-        if dest is not None:
+        if dest is not None and not env_dest_tombstoned(dest.id):
             destinations.append(dest)
     return destinations
 
@@ -172,6 +193,84 @@ def env_bootstrap_process_conflict_message(destination_id: str) -> str | None:
         "remain in the process environment so the card stays until those keys "
         "are unset; after that it stays gone (no second delete required)."
     )
+
+
+def reserved_delete_warning(destination_id: str) -> str | None:
+    """Warn when systemd/process env still names the bootstrap keys after delete."""
+    from settings import PROCESS_ENV_KEYS
+
+    keys = _ENV_BOOTSTRAP_PROCESS_KEYS.get(destination_id)
+    if not keys:
+        return None
+    still = [key for key in keys if key in PROCESS_ENV_KEYS]
+    if not still:
+        return None
+    names = ", ".join(f"`{key}`" for key in still)
+    return (
+        f"Destination removed. {names} may still be set in the process environment "
+        "(systemd/secrets) and will be ignored until you save a new URL or unset those keys."
+    )
+
+
+async def commit_reserved_env_delete(db, destination_id: str) -> None:
+    """Clear settings, write tombstone, delete row — one transaction. Caller pops env after commit."""
+    from database import delete_webhook_destination as db_delete, set_app_setting
+
+    keys = _ENV_BOOTSTRAP_CLEAR_KEYS.get(destination_id) or ()
+    for key in keys:
+        await set_app_setting(db, key, "")
+    tomb = TOMBSTONE_KEYS.get(destination_id)
+    if tomb:
+        await set_app_setting(db, tomb, "1")
+    await db_delete(db, destination_id)
+    await db.commit()
+
+
+def apply_reserved_env_delete_process(destination_id: str) -> None:
+    for key in _ENV_BOOTSTRAP_CLEAR_KEYS.get(destination_id) or ():
+        os.environ.pop(key, None)
+    tomb = TOMBSTONE_KEYS.get(destination_id)
+    if tomb:
+        os.environ[tomb] = "1"
+
+
+async def maybe_clear_env_dest_tombstone_for_key(key: str, value: str) -> None:
+    if not (value or "").strip():
+        return
+    dest_id = {
+        "DISCORD_WEBHOOK_URL": "discord",
+        "WEBHOOK_GENERIC_URL": "generic",
+        "TELEGRAM_BOT_TOKEN": "telegram",
+        "TELEGRAM_CHAT_ID": "telegram",
+    }.get(key)
+    if dest_id:
+        await clear_env_dest_tombstone(dest_id)
+
+
+async def stage_env_dest_tombstone_clear(db, destination_id: str) -> str | None:
+    """Write tombstone='' on the caller's connection. Caller commits, then pops env."""
+    tomb = TOMBSTONE_KEYS.get(destination_id)
+    if not tomb:
+        return None
+    from database import set_app_setting
+
+    await set_app_setting(db, tomb, "")
+    return tomb
+
+
+async def clear_env_dest_tombstone(destination_id: str) -> None:
+    tomb = TOMBSTONE_KEYS.get(destination_id)
+    if not tomb:
+        return
+    from database import set_app_setting
+
+    db = await get_db()
+    try:
+        await set_app_setting(db, tomb, "")
+        await db.commit()
+    finally:
+        await db.close()
+    os.environ.pop(tomb, None)
 
 
 async def clear_env_bootstrap_config(destination_id: str) -> str | None:
@@ -298,7 +397,10 @@ async def load_destinations() -> list[WebhookDestination]:
             )
         else:
             merged[db_dest.id] = db_dest
-    return sorted(merged.values(), key=lambda d: d.id)
+    return sorted(
+        (dest for dest in merged.values() if not env_dest_tombstoned(dest.id)),
+        key=lambda d: d.id,
+    )
 
 
 async def webhooks_enabled() -> bool:

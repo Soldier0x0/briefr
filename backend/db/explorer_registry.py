@@ -309,7 +309,7 @@ _TIER2: tuple[TableSpec, ...] = (
         "AI operations",
         (
             "id", "operation_id", "request_id", "started_at", "latency_ms", "feature",
-            "task_class", "provider", "model", "success", "error_class", "input_tokens",
+            "task_class", "provider", "model", "success", "error_class", "error_detail", "input_tokens",
             "output_tokens", "total_tokens", "estimated_cost_usd", "fallback_from_provider",
             "fallback_from_model", "retry_index", "context_type", "context_id",
         ),

@@ -219,6 +219,22 @@ def _reset_forge_security_architecture_module_caches():
 
 
 @pytest.fixture(autouse=True)
+def _clear_webhook_env_tombstones():
+    """Reserved dest delete writes WEBHOOK_TOMBSTONE_* into os.environ.
+
+    pytest monkeypatch.delenv(..., raising=False) does not record a restore
+    when the key was absent, so later webhook tests would skip Discord.
+    """
+    yield
+    for key in (
+        "WEBHOOK_TOMBSTONE_DISCORD",
+        "WEBHOOK_TOMBSTONE_TELEGRAM",
+        "WEBHOOK_TOMBSTONE_GENERIC",
+    ):
+        os.environ.pop(key, None)
+
+
+@pytest.fixture(autouse=True)
 def _reset_db_pool_after_test():
     """Clear a stale asyncpg pool handle so the next test's TestClient lifespan
     re-binds to the correct DATABASE_URL/DB_PATH (loop mismatch or a prior

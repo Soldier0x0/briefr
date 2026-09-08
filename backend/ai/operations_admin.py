@@ -5,7 +5,12 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from ai.llm_router import any_llm_provider_configured, get_configured_providers
+from ai.llm_router import (
+    _api_key,
+    _provider_enabled,
+    any_llm_provider_configured,
+    get_configured_providers,
+)
 from ai.model_catalog import PROVIDER_ENV_KEYS, models_catalog_payload
 from ai.operations_recorder import recording_enabled
 from ai.quota import get_quota_snapshot, quota_warnings
@@ -18,15 +23,17 @@ def _env_flag(key: str, default: str = "0") -> bool:
 
 def _provider_health_rows() -> list[dict[str, Any]]:
     feed = get_feed_health()
-    configured = set(get_configured_providers())
     rows: list[dict[str, Any]] = []
     for provider, env_key in PROVIDER_ENV_KEYS.items():
         health = feed.get(provider, {})
+        enabled = _provider_enabled(provider)
         rows.append(
             {
                 "provider": provider,
                 "env_key": env_key,
-                "configured": provider in configured,
+                "enabled": enabled,
+                "enabled_key": f"LLM_PROVIDER_{provider.upper()}_ENABLED",
+                "configured": bool(_api_key(provider)),
                 "circuit_open": bool(health.get("circuit_open")),
                 "last_success": health.get("last_success"),
                 "last_failure": health.get("last_failure"),

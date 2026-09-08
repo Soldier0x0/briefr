@@ -35,5 +35,7 @@ export const LLM_ERROR_LABELS = {
   timeout: 'timeout',
   auth: 'auth error',
   model_not_found: 'model not found',
-  unknown: 'unknown error',
+    unknown: 'unknown error',
+    dns: 'dns failure',
+    network: 'network error',
 }

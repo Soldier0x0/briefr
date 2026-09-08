@@ -17,12 +17,18 @@ from ai.llm_payload import has_llm_request_payload
 from ai.llm_session import (
     is_provider_skipped_in_job,
     mark_provider_empty_response,
+    mark_provider_transport_failure,
     provider_circuit_open,
 )
 from ai.model_catalog import ProviderStep, task_chain
 from ai.model_catalog import gemini_model as gemini_model  # re-export for tests
 from ai.openai_chat import openai_chat_completion
-from ai.operations_recorder import AttemptTimer, classify_llm_error, record_llm_attempt
+from ai.operations_recorder import (
+    AttemptTimer,
+    classify_llm_error,
+    record_llm_attempt,
+    redact_error_detail,
+)
 from ai.provider_catalog import custom_provider_step
 from api_queue_operations import LLM_TASK_OPERATIONS
 from database import get_db
@@ -30,7 +36,7 @@ from db.ai_operation_payloads import (
     insert_ai_operation_payload,
     store_failure_payloads_enabled,
 )
-from resilient_client import CircuitOpenError, record_source_success
+from resilient_client import CircuitOpenError, record_source_failure, record_source_success
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +105,19 @@ def _is_usable_api_key(value: str) -> bool:
     return True
 
 
+def _provider_enabled(provider: str) -> bool:
+    raw = os.environ.get(f"LLM_PROVIDER_{provider.upper()}_ENABLED", "").strip().lower()
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    return True
+
+
 def get_configured_providers() -> list[str]:
-    return [provider for provider in _PROVIDER_ENV_KEYS if _api_key(provider)]
+    return [
+        provider
+        for provider in _PROVIDER_ENV_KEYS
+        if _api_key(provider) and _provider_enabled(provider)
+    ]
 
 
 def _idempotency_blocked(task: str, context_type: str, context_id: str) -> bool:
@@ -243,6 +260,7 @@ async def _record_attempt(
     queue_context_type: str,
     queue_context_id: str,
     error_class: str | None = None,
+    error_detail: str | None = None,
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
     usage: dict | None = None,
@@ -258,6 +276,7 @@ async def _record_attempt(
         context_type=queue_context_type,
         context_id=queue_context_id,
         error_class=error_class,
+        error_detail=error_detail,
         fallback_from_provider=fallback_from_provider,
         fallback_from_model=fallback_from_model,
         input_tokens=usage.get("input_tokens"),
@@ -342,7 +361,7 @@ async def chat_completion_task(
     last_failed_model: str | None = None
 
     for step in _task_chain(task):
-        if not _api_key(step.provider):
+        if not _api_key(step.provider) or not _provider_enabled(step.provider):
             continue
 
         if not await has_quota(step.provider):
@@ -353,7 +372,7 @@ async def chat_completion_task(
             continue
         if is_provider_skipped_in_job(step.provider):
             logger.info(
-                "Skipping LLM provider %s for task %s — empty response earlier in this job",
+                "Skipping LLM provider %s for task %s — failed earlier in this job",
                 step.provider,
                 task,
             )
@@ -424,6 +443,7 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class=classify_llm_error(None, empty=True),
+                error_detail="empty LLM response content",
             )
             await _store_failure_payload(
                 operation_id=operation_id,
@@ -442,6 +462,7 @@ async def chat_completion_task(
                 timeout,
                 task,
             )
+            record_source_failure(step.provider, f"timeout after {timeout}s")
             operation_id = await _record_attempt(
                 task=task,
                 step=step,
@@ -451,6 +472,7 @@ async def chat_completion_task(
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
                 error_class="timeout",
+                error_detail=f"timeout after {timeout}s",
             )
             await _store_failure_payload(
                 operation_id=operation_id,
@@ -494,8 +516,15 @@ async def chat_completion_task(
                 "LLM %s failed for task %s — trying next provider: %s",
                 step.provider,
                 task,
-                exc,
+                redact_error_detail(str(exc)) or type(exc).__name__,
             )
+            record_source_failure(
+                step.provider,
+                redact_error_detail(str(exc), limit=300) or type(exc).__name__,
+            )
+            error_class = classify_llm_error(exc)
+            if error_class in {"dns", "network"}:
+                mark_provider_transport_failure(step.provider)
             operation_id = await _record_attempt(
                 task=task,
                 step=step,
@@ -504,7 +533,8 @@ async def chat_completion_task(
                 retry_index=attempt_index,
                 queue_context_type=queue_context_type,
                 queue_context_id=queue_context_id,
-                error_class=classify_llm_error(exc),
+                error_class=error_class,
+                error_detail=str(exc),
             )
             await _store_failure_payload(
                 operation_id=operation_id,

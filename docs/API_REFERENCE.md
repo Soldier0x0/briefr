@@ -2329,7 +2329,7 @@ Body `{kind, config, id?, label?, enabled?, event_types?}`. Creates a **database
 Body `{enabled?: bool, event_types?: string[], label?: string, config?: object}`. Updates enable flag, subscriptions, and label. **`config` only for `source: db`** destinations (env bootstrap destinations keep secrets in `.env`). Audit: `webhook.destination.update.{id}`.
 
 ### DELETE /api/admin/webhooks/destinations/{destination_id}
-Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes database-backed destinations (`source: db`) and reserved env bootstrap ids (`discord`, `telegram`, `generic`). For reserved ids, Admin clears the matching webhook keys in the same `app_settings` store as API keys & config (`DISCORD_WEBHOOK_URL` / `DISCORD_WEBHOOK_ENABLED`, Telegram token+chat+enabled, or generic URL+enabled) and deletes the destination row so `load_env_destinations` skips bootstrap until the operator pastes a URL into **Add destination**. Does not write `backend/.env`. If a **process-level** env var still injects the URL (or Telegram token+chat) after that clear, returns **409** with detail naming those keys only — app_settings and the row are already gone; the live card remains until process env is unset, then it stays gone (no second delete). Audit: `webhook.destination.delete.{id}`.
+Query `confirm_text=delete` (see `GET /api/admin/destructive-actions`). Deletes database-backed destinations (`source: db`) and reserved env bootstrap ids (`discord`, `telegram`, `generic`). For reserved ids, Admin clears matching webhook keys in `app_settings` (`DISCORD_WEBHOOK_URL` / `DISCORD_WEBHOOK_ENABLED`, Telegram token+chat+enabled, or generic URL+enabled), sets tombstone `WEBHOOK_TOMBSTONE_{DISCORD|TELEGRAM|GENERIC}` to `1`, deletes the reserved row, then pops those URL keys from `os.environ` (including process-level keys). Response **200** `{ok: true, destination_id, warning?}` — `warning` names keys still listed in process/systemd env that will be ignored until a new URL is saved or those keys are unset. Other destinations that copied the same URL are unchanged. Does not write `backend/.env` and does not revoke Discord.com. Audit: `webhook.destination.delete.{id}`.
 
 ### GET /api/admin/webhooks/delivery-log
 Params: `destination_id`, `event_type`, `limit`, `offset`. Returns `{rows: [{id, destination_id, event_type, dedupe_key, status, error, attempted_at}], total}`. `error` values are masked on read (URLs and token-like substrings redacted).
@@ -2344,13 +2344,13 @@ Read-only model catalog SSOT for LLM task failover chains. Returns `{providers: 
 Summary for the Admin AI Operations page: recording flag, configured provider count, active LLM circuits, 24h/7d usage rollups from `ai_operations`, feature enablement flags, embeddings vector count, `quota_warnings` (#432). No secrets. Each usage window includes token sums (`input_tokens`, `output_tokens`, `total_tokens`) and `tokens_recorded` (true once a provider that reports usage runs in the window). Cost is not estimated.
 
 ### GET /api/admin/ai/operations/providers
-Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `last_error`, `consecutive_failures`) plus `configured` from env keys. Each row includes advisory `quota` from rate-limit response headers when available (#432). Sources: `resilient_client` + `get_configured_providers()`.
+Per-provider health snapshot (`circuit_open`, `last_success`, `last_failure`, `last_error`, `consecutive_failures`) plus `configured` (usable API key present) and `enabled` (`LLM_PROVIDER_<NAME>_ENABLED`, default on) plus `enabled_key`. Sources: `resilient_client` + `get_configured_providers()` (key **and** enabled). Toggle enabled via `POST /api/admin/config` with that `enabled_key`.
 
 ### GET /api/admin/ai/operations/activity
-Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. Each row includes `input_tokens`/`output_tokens`/`total_tokens` (null for providers that don't report usage). No prompt text.
+Params: `limit`, `offset`, optional `task_class`, `provider`. Paginated redacted rows from `ai_operations` — `{rows, total, limit, offset}`. Each row includes `input_tokens`/`output_tokens`/`total_tokens` (null for providers that don't report usage) and optional `error_detail` (≤200 chars, redacted). No prompt text.
 
 ### GET /api/admin/ai/operations/{operation_id}/payload
-Returns the stored failure payload for a recorded LLM attempt (Program E Task 2): `{operation_id, messages, response_excerpt, task_class, provider, model, created_at}`. `messages` is the redacted parsed message array from `ai_operation_payloads.messages_json`. `404` when no payload row exists for the operation id.
+Returns the stored failure payload for a recorded LLM attempt (Program E Task 2): `{operation_id, messages, messages_parse_ok, messages_raw, response_excerpt, task_class, provider, model, created_at}`. `messages` is the redacted parsed message array when `messages_parse_ok` is true; otherwise `messages` is `[]` and `messages_raw` holds the unparsed text. Invalid stored JSON is **200**, never 500. `404` when no payload row exists for the operation id.
 
 ### POST /api/admin/ai/operations/{operation_id}/retry
 Manual replay of a stored failure payload through the normal LLM router/recording path. Optional JSON body: `{force?: boolean}` (`false` default).
@@ -2359,6 +2359,7 @@ Response: `{replay_operation_id, success, provider, model, error_class}` from th
 
 Behavior:
 - Replays use `context_type="replay"` and `context_id=<original operation_id>` for traceability in Activity.
+- If the stored payload cannot be parsed as a message list, returns `400` (`Stored payload cannot be replayed`).
 - If the original payload provider circuit is open and `force` is not true, returns `409` with operator guidance (`force=true` bypass).
 - Records audit action `ai.operations.retry` (target = original `operation_id`) with replay metadata.
 

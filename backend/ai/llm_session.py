@@ -39,6 +39,13 @@ def mark_provider_empty_response(provider: str) -> None:
         skipped.add(provider)
 
 
+def mark_provider_transport_failure(provider: str) -> None:
+    """Skip this provider for the rest of the job after dns/network failure."""
+    skipped = _job_empty_providers.get()
+    if skipped is not None:
+        skipped.add(provider)
+
+
 def provider_circuit_open(provider: str) -> bool:
     """True when the shared resilient-client circuit is open for this provider."""
     return is_circuit_open(provider)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Any
 
@@ -96,6 +97,34 @@ def _redact_secrets(value: str) -> str:
     return redacted
 
 
+def _bounded_messages_json(messages_json: str) -> str:
+    redacted = _redact_secrets(messages_json or "")
+    try:
+        parsed = json.loads(redacted)
+    except json.JSONDecodeError:
+        return json.dumps({"parse_ok": False, "raw": _truncate(redacted)}, ensure_ascii=True)
+    if not isinstance(parsed, list):
+        return json.dumps({"parse_ok": False, "raw": _truncate(redacted)}, ensure_ascii=True)
+    cleaned: list[dict[str, str]] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            return json.dumps({"parse_ok": False, "raw": _truncate(redacted)}, ensure_ascii=True)
+        cleaned.append(
+            {
+                "role": str(item.get("role", "")),
+                "content": str(item.get("content", "")),
+            }
+        )
+    n = max(len(cleaned), 1)
+    per_content = max(64, (32_768 // n) - 80)
+    for item in cleaned:
+        item["content"] = _truncate(item["content"], per_content)
+    dumped = json.dumps(cleaned, ensure_ascii=True)
+    if len(dumped) > 32_768:
+        return json.dumps({"parse_ok": False, "raw": _truncate(redacted)}, ensure_ascii=True)
+    return dumped
+
+
 async def insert_ai_operation_payload(
     db: DbConnection,
     *,
@@ -107,7 +136,7 @@ async def insert_ai_operation_payload(
     model: str,
 ) -> None:
     pg = _is_postgres_connection(db)
-    cleaned_messages = _truncate(_redact_secrets(messages_json))
+    cleaned_messages = _bounded_messages_json(messages_json)
     cleaned_excerpt = (
         _truncate(_redact_secrets(response_excerpt))
         if response_excerpt is not None

@@ -45,6 +45,7 @@ def test_providers_payload_lists_five_providers():
     names = [p["provider"] for p in payload["providers"]]
     assert names == ["custom", "groq", "cerebras", "openrouter", "gemini"]
     assert all("configured" in p for p in payload["providers"])
+    assert all("enabled" in p for p in payload["providers"])
 
 
 def test_usage_aggregates_and_activity_pagination(tmp_path, monkeypatch):
@@ -351,6 +352,36 @@ def test_get_payload_returns_stored_payload(admin_client):
     assert body["created_at"]
 
 
+def test_get_payload_200_when_messages_json_invalid(admin_client):
+    operation_id = "op-bad-json"
+
+    async def _seed():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation_payload(
+                db,
+                operation_id=operation_id,
+                messages_json='[{"role":"user","content":"partial',
+                response_excerpt="[Errno -3] Temporary failure in name resolution",
+                task_class="product_extraction",
+                provider="cerebras",
+                model="gpt-oss-120b",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+    r = admin_client.get(f"/api/admin/ai/operations/{operation_id}/payload")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["messages_parse_ok"] is False
+    assert body["messages"] == []
+    assert "Errno -3" in body["response_excerpt"]
+    assert "partial" in (body.get("messages_raw") or "")
+
+
 def test_retry_replays_stored_messages(admin_client, monkeypatch):
     operation_id = "op-retry-1"
     _seed_failure_payload(operation_id)
@@ -412,3 +443,42 @@ def test_retry_returns_409_when_circuit_open_unless_forced(admin_client, monkeyp
     )
     assert forced.status_code == 200
     assert forced.json()["success"] is True
+
+
+def test_retry_empty_message_object_returns_400(admin_client):
+    operation_id = "op-retry-empty-msg"
+
+    async def _seed():
+        await init_db()
+        db = await get_db()
+        try:
+            await insert_ai_operation(
+                db,
+                operation_id=operation_id,
+                request_id=None,
+                started_at="2099-01-01T00:00:00Z",
+                latency_ms=15,
+                feature="product_extraction",
+                task_class="product_extraction",
+                provider="groq",
+                model="m1",
+                success=False,
+                error_class="unknown",
+            )
+            await insert_ai_operation_payload(
+                db,
+                operation_id=operation_id,
+                messages_json="[{}]",
+                response_excerpt="bad payload",
+                task_class="product_extraction",
+                provider="groq",
+                model="m1",
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    run_db_test(_seed())
+    r = admin_client.post(f"/api/admin/ai/operations/{operation_id}/retry")
+    assert r.status_code == 400
+    assert "cannot be replayed" in r.json().get("detail", "")

@@ -158,7 +158,6 @@ async def delete_webhook_destination_route(
     from database import delete_webhook_destination as db_delete, get_webhook_destination_source
     from webhooks.destinations import (
         RESERVED_ENV_IDS,
-        clear_env_bootstrap_config,
         load_destinations,
         sync_env_destinations_to_db,
     )
@@ -172,17 +171,23 @@ async def delete_webhook_destination_route(
     if destination_id in RESERVED_ENV_IDS:
         if not any(dest.id == destination_id for dest in await load_destinations()):
             raise HTTPException(404, f"Destination '{destination_id}' not found")
-        conflict = await clear_env_bootstrap_config(destination_id)
+        from webhooks.destinations import (
+            apply_reserved_env_delete_process,
+            commit_reserved_env_delete,
+            reserved_delete_warning,
+        )
+        warning = reserved_delete_warning(destination_id)
         db = await get_db()
         try:
-            await db_delete(db, destination_id)
-            await db.commit()
+            await commit_reserved_env_delete(db, destination_id)
         finally:
             await db.close()
+        apply_reserved_env_delete_process(destination_id)
         await audit(request, f"webhook.destination.delete.{destination_id}", destination_id)
-        if conflict:
-            raise HTTPException(409, conflict)
-        return {"ok": True, "destination_id": destination_id}
+        body: dict = {"ok": True, "destination_id": destination_id}
+        if warning:
+            body["warning"] = warning
+        return body
 
     await sync_env_destinations_to_db()
     if not any(dest.id == destination_id for dest in await load_destinations()):

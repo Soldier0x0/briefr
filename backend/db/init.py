@@ -956,7 +956,7 @@ async def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_webhook_delivery_log_event ON webhook_delivery_log(event_type)",
             "CREATE TABLE IF NOT EXISTS webhook_destination_dedupe (destination_id TEXT NOT NULL, event_type TEXT NOT NULL, dedupe_key TEXT NOT NULL, recorded_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (destination_id, event_type, dedupe_key))",
             "CREATE INDEX IF NOT EXISTS idx_webhook_dest_dedupe_event ON webhook_destination_dedupe(event_type, dedupe_key)",
-            "CREATE TABLE IF NOT EXISTS ai_operations (id INTEGER PRIMARY KEY AUTOINCREMENT, operation_id TEXT NOT NULL, request_id TEXT, started_at TEXT DEFAULT (datetime('now')), latency_ms INTEGER, feature TEXT NOT NULL, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL, success INTEGER NOT NULL DEFAULT 0, error_class TEXT, input_tokens INTEGER, output_tokens INTEGER, total_tokens INTEGER, estimated_cost_usd REAL, fallback_from_provider TEXT, fallback_from_model TEXT, retry_index INTEGER NOT NULL DEFAULT 0, context_type TEXT, context_id TEXT)",
+            "CREATE TABLE IF NOT EXISTS ai_operations (id INTEGER PRIMARY KEY AUTOINCREMENT, operation_id TEXT NOT NULL, request_id TEXT, started_at TEXT DEFAULT (datetime('now')), latency_ms INTEGER, feature TEXT NOT NULL, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL, success INTEGER NOT NULL DEFAULT 0, error_class TEXT, error_detail TEXT, input_tokens INTEGER, output_tokens INTEGER, total_tokens INTEGER, estimated_cost_usd REAL, fallback_from_provider TEXT, fallback_from_model TEXT, retry_index INTEGER NOT NULL DEFAULT 0, context_type TEXT, context_id TEXT)",
             "CREATE INDEX IF NOT EXISTS idx_ai_operations_started ON ai_operations(started_at)",
             "CREATE INDEX IF NOT EXISTS idx_ai_operations_task_provider ON ai_operations(task_class, provider)",
             "CREATE TABLE IF NOT EXISTS ai_operation_payloads (operation_id TEXT PRIMARY KEY, created_at TEXT DEFAULT (datetime('now')), messages_json TEXT NOT NULL, response_excerpt TEXT, task_class TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL)",
@@ -1279,6 +1279,7 @@ async def init_db() -> None:
             _RESOURCE_METRICS_TABLE_SQL,
             _RESOURCE_METRICS_IDX_SQL,
             "ALTER TABLE audit_log ADD COLUMN metadata_json TEXT",
+            "ALTER TABLE ai_operations ADD COLUMN error_detail TEXT",
         ):
             try:
                 await db.execute(migration)

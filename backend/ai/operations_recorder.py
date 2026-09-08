@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
+import re
+import socket
 import uuid
 from time import monotonic
 
@@ -11,6 +13,8 @@ from database import get_db, insert_ai_operation
 from db.timeutil import utcnow_str
 from resilient_client import CircuitOpenError
 from structured_logging import request_id_var
+
+_HTTP_STATUS_RE = re.compile(r"\b([45]\d\d)\b")
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,52 @@ def recording_enabled() -> bool:
         "no",
         "off",
     }
+
+
+def _exception_chain(exc: BaseException) -> list[BaseException]:
+    seen: list[BaseException] = []
+    current: BaseException | None = exc
+    while current is not None and current not in seen:
+        seen.append(current)
+        current = current.__cause__ or current.__context__
+    return seen
+
+
+def _is_dns_failure(exc: BaseException) -> bool:
+    for item in _exception_chain(exc):
+        errno = getattr(item, "errno", None)
+        msg = str(item).lower()
+        if (
+            errno in {-2, -3}
+            or isinstance(item, socket.gaierror)
+            or "name resolution" in msg
+            or "errno -3" in msg
+            or "errno -2" in msg
+            or "gaierror" in msg
+            or "name or service not known" in msg
+        ):
+            return True
+    return False
+
+
+def _is_network_failure(exc: BaseException) -> bool:
+    tokens = (
+        "connection refused",
+        "connection reset",
+        "connecterror",
+        "network is unreachable",
+        "ssl",
+        "tls",
+        "certificate verify failed",
+        "handshake",
+    )
+    for item in _exception_chain(exc):
+        if isinstance(item, ConnectionRefusedError | ConnectionResetError | ConnectionError):
+            return True
+        msg = str(item).lower()
+        if any(token in msg for token in tokens):
+            return True
+    return False
 
 
 def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str:
@@ -42,7 +92,21 @@ def classify_llm_error(exc: BaseException | None, *, empty: bool = False) -> str
         return "rate_limit"
     if "404" in msg or ("model" in msg and "not found" in msg):
         return "model_not_found"
+    if _HTTP_STATUS_RE.search(msg):
+        return "unknown"
+    if _is_dns_failure(exc):
+        return "dns"
+    if _is_network_failure(exc):
+        return "network"
     return "unknown"
+
+
+def redact_error_detail(text: str | None, *, limit: int = 200) -> str | None:
+    if not text:
+        return None
+    from db.ai_operation_payloads import _redact_secrets
+
+    return _redact_secrets(text)[:limit]
 
 
 async def record_llm_attempt(
@@ -56,6 +120,7 @@ async def record_llm_attempt(
     context_type: str | None,
     context_id: str | None,
     error_class: str | None = None,
+    error_detail: str | None = None,
     fallback_from_provider: str | None = None,
     fallback_from_model: str | None = None,
     input_tokens: int | None = None,
@@ -79,6 +144,7 @@ async def record_llm_attempt(
             model=model,
             success=success,
             error_class=error_class,
+            error_detail=redact_error_detail(error_detail),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             total_tokens=total_tokens,

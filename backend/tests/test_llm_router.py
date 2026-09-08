@@ -6,13 +6,22 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ai import llm_router as router
 from ai.llm_router import LLMCompletion, chat_completion_task
 from db.config import is_postgres
-from resilient_client import CircuitOpenError
+from resilient_client import CircuitOpenError, reset_feed_health
 from tests.conftest import run_db_test
+
+
+@pytest.fixture(autouse=True)
+def _reset_source_health():
+    reset_feed_health()
+    yield
+    reset_feed_health()
 
 
 def test_get_configured_providers_reads_env(monkeypatch):
@@ -403,4 +412,146 @@ def test_chat_completion_task_records_operations(tmp_path, monkeypatch):
     assert by_provider["groq"]["error_class"] == "unknown"
     assert by_provider["gemini"]["success"] in (True, 1)
     assert by_provider["gemini"]["retry_index"] == 1
+
+
+def test_classify_llm_error_dns_errno_minus_3():
+    from ai.operations_recorder import classify_llm_error
+
+    exc = OSError(-3, "Temporary failure in name resolution")
+    assert classify_llm_error(exc) == "dns"
+
+
+def test_classify_llm_error_dns_errno_minus_2_and_cause_chain():
+    from ai.operations_recorder import classify_llm_error
+
+    assert classify_llm_error(OSError(-2, "Name or service not known")) == "dns"
+    assert classify_llm_error(Exception("[Errno -2] Name or service not known")) == "dns"
+
+    inner = OSError(-2, "Name or service not known")
+    outer = Exception("ConnectError")
+    outer.__cause__ = inner
+    assert classify_llm_error(outer) == "dns"
+
+
+def test_classify_llm_error_network_via_cause_chain():
+    from ai.operations_recorder import classify_llm_error
+
+    inner = ConnectionRefusedError("Connection refused")
+    outer = Exception("provider call failed")
+    outer.__cause__ = inner
+    assert classify_llm_error(outer) == "network"
+
+
+def test_classify_llm_error_tls_is_network_http_status_is_not():
+    from ssl import SSLError
+
+    from ai.operations_recorder import classify_llm_error
+
+    assert classify_llm_error(SSLError("TLS handshake failure")) == "network"
+    assert classify_llm_error(Exception("403 Forbidden")) == "auth"
+    assert classify_llm_error(Exception("HTTP 500 internal")) not in {"dns", "network"}
+
+
+def test_get_configured_providers_skips_disabled(monkeypatch):
+    monkeypatch.setenv("CEREBRAS_API_KEY", "csk_test")
+    monkeypatch.setenv("LLM_PROVIDER_CEREBRAS_ENABLED", "0")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    assert router.get_configured_providers() == []
+
+
+def test_dns_failure_skips_provider_later_in_job(tmp_path, monkeypatch):
+    from ai.llm_session import llm_job_session, is_provider_skipped_in_job
+    from database import init_db, get_db, list_ai_operations
+
+    if not is_postgres():
+        db_path = tmp_path / "llm_dns.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("CEREBRAS_API_KEY", "csk_test")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or_test")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    calls = []
+
+    async def fake_call(step, **_kwargs):
+        calls.append(step.provider)
+        if step.provider == "cerebras":
+            raise OSError(-3, "Temporary failure in name resolution")
+        return '{"vendor":"x","product":"y"}'
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        await init_db()
+        with llm_job_session():
+            first = await chat_completion_task(
+                "product_extraction",
+                messages=[{"role": "user", "content": "cve"}],
+                cve_id="CVE-2026-1",
+            )
+            skipped = is_provider_skipped_in_job("cerebras")
+            second = await chat_completion_task(
+                "product_extraction",
+                messages=[{"role": "user", "content": "cve-2"}],
+                cve_id="CVE-2026-2",
+            )
+        db = await get_db()
+        try:
+            rows = await list_ai_operations(db, limit=20)
+        finally:
+            await db.close()
+        return first, second, skipped, rows, calls
+
+    first, second, skipped, rows, calls = run_db_test(run())
+    assert skipped is True
+    assert calls.count("cerebras") == 1
+    dns_rows = [r for r in rows if r["error_class"] == "dns"]
+    assert dns_rows
+    assert "name resolution" in (dns_rows[0].get("error_detail") or "").lower()
+
+
+def test_failed_attempt_redacts_secret_that_straddles_char_200(tmp_path, monkeypatch):
+    from database import get_db, init_db, list_ai_operations
+
+    secret = "gsk_" + "B" * 48
+    if not is_postgres():
+        db_path = tmp_path / "llm_redact.db"
+        monkeypatch.setenv("DB_PATH", str(db_path))
+        monkeypatch.setattr("database.DB_PATH", str(db_path))
+    monkeypatch.setenv("AI_OPERATIONS_RECORD", "1")
+    monkeypatch.setenv("GROQ_API_KEY", secret)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    async def fake_call(step, **_kwargs):
+        raise RuntimeError(("n" * 190) + secret + " leftover")
+
+    monkeypatch.setattr(router, "_call_provider", fake_call)
+
+    async def run():
+        await init_db()
+        try:
+            await chat_completion_task(
+                "product_extraction",
+                messages=[{"role": "user", "content": "cve"}],
+            )
+        except Exception:
+            pass
+        db = await get_db()
+        try:
+            return await list_ai_operations(db, limit=5)
+        finally:
+            await db.close()
+
+    rows = run_db_test(run())
+    assert rows
+    detail = rows[0].get("error_detail") or ""
+    assert secret not in detail
+    assert secret[:12] not in detail
+    assert "[REDACTED]" in detail
 

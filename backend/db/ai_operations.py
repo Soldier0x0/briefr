@@ -11,8 +11,8 @@ INSERT INTO ai_operations (
     operation_id, request_id, started_at, latency_ms, feature, task_class,
     provider, model, success, error_class, input_tokens, output_tokens,
     total_tokens, estimated_cost_usd, fallback_from_provider, fallback_from_model,
-    retry_index, context_type, context_id
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    retry_index, context_type, context_id, error_detail
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 _INSERT_PG = """
@@ -20,9 +20,9 @@ INSERT INTO ai_operations (
     operation_id, request_id, started_at, latency_ms, feature, task_class,
     provider, model, success, error_class, input_tokens, output_tokens,
     total_tokens, estimated_cost_usd, fallback_from_provider, fallback_from_model,
-    retry_index, context_type, context_id
+    retry_index, context_type, context_id, error_detail
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 )
 """
 
@@ -53,6 +53,7 @@ async def insert_ai_operation(
     retry_index: int = 0,
     context_type: str | None = None,
     context_id: str | None = None,
+    error_detail: str | None = None,
 ) -> None:
     pg = _is_postgres_connection(db)
     params: tuple[Any, ...] = (
@@ -75,6 +76,7 @@ async def insert_ai_operation(
         retry_index,
         context_type,
         context_id,
+        error_detail,
     )
     sql = _INSERT_PG if pg else _INSERT_SQLITE
     await db.execute(sql, params)
@@ -105,7 +107,7 @@ async def list_ai_operations(
     rows = await db.execute_fetchall(
         f"""
         SELECT operation_id, task_class, provider, model, success, error_class,
-               latency_ms, retry_index, started_at, context_type, context_id,
+               error_detail, latency_ms, retry_index, started_at, context_type, context_id,
                input_tokens, output_tokens, total_tokens,
                fallback_from_provider, fallback_from_model
         FROM ai_operations
@@ -250,7 +252,7 @@ async def list_ai_operations_page(
     rows = await db.execute_fetchall(
         f"""
         SELECT operation_id, task_class, provider, model, success, error_class,
-               latency_ms, retry_index, started_at, context_type, context_id,
+               error_detail, latency_ms, retry_index, started_at, context_type, context_id,
                input_tokens, output_tokens, total_tokens,
                fallback_from_provider, fallback_from_model,
                EXISTS (

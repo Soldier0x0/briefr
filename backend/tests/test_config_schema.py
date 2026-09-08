@@ -155,6 +155,8 @@ def test_config_schema_endpoint(admin_client):
     assert "NVD_API_KEY" in keys
     assert "WALLBOARD_TOKEN" in keys
     assert "DISCORD_WEBHOOK_URL" in keys
+    assert "LLM_PROVIDER_GROQ_ENABLED" in keys
+    assert "LLM_PROVIDER_CEREBRAS_ENABLED" in keys
     assert len(data) == len(WRITABLE_CONFIG_KEYS)
 
 
