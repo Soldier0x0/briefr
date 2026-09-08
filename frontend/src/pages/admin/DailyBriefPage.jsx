@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Select } from '../../components/ui/index.js'
 import { adminApi } from '../../api.js'
 import HelpTip from './shared/HelpTip.jsx'
+import ToggleSwitch from './shared/ToggleSwitch.jsx'
+import { dailyBriefDeliveryCopy } from './dailyBriefCopy.js'
 import { dailyBriefTestToast } from './toastCopy.js'
 import './DailyBriefPage.css'
 
@@ -10,6 +12,10 @@ const SLOT_OPTIONS = [
   { value: 'eod', label: 'End of day' },
   { value: 'standup', label: 'Morning briefing' },
 ]
+
+function flagOn(raw) {
+  return raw === '1' || raw === 'true' || raw === true
+}
 
 function SectionCard({ title, children }) {
   if (children == null || children === false) return null
@@ -40,6 +46,8 @@ export default function DailyBriefPage({ toast }) {
   const [destinations, setDestinations] = useState([])
   const [destinationsLoading, setDestinationsLoading] = useState(true)
   const [destinationsError, setDestinationsError] = useState(null)
+  const [config, setConfig] = useState(null)
+  const [configError, setConfigError] = useState(null)
 
   const loadDestinations = useCallback(async () => {
     setDestinationsLoading(true)
@@ -54,6 +62,31 @@ export default function DailyBriefPage({ toast }) {
       setDestinationsLoading(false)
     }
   }, [])
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const { data } = await adminApi.getJson('/config')
+      setConfig(data)
+      setConfigError(null)
+    } catch (e) {
+      setConfigError(e)
+    }
+  }, [])
+
+  async function saveSetting(key, value) {
+    if (busy) return
+    setBusy(key)
+    setError(null)
+    try {
+      await adminApi.postJson('/config', { key, value: String(value) })
+      await loadConfig()
+      toast('Schedule saved', true)
+    } catch (e) {
+      toast(`Failed: ${e.message}`, false)
+    } finally {
+      setBusy(null)
+    }
+  }
 
   async function previewBrief() {
     setBusy('preview')
@@ -89,7 +122,8 @@ export default function DailyBriefPage({ toast }) {
 
   useEffect(() => {
     loadDestinations()
-  }, [loadDestinations])
+    loadConfig()
+  }, [loadDestinations, loadConfig])
 
   const brief = preview?.brief
   const subscribed = useMemo(
@@ -100,6 +134,14 @@ export default function DailyBriefPage({ toast }) {
     [destinations],
   )
   const deliveryLabels = subscribed.map((dest) => dest.label || dest.id).filter(Boolean)
+  const delivery = dailyBriefDeliveryCopy({
+    loading: destinationsLoading,
+    error: destinationsError,
+    labels: deliveryLabels,
+  })
+  const sched = config?.scheduler || {}
+  const tz = sched.SCHEDULER_TIMEZONE || 'instance timezone'
+  const scheduleLocked = Boolean(busy)
 
   const productLines = (brief?.market?.products || []).map(
     (p) =>
@@ -113,16 +155,98 @@ export default function DailyBriefPage({ toast }) {
     <div>
       <h1 className="admin-page-title">
         Daily brief
-        <HelpTip text="Scheduled instance rollup for Discord, Telegram, and generic HTTPS. Real-time KEV and watchlist alerts stay on Webhooks." />
+        <HelpTip text="Scheduled instance rollup for Discord, Telegram, and generic HTTPS. Enable EOD and standup independently here. Preview / test slot does not change the schedule. Real-time KEV and watchlist alerts stay on Webhooks." />
       </h1>
       <p className="admin-page-subtitle">
-        Same facts as the channel report. Enable EOD / standup under Config, then subscribe destinations to Daily brief.
+        Enable EOD and/or morning standup on this page, then subscribe destinations to Daily brief on Webhooks. Real-time alerts are separate event types.
       </p>
 
       <div className="admin-card daily-brief-toolbar">
+        {configError ? (
+          <p className="daily-brief-error" role="alert">
+            Could not load schedule flags.{' '}
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={loadConfig}>
+              Retry
+            </button>
+          </p>
+        ) : (
+          <div className="daily-brief-schedule">
+            <div className="daily-brief-slot-enable">
+              <span className="admin-field-label">End of day</span>
+              <ToggleSwitch
+                on={flagOn(sched.DAILY_BRIEF_EOD_ENABLED)}
+                disabled={scheduleLocked || !config}
+                onChange={(next) => saveSetting('DAILY_BRIEF_EOD_ENABLED', next ? '1' : '0')}
+                aria-label="Enable end of day brief"
+              />
+              <label className="admin-field daily-brief-time">
+                <span className="admin-field-label">Hour</span>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  max={23}
+                  disabled={scheduleLocked || !config}
+                  defaultValue={sched.DAILY_BRIEF_EOD_HOUR ?? 18}
+                  key={`eod-h-${sched.DAILY_BRIEF_EOD_HOUR}`}
+                  onBlur={(e) => saveSetting('DAILY_BRIEF_EOD_HOUR', e.target.value)}
+                />
+              </label>
+              <label className="admin-field daily-brief-time">
+                <span className="admin-field-label">Minute</span>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  max={59}
+                  disabled={scheduleLocked || !config}
+                  defaultValue={sched.DAILY_BRIEF_EOD_MINUTE ?? 0}
+                  key={`eod-m-${sched.DAILY_BRIEF_EOD_MINUTE}`}
+                  onBlur={(e) => saveSetting('DAILY_BRIEF_EOD_MINUTE', e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="daily-brief-slot-enable">
+              <span className="admin-field-label">Morning briefing</span>
+              <ToggleSwitch
+                on={flagOn(sched.DAILY_BRIEF_STANDUP_ENABLED)}
+                disabled={scheduleLocked || !config}
+                onChange={(next) => saveSetting('DAILY_BRIEF_STANDUP_ENABLED', next ? '1' : '0')}
+                aria-label="Enable morning briefing"
+              />
+              <label className="admin-field daily-brief-time">
+                <span className="admin-field-label">Hour</span>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  max={23}
+                  disabled={scheduleLocked || !config}
+                  defaultValue={sched.DAILY_BRIEF_STANDUP_HOUR ?? 7}
+                  key={`stand-h-${sched.DAILY_BRIEF_STANDUP_HOUR}`}
+                  onBlur={(e) => saveSetting('DAILY_BRIEF_STANDUP_HOUR', e.target.value)}
+                />
+              </label>
+              <label className="admin-field daily-brief-time">
+                <span className="admin-field-label">Minute</span>
+                <input
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  max={59}
+                  disabled={scheduleLocked || !config}
+                  defaultValue={sched.DAILY_BRIEF_STANDUP_MINUTE ?? 0}
+                  key={`stand-m-${sched.DAILY_BRIEF_STANDUP_MINUTE}`}
+                  onBlur={(e) => saveSetting('DAILY_BRIEF_STANDUP_MINUTE', e.target.value)}
+                />
+              </label>
+            </div>
+            <p className="daily-brief-muted">Times are {tz}. Both slots may be on. Preview / test does not enable a slot.</p>
+          </div>
+        )}
         <div className="admin-filter-bar admin-filter-bar--fields">
           <label className="admin-field">
-            <span className="admin-field-label">Slot</span>
+            <span className="admin-field-label">Preview / test slot</span>
             <Select className="admin-select" value={slot} onChange={setSlot} options={SLOT_OPTIONS} />
           </label>
           <button type="button" className="admin-btn admin-btn-ghost" disabled={!!busy} onClick={previewBrief}>
@@ -132,21 +256,20 @@ export default function DailyBriefPage({ toast }) {
             {busy === 'test' ? 'Sending…' : 'Send test'}
           </button>
         </div>
-        <p className="daily-brief-delivery">
-          {destinationsLoading
-            ? 'Loading destinations…'
-            : destinationsError
-              ? (
-                <>
-                  Could not load destinations.{' '}
-                  <button type="button" className="admin-btn admin-btn-ghost" onClick={loadDestinations}>
-                    Retry
-                  </button>
-                </>
-              )
-              : deliveryLabels.length
-                ? `Sends to ${deliveryLabels.join(', ')} (Daily brief subscribed)`
-                : 'No destinations subscribe to Daily brief yet.'}{' '}
+        <p
+          className={delivery.kind === 'empty' ? 'daily-brief-error' : 'daily-brief-delivery'}
+          role={delivery.kind === 'empty' || delivery.kind === 'error' ? 'alert' : undefined}
+        >
+          {delivery.kind === 'error' ? (
+            <>
+              {delivery.text}{' '}
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={loadDestinations}>
+                Retry
+              </button>
+            </>
+          ) : (
+            delivery.text
+          )}{' '}
           <Link to="/admin?p=webhooks">Configure events on Webhooks</Link>
         </p>
       </div>
