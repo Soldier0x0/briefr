@@ -279,7 +279,11 @@ export default function ApiKeysPage({ toast }) {
       if (data?.restart_required ?? data?.warning_restart_required) {
         notifyBackendRestarting()
       }
-      toast(data?.message || `Applied ${entries.length} change(s)`, true)
+      if (data?.warning) {
+        toast({ message: data.warning, variant: 'warning' })
+      } else {
+        toast(data?.message || `Applied ${entries.length} change(s)`, true)
+      }
       setShowReview(false)
     } catch (e) {
       toast(`Apply failed: ${e.message || String(e)}`, false)
@@ -313,7 +317,11 @@ export default function ApiKeysPage({ toast }) {
       await reloadConfig()
       const restarting = restartRequired && (data?.restart_required ?? data?.warning_restart_required)
       if (restarting) notifyBackendRestarting()
-      toast(saveOutcomeMessage(key, data, restarting, field), true)
+      if (data?.warning) {
+        toast({ message: data.warning, variant: 'warning' })
+      } else {
+        toast(saveOutcomeMessage(key, data, restarting, field), true)
+      }
       return true
     } catch (e) {
       toast(`Failed: ${e.message || String(e)}`, false)
@@ -349,6 +357,14 @@ export default function ApiKeysPage({ toast }) {
       <div className="config-row">
         <div className="config-row-key mono admin-config-key">
           <span title={envKey}>{label}</span>
+          {config?.meta?.process_pinned_keys?.includes(envKey) && (
+            <span
+              className="badge badge-warn config-pin-badge"
+              title="This key is set in the process environment (systemd / secrets manager). Saving updates the running process, but a restart restores the pin."
+            >
+              pinned by process env
+            </span>
+          )}
           {helpText && <div className="admin-config-help">{helpText}</div>}
           {RATE_LIMIT_HINTS[envKey] && <div className="admin-config-help">{RATE_LIMIT_HINTS[envKey]}</div>}
         </div>
@@ -590,6 +606,7 @@ export default function ApiKeysPage({ toast }) {
               <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: '0.5rem', padding: '0.5rem 0.65rem', border: '1px solid var(--border)', borderRadius: '4px' }}>
                 <strong>Legacy bootstrap:</strong> values here seed the default <code className="mono">discord</code>, <code className="mono">telegram</code>, and <code className="mono">generic</code> destinations at startup.
                 Add more endpoints, edit event subscriptions, and run delivery tests on the <strong>Webhooks</strong> admin tab.
+                An explicit <code className="mono">DISCORD_WEBHOOK_EVENTS</code> (or Telegram/generic events) list does not auto-gain <code className="mono">daily_brief</code> — tick <strong>Daily brief (EOD / standup)</strong> on Webhooks.
               </div>
             )}
           </div>

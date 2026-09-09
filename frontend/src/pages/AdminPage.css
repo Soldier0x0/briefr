@@ -2451,6 +2451,10 @@
 
 .badge-ok    { background: rgba(74,158,106,0.15); color: var(--green); }
 .badge-warn  { background: rgba(212,134,10,0.15);  color: var(--amber); }
+.badge.config-pin-badge {
+  font-size: var(--type-micro);
+  margin-left: var(--space-2);
+}
 .badge-error { background: rgba(232,85,51,0.15);   color: var(--red); }
 .badge-info  { background: rgba(110,181,255,0.15); color: var(--link); }
 .badge-muted { background: rgba(90,88,80,0.2);     color: var(--text3); }

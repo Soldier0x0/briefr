@@ -251,6 +251,7 @@
   --control-height-sm: 24px;
   --control-height-md: 30px;
   --control-height-lg: 36px;
+  --control-width-sm:  calc(var(--space-8) + var(--space-2)); /* compact hour/minute fields */
   --hit-target-min:    24px;
 
   /* About modal landscape dialog (sources + scope without a tall scroll) */

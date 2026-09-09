@@ -2,13 +2,36 @@
   margin-bottom: var(--space-4);
 }
 
+.daily-brief-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.daily-brief-slot-enable {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.daily-brief-time {
+  min-width: var(--control-width-sm);
+}
+
+.daily-brief-time .admin-input {
+  width: var(--control-width-sm);
+}
+
 .daily-brief-delivery {
   margin: var(--space-3) 0 0;
   font-size: var(--font-size-secondary);
   color: var(--text-secondary);
 }
 
-.daily-brief-delivery a {
+.daily-brief-delivery a,
+.daily-brief-error a {
   color: var(--accent-primary);
 }
 

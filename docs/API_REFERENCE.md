@@ -2262,13 +2262,13 @@ Audit: `scheduler.run.{job_id}`.
 Returns field metadata for every writable config key: `section`, `type`, bounds, `help_text`, `restart_required`, `apply_strategy` (`immediate` | `scheduler_reschedule` | `restart`), `display_label`, and `unit` (e.g. `h`, `min` for scheduler intervals). Includes `WALLBOARD_TOKEN` under section `security` (kiosk gate — `restart` apply strategy), `RATE_LIMIT_WALLBOARD_PER_MINUTE` under `app` (kiosk polling limit — `restart` apply strategy), and Admin-visible boolean toggles for `CORRELATION_PRECOMPUTE_ENABLED`, `DETECTION_CONTEXT_SYNC_ENABLED`, `DETECTION_CONTEXT_LLM_ENABLED`, and `DETECTION_CONTEXT_NUCLEI_ENABLED`.
 
 ### GET /api/admin/config
-Returns the current Admin config values grouped by section, with secrets masked. The `ml` section includes env-backed runtime booleans for correlation precompute and detection-context sync/LLM/Nuclei toggles so operators can see the same flags exposed by `/config/schema`.
+Returns the current Admin config values grouped by section, with secrets masked. The `scheduler` dict includes `DAILY_BRIEF_EOD_ENABLED`, `DAILY_BRIEF_STANDUP_ENABLED`, `DAILY_BRIEF_EOD_HOUR` / `MINUTE`, and `DAILY_BRIEF_STANDUP_HOUR` / `MINUTE`. The `ml` section includes `DAILY_BRIEF_LLM_ENABLED` plus env-backed runtime booleans for correlation precompute and detection-context sync/LLM/Nuclei toggles so operators can see the same flags exposed by `/config/schema`. Top-level `meta` is non-secret: `settings_key_configured` (bool — `BRIEFR_SETTINGS_KEY` present) and `process_pinned_keys` (sorted writable key names that were in the process environment at import; names only). Process env still wins over `app_settings`.
 
 ### POST /api/admin/config
-Body `{key, value}`. Writes one key to `.env` and `os.environ`. For `scheduler_reschedule` keys, reschedules affected APScheduler jobs without a full restart. Response includes `apply_strategy`, `warning_restart_required` (when strategy is `restart`), `rescheduled_jobs`, and `message`. Use `POST /config/apply-all` for keys that require a backend restart (including `WALLBOARD_TOKEN`).
+Body `{key, value}`. Persists one writable key via `persist_operator_setting` (`app_settings` + `os.environ` this run). Does **not** rewrite `backend/.env` except generated `JWT_SECRET`. Secret-typed keys skip the DB when `BRIEFR_SETTINGS_KEY` is unset. For `scheduler_reschedule` keys, reschedules affected APScheduler jobs without a full restart. Response includes `apply_strategy`, `warning_restart_required` (when strategy is `restart`), `rescheduled_jobs`, `message`, `persisted_to_db` (false if a secret was skipped), and `warning` when the value is not in `app_settings`. Use `POST /config/apply-all` for keys that require a backend restart (including `WALLBOARD_TOKEN`).
 
 ### POST /api/admin/config/apply-all
-Body `[{key, value}, ...]`. Writes all keys to `.env`, reschedules scheduler interval/cron jobs when applicable, and triggers a graceful backend restart when any changed key has `apply_strategy: restart` (includes `ALLOWED_ORIGINS` / CORS). Returns `400` if any key is not in the allowlist. Response: `{ok, changed_keys, restart_required, rescheduled_jobs, message}`. Audit: `config.apply`.
+Body `[{key, value}, ...]`. Persists all keys the same way as `POST /config` (not a bulk `.env` rewrite), reschedules scheduler interval/cron jobs when applicable, and triggers a graceful backend restart when any changed key has `apply_strategy: restart` (includes `ALLOWED_ORIGINS` / CORS). Returns `400` if any key is not in the allowlist. Response: `{ok, changed_keys, restart_required, rescheduled_jobs, message, persisted_to_db, warning?}`. Audit: `config.apply`.
 
 ### GET /api/admin/webhooks/log
 Params: `event_type`, `limit`, `offset`. Returns dedupe log `{rows: [{alert_type, target, alerted_at}], total}`. `event_type` accepts canonical names (`kev_alert`, `backup_failure`, `watchlist_alert`, `kev_backlog`, `ioc_watchlist_hit`, `daily_brief`) and legacy aliases.
@@ -2290,7 +2290,9 @@ Returns `{destinations: [{id, kind, label, enabled, event_types, source, health_
 
 Fresh env bootstrap destinations with unset `DISCORD_WEBHOOK_EVENTS` / `TELEGRAM_WEBHOOK_EVENTS` / `WEBHOOK_GENERIC_EVENTS` (empty or missing and no synced DB row yet) subscribe to **all** types in the table, including `daily_brief`. Existing synced env destinations retain their stored `event_types` list and must have **Daily brief (EOD / standup)** ticked on Admin → Webhooks; database destinations with an explicit list likewise do not auto-gain new types. **Both cron slots default off** (`DAILY_BRIEF_EOD_ENABLED=0`, `DAILY_BRIEF_STANDUP_ENABLED=0`); no scheduled brief is sent until enabled in Admin config (jobs are registered but no-op while disabled).
 
-**Daily brief config keys** (Admin → API keys & config; see `GET /api/admin/config/schema`):
+Enable EOD and standup independently on Admin → **Daily brief** (`p=dailybrief`); the same flags are also on API keys & config. Slot on that page is Preview / test only. Subscribe destinations on Webhooks (`daily_brief`).
+
+**Daily brief config keys** (Admin → Daily brief and API keys & config; see `GET /api/admin/config/schema`):
 
 | Key | Type | Default | Apply strategy |
 |---|---|---|---|
