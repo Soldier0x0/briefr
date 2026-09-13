@@ -293,11 +293,13 @@ Format doc: At a glance “always all six” → six when `stack_configured`; om
 
 PRODUCT_STATUS Daily brief: glance omits My Stack unless admin stack is configured.
 
-API_REFERENCE preview: `brief.stack_configured` (bool).
+API_REFERENCE: document `brief.stack_configured` (bool) on the shared structured `brief` object (same fact object returned by preview, send-test, and generic HTTPS `payload_extra`). Keep existing brief field docs and payload behavior. Then reference that shared field from both **GET `/api/admin/webhooks/daily-brief/preview`** and **POST `/api/admin/webhooks/daily-brief/test`** (do not only mention preview). This is the daily-brief `brief` contract, not wallboard `kev_on_stack.stack_configured`.
 
 - [ ] **Step 4: Run tests**
 
 Run: `cd frontend && node --test src/pages/admin/dailyBriefGlance.test.js && npm run test:unit`
+
+After the code edits and before the merge gate, from the repository root: `graphify update .` (do not commit `graphify-out/`).
 
 Then: `./scripts/verify-local.sh`
 

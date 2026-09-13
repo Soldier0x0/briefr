@@ -56,7 +56,7 @@ Never print “not configured” as a glance line.
 ## Docs
 
 - `docs/design/daily-brief-format.md`: At a glance keys are six **when configured**; omit Matches My Stack when not. Quiet example has no stack line.
-- `docs/API_REFERENCE.md` preview/payload: `stack_configured`.
+- `docs/API_REFERENCE.md`: `stack_configured` on the shared structured `brief` object; reference it from both daily-brief preview and webhook test payload sections.
 - `docs/PRODUCT_STATUS.md` Daily brief row: glance omits My Stack unless admin stack is configured.
 
 ## Out of scope
@@ -68,5 +68,5 @@ Never print “not configured” as a glance line.
 
 ## Risks
 
-- Tests that construct `DailyBrief(..., stack_matches=1)` without `stack_configured=True` will stop showing the glance line — update those fixtures.
+- Tests that construct `DailyBrief` with `counts["stack_matches"]` non-zero and omit `stack_configured=True` will stop showing the glance line — find those fixtures and set `stack_configured=True`. `stack_matches` is a key on `counts`, not a `DailyBrief` constructor argument.
 - Overflow drop order still lists `stack`; no change needed when the field is absent.
