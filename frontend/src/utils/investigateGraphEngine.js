@@ -1,4 +1,4 @@
-import { seedPositions, stepForce } from './investigateForceLayout.js'
+import { seedExpandPositions, seedPositions, stepForce } from './investigateForceLayout.js'
 
 const ALPHA_DECAY = 0.985
 const ALPHA_MIN = 0.001
@@ -106,6 +106,34 @@ export function createGraphEngine({
       }
       positions = seedPositions(nodes, width, height, prior, rootId)
       this.reheat(1)
+      notifyFrame()
+    },
+    mergeTopology(allNodes, nextEdges, nextRootId, { expandParentId = null, parentPosition = null } = {}) {
+      const prior = new Map(positions.map((n) => [n.node_id, n]))
+      edges = nextEdges || []
+      rootId = nextRootId
+      const nodeIds = new Set((allNodes || []).map((n) => n.node_id))
+      for (const id of pins.keys()) {
+        if (!nodeIds.has(id)) pins.delete(id)
+      }
+      if (expandParentId && parentPosition) {
+        const parentNode = {
+          node_id: expandParentId,
+          x: parentPosition.x,
+          y: parentPosition.y,
+        }
+        const added = (allNodes || []).filter((n) => !prior.has(n.node_id))
+        const merged = seedExpandPositions(parentNode, added, prior, { width, height })
+        const metaById = new Map((allNodes || []).map((n) => [n.node_id, n]))
+        positions = merged.map((node) => {
+          const meta = metaById.get(node.node_id) || node
+          return { ...meta, x: node.x, y: node.y, vx: node.vx || 0, vy: node.vy || 0 }
+        })
+        this.reheat(0.4)
+      } else {
+        positions = seedPositions(allNodes, width, height, prior, rootId)
+        this.reheat(1)
+      }
       notifyFrame()
     },
     reheat(nextAlpha = REHEAT_ALPHA) {

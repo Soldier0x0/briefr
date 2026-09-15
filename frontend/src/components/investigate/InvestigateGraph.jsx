@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { fetchInvestigationRelationships, resolveInvestigation } from '../../api.js'
+import {
+  createInvestigationCase,
+  fetchInvestigationCase,
+  fetchInvestigationCases,
+  fetchInvestigationRelationships,
+  resolveInvestigation,
+  updateInvestigationCase,
+} from '../../api.js'
 import { notifyApiError } from '../Toast.jsx'
 import AsyncState from '../ui/AsyncState.jsx'
 import Checkbox from '../ui/Checkbox.jsx'
@@ -19,7 +26,16 @@ import {
   splitGraphLayers,
   visibleGraph,
 } from '../../utils/investigateGraphFilters.js'
-import { shouldRefitAfterStructuralChange } from '../../utils/investigateCameraPolicy.js'
+import {
+  cameraActionForStructuralChange,
+  structuralReasonForExpand,
+} from '../../utils/investigateCameraPolicy.js'
+import {
+  clearInvestigateDraft,
+  hasInvestigateDraft,
+  loadInvestigateDraft,
+  saveInvestigateDraft,
+} from '../../utils/investigateDraftStorage.js'
 import { createCameraController } from '../../utils/investigateCameraController.js'
 import { createGraphEngine } from '../../utils/investigateGraphEngine.js'
 import { createDragTracker } from '../../utils/investigateDragPolicy.js'
@@ -180,7 +196,9 @@ export default function InvestigateGraph({
   onOpenForgeCampaigns,
   onOpenAdvisories,
   initialQuery = '',
+  initialCaseId = '',
   onQueryResolved,
+  onCaseOpened,
 }) {
   const investigation = useInvestigationOptional()
   const [query, setQuery] = useState('')
@@ -202,11 +220,26 @@ export default function InvestigateGraph({
   includeSemanticRef.current = includeSemantic
   const viewRef = useRef({ ...DEFAULT_VIEW })
   const [structuralVersion, setStructuralVersion] = useState(0)
-  const lastFitVersionRef = useRef(-1)
   const [liveStatus, setLiveStatus] = useState('')
+  const structuralReasonRef = useRef('none')
+  const topologyModeRef = useRef('none')
+  const lastExpandParentRef = useRef(null)
+  const flyToNeighborhoodRef = useRef(null)
+  const flyToVisibleRef = useRef(null)
+  const draftSaveTimerRef = useRef(null)
   const [focusedNodeId, setFocusedNodeId] = useState(null)
   const [mobilePane, setMobilePane] = useState('graph')
   const [filtersOpen, setFiltersOpen] = useState(true)
+  const [draftBanner, setDraftBanner] = useState(false)
+  const [activeCaseId, setActiveCaseId] = useState('')
+  const [activeCaseTitle, setActiveCaseTitle] = useState('')
+  const [caseSaveState, setCaseSaveState] = useState('saved')
+  const [casesList, setCasesList] = useState([])
+  const [casesMenuOpen, setCasesMenuOpen] = useState(false)
+  const [casesLoading, setCasesLoading] = useState(false)
+  const caseAutosaveTimerRef = useRef(null)
+  const lastSavedSnapshotRef = useRef('')
+  const lastConsumedCaseIdRef = useRef('')
   const dragRef = useRef(null)
   const nodeDragRef = useRef(null)
   const draggingNodeIdRef = useRef(null)
@@ -247,13 +280,11 @@ export default function InvestigateGraph({
         if (draggingNodeIdRef.current) return
         positionsRef.current = pos
         setPositions(pos)
-        const ver = structuralVersionRef.current
-        if (shouldRefitAfterStructuralChange({
-          structuralVersion: ver,
-          lastFitVersion: lastFitVersionRef.current,
-        })) {
-          lastFitVersionRef.current = ver
-          fitGraphToViewRef.current?.()
+        const action = cameraActionForStructuralChange(structuralReasonRef.current)
+        if (action === 'fit_all') fitGraphToViewRef.current?.()
+        else if (action === 'fit_visible') flyToVisibleRef.current?.()
+        else if (action === 'fly_neighborhood') {
+          flyToNeighborhoodRef.current?.(lastExpandParentRef.current)
         }
       },
     })
@@ -262,7 +293,9 @@ export default function InvestigateGraph({
   structuralVersionRef.current = structuralVersion
   const fitGraphToViewRef = useRef(null)
 
-  const bumpStructure = useCallback((message) => {
+  const bumpStructure = useCallback((message, reason = 'filter') => {
+    structuralReasonRef.current = reason
+    topologyModeRef.current = reason
     setStructuralVersion((n) => n + 1)
     if (message) setLiveStatus(message)
   }, [])
@@ -328,6 +361,164 @@ export default function InvestigateGraph({
     startCameraLoop()
   }, [startCameraLoop])
   fitGraphToViewRef.current = fitGraphToView
+
+  const flyToNeighborhood = useCallback((parentId) => {
+    if (!parentId) return
+    const el = canvasRef.current
+    if (!el) return
+    const ids = new Set([parentId, ...neighborIds(graphRef.current, parentId)])
+    const subset = positionsRef.current.filter((node) => ids.has(node.node_id))
+    if (!subset.length) return
+    const bounds = computePointCloudBounds(subset, 28, 80)
+    cameraRef.current.flyToBounds(bounds, el.clientWidth, el.clientHeight)
+    startCameraLoop()
+  }, [startCameraLoop])
+  flyToNeighborhoodRef.current = flyToNeighborhood
+
+  const flyToVisible = useCallback(() => {
+    const el = canvasRef.current
+    if (!el) return
+    const visibleIds = new Set(visibleRef.current.nodes.map((node) => node.node_id))
+    const subset = positionsRef.current.filter((node) => visibleIds.has(node.node_id))
+    if (!subset.length) return
+    const bounds = computePointCloudBounds(subset, 12, 48)
+    cameraRef.current.flyToBounds(bounds, el.clientWidth, el.clientHeight)
+    startCameraLoop()
+  }, [startCameraLoop])
+  flyToVisibleRef.current = flyToVisible
+
+  const buildCaseSnapshot = useCallback(() => ({
+    root_id: graph.root_id,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    positions: positionsRef.current.map((node) => ({
+      node_id: node.node_id,
+      x: node.x,
+      y: node.y,
+    })),
+    view: { ...viewRef.current },
+    filters: {
+      showRelatedCves,
+      entityType,
+      edgeClasses: [...edgeClasses],
+      isolate,
+      includeSemantic,
+    },
+  }), [graph, showRelatedCves, entityType, edgeClasses, isolate, includeSemantic])
+
+  const hydrateFromSnapshot = useCallback((snapshot, title = '') => {
+    if (!snapshot) return
+    clearInvestigateDraft()
+    setDraftBanner(false)
+    setGraph({
+      ...emptyGraphState(),
+      nodes: snapshot.nodes || [],
+      edges: snapshot.edges || [],
+      root_id: snapshot.root_id || null,
+    })
+    if (snapshot.filters?.showRelatedCves != null) {
+      setShowRelatedCves(snapshot.filters.showRelatedCves)
+    }
+    if (snapshot.filters?.entityType) setEntityType(snapshot.filters.entityType)
+    if (snapshot.filters?.edgeClasses) {
+      setEdgeClasses(new Set(snapshot.filters.edgeClasses))
+    }
+    if (snapshot.filters?.isolate != null) setIsolate(snapshot.filters.isolate)
+    if (snapshot.filters?.includeSemantic) setIncludeSemantic(true)
+    if (snapshot.view) {
+      viewRef.current = { ...snapshot.view }
+      cameraRef.current.setTargetView(snapshot.view, { immediate: prefersReducedMotion() })
+      syncCameraView(snapshot.view)
+    }
+    if (snapshot.positions?.length) {
+      positionsRef.current = snapshot.positions.map((node) => ({
+        ...node,
+        vx: 0,
+        vy: 0,
+      }))
+      setPositions(positionsRef.current)
+    }
+    if (title) setActiveCaseTitle(title)
+    structuralReasonRef.current = 'resolve'
+    topologyModeRef.current = 'resolve'
+    lastExpandParentRef.current = null
+    setSelectedId(snapshot.root_id)
+    setStructuralVersion((n) => n + 1)
+    setLiveStatus(title ? `Opened case ${title}.` : 'Opened saved case.')
+  }, [syncCameraView])
+
+  const markCaseDirty = useCallback(() => {
+    if (!activeCaseId) return
+    const next = JSON.stringify(buildCaseSnapshot())
+    if (next !== lastSavedSnapshotRef.current) {
+      setCaseSaveState('unsaved')
+    }
+  }, [activeCaseId, buildCaseSnapshot])
+
+  const persistCase = useCallback(async (titleOverride = null) => {
+    if (!graph.nodes.length) return null
+    const snapshot = buildCaseSnapshot()
+    setCaseSaveState('saving')
+    try {
+      if (activeCaseId) {
+        const updated = await updateInvestigationCase(
+          activeCaseId,
+          snapshot,
+          titleOverride || undefined,
+        )
+        setActiveCaseTitle(updated.title || activeCaseTitle)
+        lastSavedSnapshotRef.current = JSON.stringify(snapshot)
+        setCaseSaveState('saved')
+        return updated
+      }
+      const title = (titleOverride || window.prompt('Case title (optional)') || '').trim()
+      const created = await createInvestigationCase(snapshot, title || null)
+      setActiveCaseId(created.id)
+      setActiveCaseTitle(created.title || '')
+      lastSavedSnapshotRef.current = JSON.stringify(snapshot)
+      setCaseSaveState('saved')
+      onCaseOpened?.(created.id)
+      setLiveStatus(`Saved case ${created.title || created.id}.`)
+      return created
+    } catch (err) {
+      setCaseSaveState('unsaved')
+      notifyApiError(err)
+      return null
+    }
+  }, [activeCaseId, activeCaseTitle, buildCaseSnapshot, graph.nodes.length, onCaseOpened])
+
+  const openSavedCase = useCallback(async (caseId) => {
+    if (!caseId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const caseRow = await fetchInvestigationCase(caseId)
+      hydrateFromSnapshot(caseRow.snapshot, caseRow.title)
+      setActiveCaseId(caseRow.id)
+      setActiveCaseTitle(caseRow.title || '')
+      lastSavedSnapshotRef.current = JSON.stringify(caseRow.snapshot)
+      setCaseSaveState('saved')
+      onCaseOpened?.(caseRow.id)
+      setCasesMenuOpen(false)
+    } catch (err) {
+      setError(err)
+      notifyApiError(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [hydrateFromSnapshot, onCaseOpened])
+
+  const loadCasesList = useCallback(async () => {
+    setCasesLoading(true)
+    try {
+      const body = await fetchInvestigationCases()
+      setCasesList(body.cases || [])
+    } catch (err) {
+      notifyApiError(err)
+    } finally {
+      setCasesLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -548,6 +739,16 @@ export default function InvestigateGraph({
     const generation = searchGenRef.current + 1
     searchGenRef.current = generation
     expandGenRef.current += 1
+    structuralReasonRef.current = 'resolve'
+    topologyModeRef.current = 'resolve'
+    lastExpandParentRef.current = null
+    clearInvestigateDraft()
+    setDraftBanner(false)
+    setActiveCaseId('')
+    setActiveCaseTitle('')
+    setCaseSaveState('saved')
+    lastSavedSnapshotRef.current = ''
+    onCaseOpened?.('')
     setExpandingId(null)
     setLoading(true)
     setError(null)
@@ -570,7 +771,7 @@ export default function InvestigateGraph({
       const merged = mergeGraphPage(emptyGraphState(), page)
       setGraph(merged)
       setSelectedId(root.node_id)
-      bumpStructure(`Resolved ${root.entity_id}. ${merged.nodes.length} nodes.`)
+      bumpStructure(`Resolved ${root.entity_id}. ${merged.nodes.length} nodes.`, 'resolve')
       const canonical = (resolved.query || q).trim()
       if (canonical) lastConsumedInitialQueryRef.current = canonical
       onQueryResolved?.(canonical || q)
@@ -587,7 +788,7 @@ export default function InvestigateGraph({
     } finally {
       if (generation === searchGenRef.current) setLoading(false)
     }
-  }, [onQueryResolved, bumpStructure])
+  }, [onQueryResolved, bumpStructure, onCaseOpened])
 
   useEffect(() => {
     const q = (initialQuery || '').trim()
@@ -597,6 +798,71 @@ export default function InvestigateGraph({
     setQuery(q)
     runSearch(q)
   }, [initialQuery, runSearch])
+
+  useEffect(() => {
+    if ((initialQuery || '').trim()) return
+    if ((initialCaseId || '').trim()) return
+    if (graph.nodes.length > 0) return
+    if (hasInvestigateDraft()) setDraftBanner(true)
+  }, [initialQuery, initialCaseId, graph.nodes.length])
+
+  useEffect(() => {
+    const caseId = (initialCaseId || '').trim()
+    if (!caseId || caseId === lastConsumedCaseIdRef.current) return
+    lastConsumedCaseIdRef.current = caseId
+    void openSavedCase(caseId)
+  }, [initialCaseId, openSavedCase])
+
+  useEffect(() => {
+    markCaseDirty()
+  }, [graph, positions, showRelatedCves, entityType, edgeClassesKey, isolate, includeSemantic, markCaseDirty])
+
+  useEffect(() => {
+    if (!activeCaseId || caseSaveState !== 'unsaved') return undefined
+    if (caseAutosaveTimerRef.current) clearTimeout(caseAutosaveTimerRef.current)
+    caseAutosaveTimerRef.current = setTimeout(() => {
+      void persistCase()
+    }, 30000)
+    return () => {
+      if (caseAutosaveTimerRef.current) clearTimeout(caseAutosaveTimerRef.current)
+    }
+  }, [activeCaseId, caseSaveState, persistCase])
+
+  useEffect(() => {
+    if (!graph.nodes.length) return undefined
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current)
+    draftSaveTimerRef.current = setTimeout(() => {
+      saveInvestigateDraft({
+        query,
+        graph,
+        positions: positionsRef.current.map((node) => ({
+          node_id: node.node_id,
+          x: node.x,
+          y: node.y,
+        })),
+        view: viewRef.current,
+        filters: {
+          showRelatedCves,
+          entityType,
+          edgeClasses: [...edgeClasses],
+          isolate,
+          includeSemantic,
+        },
+      })
+    }, 500)
+    return () => {
+      if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current)
+    }
+  }, [
+    graph,
+    query,
+    showRelatedCves,
+    entityType,
+    edgeClassesKey,
+    isolate,
+    includeSemantic,
+    positions,
+  ])
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -644,6 +910,10 @@ export default function InvestigateGraph({
     if (!node?.entity_type || !node?.entity_id) return
     const generation = expandGenRef.current + 1
     expandGenRef.current = generation
+    const expandReason = structuralReasonForExpand(params)
+    structuralReasonRef.current = expandReason
+    topologyModeRef.current = expandReason
+    lastExpandParentRef.current = node.node_id
     const requestedRootId = graphRef.current.root_id
     setExpandingId(node.node_id)
     setError(null)
@@ -655,9 +925,14 @@ export default function InvestigateGraph({
       )
       if (generation !== expandGenRef.current) return
       if (graphRef.current.root_id !== requestedRootId) return
+      const addedCount = (page.nodes || []).length
       setGraph((prev) => mergeGraphPage(prev, page))
       setSelectedId(node.node_id)
-      bumpStructure(`Expanded ${node.entity_id}`)
+      if (addedCount === 0) {
+        setLiveStatus(`No further stored hops for ${node.entity_id}.`)
+      } else {
+        bumpStructure(`Expanded ${node.entity_id} — added ${addedCount} nodes.`, expandReason)
+      }
     } catch (err) {
       if (generation !== expandGenRef.current) return
       if (err?.status === 404) {
@@ -709,6 +984,8 @@ export default function InvestigateGraph({
 
   useEffect(() => {
     if (!graph.nodes.length) return
+    structuralReasonRef.current = 'filter'
+    topologyModeRef.current = 'filter'
     setStructuralVersion((n) => n + 1)
   }, [showRelatedCves, entityType, edgeClassesKey, isolate, graph.nodes.length])
 
@@ -761,7 +1038,21 @@ export default function InvestigateGraph({
     if (!isActive || visible.nodes.length === 0) return undefined
     const engine = engineRef.current
     engine.setSize(sizeRef.current.width, sizeRef.current.height)
-    engine.setTopology(visible.nodes, visible.edges, graph.root_id)
+    const mode = topologyModeRef.current
+    const parentId = lastExpandParentRef.current
+    if ((mode === 'expand' || mode === 'load_more') && parentId) {
+      const parentPos = positionsRef.current.find((node) => node.node_id === parentId)
+      if (parentPos) {
+        engine.mergeTopology(visible.nodes, visible.edges, graph.root_id, {
+          expandParentId: parentId,
+          parentPosition: { x: parentPos.x, y: parentPos.y },
+        })
+      } else {
+        engine.setTopology(visible.nodes, visible.edges, graph.root_id)
+      }
+    } else {
+      engine.setTopology(visible.nodes, visible.edges, graph.root_id)
+    }
     const seeded = engine.getPositions()
     positionsRef.current = seeded
     setPositions(seeded)
@@ -808,6 +1099,65 @@ export default function InvestigateGraph({
 
   return (
     <div className="investigate-page">
+      {draftBanner && graph.nodes.length === 0 && (
+        <div className="investigate-honesty investigate-draft-banner mono" role="status">
+          Previous graph available.
+          {' '}
+          <button
+            type="button"
+            className="investigate-ghost-btn mono"
+            onClick={() => {
+              const draft = loadInvestigateDraft()
+              if (!draft) {
+                setDraftBanner(false)
+                return
+              }
+              setQuery(draft.query || '')
+              setGraph(draft.graph || emptyGraphState())
+              if (draft.filters?.showRelatedCves != null) {
+                setShowRelatedCves(draft.filters.showRelatedCves)
+              }
+              if (draft.filters?.entityType) setEntityType(draft.filters.entityType)
+              if (draft.filters?.edgeClasses) {
+                setEdgeClasses(new Set(draft.filters.edgeClasses))
+              }
+              if (draft.filters?.isolate != null) setIsolate(draft.filters.isolate)
+              if (draft.filters?.includeSemantic) setIncludeSemantic(true)
+              if (draft.view) {
+                viewRef.current = { ...draft.view }
+                cameraRef.current.setTargetView(draft.view, { immediate: true })
+                syncCameraView(draft.view)
+              }
+              if (draft.positions?.length) {
+                positionsRef.current = draft.positions.map((node) => ({
+                  ...node,
+                  vx: 0,
+                  vy: 0,
+                }))
+                setPositions(positionsRef.current)
+              }
+              structuralReasonRef.current = 'resolve'
+              topologyModeRef.current = 'resolve'
+              setStructuralVersion((n) => n + 1)
+              setDraftBanner(false)
+              setLiveStatus('Restored previous graph draft.')
+            }}
+          >
+            RESTORE
+          </button>
+          <button
+            type="button"
+            className="investigate-ghost-btn mono"
+            onClick={() => {
+              clearInvestigateDraft()
+              setDraftBanner(false)
+            }}
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
+
       <header className="investigate-hero">
         <h1 className="investigate-hero-title mono">INVESTIGATE</h1>
         <p className="investigate-hero-copy">
@@ -836,7 +1186,61 @@ export default function InvestigateGraph({
         <button type="submit" className="investigate-search-btn mono" disabled={loading || !query.trim()}>
           {loading ? 'RESOLVING…' : 'RESOLVE'}
         </button>
+        {graph.nodes.length > 0 && (
+          <>
+            <button
+              type="button"
+              className="investigate-search-btn mono"
+              disabled={caseSaveState === 'saving'}
+              onClick={() => { void persistCase() }}
+            >
+              {caseSaveState === 'saving' ? 'SAVING…' : 'SAVE CASE'}
+            </button>
+            <div className="investigate-case-open">
+              <button
+                type="button"
+                className="investigate-ghost-btn mono"
+                aria-expanded={casesMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => {
+                  const next = !casesMenuOpen
+                  setCasesMenuOpen(next)
+                  if (next) void loadCasesList()
+                }}
+              >
+                OPEN
+              </button>
+              {casesMenuOpen && (
+                <div className="investigate-case-menu mono" role="menu">
+                  {casesLoading && <div className="investigate-case-menu-empty">Loading…</div>}
+                  {!casesLoading && casesList.length === 0 && (
+                    <div className="investigate-case-menu-empty">No saved cases</div>
+                  )}
+                  {!casesLoading && casesList.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="menuitem"
+                      className="investigate-case-menu-item"
+                      onClick={() => { void openSavedCase(item.id) }}
+                    >
+                      {item.title || item.root_node_id}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </form>
+
+      {activeCaseId && (
+        <div className="investigate-honesty investigate-case-banner mono" role="status">
+          Case: {activeCaseTitle || activeCaseId}
+          {' · '}
+          {caseSaveState === 'saving' ? 'Saving…' : caseSaveState === 'unsaved' ? 'Unsaved changes' : 'Saved'}
+        </div>
+      )}
 
       {graph.nodes.length > 0 && (
         <div className="investigate-chrome">
@@ -1064,6 +1468,7 @@ export default function InvestigateGraph({
                     const dotR = nodeDotRadius(node, active, heuristicIds, graph.root_id)
                     const pinned = watchlist?.getState(node.entity_id) === 'pin'
                     const inThread = investigation?.isCveInThread?.(node.entity_id)
+                    const hasMore = Boolean(graph.cursorsByNodeId?.[node.node_id]) && !graph.capped
                     return (
                       <g
                         key={node.node_id}
@@ -1075,6 +1480,7 @@ export default function InvestigateGraph({
                           dimmed ? 'investigate-node-dim' : '',
                           findMatch ? 'investigate-node-find-match investigate-node-match' : '',
                           node.node_id === focusedNodeId ? 'investigate-node-focused' : '',
+                          expanding ? 'investigate-node-expanding' : '',
                         ].filter(Boolean).join(' ')}
                         onDoubleClick={() => onNodeDoubleClick(node)}
                         onMouseEnter={() => {
@@ -1115,6 +1521,32 @@ export default function InvestigateGraph({
                           />
                         )}
                         {renderNodeShape(node, 0, 0, active, expanding, heuristicIds, graph.root_id)}
+                        {hasMore && (
+                          <g
+                            className="investigate-truncation-badge"
+                            transform={`translate(${dotR + 6}, ${-dotR - 4})`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              expandNode(node, {
+                                cursor: graph.cursorsByNodeId[node.node_id],
+                              })
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') return
+                              event.preventDefault()
+                              event.stopPropagation()
+                              expandNode(node, {
+                                cursor: graph.cursorsByNodeId[node.node_id],
+                              })
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label="More hops available — load more"
+                          >
+                            <circle r={10} className="investigate-truncation-badge-dot" />
+                            <text textAnchor="middle" dy="0.35em" className="investigate-truncation-badge-label">+</text>
+                          </g>
+                        )}
                         {pinned && (
                           <polygon
                             className="investigate-node-pin"
