@@ -113,6 +113,17 @@ function prefersReducedMotion() {
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
+function stableCaseSnapshotSignature(snapshot) {
+  return JSON.stringify({
+    root_id: snapshot?.root_id ?? null,
+    nodes: snapshot?.nodes ?? [],
+    edges: snapshot?.edges ?? [],
+    positions: snapshot?.positions ?? [],
+    view: snapshot?.view ?? null,
+    filters: snapshot?.filters ?? {},
+  })
+}
+
 function renderNodeShape(node, cx, cy, active, expanding, heuristicIds, rootId) {
   const r = nodeDotRadius(node, active, heuristicIds, rootId)
   const fill = active ? 'var(--accent-selected)' : 'var(--surface-raised, var(--bg2))'
@@ -238,6 +249,7 @@ export default function InvestigateGraph({
   const [casesMenuOpen, setCasesMenuOpen] = useState(false)
   const [casesLoading, setCasesLoading] = useState(false)
   const caseAutosaveTimerRef = useRef(null)
+  const caseMenuRef = useRef(null)
   const lastSavedSnapshotRef = useRef('')
   const lastConsumedCaseIdRef = useRef('')
   const dragRef = useRef(null)
@@ -424,7 +436,14 @@ export default function InvestigateGraph({
       setEdgeClasses(new Set(snapshot.filters.edgeClasses))
     }
     if (snapshot.filters?.isolate != null) setIsolate(snapshot.filters.isolate)
-    if (snapshot.filters?.includeSemantic) setIncludeSemantic(true)
+    setIncludeSemantic(Boolean(snapshot.filters?.includeSemantic))
+    if (!snapshot.filters?.includeSemantic) {
+      setEdgeClasses((prev) => {
+        const next = new Set(prev)
+        next.delete('semantic')
+        return next
+      })
+    }
     if (snapshot.view) {
       viewRef.current = { ...snapshot.view }
       cameraRef.current.setTargetView(snapshot.view, { immediate: prefersReducedMotion() })
@@ -440,7 +459,7 @@ export default function InvestigateGraph({
     }
     if (title) setActiveCaseTitle(title)
     structuralReasonRef.current = 'resolve'
-    topologyModeRef.current = 'resolve'
+    topologyModeRef.current = 'restore'
     lastExpandParentRef.current = null
     setSelectedId(snapshot.root_id)
     setStructuralVersion((n) => n + 1)
@@ -449,7 +468,7 @@ export default function InvestigateGraph({
 
   const markCaseDirty = useCallback(() => {
     if (!activeCaseId) return
-    const next = JSON.stringify(buildCaseSnapshot())
+    const next = stableCaseSnapshotSignature(buildCaseSnapshot())
     if (next !== lastSavedSnapshotRef.current) {
       setCaseSaveState('unsaved')
     }
@@ -467,7 +486,7 @@ export default function InvestigateGraph({
           titleOverride || undefined,
         )
         setActiveCaseTitle(updated.title || activeCaseTitle)
-        lastSavedSnapshotRef.current = JSON.stringify(snapshot)
+        lastSavedSnapshotRef.current = stableCaseSnapshotSignature(snapshot)
         setCaseSaveState('saved')
         return updated
       }
@@ -475,7 +494,7 @@ export default function InvestigateGraph({
       const created = await createInvestigationCase(snapshot, title || null)
       setActiveCaseId(created.id)
       setActiveCaseTitle(created.title || '')
-      lastSavedSnapshotRef.current = JSON.stringify(snapshot)
+      lastSavedSnapshotRef.current = stableCaseSnapshotSignature(snapshot)
       setCaseSaveState('saved')
       onCaseOpened?.(created.id)
       setLiveStatus(`Saved case ${created.title || created.id}.`)
@@ -496,7 +515,7 @@ export default function InvestigateGraph({
       hydrateFromSnapshot(caseRow.snapshot, caseRow.title)
       setActiveCaseId(caseRow.id)
       setActiveCaseTitle(caseRow.title || '')
-      lastSavedSnapshotRef.current = JSON.stringify(caseRow.snapshot)
+      lastSavedSnapshotRef.current = stableCaseSnapshotSignature(caseRow.snapshot)
       setCaseSaveState('saved')
       onCaseOpened?.(caseRow.id)
       setCasesMenuOpen(false)
@@ -987,7 +1006,7 @@ export default function InvestigateGraph({
     structuralReasonRef.current = 'filter'
     topologyModeRef.current = 'filter'
     setStructuralVersion((n) => n + 1)
-  }, [showRelatedCves, entityType, edgeClassesKey, isolate, graph.nodes.length])
+  }, [showRelatedCves, entityType, edgeClassesKey, isolate])
 
   useEffect(() => {
     if (!graph.nodes.length) return
@@ -1040,7 +1059,14 @@ export default function InvestigateGraph({
     engine.setSize(sizeRef.current.width, sizeRef.current.height)
     const mode = topologyModeRef.current
     const parentId = lastExpandParentRef.current
-    if ((mode === 'expand' || mode === 'load_more') && parentId) {
+    if (mode === 'restore' && positionsRef.current.length) {
+      engine.restorePositions(
+        visible.nodes,
+        visible.edges,
+        graph.root_id,
+        positionsRef.current,
+      )
+    } else if ((mode === 'expand' || mode === 'load_more') && parentId) {
       const parentPos = positionsRef.current.find((node) => node.node_id === parentId)
       if (parentPos) {
         engine.mergeTopology(visible.nodes, visible.edges, graph.root_id, {

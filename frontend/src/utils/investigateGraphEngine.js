@@ -108,6 +108,23 @@ export function createGraphEngine({
       this.reheat(1)
       notifyFrame()
     },
+    restorePositions(nodes, nextEdges, nextRootId, savedPositions) {
+      edges = nextEdges || []
+      rootId = nextRootId
+      const prior = new Map((savedPositions || []).map((n) => [n.node_id, n]))
+      const metaById = new Map((nodes || []).map((n) => [n.node_id, n]))
+      positions = (nodes || []).map((node) => {
+        const saved = prior.get(node.node_id)
+        const meta = metaById.get(node.node_id) || node
+        if (saved) {
+          return { ...meta, x: saved.x, y: saved.y, vx: 0, vy: 0 }
+        }
+        return { ...meta, x: width / 2, y: height / 2, vx: 0, vy: 0 }
+      })
+      alpha = ALPHA_MIN
+      settled = true
+      notifyFrame()
+    },
     mergeTopology(allNodes, nextEdges, nextRootId, { expandParentId = null, parentPosition = null } = {}) {
       const prior = new Map(positions.map((n) => [n.node_id, n]))
       edges = nextEdges || []
