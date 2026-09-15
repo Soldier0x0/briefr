@@ -54,10 +54,12 @@ This program **extends** that stack; it does not replace it.
   - New nodes spawn on a small ring around the parent (radius ~80–120px world units, jitter ±20px).
   - Existing nodes keep prior `(x, y)` from `positionsRef`.
   - Root position never changes on expand.
-- `investigateGraphEngine.js` gains `mergeTopology(existingNodes, addedNodes, edges, rootId, expandParentId)`:
-  - Only reheat to `0.4` (not `1.0`) when `expandParentId` is set.
+- `investigateGraphEngine.js` gains `mergeTopology(allNodes, edges, rootId, { expandParentId, parentPosition })`:
+  - `allNodes` is the full merged node list after expand; engine diffs against prior positions to find added nodes.
+  - Only reheat to `0.4` (not `1.0`) when `expandParentId` and `parentPosition` are set.
   - Full reheat remains for **resolve** (new root) and **filter/layer** changes.
-- On expand merge, pass `expandParentId` from `InvestigateGraph.jsx` `expandNode()`.
+- On expand merge, pass `expandParentId` and `parentPosition` from `InvestigateGraph.jsx` `expandNode()`.
+- LOAD MORE sets structural reason `'load_more'` (same camera policy as expand).
 
 **Success:** Double-click expand adds nodes locally without unrelated nodes crossing the canvas.
 
@@ -170,11 +172,11 @@ New Postgres table `investigation_cases` (Alembic migration):
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | UUID PK | |
-| `title` | TEXT NOT NULL | Default: root label + date |
+| `id` | UUID PK (Postgres) / TEXT(36) (SQLite) | |
+| `title` | TEXT NOT NULL | Default: root label + UTC date when omitted on create |
 | `owner_user_id` | INTEGER FK | Session user; single-operator |
-| `root_node_id` | TEXT | `cve:CVE-…` etc. |
-| `snapshot` | JSONB NOT NULL | Frozen `{ nodes, edges, positions, view, filters }` |
+| `root_node_id` | TEXT NOT NULL | Derived from `snapshot.root_id` on create/update |
+| `snapshot` | JSONB (Postgres) / TEXT JSON (SQLite) | Frozen `{ nodes, edges, positions, view, filters, root_id }` |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
@@ -195,7 +197,9 @@ Session-gated routes in `backend/routers/investigations.py` (or `investigation_c
 | PUT | `/api/investigations/cases/{id}` | Replace snapshot (save) |
 | DELETE | `/api/investigations/cases/{id}` | Delete |
 
-- Validate `snapshot.nodes[].node_id` shape; reject > 500 nodes / 600 edges server-side.
+- Validate `snapshot.nodes[].node_id` matches `^(cve|ioc|technique|campaign|publication|sigma_rule):.+`; reject malformed IDs with HTTP 422.
+- Reject > 500 nodes / 600 edges server-side.
+- `create_case` derives `root_node_id` from snapshot; default title when omitted.
 - No server-side expand merge in Wave 3 — client loads case, continues expand via existing relationship APIs, then PUT save.
 
 ### 3.3 UI

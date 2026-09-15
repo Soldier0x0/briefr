@@ -18,7 +18,7 @@
 - Semantic tokens only in UI (`frontend/src/styles/tokens.css`); respect `prefers-reduced-motion` and `data-motion` on `<html>`.
 - Postgres production; SQLite test fallback for backend (danger zone 1 — test both ways for Wave 3).
 - Merge gate: `./scripts/verify-local.sh` green after each wave.
-- Update `docs/PRODUCT_STATUS.md` when operator-visible behavior changes (Wave 3; Wave 1 if draft restore ships).
+- Update `docs/PRODUCT_STATUS.md` when operator-visible behavior changes (Wave 1: camera on expand, layout stability, expand feedback, truncation badges, draft restore; Wave 3: saved cases).
 
 ---
 
@@ -147,7 +147,7 @@ git commit -m "feat(investigate): add seedExpandPositions for stable expand layo
 
 **Interfaces:**
 - Consumes: `seedExpandPositions` from Task 1
-- Produces: `mergeTopology(nodes, edges, rootId, { expandParentId, parentPosition })` on engine API
+- Produces: `mergeTopology(allNodes, edges, rootId, { expandParentId, parentPosition })` on engine API (options object; `allNodes` is the full merged node list after expand)
 
 - [ ] **Step 1: Write failing test**
 
@@ -272,8 +272,13 @@ export function cameraActionForStructuralChange(reason) {
 - [ ] **Step 1: Add `structuralReasonRef` and set on resolve/expand/filter**
 
 In `runSearch`: set `structuralReasonRef.current = 'resolve'` before merge.  
-In `expandNode`: set `'expand'`.  
+In `expandNode`: set `'expand'` (or `'load_more'` when `params.cursor` is present).  
 In filter toggles: set `'filter'`.
+
+- [ ] **Step 1b: Integration test for load_more camera policy**
+
+Add `frontend/src/utils/investigateCameraPolicy.test.js` case: `load_more` → `fly_neighborhood`.  
+Add `investigateGraphEngine.test.js` or policy test asserting LOAD MORE path sets `structuralReasonRef` to `'load_more'` (extract helper `structuralReasonForExpand(params)` if needed).
 
 - [ ] **Step 2: On graph merge after expand, call `engine.mergeTopology` instead of `setTopology`**
 
@@ -403,21 +408,31 @@ Only if Task 8–9 green.
 - Create: `backend/alembic/versions/045_investigation_cases.py`
 
 ```python
+from sqlalchemy.dialects import postgresql
+
 def upgrade():
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        id_type = postgresql.UUID(as_uuid=False)
+        snapshot_type = postgresql.JSONB(astext_type=sa.Text())
+    else:
+        id_type = sa.String(36)
+        snapshot_type = sa.Text()
+
     op.create_table(
         "investigation_cases",
-        sa.Column("id", sa.String(36), primary_key=True),
+        sa.Column("id", id_type, primary_key=True),
         sa.Column("owner_user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("title", sa.Text(), nullable=False),
         sa.Column("root_node_id", sa.Text(), nullable=False),
-        sa.Column("snapshot", sa.Text(), nullable=False),  # JSON
+        sa.Column("snapshot", snapshot_type, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
     op.create_index("ix_investigation_cases_owner_updated", "investigation_cases", ["owner_user_id", "updated_at"])
 ```
 
-- [ ] Run migration on SQLite and Postgres test paths.
+- [ ] Run migration on SQLite (`DATABASE_URL=""`) and Postgres (`./scripts/postgres-dev.sh start` + `DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr`) test paths.
 
 ---
 
@@ -428,11 +443,11 @@ def upgrade():
 
 **Interfaces:**
 - `async def list_cases(db, user_id, limit=50)`
-- `async def create_case(db, user_id, title, snapshot) -> str`
+- `async def create_case(db, user_id, snapshot, title=None) -> str` — derives `root_node_id` from `snapshot.root_id` or first `snapshot.nodes` match; default title `{root_label} · {UTC date}` when `title` omitted
 - `async def get_case(db, user_id, case_id)`
 - `async def update_case(db, user_id, case_id, snapshot, title=None)`
 - `async def delete_case(db, user_id, case_id)`
-- Validate snapshot size: max 500 nodes, 600 edges
+- `validate_snapshot(snapshot) -> None` raises `ValueError` for: >500 nodes, >600 edges, malformed `nodes[].node_id` (must match `^(cve|ioc|technique|campaign|publication|sigma_rule):.+`)
 
 ---
 
@@ -443,9 +458,11 @@ def upgrade():
 - Modify: `backend/main.py` — include router
 - Create: `backend/tests/test_investigation_cases.py`
 
-- [ ] TDD: 401 without session, 404 wrong owner, CRUD happy path, oversize snapshot 422.
+- [ ] TDD: 401 without session, 404 wrong owner, CRUD happy path, oversize snapshot 422, malformed `node_id` 422.
 
-Run: `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/test_investigation_cases.py -q`
+Run (SQLite path): `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/test_investigation_cases.py -q`
+
+Run (Postgres path, required in Task 16): `cd backend && BRIEFR_REQUIRE_POSTGRES=1 DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr pytest tests/test_investigation_cases.py -q` — fails if Postgres unreachable.
 
 ---
 
@@ -462,8 +479,8 @@ Run: `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/test_
 
 ### Task 16: Wave 3 verification
 
-- [ ] `pytest tests/test_investigation_cases.py -q`
-- [ ] Postgres path: `./scripts/verify-local.sh --full` (if available)
+- [ ] SQLite: `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/test_investigation_cases.py -q`
+- [ ] Postgres (required): start `./scripts/postgres-dev.sh start`, then `cd backend && BRIEFR_REQUIRE_POSTGRES=1 DATABASE_URL=postgresql://briefr:briefr@127.0.0.1:5433/briefr pytest tests/test_investigation_cases.py -q`
 - [ ] `./scripts/verify-local.sh`
 - [ ] Commit
 
@@ -484,7 +501,10 @@ Run: `cd backend && DATABASE_URL="" BRIEFR_REQUIRE_POSTGRES=0 pytest tests/test_
 | Case CRUD API | 13, 14 |
 | Case UI + deep link | 15 |
 | No graph DB | Global constraints |
-| PRODUCT_STATUS update | 15 |
+| PRODUCT_STATUS update | 7 (Wave 1), 15 (Wave 3) |
+| load_more camera policy | 3, 4 |
+| node_id validation | 13, 14 |
+| Postgres case tests | 16 |
 
 No TBD placeholders remain.
 
