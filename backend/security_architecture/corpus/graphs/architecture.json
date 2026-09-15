@@ -944,6 +944,19 @@
       ]
     },
     {
+      "id": "routers-investigation_cases",
+      "label": "routers.investigation_cases",
+      "kind": "component",
+      "cluster": "api",
+      "endpoint_count": 5,
+      "source_refs": [
+        {
+          "type": "file",
+          "ref": "backend/routers/investigation_cases.py"
+        }
+      ]
+    },
+    {
       "id": "routers-investigations",
       "label": "routers.investigations",
       "kind": "component",
@@ -1470,6 +1483,18 @@
         {
           "type": "table",
           "ref": "infra_classifications"
+        }
+      ]
+    },
+    {
+      "id": "table:investigation_cases",
+      "label": "investigation_cases",
+      "kind": "table",
+      "cluster": "database",
+      "source_refs": [
+        {
+          "type": "table",
+          "ref": "investigation_cases"
         }
       ]
     },
@@ -6932,6 +6957,36 @@
     {
       "id": "routers-health->table:ti_mirror_iocs",
       "source": "routers-health",
+      "target": "table:ti_mirror_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigation_cases->table:cve_exploits",
+      "source": "routers-investigation_cases",
+      "target": "table:cve_exploits",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigation_cases->table:cves",
+      "source": "routers-investigation_cases",
+      "target": "table:cves",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigation_cases->table:investigation_cases",
+      "source": "routers-investigation_cases",
+      "target": "table:investigation_cases",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigation_cases->table:otx_pulse_iocs",
+      "source": "routers-investigation_cases",
+      "target": "table:otx_pulse_iocs",
+      "kind": "references_table"
+    },
+    {
+      "id": "routers-investigation_cases->table:ti_mirror_iocs",
+      "source": "routers-investigation_cases",
       "target": "table:ti_mirror_iocs",
       "kind": "references_table"
     },

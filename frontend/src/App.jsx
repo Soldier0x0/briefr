@@ -698,12 +698,22 @@ export default function App() {
   }, [setSearchParams, setActiveTab])
 
   const investigateInitialQuery = activeTab === 'investigate' ? (searchParams.get('q') || '') : ''
+  const investigateInitialCaseId = activeTab === 'investigate' ? (searchParams.get('case') || '') : ''
 
   const onInvestigateQueryResolved = useCallback((q) => {
     pushContext(setSearchParams, (prev) => {
       const next = buildAppTabSearchParams(prev, 'investigate')
       if (q) next.set('q', q)
       else next.delete('q')
+      return next
+    })
+  }, [setSearchParams])
+
+  const onInvestigateCaseOpened = useCallback((caseId) => {
+    pushContext(setSearchParams, (prev) => {
+      const next = buildAppTabSearchParams(prev, 'investigate')
+      if (caseId) next.set('case', caseId)
+      else next.delete('case')
       return next
     })
   }, [setSearchParams])
@@ -931,7 +941,9 @@ export default function App() {
               onWatchlistChange={handleWatchlistChange}
               onOpenAdvisories={openAdvisories}
               investigateInitialQuery={investigateInitialQuery}
+              investigateInitialCaseId={investigateInitialCaseId}
               onInvestigateQueryResolved={onInvestigateQueryResolved}
+              onInvestigateCaseOpened={onInvestigateCaseOpened}
             />
             </RequireAuth>
           )}
@@ -992,7 +1004,9 @@ function AppLayout({
   onWatchlistChange,
   onOpenAdvisories,
   investigateInitialQuery,
+  investigateInitialCaseId,
   onInvestigateQueryResolved,
+  onInvestigateCaseOpened,
 }) {
   const { showPanel, panelExpanded } = useInvestigation()
   const [mountedTabs, setMountedTabs] = useState({ brief: true })
@@ -1120,7 +1134,9 @@ function AppLayout({
                     onOpenForgeCampaigns={onOpenForgeCampaigns}
                     onOpenAdvisories={onOpenAdvisories}
                     initialQuery={investigateInitialQuery}
+                    initialCaseId={investigateInitialCaseId}
                     onQueryResolved={onInvestigateQueryResolved}
+                    onCaseOpened={onInvestigateCaseOpened}
                   />
                 </ToolErrorBoundary>
               </Suspense>

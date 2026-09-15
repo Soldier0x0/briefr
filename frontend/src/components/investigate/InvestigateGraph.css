@@ -27,6 +27,89 @@
   max-width: 52rem;
 }
 
+.investigate-draft-banner,
+.investigate-case-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.investigate-case-open {
+  position: relative;
+}
+
+.investigate-case-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: var(--z-popover, 40);
+  min-width: 14rem;
+  max-height: 16rem;
+  overflow: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--border-subtle, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised, var(--bg2));
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.35));
+}
+
+.investigate-case-menu-item {
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary, var(--text));
+  text-align: left;
+  cursor: pointer;
+}
+
+.investigate-case-menu-item:hover {
+  background: var(--accent-selected);
+}
+
+.investigate-case-menu-empty {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-muted, var(--text3));
+}
+
+.investigate-node-expanding .investigate-node-dot,
+.investigate-node-expanding .investigate-node-hex {
+  animation: investigate-expand-pulse 900ms ease-out infinite;
+}
+
+@keyframes investigate-expand-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .investigate-node-expanding .investigate-node-dot,
+  .investigate-node-expanding .investigate-node-hex {
+    animation: none;
+  }
+}
+
+.investigate-truncation-badge {
+  cursor: pointer;
+}
+
+.investigate-truncation-badge-dot {
+  fill: var(--surface-raised, var(--bg2));
+  stroke: var(--border-active, var(--border2));
+  stroke-width: 1.5;
+}
+
+.investigate-truncation-badge-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  fill: var(--text-secondary, var(--text2));
+  pointer-events: none;
+}
+
 .investigate-toolbar {
   display: flex;
   align-items: flex-end;

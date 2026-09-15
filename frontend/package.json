@@ -9,6 +9,7 @@
     "preview": "vite preview --port 3000",
     "audit:ci": "npm audit --audit-level=high",
     "test:unit": "node --test 'src/**/*.test.js'",
+    "test:perf": "node scripts/investigate-graph-perf.mjs",
     "lint": "eslint src/scoring src/pages/admin",
     "format": "prettier --write \"src/scoring/**/*.{js,jsx,css}\" \"src/pages/admin/**/*.{js,jsx,css}\"",
     "format:check": "prettier --check \"src/scoring/**/*.{js,jsx,css}\" \"src/pages/admin/**/*.{js,jsx,css}\""

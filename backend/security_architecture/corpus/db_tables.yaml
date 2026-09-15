@@ -261,6 +261,15 @@ tables:
   source_refs:
   - type: table
     ref: infra_classifications
+- id: investigation_cases
+  title: investigation_cases
+  summary: Database table defined in db/init.py (name=investigation_cases).
+  owner: platform
+  status: active
+  origin: generated
+  source_refs:
+  - type: table
+    ref: investigation_cases
 - id: ioc_cache
   title: ioc_cache
   summary: Database table defined in db/init.py (name=ioc_cache).
