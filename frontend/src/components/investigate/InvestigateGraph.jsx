@@ -837,6 +837,23 @@ export default function InvestigateGraph({
   }, [graph, positions, showRelatedCves, entityType, edgeClassesKey, isolate, includeSemantic, markCaseDirty])
 
   useEffect(() => {
+    if (!casesMenuOpen) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setCasesMenuOpen(false)
+    }
+    const onPointerDown = (event) => {
+      if (caseMenuRef.current?.contains(event.target)) return
+      setCasesMenuOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [casesMenuOpen])
+
+  useEffect(() => {
     if (!activeCaseId || caseSaveState !== 'unsaved') return undefined
     if (caseAutosaveTimerRef.current) clearTimeout(caseAutosaveTimerRef.current)
     caseAutosaveTimerRef.current = setTimeout(() => {
@@ -1222,7 +1239,7 @@ export default function InvestigateGraph({
             >
               {caseSaveState === 'saving' ? 'SAVING…' : 'SAVE CASE'}
             </button>
-            <div className="investigate-case-open">
+            <div className="investigate-case-open" ref={caseMenuRef}>
               <button
                 type="button"
                 className="investigate-ghost-btn mono"
