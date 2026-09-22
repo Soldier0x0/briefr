@@ -289,7 +289,7 @@ terms:
   term: PyJWT
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 2.13.0
+  version: 2.14.0
 - id: self-stack-pyrage
   title: pyrage
   summary: BRIEFR dependency term derived from backend/requirements.txt.
