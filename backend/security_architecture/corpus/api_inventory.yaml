@@ -448,6 +448,21 @@ endpoints:
   path: /api/investigation/summary
   component_id: routers-meta
 - method: GET
+  path: /api/investigations/cases
+  component_id: routers-investigation_cases
+- method: POST
+  path: /api/investigations/cases
+  component_id: routers-investigation_cases
+- method: DELETE
+  path: /api/investigations/cases/{case_id}
+  component_id: routers-investigation_cases
+- method: GET
+  path: /api/investigations/cases/{case_id}
+  component_id: routers-investigation_cases
+- method: PUT
+  path: /api/investigations/cases/{case_id}
+  component_id: routers-investigation_cases
+- method: GET
   path: /api/investigations/entities/{entity_type}/{entity_id:path}
   component_id: routers-investigations
 - method: GET
