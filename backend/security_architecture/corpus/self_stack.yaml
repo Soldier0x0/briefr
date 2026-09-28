@@ -239,7 +239,7 @@ terms:
   term: procrastinate
   source: backend/requirements.txt
   ecosystem: pypi
-  version: 3.9.0
+  version: 3.10.0
 - id: self-stack-psutil
   title: psutil
   summary: BRIEFR dependency term derived from backend/requirements.txt.
