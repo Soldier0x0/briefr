@@ -29,7 +29,7 @@
     "@tanstack/react-table": "^9.2.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "lucide-react": "^1.47.0",
+    "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4",
@@ -43,7 +43,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.63.0",
-    "prettier": "^3.9.8",
+    "prettier": "^3.9.9",
     "vite": "^8.3.0"
   },
   "overrides": {
