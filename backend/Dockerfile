@@ -1,8 +1,11 @@
 # BRIEFR API image. Build context is the repo root.
 # Production requirements only — not requirements-dev.txt.
 # Final process is non-root and does not use --reload.
+#
+# Debian slim, not Alpine. Python 3.12 matches CI and is required by
+# numpy==2.5.1 (Requires-Python >=3.12), so 3.11 cannot install requirements.txt.
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

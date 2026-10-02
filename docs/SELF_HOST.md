@@ -307,7 +307,7 @@ bash /opt/briefr/deploy/smoke-intel.sh
 
 | Piece | Image |
 |-------|--------|
-| API | `python:3.11-slim`, production `backend/requirements.txt`, non-root, `uvicorn` on `:8000` (no `--reload`). Healthcheck calls `/api/health`. |
+| API | `python:3.12-slim` (Debian, not Alpine). `numpy==2.5.1` needs Python ≥ 3.12, which is also what CI runs. Production `backend/requirements.txt`, non-root, `uvicorn` on `:8000` (no `--reload`). Healthcheck calls `/api/health`. |
 | UI | Multi-stage: Node builds `frontend/dist`, then `nginx:alpine` serves that directory only. No Node in the final image. nginx proxies `/api` to the `backend` service. |
 | Database | Optional `pgvector/pgvector:pg16` with a named volume. Leave it out when Postgres already runs on the host. |
 
