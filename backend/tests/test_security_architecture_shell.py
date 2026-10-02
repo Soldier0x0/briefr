@@ -68,7 +68,18 @@ def test_overview_tiles_are_counts_with_drill_targets():
             assert tile["help"], f"tile {tile['id']} has no discoverable explanation"
 
 
-def test_overview_curated_tiles_reflect_empty_corpus_honestly():
+def test_overview_curated_tiles_reflect_empty_corpus_honestly(monkeypatch):
+    # Seed review_dates are 2026-07-01. After 90 days (from 2026-10-01) every
+    # control is stale and the live tile correctly shows 0/0. This test still
+    # checks the in-window seed: freeze merge.date.today so calendar rot does
+    # not fail Dependabot CI. Stale exclusion is covered in
+    # test_security_architecture_stale.py.
+    class _Date(datetime.date):
+        @classmethod
+        def today(cls):
+            return datetime.date(2026, 9, 28)
+
+    monkeypatch.setattr("security_architecture.merge.date", _Date)
     with TestClient(app) as client:
         body = client.get("/api/security-architecture/overview").json()
         by_id = {t["id"]: t for t in body["tiles"]}
