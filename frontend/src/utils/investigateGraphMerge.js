@@ -1,7 +1,7 @@
 /** Merge frozen GraphPage payloads by node_id / edge_id (P1 canvas). */
 
-export const INVESTIGATE_GRAPH_MAX_NODES = 200
-export const INVESTIGATE_GRAPH_MAX_EDGES = 300
+export const INVESTIGATE_GRAPH_MAX_NODES = 400
+export const INVESTIGATE_GRAPH_MAX_EDGES = 500
 
 export function emptyGraphState() {
   return {
