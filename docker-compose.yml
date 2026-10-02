@@ -1,0 +1,64 @@
+# Try-out stack: API + nginx frontend, plus an optional Postgres.
+#
+# Bundled database (first look, nothing else listening):
+#   cp .env.example .env
+#   docker compose --profile postgres up --build -d
+#
+# Existing Postgres on a Debian host — omit the postgres service:
+#   Set DATABASE_URL to host.docker.internal (see .env.example).
+#   docker compose up --build -d
+#
+# Secrets come from .env. They are not baked into the images.
+# Bare-metal install (systemd + host nginx) is unchanged: docs/SELF_HOST.md §3.
+# Dev-only Postgres for an app running on the host stays
+# deploy/docker-compose.postgres.yml.
+
+services:
+  postgres:
+    profiles: ["postgres"]
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-briefr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-briefr}
+    volumes:
+      - briefr-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-briefr} -d ${POSTGRES_DB:-briefr}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No host port. Other containers reach this service as hostname "postgres".
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+    ports:
+      - "127.0.0.1:${BRIEFR_BACKEND_PORT:-8000}:8000"
+    volumes:
+      - briefr-backups:/var/lib/briefr/backups
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${BRIEFR_HTTP_PORT:-8080}:80"
+
+volumes:
+  briefr-pg-data:
+  briefr-backups:
