@@ -37,12 +37,12 @@
     "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "playwright": "^1.63.0",
+    "playwright": "^1.64.0",
     "prettier": "^3.9.9",
     "vite": "^8.3.5"
   },
