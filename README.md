@@ -95,6 +95,15 @@ cd ../frontend && npm install && npm run dev   # http://localhost:5173
 
 Open the UI and complete first-run admin setup.
 
+**Docker try-out** (API + nginx UI, optional Postgres — bare-metal install below is unchanged):
+
+```bash
+cp .env.example .env   # set JWT_SECRET and POSTGRES_PASSWORD; keep DATABASE_URL in sync
+docker compose --profile postgres up --build -d   # http://127.0.0.1:8080
+```
+
+An existing host Postgres can omit `--profile postgres` and use `host.docker.internal`. Steps: [SELF_HOST.md §4](docs/SELF_HOST.md#4-docker-images-try-out).
+
 **Production path** — PostgreSQL 16 + **pgvector** (`pgvector/pgvector:pg16`), then the install script:
 
 ```bash
@@ -105,7 +114,7 @@ curl -s http://127.0.0.1:8000/api/health | python3 -m json.tool
 
 | Guide | Use when |
 |-------|----------|
-| [SELF_HOST.md](docs/SELF_HOST.md) | Full install — dev Postgres, production Debian/nginx, Docker notes |
+| [SELF_HOST.md](docs/SELF_HOST.md) | Full install — dev Postgres, production Debian/nginx, Docker images |
 | [POSTGRES.md](docs/POSTGRES.md) | Backups, restore, pgvector upgrade |
 | [USE.md](docs/USE.md) | Analyst tabs and workflows |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Something broke |

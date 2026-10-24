@@ -7,6 +7,7 @@
 | Try BRIEFR locally in 5 minutes | [§1 Quick dev (SQLite)](#1-quick-local-development-sqlite) |
 | Develop or test with real Postgres + pgvector | [§2 Postgres dev](#2-local-development-with-postgresql--pgvector) |
 | Run on a production Debian server | [§3 Production](#3-production-debian--systemd--nginx) |
+| Run the app in Docker | [§4 Docker images](#4-docker-images-try-out) |
 | Deep Postgres / backup / pgvector cutover | [`POSTGRES.md`](POSTGRES.md) |
 | Day-2 ops (updates, smoke, scheduler) | [`OPERATIONS.md`](OPERATIONS.md) |
 | Something broke after install | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) |
@@ -298,6 +299,63 @@ bash /opt/briefr/deploy/smoke-intel.sh
 
 ---
 
+## 4. Docker images (try-out)
+
+**Use when:** you want the API and the built UI in containers, on a laptop or next to an existing Postgres.
+
+**Bare-metal install stays.** [§3](#3-production-debian--systemd--nginx) (systemd, host nginx, `/opt/briefr`) is still the production path on Debian. These files do not replace it. Images are built locally. Nothing in this section publishes to a registry.
+
+| Piece | Image |
+|-------|--------|
+| API | `python:3.12-slim` (Debian, not Alpine). `numpy==2.5.1` needs Python ≥ 3.12, which is also what CI runs. Production `backend/requirements.txt`, non-root, `uvicorn` on `:8000` (no `--reload`). Healthcheck calls `/api/health`. |
+| UI | Multi-stage: Node builds `frontend/dist`, then `nginx:alpine` serves that directory only. No Node in the final image. nginx proxies `/api` to the `backend` service. |
+| Database | Optional `pgvector/pgvector:pg16` with a named volume. Leave it out when Postgres already runs on the host. |
+
+### Try-out with bundled Postgres
+
+From the repo root:
+
+```bash
+cp .env.example .env
+# Set JWT_SECRET (openssl rand -hex 32) and POSTGRES_PASSWORD.
+# Put the same password in DATABASE_URL. Hex is safest — no URL encoding.
+docker compose --profile postgres up --build -d
+curl -s http://127.0.0.1:8080/api/health | python3 -m json.tool
+```
+
+Open http://127.0.0.1:8080 and complete first-run setup. The API is also on http://127.0.0.1:8000.
+
+`AUTH_COOKIE_SECURE=0` in `.env.example` is for this plain-HTTP port. Set it to `1` when a TLS proxy terminates HTTPS in front of nginx.
+
+Secrets stay in `.env` (gitignored). They are not written into the images.
+
+### Existing Postgres on a Debian host
+
+Omit the `postgres` service. Point `DATABASE_URL` at the host through Docker's host gateway (`extra_hosts` on the backend service maps `host.docker.internal` to `host-gateway`):
+
+```bash
+DATABASE_URL=postgresql://briefr:YOUR_PASSWORD@host.docker.internal:5432/briefr
+```
+
+```bash
+docker compose up --build -d
+```
+
+Postgres must accept TCP on the address containers actually reach (the Docker bridge). A server that listens only on `127.0.0.1` is not reachable as `host.docker.internal`. Publishing `127.0.0.1:5432` on the host is the right shape for the bare-metal app in §2 and §3; for this containerized API, listen on the bridge address or keep the app on the host.
+
+`deploy/docker-compose.postgres.yml` is unchanged. It is the host-published dev database for an app you run yourself with uvicorn, not this stack.
+
+### Build without Compose
+
+```bash
+docker build -f backend/Dockerfile -t briefr-backend .
+docker build -f frontend/Dockerfile -t briefr-frontend .
+```
+
+The frontend image expects a service named `backend` on the same Docker network.
+
+---
+
 ## After install: verification checklist
 
 Use this table regardless of path:
@@ -325,7 +383,8 @@ Use this table regardless of path:
 | Symptom → fix | `docs/TROUBLESHOOTING.md` | — |
 | Developer workflow / tests | `docs/ONBOARDING.md` | `./scripts/verify-local.sh` |
 | API keys template | `backend/.env.example` | copy to `backend/.env` |
-| Compose Postgres (dev) | `deploy/docker-compose.postgres.yml` | `docker compose -f deploy/docker-compose.postgres.yml up -d` |
+| Compose Postgres (dev, app on the host) | `deploy/docker-compose.postgres.yml` | `docker compose -f deploy/docker-compose.postgres.yml up -d` |
+| Docker app images (try-out) | `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile` | [§4](#4-docker-images-try-out) — `docker compose --profile postgres up --build -d` |
 | Disposable Postgres (CI / :5433) | `scripts/postgres-dev.sh` | `./scripts/postgres-dev.sh start` |
 | External Postgres env stub | `deploy/external-postgres.env.example` | — |
 | Production install script | `deploy/setup.sh` (git) or `deploy/briefr-install.sh` (artifact) |

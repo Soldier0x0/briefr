@@ -1,0 +1,35 @@
+# Build context is the repo root (see docker-compose.yml).
+# Keep images free of local environments, secrets, and generated data.
+
+.git
+**/.git
+.github
+
+**/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# Secrets. .env.example is a template and stays in the context.
+.env
+**/.env
+.env.local
+**/.env.local
+backend/.env
+
+# Local databases, backups, and generated trees
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/*.sqlite
+**/*.sqlite3
+**/backups
+**/dist
+graphify-out
+.cursor
+.superpowers
+**/.DS_Store

@@ -53,7 +53,7 @@
 | **Stack Tier A (Q4)** | Opt-in historical NVD+KEV+EPSS backfill for shallow stack coverage (`STACK_BACKFILL_ENABLED=0` default). `GET /api/stack/coverage`, `POST /api/stack/backfill/agree`, run status/resume. Checkpointed per product; FEED gap banner + Agree. Deep intel stays on background jobs. **Idempotent (IDEM-A/B):** a duplicate resume/retry can't double-run a run — an atomic `claim_run_running` gate admits one worker (a crash-stalled `running` run is reclaimable after `STACK_BACKFILL_STALE_SECONDS`, default 900s); the Procrastinate defer carries a per-run `queueing_lock`. NVD rate-limit deferrals now schedule a durable resume with the same per-run lock after 180s when Procrastinate is available; otherwise the run stays deferred with manual-resume copy. |
 | **Security architecture live risks** | Risk Register live self-stack rows use structured CPE / `affected_products` scoring against the generated self-stack, including version pins when available. Product+version matches score 100; product-only fallback rows score 55 and are shown as version unverified. Description text `LIKE` is not used for self-stack admission. `/api/security-architecture/section/risks` now returns additive `live_self_stack` cap-honesty stats (`candidate_rows`, `scored_matches`, `admitted`, `cap=50`), and the UI shows "live self-stack showing X of Y (cap 50)" when scored matches exceed admitted rows. |
 | **EPSS identity skip (Q5)** | Scheduled EPSS sync downloads FIRST CSV.GZ and compares `sha256` + `score_date` to `sync_state.epss_csv_file_identity`. Unchanged → skip gunzip/parse/upsert/snapshot. Force: `POST /api/admin/feeds/epss/force-resync`. |
-| **Docker compose** | Postgres compose exists; full V2.0 platform compose not shipped. |
+| **Docker compose** | Try-out images: `docker-compose.yml` (API + nginx UI, optional `pgvector/pgvector:pg16`). Host-only Postgres compose remains `deploy/docker-compose.postgres.yml`. Bare-metal Debian install is unchanged. Full V2.0 platform compose is not shipped. |
 
 ---
 
@@ -90,7 +90,7 @@
 
 | Shipped | Planned / open |
 |---------|----------------|
-| Postgres, auth, rate limits, API queue, shared rate-limit store (#437) | Full `docker-compose.yml` (V2.0) |
+| Postgres, auth, rate limits, API queue, shared rate-limit store (#437); try-out Docker images (API + nginx, optional pgvector) | Full V2.0 platform compose |
 | Correlation v3 complete (#473…#513) | STIX export (excluded from current loop) |
 | Forge redesign FR-1…FR-3 (#490, #492, #495) | ONBOARDING refresh (ongoing) |
 | Threat modeling TM-0…TM-5 (#491, #493–#497); **TM-6 CWE/OWASP/CAPEC/STRIDE framework workspaces** | TM-6 NIST CSF / ASVS (operator control-backed, follow-up); self-monitoring/remediation job |
