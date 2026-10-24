@@ -26,6 +26,41 @@ function ringRadiusForType(entityType, isRoot) {
   return 0.85
 }
 
+const EXPAND_RING_MIN = 80
+const EXPAND_RING_MAX = 140
+
+export function seedExpandPositions(parent, newNodes, priorMap, { width, height }) {
+  const px = parent?.x ?? width / 2
+  const py = parent?.y ?? height / 2
+  const existingIds = new Set()
+  const result = []
+  for (const [nodeId, pos] of priorMap.entries()) {
+    existingIds.add(nodeId)
+    result.push({
+      node_id: nodeId,
+      x: pos.x,
+      y: pos.y,
+      vx: pos.vx || 0,
+      vy: pos.vy || 0,
+    })
+  }
+  const count = Math.max(newNodes.length, 1)
+  newNodes.forEach((node, index) => {
+    if (existingIds.has(node.node_id)) return
+    const angle = (index / count) * Math.PI * 2
+    const radius = EXPAND_RING_MIN + (index % 3) * 20
+    const jitter = (index % 2 === 0 ? 1 : -1) * 12
+    result.push({
+      ...node,
+      x: px + Math.cos(angle) * radius + jitter,
+      y: py + Math.sin(angle) * radius - jitter,
+      vx: 0,
+      vy: 0,
+    })
+  })
+  return result
+}
+
 export function seedPositions(nodes, width, height, prior = new Map(), rootId = null) {
   const cx = width / 2
   const cy = height / 2

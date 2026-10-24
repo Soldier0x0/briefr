@@ -1280,6 +1280,18 @@ async def init_db() -> None:
             _RESOURCE_METRICS_IDX_SQL,
             "ALTER TABLE audit_log ADD COLUMN metadata_json TEXT",
             "ALTER TABLE ai_operations ADD COLUMN error_detail TEXT",
+            """
+            CREATE TABLE IF NOT EXISTS investigation_cases (
+                id TEXT PRIMARY KEY,
+                owner_user_id INTEGER NOT NULL REFERENCES users(id),
+                title TEXT NOT NULL,
+                root_node_id TEXT NOT NULL,
+                snapshot TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_investigation_cases_owner_updated ON investigation_cases(owner_user_id, updated_at)",
         ):
             try:
                 await db.execute(migration)

@@ -63,6 +63,21 @@ describe('createGraphEngine', () => {
     assert.equal(settled, 1)
   })
 
+  it('mergeTopology reheat is weaker than full setTopology', () => {
+    const engine = createGraphEngine()
+    engine.setSize(800, 600)
+    engine.setTopology(nodes, edges, 'root')
+    while (engine.tick()) { /* settle */ }
+    engine.mergeTopology(
+      [...nodes, { node_id: 'c', entity_type: 'ioc' }],
+      [...edges, { source_node_id: 'root', target_node_id: 'c' }],
+      'root',
+      { expandParentId: 'root', parentPosition: { x: 400, y: 300 } },
+    )
+    assert.ok(engine.alpha() <= 0.5)
+    assert.ok(engine.alpha() >= 0.35)
+  })
+
   it('drops pins when nodes leave the topology', () => {
     const engine = createGraphEngine()
     engine.setSize(800, 600)

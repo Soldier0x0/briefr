@@ -318,6 +318,40 @@ export function fetchInvestigationRelationships(entityType, entityId, params = {
   return request(`${investigationEntityPath(entityType, entityId)}/relationships${suffix}`)
 }
 
+export function fetchInvestigationCases() {
+  return request('/investigations/cases')
+}
+
+export function fetchInvestigationCase(caseId) {
+  return request(`/investigations/cases/${encodeURIComponent(caseId)}`)
+}
+
+export function createInvestigationCase(snapshot, title = null) {
+  const body = { snapshot }
+  if (title) body.title = title
+  return request('/investigations/cases', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateInvestigationCase(caseId, snapshot, title = null) {
+  const body = { snapshot }
+  if (title) body.title = title
+  return request(`/investigations/cases/${encodeURIComponent(caseId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteInvestigationCase(caseId) {
+  return request(`/investigations/cases/${encodeURIComponent(caseId)}`, {
+    method: 'DELETE',
+  })
+}
+
 /** Asset profile CPE match — sole API endpoint that receives asset inventory. */
 export function fetchCveAssetMatch(assets) {
   return request('/cves/match', {

@@ -252,6 +252,12 @@ EXPECTED_ROUTES = [
         "/api/investigations/entities/{entity_type}/{entity_id}/relationships",
     ),
     ("GET", "/api/investigations/entities/{entity_type}/{entity_id}"),
+    # Saved investigation workspace cases (smoothness wave 3).
+    ("GET", "/api/investigations/cases"),
+    ("POST", "/api/investigations/cases"),
+    ("GET", "/api/investigations/cases/{case_id}"),
+    ("PUT", "/api/investigations/cases/{case_id}"),
+    ("DELETE", "/api/investigations/cases/{case_id}"),
 ]
 
 
@@ -342,6 +348,8 @@ def test_moved_endpoints_live_in_routers():
         by_path["/api/investigations/entities/{entity_type}/{entity_id:path}"]
         == "routers.investigations"
     )
+    assert by_path["/api/investigations/cases"] == "routers.investigation_cases"
+    assert by_path["/api/investigations/cases/{case_id}"] == "routers.investigation_cases"
     # main.py owns only app wiring now (V1.2 exit criterion: <300 lines)
     assert not any(module == "main" for module in by_path.values())
 

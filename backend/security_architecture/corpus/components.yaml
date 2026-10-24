@@ -270,6 +270,16 @@ components:
   source_refs:
   - type: file
     ref: backend/routers/health.py
+- id: routers-investigation_cases
+  title: routers.investigation_cases
+  summary: FastAPI router module with 5 endpoint(s).
+  owner: platform
+  status: active
+  origin: generated
+  endpoint_count: 5
+  source_refs:
+  - type: file
+    ref: backend/routers/investigation_cases.py
 - id: routers-investigations
   title: routers.investigations
   summary: FastAPI router module with 3 endpoint(s).
